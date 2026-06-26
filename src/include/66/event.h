@@ -42,20 +42,48 @@
 #include <66/config.h>
 
 /**
- * @brief Native s6-supervise service transition bytes.
+ * @brief A service/supervisor event: the format-independent vocabulary.
  *
- * s6-supervise emits these one byte at a time on a service's `supervise/event`
- * fifodir. The canonical service state s6 derives from them is the `(up, ready)`
- * pair, noted on each value below. A consumer interprets the stream byte by
- * byte; the pump never looks at them.
+ * One single typed vocabulary for everything a waiter expresses AND everything
+ * the producer emits. The first seven are the transitions 66-supervise actually
+ * emits; their wire encoding (a single byte today) lives in `event_to_byte` /
+ * `event_from_byte`, NOT here -- a future rich payload swaps the codec while this
+ * enum and the matcher stay put. The two RESTART values are wait-only composites
+ * (no transition byte): a waiter may want them, the producer never emits them.
+ * `EVENT_NONE` is what `event_from_byte` returns for a byte it does not know.
  */
-#define EVENT_S6_UP             'u' // process up, not ready (up=1 ready=0)
-#define EVENT_S6_READY          'U' // process up and ready (up=1 ready=1)
-#define EVENT_S6_DOWN           'd' // finishing / down (up=0 ready=0)
-#define EVENT_S6_DOWN_READY     'D' // fully down, ready to start (up=0 ready=1)
-#define EVENT_S6_NORESTART      'O' // will not be restarted
-#define EVENT_S6_SUPERVISE_UP   's' // s6-supervise started
-#define EVENT_S6_SUPERVISE_DOWN 'x' // s6-supervise exiting
+typedef enum event_e event_t ;
+enum event_e
+{
+    EVENT_UP,             // process up, not ready           (byte 'u')
+    EVENT_READY,          // process up and ready            (byte 'U')
+    EVENT_DOWN,           // finishing / down                (byte 'd')
+    EVENT_DOWN_READY,     // fully down, ready to start       (byte 'D')
+    EVENT_NORESTART,      // will not be restarted            (byte 'O')
+    EVENT_SUPERVISE_UP,   // supervisor started              (byte 's')
+    EVENT_SUPERVISE_DOWN, // supervisor exiting              (byte 'x')
+    EVENT_RESTART,        // wait-only: down then up          (no byte)
+    EVENT_RESTART_READY,  // wait-only: down then up+ready     (no byte)
+    EVENT_NONE            // unknown / not an event           (no byte)
+} ;
+
+/**
+ * @brief Wire codec: convert between an event and its single transition byte.
+ *
+ * The byte is just today's serialization; isolating it here keeps the rest of
+ * the engine format-independent (a rich-payload codec would sit beside these).
+ *
+ * @return event_to_byte: the transition byte for a wire event, or 0 for an event
+ *         that never travels on the wire (RESTART, RESTART_READY, NONE).
+ * @return event_from_byte: the event for a known byte, or EVENT_NONE otherwise.
+ */
+extern char event_to_byte(event_t e) ;
+extern event_t event_from_byte(char c) ;
+
+/** @brief event_match_feed verdicts. */
+#define EVENT_MATCH_FAIL    (-1) // permanent failure ('O' while wanting up, or 'x')
+#define EVENT_MATCH_PENDING   0  // not reached yet
+#define EVENT_MATCH_OK        1  // wanted state reached
 
 /**
  * @brief Subscriber fifo naming, byte-compatible with s6-supervise's fanout.
@@ -80,6 +108,61 @@
 typedef struct event_reader_s event_reader_t ;
 typedef struct event_fifo_s event_fifo_t ;
 typedef struct event_wait_s event_wait_t ;
+typedef struct event_match_s event_match_t ;
+
+/**
+ * @struct event_match_s
+ * @brief The transition interpreter: tracks (up, ready) and matches a wanted state.
+ *
+ * Feed it the raw transition bytes as they arrive; it maintains the decoded
+ * `(up, ready)` pair and tells the caller when @wanted is reached or has
+ * permanently failed. The same matcher backs every waiter (event_wait and the
+ * svc launch/daemon waits), so the s6 wait semantics live in exactly one place.
+ *
+ * @param wanted       The service state being waited for.
+ * @param up, ready    Current decoded process state (seed at init, updated on feed).
+ * @param restart_done For a RESTART wait, set once the down phase has been seen.
+ */
+struct event_match_s
+{
+    event_t wanted ;
+    unsigned char up ;
+    unsigned char ready ;
+    unsigned char restart_done ;
+} ;
+
+/**
+ * @brief Initialize a matcher for @wanted, seeded with the currently known state.
+ *
+ * @param[out] m      Matcher to initialize.
+ * @param[in]  wanted The state to wait for.
+ * @param[in]  up     Current up bit (1 if the process is up), or 0 if unknown.
+ * @param[in]  ready  Current ready bit, or 0 if unknown.
+ *
+ * @note A non-RESTART wait whose seed already satisfies @wanted is reported as
+ *       matched on the first `event_match_feed` (including a zero-length feed).
+ * @see event_match_feed
+ */
+extern void event_match_init(event_match_t *m, event_t wanted, unsigned char up, unsigned char ready) ;
+
+/**
+ * @brief Feed transition bytes and report whether @wanted has been reached.
+ *
+ * Updates the tracked `(up, ready)` from the bytes in @buf (decoding `d/D/u/U`,
+ * handling the two-phase RESTART, and treating `O` while waiting up or `x` as a
+ * permanent failure). Supervise waits match the exact `'s'`/`'x'` byte instead.
+ * A `len == 0` call evaluates the current state without consuming input.
+ *
+ * @param[in,out] m   Initialized matcher.
+ * @param[in]     buf Bytes read from the source (may be NULL when @len is 0).
+ * @param[in]     len Number of bytes in @buf.
+ *
+ * @return `EVENT_MATCH_OK` (1) if @wanted is reached, `EVENT_MATCH_FAIL` (-1) on
+ *         permanent failure, `EVENT_MATCH_PENDING` (0) otherwise. Once OK or FAIL
+ *         is returned the matcher should not be fed further.
+ * @see event_match_init
+ */
+extern int event_match_feed(event_match_t *m, char const *buf, size_t len) ;
 
 
 /**
@@ -360,7 +443,7 @@ extern int event_fifodir_clean(char const *path) ;
  * Scans @path and, for every entry matching the subscriber naming (the
  * `EVENT_FIFO_PREFIX` prefix AND the exact `EVENT_FIFO_NAMELEN` length), opens it
  * `O_WRONLY | O_NONBLOCK` and writes the @len bytes at @s into it. This is how
- * 66-supervise emits a transition byte (`EVENT_S6_*`) to all current readers.
+ * 66-supervise emits a transition byte (`EVENT_* event`) to all current readers.
  *
  * The producer NEVER blocks on a bad subscriber: a fifo with no reader (`ENXIO`)
  * or whose reader has gone (`EPIPE`) is unlinked, and a full fifo (`EAGAIN`) or
@@ -368,7 +451,7 @@ extern int event_fifodir_clean(char const *path) ;
  * directory stream is never leaked, and the FIRST error is the one reported.
  *
  * @param[in] path Fifodir to fan out into.
- * @param[in] s    Bytes to write to each subscriber (typically one `EVENT_S6_*`).
+ * @param[in] s    Bytes to write to each subscriber (typically one `EVENT_* event`).
  * @param[in] len  Number of bytes at @s.
  *
  * @return 1 on success (message delivered to every live subscriber; orphans
@@ -386,6 +469,24 @@ extern int event_fifodir_clean(char const *path) ;
  * @see event_fifodir_clean
  */
 extern int event_fifodir_notify(char const *path, char const *s, size_t len) ;
+
+/**
+ * @brief Typed producer-side emit: fan @n events out to a fifodir in one message.
+ *
+ * Encodes each of @ev to its transition byte (`event_to_byte`) and hands the
+ * resulting bytes to `event_fifodir_notify` in a single write, so a multi-event
+ * transition (e.g. DOWN then DOWN_READY) reaches every subscriber atomically.
+ * This is how 66-supervise emits, in the typed vocabulary rather than raw bytes.
+ *
+ * @param[in] path Fifodir to fan out into.
+ * @param[in] ev   Events to emit (must be wire events; RESTART/NONE encode to 0).
+ * @param[in] n    Number of events (1 or more).
+ *
+ * @return 1 on success, 0 on failure (the `event_fifodir_notify` errno).
+ * @see event_fifodir_notify
+ * @see event_to_byte
+ */
+extern int event_fifodir_emit(char const *path, event_t const *ev, size_t n) ;
 
 /**
  * @struct event_wait_s
@@ -421,7 +522,11 @@ extern int event_fifodir_notify(char const *path, char const *s, size_t len) ;
  * `triggered == n`.
  *
  * @param wanted
- * The single transition byte every source is waiting for.
+ * The service state every source is waiting for (interpreted by event_match).
+ *
+ * @param failed
+ * Set when a source reported a permanent failure (`O`/`x`): the wait ended early
+ * and `event_wait_run` returns 0, distinct from a clean timeout.
  *
  * @param timer_active
  * Non-zero while the deadline timer is registered on @epoll.
@@ -429,12 +534,13 @@ extern int event_fifodir_notify(char const *path, char const *s, size_t len) ;
 struct event_wait_s
 {
     sse_epoll_t epoll ;
-    event_fifo_t *fifos ;        // n fifo sources held at a stable address
-    void *slots ;                // n per-source cookies (private layout, event_wait.c)
+    event_fifo_t *fifos ; // n fifo sources held at a stable address
+    void *slots ; // n per-source cookies (private layout, event_wait.c)
     sse_watcher_t timer ;
     size_t n ;
-    size_t triggered ;           // sources that have seen `wanted`
-    char wanted ;                // transition byte every source waits for
+    size_t triggered ; // sources that have reached `wanted`
+    event_t wanted ; // service state every source waits for
+    int failed ; // a source reported permanent failure (O/x)
     int timer_active ;
 } ;
 
@@ -455,7 +561,7 @@ struct event_wait_s
  * @param[in]  eventdirs Array of @n service event directories to subscribe to.
  *                       Read only when @n > 0.
  * @param[in]  n         Number of directories.
- * @param[in]  wanted    The transition byte every source must see.
+ * @param[in]  wanted    The service state every source must reach.
  *
  * @return 1 on success (all @n sources subscribed, or @n == 0).
  * @return 0 on failure; errno is set and per path is:
@@ -471,7 +577,7 @@ struct event_wait_s
  * @see event_wait_run
  * @see event_wait_free
  */
-extern int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, char wanted) ;
+extern int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, event_t wanted) ;
 
 /**
  * @brief Block until every subscribed source has seen its byte, or the deadline.

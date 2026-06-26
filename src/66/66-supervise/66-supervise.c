@@ -257,7 +257,7 @@ static inline int read_reloadsig(void)
   return sig ;
 }
 
-static void set_down_and_ready(char const *s, unsigned int n)
+static void set_down_and_ready(event_t const *ev, unsigned int n)
 {
   status.pid = 0 ;
   status.flagfinishing = 0 ;
@@ -267,7 +267,7 @@ static void set_down_and_ready(char const *s, unsigned int n)
   else settimeout(1) ;
   tain_wallclock_read(&status.readystamp) ;
   announce() ;
-  event_fifodir_notify(S6_SUPERVISE_EVENTDIR, s, n) ;
+  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, ev, n) ;
 }
 
 
@@ -398,15 +398,16 @@ static void notify_cb(sse_watcher_t *w, void *data, int revents)
 {
   log_flow() ;
   (void)w ; (void)data ;
-  if (revents & (SSE_ERROR | SSE_HUP)) { notify_drop_req = 1 ; return ; }
-  for (;;)
-  {
+  /* Drain readable data FIRST, then honour a hangup. A child that writes its
+   * readiness newline and closes the fd at once (e.g. 66-log) makes the pipe
+   * report POLLIN and POLLHUP together; acting on the hangup before reading
+   * would drop the pending newline and the service would never be seen ready. */
+  for (;;) {
     char buf[512] ;
     ssize_t r = io_read_result(io_read(notifyfd, buf, 512)) ;
     if (r < 0) { notify_drop_req = 1 ; return ; } // EOF (EPIPE) or error: stop watching
-    if (!r) return ; // would block
-    if (memchr(buf, '\n', (size_t)r))
-    {
+    if (!r) break ; // would block: nothing more to read for now
+    if (memchr(buf, '\n', (size_t)r)) {
       struct timespec now ;
       clock_now_mono(&now) ;
       clock_addsec(&nextstart, &now, 1) ;
@@ -414,11 +415,14 @@ static void notify_cb(sse_watcher_t *w, void *data, int revents)
       tain_wallclock_read(&status.readystamp) ;
       status.flagready = 1 ;
       announce() ;
-      event_fifodir_notify(S6_SUPERVISE_EVENTDIR, "U", 1) ;
+      event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_READY}, 1) ;
       notify_drop_req = 1 ;
       return ;
     }
   }
+
+  if (revents & (SSE_ERROR | SSE_HUP))
+    notify_drop_req = 1 ; // hangup, no newline: stop watching
 }
 
 static void trystart(void)
@@ -479,7 +483,7 @@ static void trystart(void)
   status.flagready = 0 ;
   tain_wallclock_read(&status.stamp) ;
   announce() ;
-  event_fifodir_notify(S6_SUPERVISE_EVENTDIR, "u", 1) ;
+  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_UP}, 1) ;
   return ;
 
  errn:
@@ -576,7 +580,7 @@ static int uplastup_z(void)
   if (!status.pid)
   {
     if (errno != ENOENT) log_warnusys("spawn ", "./finish") ;
-    set_down_and_ready("dD", 2) ;
+    set_down_and_ready((event_t[]){EVENT_DOWN, EVENT_DOWN_READY}, 2) ;
     return 0 ;
   }
   if (!sse_start_child(&g_epoll, &wchild, child_cb, NULL, status.pid, 1, true))
@@ -589,7 +593,7 @@ static int uplastup_z(void)
   }
   status.flagfinishing = 1 ;
   announce() ;
-  event_fifodir_notify(S6_SUPERVISE_EVENTDIR, "d", 1) ;
+  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_DOWN}, 1) ;
   return 1 ;
 }
 
@@ -662,9 +666,9 @@ static void finish_z(void)
   if (WIFEXITED(finish_wstat) && WEXITSTATUS(finish_wstat) == 125)
   {
     status.flagwantup = 0 ;
-    set_down_and_ready("OD", 2) ;
+    set_down_and_ready((event_t[]){EVENT_NORESTART, EVENT_DOWN_READY}, 2) ;
   }
-  else set_down_and_ready("D", 1) ;
+  else set_down_and_ready((event_t[]){EVENT_DOWN_READY}, 1) ;
 }
 
 static void finish_x(void)
@@ -884,7 +888,7 @@ int main(int argc, char const *const *argv)
     status.flagpaused = 1 ;
     announce() ;
     status.flagpaused = 0 ;
-    event_fifodir_notify(S6_SUPERVISE_EVENTDIR, "s", 1) ;
+    event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_SUPERVISE_UP}, 1) ;
 
     g_epoll.running = true ;
     while (gflags.cont)
@@ -910,7 +914,7 @@ int main(int argc, char const *const *argv)
       if (notify_drop_req) { notify_drop_req = 0 ; drop_notifyfd() ; }
     }
 
-    event_fifodir_notify(S6_SUPERVISE_EVENTDIR, "x", 1) ;
+    event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_SUPERVISE_DOWN}, 1) ;
   }
   resolve_free(wres) ;
   return 0 ;

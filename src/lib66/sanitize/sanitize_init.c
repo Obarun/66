@@ -207,7 +207,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
 
             event_wait_t fifo ;
 
-            if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_S6_SUPERVISE_UP)) {
+            if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_SUPERVISE_UP)) {
                 cleanup(toclean, ntoclean) ;
                 log_dieusys(LOG_EXIT_SYS, "subscribe to event fifos") ;
             }

@@ -59,8 +59,6 @@ int event_fifodir_make(char const *path, gid_t gid)
             log_warnusys_return(LOG_EXIT_ZERO, "not a directory: ", path) ;
         }
 
-        // exists, ours, a real directory: fall through to re-apply chown+chmod
-        // below, so the postcondition (correct perms) holds however it was created
     } else umask(m) ;
 
     if (gid != (gid_t)-1 && chown(path, (uid_t)-1, gid) < 0)
@@ -161,11 +159,14 @@ int event_fifodir_notify(char const *path, char const *s, size_t len)
         if (fd < 0) {
             if (errno == ENXIO && unlink(tmp) < 0 && !e)
                 e = errno ;
+
             continue ;
         }
+
         ssize_t r = io_write(fd, (char *)s, len) ;
         if ((r < 0 || (size_t)r < len) && errno == EPIPE && unlink(tmp) < 0 && !e)
             e = errno ;
+
         close_fd(fd) ;
     }
 
@@ -177,4 +178,18 @@ int event_fifodir_notify(char const *path, char const *s, size_t len)
     }
 
     return 1 ;
+}
+
+int event_fifodir_emit(char const *path, event_t const *ev, size_t n)
+{
+    log_flow() ;
+
+    if (!n)
+        return 1 ;
+
+    char buf[n] ;
+    for (size_t i = 0 ; i < n ; i++)
+        buf[i] = event_to_byte(ev[i]) ;
+
+    return event_fifodir_notify(path, buf, n) ;
 }

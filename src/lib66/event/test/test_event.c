@@ -537,20 +537,20 @@ static void test_subscribe_double_fd_no_eof(void)
     }
 
     /* now actually deliver a byte and confirm it reads cleanly (no HUP path) */
-    T_ASSERT_EQ(1, fanout_write(ev, EVENT_S6_UP), "producer writes one byte") ;
+    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_UP)), "producer writes one byte") ;
 
     /* drive the loop once (timeout so it can't hang); the byte must arrive */
     int pr = sse_run(&ep, 200) ;
     T_ASSERT_EQ(1, pr, "sse_run ok") ;
     T_ASSERT_EQ(1, (long long)s.n, "exactly one byte delivered") ;
-    T_ASSERT_EQ(EVENT_S6_UP, s.buf[0], "the delivered byte is 'u'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_UP), s.buf[0], "the delivered byte is 'u'") ;
 
     /* the read end is still alive (wfd kept it open) — verify by a second byte */
     s.n = 0 ;
-    T_ASSERT_EQ(1, fanout_write(ev, EVENT_S6_READY), "producer writes again") ;
+    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_READY)), "producer writes again") ;
     T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok 2") ;
     T_ASSERT_EQ(1, (long long)s.n, "second byte delivered after writer churn") ;
-    T_ASSERT_EQ(EVENT_S6_READY, s.buf[0], "second byte is 'U'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_READY), s.buf[0], "second byte is 'U'") ;
 
     event_fifo_unsubscribe(&r) ;
     sse_free(&ep) ;
@@ -577,15 +577,15 @@ static void test_notify_delivers_to_subscriber(void)
     T_ASSERT_EQ(1, event_fifodir_notify(ev, "U", 1), "notify returns 1") ;
     T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok") ;
     T_ASSERT_EQ(1, (long long)s.n, "exactly one byte delivered") ;
-    T_ASSERT_EQ(EVENT_S6_READY, s.buf[0], "the delivered byte is 'U'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_READY), s.buf[0], "the delivered byte is 'U'") ;
 
     /* multi-byte combo arrives intact */
     s.n = 0 ;
     T_ASSERT_EQ(1, event_fifodir_notify(ev, "dD", 2), "notify combo returns 1") ;
     T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok 2") ;
     T_ASSERT_EQ(2, (long long)s.n, "two bytes delivered") ;
-    T_ASSERT_EQ(EVENT_S6_DOWN, s.buf[0], "first byte is 'd'") ;
-    T_ASSERT_EQ(EVENT_S6_DOWN_READY, s.buf[1], "second byte is 'D'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_DOWN), s.buf[0], "first byte is 'd'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_DOWN_READY), s.buf[1], "second byte is 'D'") ;
 
     event_fifo_unsubscribe(&r) ;
     sse_free(&ep) ;
@@ -687,10 +687,10 @@ static void test_cb_single_byte(void)
     sink_t s = {0} ; event_fifo_t r ;
     subscribe_one(&ep, &r, &s, ev) ;
 
-    T_ASSERT_EQ(1, fanout_write(ev, EVENT_S6_DOWN), "write 1 byte") ;
+    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_DOWN)), "write 1 byte") ;
     pump(&ep, &s, 1) ;
     T_ASSERT_EQ(1, (long long)s.n, "one byte reported once") ;
-    T_ASSERT_EQ(EVENT_S6_DOWN, s.buf[0], "byte value 'd'") ;
+    T_ASSERT_EQ(event_to_byte(EVENT_DOWN), s.buf[0], "byte value 'd'") ;
 
     event_fifo_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
 }
@@ -732,7 +732,7 @@ static void test_cb_large_batch_over_256(void)
 
     enum { N = 1000 } ;
     char big[N] ;
-    for (int i = 0 ; i < N ; i++) big[i] = (i & 1) ? EVENT_S6_UP : EVENT_S6_DOWN ;
+    for (int i = 0 ; i < N ; i++) big[i] = (i & 1) ? event_to_byte(EVENT_UP) : event_to_byte(EVENT_DOWN) ;
 
     int w = open(r.fifopath, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
     T_ASSERT(w >= 0, "open writer") ;
@@ -801,11 +801,11 @@ static void test_wait_all_triggered(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_S6_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
 
     /* producer triggers AFTER subscribe, BEFORE run (prod ordering) */
     for (size_t i = 0 ; i < N ; i++)
-        T_ASSERT_EQ(1, fanout_write(dirs[i], EVENT_S6_READY), "trigger each dir") ;
+        T_ASSERT_EQ(1, fanout_write(dirs[i], event_to_byte(EVENT_READY)), "trigger each dir") ;
 
     int r = event_wait_run(&w, 2000) ;
     T_ASSERT_EQ(1, r, "run returns 1 when all triggered") ;
@@ -829,11 +829,11 @@ static void test_wait_partial_timeout(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_S6_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
 
     /* only 2 of 3 trigger -> deadline must fire, run returns 0 */
-    T_ASSERT_EQ(1, fanout_write(dirs[0], EVENT_S6_READY), "trigger 0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[2], EVENT_S6_READY), "trigger 2") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "trigger 0") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[2], event_to_byte(EVENT_READY)), "trigger 2") ;
 
     int r = event_wait_run(&w, 300) ;
     T_ASSERT_EQ(0, r, "run returns 0 on partial timeout") ;
@@ -851,11 +851,11 @@ static void test_wait_duplicate_byte_idempotent(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_S6_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
 
     /* dir0 emits the wanted byte THREE times; dir1 once.
      * got[] must dedupe: triggered must reach exactly 2, never more. */
-    char b = EVENT_S6_READY ;
+    char b = event_to_byte(EVENT_READY) ;
     DIR *d = opendir(dirs[0]) ; T_ASSERT(d != NULL, "opendir dir0") ;
     struct dirent *e ; char path[1024] ;
     while ((e = readdir(d))) {
@@ -868,7 +868,7 @@ static void test_wait_duplicate_byte_idempotent(void)
         close(fd) ;
     }
     closedir(d) ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], EVENT_S6_READY), "trigger dir1 once") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_READY)), "trigger dir1 once") ;
 
     int r = event_wait_run(&w, 2000) ;
     T_ASSERT_EQ(1, r, "run returns 1") ;
@@ -878,7 +878,7 @@ static void test_wait_duplicate_byte_idempotent(void)
     free_dirs(N, dirs) ; rm_rf(base) ;
 }
 
-static void test_wait_noise_ignored(void)
+static void test_wait_irrelevant_bytes_ignored(void)
 {
     char tmpl[] = "/tmp/ev_wn_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
@@ -886,23 +886,55 @@ static void test_wait_noise_ignored(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_S6_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
 
-    /* dir0: noise then the wanted byte -> matches.
-     * dir1: ONLY non-matching noise, never the wanted byte -> must NOT match.
-     * With the wanted-filter intact: triggered stays at 1, run times out (0).
-     * If the filter were dropped, dir1's noise would match -> triggered 2,
-     * run 1; so this asymmetry makes the filter load-bearing. */
-    T_ASSERT_EQ(1, fanout_write(dirs[0], EVENT_S6_UP), "noise u dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], EVENT_S6_DOWN), "noise d dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], EVENT_S6_READY), "wanted dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], EVENT_S6_NORESTART), "noise O dir1") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], EVENT_S6_UP), "more noise u dir1") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], EVENT_S6_DOWN), "more noise d dir1") ;
+    /* dir0: non-satisfying transitions then the wanted state -> matches.
+     * dir1: only bytes that never reach READY and never fail ('u'=up-not-ready,
+     * 'd'=down, 's'=supervise-up which is irrelevant to a service-state wait) ->
+     * stays pending. So triggered stays 1 and the wait times out (0). */
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_UP)), "up-not-ready dir0") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_DOWN)), "down dir0") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "ready dir0") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_UP)), "up-not-ready dir1") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_DOWN)), "down dir1") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_SUPERVISE_UP)), "irrelevant s dir1") ;
 
     int r = event_wait_run(&w, 300) ;
-    T_ASSERT_EQ(0, r, "run times out: dir1 got only noise, never wanted") ;
-    T_ASSERT_EQ(1, (long long)w.triggered, "only dir0 matched; noise never incremented triggered") ;
+    T_ASSERT_EQ(0, r, "run times out: dir1 never reached READY") ;
+    T_ASSERT_EQ(1, (long long)w.triggered, "only dir0 matched") ;
+    T_ASSERT_EQ(0, w.failed, "no permanent-failure byte: not flagged failed") ;
+
+    event_wait_free(&w) ;
+    free_dirs(N, dirs) ; rm_rf(base) ;
+}
+
+/* A permanent-failure byte ('O' while waiting up, or 'x') ends a wait_and at
+ * once -- like s6-svwait, which exits on such an event rather than waiting out
+ * the deadline. Proven by both the `failed` flag AND the elapsed time being far
+ * below the (generous) timeout. */
+static void test_wait_permanent_failure_fast(void)
+{
+    char tmpl[] = "/tmp/ev_wf_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    enum { N = 2 } ;
+    char *dirs[N] ; make_dirs(base, N, dirs) ;
+
+    event_wait_t w ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+
+    /* dir1 will never come up; dir0 reports it won't be restarted -> the AND is
+     * doomed and must fail immediately, not after the 5s deadline. */
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_NORESTART)), "O dir0") ;
+
+    struct timespec a, b ;
+    clock_gettime(CLOCK_MONOTONIC, &a) ;
+    int r = event_wait_run(&w, 5000) ;
+    clock_gettime(CLOCK_MONOTONIC, &b) ;
+    long ms = (b.tv_sec - a.tv_sec) * 1000 + (b.tv_nsec - a.tv_nsec) / 1000000 ;
+
+    T_ASSERT_EQ(0, r, "run returns 0 on permanent failure") ;
+    T_ASSERT_EQ(1, w.failed, "permanent failure flagged") ;
+    T_ASSERT(ms < 1000, "failed fast, well under the 5s deadline") ;
 
     event_wait_free(&w) ;
     free_dirs(N, dirs) ; rm_rf(base) ;
@@ -911,7 +943,7 @@ static void test_wait_noise_ignored(void)
 static void test_wait_zero_dirs(void)
 {
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, NULL, 0, EVENT_S6_READY), "init n=0") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, NULL, 0, EVENT_READY), "init n=0") ;
     T_ASSERT(w.fifos == NULL, "no fifo sources allocated for n=0") ;
     T_ASSERT(w.slots == NULL, "no slots allocated for n=0") ;
     int r = event_wait_run(&w, 1000) ;
@@ -932,8 +964,8 @@ static void test_wait_timeout_zero_no_timer(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_S6_READY), "init") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], EVENT_S6_READY), "trigger") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "trigger") ;
 
     int r = event_wait_run(&w, 0) ;
     T_ASSERT_EQ(1, r, "run returns 1 (match) with timeout 0") ;
@@ -962,7 +994,7 @@ static void test_wait_timeout_zero_blocks(void)
     if (pid == 0) {
         alarm(0) ;   /* drop the inherited suite alarm; parent bounds us */
         event_wait_t cw ;
-        if (!event_wait_init(&cw, (char const *const *)dirs, N, EVENT_S6_READY)) _exit(2) ;
+        if (!event_wait_init(&cw, (char const *const *)dirs, N, EVENT_READY)) _exit(2) ;
         /* if this returns at all with timeout 0 and no match, the timer fired */
         int rc = event_wait_run(&cw, 0) ;
         _exit(rc == 0 ? 50 : 51) ;   /* 50 = returned on a (bad) deadline */
@@ -994,7 +1026,7 @@ static void test_wait_init_rollback_on_bad_dir(void)
 
     event_wait_t w ;
     errno = 0 ;
-    int r = event_wait_init(&w, (char const *const *)dirs, 2, EVENT_S6_READY) ;
+    int r = event_wait_init(&w, (char const *const *)dirs, 2, EVENT_READY) ;
     T_ASSERT_EQ(0, r, "init returns 0 when a subscribe fails") ;
     T_ASSERT(w.fifos == NULL, "fifo sources freed on rollback") ;
     T_ASSERT(w.slots == NULL, "slots freed on rollback") ;
@@ -1005,6 +1037,105 @@ static void test_wait_init_rollback_on_bad_dir(void)
     T_ASSERT_EQ(-1, w.epoll.fd, "epoll freed (fd -1)") ;
 
     rm_rf(dirs[0]) ; free(dirs[0]) ; free(dirs[1]) ; rm_rf(base) ;
+}
+
+/* ---- event_match (the shared transition interpreter) -------------- */
+
+/* feed a NUL-terminated byte string through the matcher, return its verdict. */
+static int m_feed(event_match_t *m, char const *s)
+{
+    return event_match_feed(m, s, strlen(s)) ;
+}
+
+static void test_match_up(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_UP, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down byte: still pending for up") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "u"), "up byte: reached") ;
+}
+
+static void test_match_ready_needs_U(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_READY, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "u"), "up-not-ready: pending for ready") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "U"), "ready byte: reached") ;
+}
+
+static void test_match_down_from_up(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_DOWN, 1, 0) ;   /* seed: currently up */
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, ""), "seeded up: not down yet") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "d"), "down byte: reached") ;
+}
+
+static void test_match_down_ready(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_DOWN_READY, 1, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down-not-ready: pending") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "D"), "fully down: reached") ;
+}
+
+static void test_match_down_combo_one_feed(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_DOWN_READY, 1, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "dD"), "d then D in one read: reached") ;
+}
+
+static void test_match_restart_two_phase(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_RESTART, 1, 0) ;   /* seed: up */
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "u"), "still up, no down seen: pending") ;
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down phase reached, not up again: pending") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "u"), "up after down: restart reached") ;
+}
+
+static void test_match_already_satisfied_seed(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_UP, 1, 0) ;   /* already up */
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, ""), "seeded up: up wait already satisfied") ;
+}
+
+static void test_match_norestart_fail(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_READY, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_FAIL, m_feed(&m, "O"), "O while waiting up: permanent failure") ;
+}
+
+static void test_match_supervise_down_fail(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_READY, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_FAIL, m_feed(&m, "x"), "x while waiting ready: supervisor died") ;
+}
+
+static void test_match_norestart_ignored_when_down(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_DOWN, 1, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "Od"), "O ignored when waiting down, then d: reached") ;
+}
+
+static void test_match_supervise_up(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_SUPERVISE_UP, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "uU"), "service bytes: pending for supervise-up") ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "s"), "s byte: supervise-up reached") ;
+}
+
+static void test_match_supervise_down(void)
+{
+    event_match_t m ;
+    event_match_init(&m, EVENT_SUPERVISE_DOWN, 0, 0) ;
+    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "x"), "x byte: supervise-down reached (not a failure)") ;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1054,9 +1185,24 @@ T_SUITE("event module")
     T_RUN(test_wait_all_triggered) ;
     T_RUN(test_wait_partial_timeout) ;
     T_RUN(test_wait_duplicate_byte_idempotent) ;
-    T_RUN(test_wait_noise_ignored) ;
+    T_RUN(test_wait_irrelevant_bytes_ignored) ;
+    T_RUN(test_wait_permanent_failure_fast) ;
     T_RUN(test_wait_zero_dirs) ;
     T_RUN(test_wait_timeout_zero_no_timer) ;
     T_RUN(test_wait_timeout_zero_blocks) ;
     T_RUN(test_wait_init_rollback_on_bad_dir) ;
+
+    /* event_match (transition interpreter) */
+    T_RUN(test_match_up) ;
+    T_RUN(test_match_ready_needs_U) ;
+    T_RUN(test_match_down_from_up) ;
+    T_RUN(test_match_down_ready) ;
+    T_RUN(test_match_down_combo_one_feed) ;
+    T_RUN(test_match_restart_two_phase) ;
+    T_RUN(test_match_already_satisfied_seed) ;
+    T_RUN(test_match_norestart_fail) ;
+    T_RUN(test_match_supervise_down_fail) ;
+    T_RUN(test_match_norestart_ignored_when_down) ;
+    T_RUN(test_match_supervise_up) ;
+    T_RUN(test_match_supervise_down) ;
 }
