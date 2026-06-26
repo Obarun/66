@@ -54,20 +54,25 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
 
     ssexec_t *info = data ;
 
-    /* map the lifecycle action onto a control byte ; restart sends SIGTERM and
-     * the supervisor brings the service back up (it stays wanted-up) */
-    char byte ;
-    if (!strcmp(fdh_signame, "start"))
-        byte = 'u' ;
-    else if (!strcmp(fdh_signame, "stop"))
-        byte = 'd' ;
-    else
-        byte = 't' ;
+    /* map the lifecycle action onto a control sequence and the state to confirm.
+     * start/stop use the uppercase U/D so the wanted state persists (they edit
+     * the down file: deldown / adddown); restart sends SIGTERM and the
+     * supervisor brings the service back up (down then up). */
+    char const *control ;
+    event_t wanted ;
+    if (!strcmp(fdh_signame, "start")) {
+        control = "U" ; wanted = EVENT_READY ;
+    } else if (!strcmp(fdh_signame, "stop")) {
+        control = "D" ; wanted = EVENT_DOWN_READY ;
+    } else {
+        control = "t" ; wanted = EVENT_RESTART_READY ;
+    }
 
     char dir[info->scandir.len + sizeof("/" SS_FDHOLDER) + 1] ;
     auto_strings(dir, info->scandir.s, "/" SS_FDHOLDER) ;
 
     log_trace(fdh_signame, " fdholder service: ", dir) ;
 
-    return svc_control_send(dir, &byte, 1) ? 0 : LOG_EXIT_SYS ;
+    svc_send_daemon(dir, control, wanted, (int)fdh_sig_timeout) ;
+    return 0 ;
 }
