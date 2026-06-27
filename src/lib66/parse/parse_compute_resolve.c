@@ -85,9 +85,14 @@ uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info)
     char *name = res->sa.s + res->name ;
     size_t namelen = strlen(name) ;
 
-    char dir[info->live.len + SS_SCANDIR_LEN + 1 + info->ownerlen + 1 + namelen + 1] ;
+    /* oneshot and module are not supervised by 66-scandir: their scandir entry
+     * is hidden with a leading dot so 66-scandir skips it, while the rest of the
+     * /run layout stays identical to a classic. */
+    char const *dot = res->type == E_PARSER_TYPE_CLASSIC ? "" : "." ;
 
-    auto_strings(dir, info->live.s, SS_SCANDIR, "/", info->ownerstr, "/", name) ;
+    char dir[info->live.len + SS_SCANDIR_LEN + 1 + info->ownerlen + 1 + 1 + namelen + 1] ;
+
+    auto_strings(dir, info->live.s, SS_SCANDIR, "/", info->ownerstr, "/", dot, name) ;
 
     return resolve_add_string(wres, dir) ;
 }

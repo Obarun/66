@@ -31,14 +31,7 @@ static void scandir_to_livestate(resolve_service_t *res)
 {
     log_flow() ;
 
-    char *name = res->sa.s + res->name ;
-    size_t namelen = strlen(name) ;
-    size_t livelen = strlen(res->sa.s + res->live.livedir) ;
-    size_t ownerlen = strlen(res->sa.s + res->ownerstr) ;
-
-    char sym[livelen + SS_SCANDIR_LEN + 1 + ownerlen + 1 + namelen + 1] ;
-
-    auto_strings(sym, res->sa.s + res->live.livedir, SS_SCANDIR, "/", res->sa.s + res->ownerstr, "/", name) ;
+    char const *sym = res->sa.s + res->live.scandir ;
 
     log_trace("symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
     if (!symlink_atomic(res->sa.s + res->live.servicedir, sym))

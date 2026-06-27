@@ -213,71 +213,41 @@ static void info_get_status(resolve_service_t *res)
 {
     int warn_color = 0 ;
 
-    ss_state_t sta = STATE_ZERO ;
+    char const *supervisedir = res->sa.s + res->live.supervisedir ;
+    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, supervisedir, "/", SS_STATUS) ;
 
-    if (res->type == E_PARSER_TYPE_CLASSIC) {
+    if (access(file, F_OK) < 0) {
+        if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        return ;
+    }
 
-        char const *supervisedir = res->sa.s + res->live.supervisedir ;
-        char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
-        auto_strings(file, supervisedir, "/", SS_STATUS) ;
+    service_status_t st = STATUS_ZERO ;
+    if (status_read(&st, file) < 0)
+        log_dieusys(LOG_EXIT_SYS, "read status of: ", res->sa.s + res->name) ;
 
-        if (access(file, F_OK) < 0) {
-            if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-            return ;
-        }
+    char const *word ;
+    switch (st.state) {
+        case STATUS_STATE_UP :         word = "up" ; warn_color = 2 ; break ;
+        case STATUS_STATE_STARTING :   word = "starting" ; warn_color = 2 ; break ;
+        case STATUS_STATE_DONE :       word = "done" ; warn_color = 2 ; break ;
+        case STATUS_STATE_STOPPING :   word = "stopping" ; warn_color = 1 ; break ;
+        case STATUS_STATE_FINISHING :  word = "finishing" ; warn_color = 1 ; break ;
+        case STATUS_STATE_RESTARTING : word = "restarting" ; warn_color = 1 ; break ;
+        case STATUS_STATE_FAILED :     word = "failed" ; warn_color = 1 ; break ;
+        case STATUS_STATE_DOWN :
+        default :                      word = "down" ; warn_color = 1 ; break ;
+    }
 
-        service_status_t st = STATUS_ZERO ;
-        if (status_read(&st, file) < 0)
-            log_dieusys(LOG_EXIT_SYS, "read status of: ", res->sa.s + res->name) ;
+    char fmt[PID_FMT] ;
+    fmt[pid_format(fmt, st.pid)] = 0 ;
 
-        char const *word ;
-        switch (st.state) {
-            case STATUS_STATE_UP :         word = "up" ; warn_color = 2 ; break ;
-            case STATUS_STATE_STARTING :   word = "starting" ; warn_color = 2 ; break ;
-            case STATUS_STATE_DONE :       word = "done" ; warn_color = 2 ; break ;
-            case STATUS_STATE_STOPPING :   word = "stopping" ; warn_color = 1 ; break ;
-            case STATUS_STATE_FINISHING :  word = "finishing" ; warn_color = 1 ; break ;
-            case STATUS_STATE_RESTARTING : word = "restarting" ; warn_color = 1 ; break ;
-            case STATUS_STATE_FAILED :     word = "failed" ; warn_color = 1 ; break ;
-            case STATUS_STATE_DOWN :
-            default :                      word = "down" ; warn_color = 1 ; break ;
-        }
-
-        char fmt[PID_FMT] ;
-        fmt[pid_format(fmt, st.pid)] = 0 ;
-
-        if (st.pid > 0) {
-            if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off, fmt))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        } else {
-            if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off))
-                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-        }
-
+    if (st.pid > 0) {
+        if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off, fmt))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     } else {
-
-        char *status = 0 ;
-
-        if (!state_read(&sta, res))
-            log_dieusys(LOG_EXIT_SYS,"read state of: ", res->sa.s + res->name) ;
-
-        if (sta.issupervised == STATE_FLAGS_FALSE) {
-
-            status = "unsupervised" ;
-
-        } else if (sta.isup == STATE_FLAGS_FALSE) {
-
-            status = "down" ;
-            warn_color = 1 ;
-
-        } else {
-
-            status = "up" ;
-            warn_color = 2 ;
-        }
-
-        if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : warn_color ? log_color->error : log_color->warning, status, log_color->off))
+        if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }

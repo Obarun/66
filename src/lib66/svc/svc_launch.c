@@ -29,13 +29,16 @@
 #include <oblibs/log.h>
 #include <oblibs/environ.h>
 #include <oblibs/string.h>
+#include <oblibs/clock.h>
 #include <oblibs/sse.h>
 #include <oblibs/fd.h>
 
 #include <66/service.h>
 #include <66/state.h>
+#include <66/status.h>
 #include <66/enum_parser.h>
 #include <66/svc.h>
+#include <66/constants.h>
 #include <66/config.h>
 #include <66/event.h>
 
@@ -156,6 +159,31 @@ static inline int svc_send_event(svc_event_type_t type, uint32_t id)
     return (written == sizeof(msg)) ? 1 : 0 ;
 }
 
+static void svc_runtime_write(svc_ctx_t *svc, bool success)
+{
+    log_flow() ;
+
+    service_status_t st = STATUS_ZERO ;
+
+    if (success) {
+        st.state = pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
+        st.result = STATUS_RESULT_SUCCESS ;
+    } else {
+        st.state = STATUS_STATE_FAILED ;
+        st.result = STATUS_RESULT_EXITED ;
+        st.code = (uint32_t)svc->exitcode ;
+    }
+    st.who = STATUS_WHO_USER ;
+    clock_now(&st.stamp) ;
+
+    char const *supervisedir = svc->res->sa.s + svc->res->live.supervisedir ;
+    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, supervisedir, "/", SS_STATUS) ;
+
+    if (!status_write(&st, file))
+        log_warnusys("write runtime status of: ", svc->res->sa.s + svc->res->name) ;
+}
+
 // state = true > success
 static void announce(uint32_t id, bool success)
 {
@@ -169,6 +197,9 @@ static void announce(uint32_t id, bool success)
     char file[scandirlen +  6] ;
 
     auto_strings(file, scandir, "/down") ;
+
+    if (svc->res->type != E_PARSER_TYPE_CLASSIC)
+        svc_runtime_write(svc, success) ;
 
     if (success) {
 

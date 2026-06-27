@@ -58,34 +58,21 @@ int info_graph_display_service(char const *name)
         goto freed ;
     }
 
-    if (res.type == E_PARSER_TYPE_CLASSIC) {
+    svc_status(&res, &st) ;
 
-        svc_status(&res, &st) ;
-        pid_color = !st.pid ? 1 : 2 ;
+    if (st.pid > 0) {
+
+        pid_color = 2 ;
         str_pid[pid_format(str_pid, st.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
-    } else {
+    } else switch (st.state) {
 
-         if (sta.issupervised == STATE_FLAGS_FALSE) {
-
-            ppid = "unitialized" ;
-            goto dis ;
-
-        } else if (sta.isup == STATE_FLAGS_FALSE) {
-
-            ppid = "down" ;
-            pid_color = 1 ;
-
-        } else {
-
-            ppid = "up" ;
-            pid_color = 2 ;
-
-        }
+        case STATUS_STATE_DONE :   ppid = "done" ; pid_color = 2 ; break ;
+        case STATUS_STATE_UP :     ppid = "up" ; pid_color = 2 ; break ;
+        case STATUS_STATE_FAILED : ppid = "failed" ; pid_color = 1 ; break ;
+        default :                  ppid = "down" ; pid_color = 1 ; break ;
     }
-
-    dis:
 
     if (!ostream_fmt(ostream_1,"%s (%s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s)", \
 

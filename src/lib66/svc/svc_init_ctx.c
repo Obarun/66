@@ -76,29 +76,15 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
 
         svc.index = v->index ;
 
-        if (svc.res->type != E_PARSER_TYPE_CLASSIC) {
+        service_status_t st = STATUS_ZERO ;
 
-                ss_state_t sta = STATE_ZERO ;
+        svc_status(svc.res, &st) ;
 
-                if (!state_read(&sta, svc.res))
-                    log_dieusys(LOG_EXIT_SYS, "read state file of: ", name) ;
-
-                if (sta.isup == STATE_FLAGS_TRUE)
-                    FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
-                else
-                    FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
-
-        } else {
-
-            service_status_t st = STATUS_ZERO ;
-
-            svc_status(svc.res, &st) ;
-
-            if (st.pid > 0)
-                FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
-            else
-                FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
-        }
+        /* up means the process is alive (classic) or the oneshot latched DONE. */
+        if (st.pid > 0 || st.state == STATUS_STATE_DONE)
+            FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
+        else
+            FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
 
         asvc[pos] = svc ;
     }

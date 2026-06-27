@@ -29,6 +29,7 @@
 #include <66/state.h>
 #include <66/service.h>
 #include <66/sanitize.h>
+#include <66/symlink.h>
 #include <66/enum_parser.h>
 
 #include <66/event.h>
@@ -103,23 +104,34 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
         if (!r)
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug reports") ;
 
-        /**
-         * Oneshot are not supervised by a scandir.
-         * Check for state directory instead.
-        */
-        if (pres->type == E_PARSER_TYPE_ONESHOT)
-            issupervised = access(pres->sa.s + pres->live.statedir, F_OK) ;
-        else
-            issupervised = access(scandir, F_OK) ;
+        /* every type now owns a scandir entry (hidden for the non-supervised
+         * ones), so the "is it set up" check is uniform. */
+        issupervised = access(scandir, F_OK) ;
 
         if (!sanitize_livestate(pres, &sta)) {
             cleanup(toclean, ntoclean) ;
             log_dieu(LOG_EXIT_SYS, "sanitize state directory: ", pres->sa.s + pres->name) ;
         }
 
+        /* oneshot and module are not supervised, but they get the same /run
+         * layout as a classic so the status window is uniform: a supervise/ dir
+         * for svc_launch's runtime record, and a hidden scandir symlink that
+         * 66-scandir skips. The supervisor builds these itself for a classic. */
+        if (pres->type != E_PARSER_TYPE_CLASSIC && sta.tounsupervise != STATE_FLAGS_TRUE) {
+
+            if (!dir_create_parent(pres->sa.s + pres->live.supervisedir, 0755)) {
+                cleanup(toclean, ntoclean) ;
+                log_dieusys(LOG_EXIT_SYS, "create supervise directory of: ", pres->sa.s + pres->name) ;
+            }
+
+            if (!symlink_atomic(pres->sa.s + pres->live.servicedir, pres->sa.s + pres->live.scandir)) {
+                cleanup(toclean, ntoclean) ;
+                log_dieusys(LOG_EXIT_SYS, "create scandir symlink of: ", pres->sa.s + pres->name) ;
+            }
+        }
+
         /**
-         * Module type are not a daemons. We don't need to supervise it.
-         * Special case for Oneshot, we only deal with the scandir symlink. */
+         * Module type are not a daemons. We don't need to supervise it. */
         if (pres->type == E_PARSER_TYPE_MODULE)
             continue ;
 
