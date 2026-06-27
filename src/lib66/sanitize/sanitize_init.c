@@ -104,8 +104,6 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
         if (!r)
             log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug reports") ;
 
-        /* every type now owns a scandir entry (hidden for the non-supervised
-         * ones), so the "is it set up" check is uniform. */
         issupervised = access(scandir, F_OK) ;
 
         if (!sanitize_livestate(pres, &sta)) {

@@ -22,6 +22,7 @@
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/constants.h>
+
 int svc_status(resolve_service_t *res, service_status_t *st)
 {
     log_flow() ;

@@ -37,10 +37,6 @@
  * what s6-svscan's handle_signals did, with no manual signalfd draining.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE   /* SIGPWR, SIGWINCH */
-#endif
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
