@@ -142,7 +142,12 @@ static struct runtime_s
   uint8_t flagfinishing ;
   uint8_t flagwantup ;
   uint8_t flagready ;
+  uint8_t flagfailed ;        // crash budget exhausted: parked, projects FAILED
   uint8_t result ;            // status_result_e: what last happened to the process
+  struct timespec window_start ; // MONOTONIC: start of the current crash window
+  uint8_t ndeaths ;           // run-then-die count since window_start
+  uint8_t exec_backoff ;      // shift for the exec-failed retry delay (1<<shift, capped 60s)
+  int exec_errno ;            // errno of the last failed exec, projected on EXEC_FAILED
 } status = { .flagwantup = 1 } ; // wants up by default unless a ./down file exists
 
 /** the death we caused with a timeout kill, consumed at the next process death
@@ -255,15 +260,21 @@ static void project_status(service_status_t *st)
   st->result = status.result ;
   if (status.result == STATUS_RESULT_SIGNALED) st->code = (uint32_t)WTERMSIG(status.wstat) ;
   else if (status.result == STATUS_RESULT_EXITED) st->code = (uint32_t)WEXITSTATUS(status.wstat) ;
+  else if (status.result == STATUS_RESULT_EXEC_FAILED) st->code = (uint32_t)status.exec_errno ;
   else st->code = 0 ;
 
   st->who = latched_who ;
+  st->window_start = status.window_start ;
+  st->ndeaths = status.ndeaths ;
 
-  /* flagfinishing is the canonical "the ./finish script is running" signal: it
-   * is set before uplastup_z announces, while the FSM state is still UP/LASTUP
-   * (up_z/lastup_z set FINISH only after). Read it first so a finishing service
-   * never projects as STOPPING during that window. */
-  if (status.flagfinishing)
+  /* flagfailed (crash budget exhausted) is terminal and parked: it outranks
+   * every transient FSM state. flagfinishing is the canonical "the ./finish
+   * script is running" signal: it is set before uplastup_z announces, while the
+   * FSM state is still UP/LASTUP (up_z/lastup_z set FINISH only after). Read both
+   * first so a failed/finishing service never projects as DOWN/STOPPING. */
+  if (status.flagfailed)
+    st->state = STATUS_STATE_FAILED ;
+  else if (status.flagfinishing)
     st->state = STATUS_STATE_FINISHING ;
   else switch (state)
   {
@@ -491,6 +502,58 @@ static void notify_cb(sse_watcher_t *w, void *data, int revents)
     notify_drop_req = 1 ; // hangup, no newline: stop watching
 }
 
+// native crash budget (variant B: fixed re-armed window)
+
+static int within_window(struct timespec const *start, struct timespec const *now, uint32_t ms)
+{
+  int64_t elapsed = (int64_t)(now->tv_sec - start->tv_sec) * 1000 + ((int64_t)now->tv_nsec - (int64_t)start->tv_nsec) / 1000000 ;
+  return elapsed >= 0 && elapsed < (int64_t)ms ;
+}
+
+/** counted at an intrinsic run-then-die only (caller checks flagwantup): a death
+ * inside the live window bumps the count, an expired window re-arms it to 1. A
+ * zero MaxDeath disables the budget (s6-style infinite restart). */
+static void record_death(void)
+{
+  if (!res.maxdeath) return ;
+  struct timespec now ;
+  clock_now_mono(&now) ;
+  if (status.ndeaths && within_window(&status.window_start, &now, res.maxdeathtime))
+    status.ndeaths++ ;
+  else { status.window_start = now ; status.ndeaths = 1 ; }
+}
+
+/** budget exhausted: abandon the service, park the supervisor (FAILED/CRASH_LIMIT,
+ * self-inflicted) and tell waiters it will not be restarted. A later wantup
+ * (66 start/restart) clears flagfailed and resets the budget. */
+static void enter_failed(void)
+{
+  status.flagfailed = 1 ;
+  status.flagwantup = 0 ;
+  status.result = STATUS_RESULT_CRASH_LIMIT ;
+  latched_who = STATUS_WHO_SELF ;
+  nextstart_set = 0 ;
+  settimeout_infinite() ;
+  clock_now(&status.stamp) ;
+  announce() ;
+  event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_NORESTART}, 1) ;
+}
+
+/** an exec that never ran ./run (spawn/pipe failure) is out of the crash budget:
+ * retry with a progressive backoff (1->2->4->...->60s, doubling, capped) that
+ * resets on the next successful exec. Carries EXEC_FAILED with the raw errno. */
+static void exec_failed(int e)
+{
+  status.exec_errno = e ;
+  status.result = STATUS_RESULT_EXEC_FAILED ;
+  unsigned int delay = 1u << status.exec_backoff ;
+  if (delay > 60) delay = 60 ;
+  if (status.exec_backoff < 6) status.exec_backoff++ ;
+  nextstart_set = 0 ;
+  settimeout(delay) ;
+  announce() ;
+}
+
 static void trystart(void)
 {
   spawn_fa_t fa[2] ;
@@ -506,8 +569,9 @@ static void trystart(void)
   {
     if (pipe(notifyp) == -1)
     {
-      settimeout(60) ;
-      log_warnusys("create notification pipe", " (waiting 60 seconds)") ;
+      int e = errno ;
+      log_warnusys("create notification pipe") ;
+      exec_failed(e) ;
       return ;
     }
     fa[0] = (spawn_fa_t){ .type = SPAWN_FA_CLOSE, .from = notifyp[0] } ;
@@ -522,8 +586,9 @@ static void trystart(void)
   status.pid = spawn_path_full(cargv[0], cargv, (char const *const *)environ, 0, 0, spawnflags, fa, notifyp[1] >= 0 ? 2 : 0) ;
   if (!status.pid)
   {
-    settimeout(60) ;
-    log_warnusys("spawn ", cargv[0], " (waiting 60 seconds)") ;
+    int e = errno ;
+    log_warnusys("spawn ", cargv[0]) ;
+    exec_failed(e) ;
     goto errn ;
   }
 
@@ -548,6 +613,7 @@ static void trystart(void)
   state = UP ;
   status.flagready = 0 ;
   status.result = STATUS_RESULT_SUCCESS ;
+  status.exec_backoff = 0 ; // ./run exec'd: clear the exec-failed backoff
   kill_timeout = 0 ;
   clock_now(&status.stamp) ;
   announce() ;
@@ -566,12 +632,18 @@ static void wantdown(void)
 {
   if (status.flagwantup) latched_who = current_who ; // a real 1->0 owns the transition
   status.flagwantup = 0 ;
+  status.flagfailed = 0 ; // a stop clears the failed latch -> plain DOWN
   announce() ;
 }
 
 static void wantup(void)
 {
-  if (!status.flagwantup) latched_who = current_who ; // a real 0->1 owns the transition
+  if (!status.flagwantup)
+  {
+    latched_who = current_who ; // a real 0->1 owns the transition
+    status.ndeaths = 0 ;        // an explicit start grants a fresh crash budget
+    status.flagfailed = 0 ;     // and lifts the failed latch (reset-failed + start)
+  }
   status.flagwantup = 1 ;
   announce() ;
 }
@@ -590,8 +662,10 @@ static void wantUP(void)
 
 static void downtimeout(void)
 {
-  if (status.flagwantup) trystart() ;
-  else settimeout_infinite() ;
+  if (!status.flagwantup) { settimeout_infinite() ; return ; }
+  // budget checked here: counter up to date (death already recorded), 1s throttle elapsed
+  if (res.maxdeath && status.ndeaths >= res.maxdeath) enter_failed() ;
+  else trystart() ;
 }
 
 static void down_o(void)
@@ -633,8 +707,9 @@ static int uplastup_z(void)
   else status.result = STATUS_RESULT_SUCCESS ;
   kill_timeout = 0 ;
 
-  // an intrinsic death (still wanted up) is self-inflicted, whoever started it
-  if (status.flagwantup) latched_who = STATUS_WHO_SELF ;
+  // an intrinsic death (still wanted up) is self-inflicted, whoever started it,
+  // and is the only thing the crash budget counts (run-then-die)
+  if (status.flagwantup) { latched_who = STATUS_WHO_SELF ; record_death() ; }
 
   clock_now(&status.stamp) ;
   drop_notifyfd() ;
