@@ -494,7 +494,10 @@ int on_tree_status(int id, char const *arg, void *data)
 
     switch (id) {
         case 'n' :  NOFIELD = 0 ; break ;
-        case 'o' :  LEGACY = 0 ; info_parse_options(arg, WHAT) ; break ;
+        case 'o' :
+            log_1_warn("deprecated options, please use -f instead") ;
+            attribute_fallthrough ;
+        case 'f' :  LEGACY = 0 ; info_parse_options(arg, WHAT) ; break ;
         case 'g' :  GRAPH = 1 ; break ;
         case 'r' :  REVERSE = 1 ; break ;
         case 'd' :  if (!u32_scan_strict(arg, &INFO_MAXDEPTH)) log_die(LOG_EXIT_USER, "invalid depth value: ", arg) ; break ;

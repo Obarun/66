@@ -83,7 +83,7 @@ static opt_t const opts_tree_signal[] = {
 static opt_t const opts_tree_status[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'n',         .shortname = 'n', .longname = "no-name",  .arg = OPT_NONE,                             .help = "do not display the names of fields" },
-    { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "comma separated list of field to display" },
+    { .id = 'o',         .shortname = 'o', .longname = "options",  .arg = OPT_REQUIRED, .argname = "field,...", .help = "deprecated options, please use -f instead", .hidden = true },
     { .id = 'f',         .shortname = 'f', .longname = "field",    .arg = OPT_REQUIRED, .argname = "field,...", .help = "display only these comma-separated fields" },
     { .id = 'g',         .shortname = 'g', .longname = "graph",    .arg = OPT_NONE,                             .help = "displays the contents field as graph" },
     { .id = 'r',         .shortname = 'r', .longname = "reverse",  .arg = OPT_NONE,                             .help = "reverse the contents field" },
