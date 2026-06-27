@@ -28,5 +28,4 @@ void state_pack(char *pack, ss_state_t *sta)
     u32_pack_big(pack + 16, sta->toparse) ;
     u32_pack_big(pack + 20, sta->isparsed) ;
     u32_pack_big(pack + 24, sta->issupervised) ;
-    u32_pack_big(pack + 28, sta->isup) ;
 }

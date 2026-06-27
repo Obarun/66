@@ -203,14 +203,6 @@ static void announce(uint32_t id, bool success)
 
     if (success) {
 
-        if (!state_messenger(svc->res, STATE_FLAGS_ISUP, \
-            pmanager->signal[1] == 'a' || \
-            pmanager->signal[1] == 'h' || \
-            pmanager->signal[1] == 'U' || \
-            pmanager->signal[1] == 'r' \
-            ? STATE_FLAGS_TRUE : pmanager->operation ? STATE_FLAGS_FALSE : STATE_FLAGS_TRUE))
-                log_dieu(LOG_EXIT_SYS, "send message to state of: ", name) ;
-
         if (!svc->res->execute.down && svc->res->type == E_PARSER_TYPE_CLASSIC) {
 
             if (!pmanager->operation) {

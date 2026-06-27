@@ -30,7 +30,6 @@ void state_unpack(char *pack,ss_state_t *sta)
     uint32_t toparse ;
     uint32_t isparsed ;
     uint32_t issupervised ;
-    uint32_t isup ;
 
     u32_unpack_big(pack, &toinit) ;
     sta->toinit = toinit ;
@@ -52,7 +51,4 @@ void state_unpack(char *pack,ss_state_t *sta)
 
     u32_unpack_big(pack + 24, &issupervised) ;
     sta->issupervised = issupervised ;
-
-    u32_unpack_big(pack + 28, &isup) ;
-    sta->isup = isup ;
 }

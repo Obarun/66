@@ -48,8 +48,8 @@ static void ensure_no_conflict(service_graph_t *graph, int argc, char const *con
 
             FOREACH_SBL(&stk, pos) {
 
-                r = service_is_g(stk.s + pos, STATE_FLAGS_ISUP) ;
-                if (r > 0 && r == STATE_FLAGS_TRUE)
+                r = svc_is_up(stk.s + pos) ;
+                if (r > 0)
                     log_die(LOG_EXIT_SYS, "conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please stop the '", stk.s + pos, "' service first.") ;
             }
         }

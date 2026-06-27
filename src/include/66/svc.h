@@ -128,5 +128,6 @@ extern void svc_unsupervise(service_graph_t *g) ;
 extern void svc_send_daemon(char const *dir, char const *control, event_t wanted, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 extern int svc_status(resolve_service_t *res, service_status_t *st) ;
+extern int svc_is_up(char const *name) ;
 
 #endif

@@ -20,7 +20,7 @@
 
 #include <66/service.h>
 
-#define STATE_STATE_SIZE 32
+#define STATE_STATE_SIZE 28
 
 #define STATE_FLAGS_FALSE (1 << 1) // 2
 #define STATE_FLAGS_TRUE (1 << 2) // 4
@@ -33,7 +33,6 @@
 #define STATE_FLAGS_TOPARSE (1 << 8)
 #define STATE_FLAGS_ISPARSED (1 << 9)
 #define STATE_FLAGS_ISSUPERVISED (1 << 10)
-#define STATE_FLAGS_ISUP (1 << 11)
 
 #define STATE_FLAGS_TOPROPAGATE (1 << 12)
 #define STATE_FLAGS_WANTUP (1 << 13)
@@ -54,7 +53,6 @@ struct ss_state_s
     uint32_t toparse ;
     uint32_t isparsed ;
     uint32_t issupervised ;
-    uint32_t isup ;
 } ;
 
 #define STATE_ZERO { \
@@ -64,7 +62,6 @@ struct ss_state_s
     STATE_FLAGS_FALSE, \
     STATE_FLAGS_FALSE, \
     STATE_FLAGS_TRUE, \
-    STATE_FLAGS_FALSE, \
     STATE_FLAGS_FALSE, \
 }
 extern ss_state_t const ss_state_zero ;

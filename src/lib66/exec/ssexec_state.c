@@ -36,7 +36,6 @@ static info_field_t const fields_state[] = {
     { "toparse",       INFO_FIELD_FLAG, offsetof(ss_state_t, toparse) },
     { "isparsed",      INFO_FIELD_FLAG, offsetof(ss_state_t, isparsed) },
     { "issupervised",  INFO_FIELD_FLAG, offsetof(ss_state_t, issupervised) },
-    { "isup",          INFO_FIELD_FLAG, offsetof(ss_state_t, isup) },
 } ;
 
 /* option state, set by on_state, drained at the top of ssexec_state */
@@ -81,7 +80,7 @@ opt_cmd_t const cmd_state = {
         "field:\n"
         "    toinit          toreload        torestart\n"
         "    tounsupervise   toparse         isparsed\n"
-        "    issupervised    isup",
+        "    issupervised",
 } ;
 
 int ssexec_state(int argc, char const *const *argv, void *data)

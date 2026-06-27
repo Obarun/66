@@ -41,7 +41,6 @@ static void sanitize_it(resolve_service_t *res, fdholder_client_t *a)
         log_warnusys("sanitize fdholder") ;
 
     state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
-    state_set_flag(&sta, STATE_FLAGS_ISUP, STATE_FLAGS_FALSE) ;
 
     if (!sanitize_scandir(res, &sta))
         log_warnusys("sanitize scandir") ;

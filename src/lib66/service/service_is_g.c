@@ -47,8 +47,6 @@ static int service_is(ss_state_t *ste, uint32_t flag)
 
         case STATE_FLAGS_ISSUPERVISED : return ste->issupervised ;
 
-        case STATE_FLAGS_ISUP : return ste->isup ;
-
         default:
             break ;
 
