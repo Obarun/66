@@ -91,6 +91,10 @@
 
 #define SS_SUPERVISEDIR "/supervise"
 #define SS_SUPERVISEDIR_LEN (sizeof SS_SUPERVISEDIR - 1)
+#define SS_CONTROL "control"
+#define SS_CONTROL_LEN (sizeof SS_CONTROL - 1)
+#define SS_LOCK "lock"
+#define SS_LOCK_LEN (sizeof SS_LOCK - 1)
 
 /** boot */
 #define SS_BOOT_CONF "init.conf"

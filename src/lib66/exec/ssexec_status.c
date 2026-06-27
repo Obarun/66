@@ -45,8 +45,7 @@
 #include <66/graph.h>
 #include <66/config.h>
 #include <66/ssexec.h>
-
-#include <s6/supervise.h>
+#include <66/status.h>
 
 static unsigned int REVERSE = 0 ;
 static unsigned int NOFIELD = 1 ;
@@ -212,32 +211,49 @@ static void info_display_intree(char const *field,resolve_service_t *res)
 
 static void info_get_status(resolve_service_t *res)
 {
-    int r, wstat, warn_color = 0 ;
-    pid_t pid ;
+    int warn_color = 0 ;
 
     ss_state_t sta = STATE_ZERO ;
 
     if (res->type == E_PARSER_TYPE_CLASSIC) {
 
-        r = s6_svc_ok(res->sa.s + res->live.scandir) ;
-        if (r != 1) {
+        char const *supervisedir = res->sa.s + res->live.supervisedir ;
+        char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+        auto_strings(file, supervisedir, "/", SS_STATUS) ;
+
+        if (access(file, F_OK) < 0) {
             if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
             return ;
         }
-        char const *newargv[3] ;
-        unsigned int m = 0 ;
 
-        newargv[m++] = SS_BINPREFIX "s6-svstat" ;
-        newargv[m++] = res->sa.s + res->live.scandir ;
-        newargv[m++] = 0 ;
+        service_status_t st = STATUS_ZERO ;
+        if (status_read(&st, file) < 0)
+            log_dieusys(LOG_EXIT_SYS, "read status of: ", res->sa.s + res->name) ;
 
-        pid = spawn_path(newargv[0],newargv,(char const *const *)environ) ;
-        if (process_wait(pid,&wstat) < 0)
-            log_dieusys(LOG_EXIT_SYS,"wait for ",newargv[0]) ;
+        char const *word ;
+        switch (st.state) {
+            case STATUS_STATE_UP :         word = "up" ; warn_color = 2 ; break ;
+            case STATUS_STATE_STARTING :   word = "starting" ; warn_color = 2 ; break ;
+            case STATUS_STATE_DONE :       word = "done" ; warn_color = 2 ; break ;
+            case STATUS_STATE_STOPPING :   word = "stopping" ; warn_color = 1 ; break ;
+            case STATUS_STATE_FINISHING :  word = "finishing" ; warn_color = 1 ; break ;
+            case STATUS_STATE_RESTARTING : word = "restarting" ; warn_color = 1 ; break ;
+            case STATUS_STATE_FAILED :     word = "failed" ; warn_color = 1 ; break ;
+            case STATUS_STATE_DOWN :
+            default :                      word = "down" ; warn_color = 1 ; break ;
+        }
 
-        if (wstat)
-            log_dieu(LOG_EXIT_SYS,"status for service: ",res->sa.s + res->name) ;
+        char fmt[PID_FMT] ;
+        fmt[pid_format(fmt, st.pid)] = 0 ;
+
+        if (st.pid > 0) {
+            if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off, fmt))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        } else {
+            if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off))
+                log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+        }
 
     } else {
 

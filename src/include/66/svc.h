@@ -25,6 +25,7 @@
 #include <66/graph.h>
 #include <66/ssexec.h>
 #include <66/event.h>
+#include <66/status.h>
 
 #define DATASIZE 65
 
@@ -126,5 +127,6 @@ extern int svc_send_wait(char const *const *list, uint32_t nservice, char **sig,
 extern void svc_unsupervise(service_graph_t *g) ;
 extern void svc_send_daemon(char const *dir, char const *control, event_t wanted, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
+extern int svc_status(resolve_service_t *res, service_status_t *st) ;
 
 #endif

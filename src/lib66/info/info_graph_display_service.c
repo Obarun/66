@@ -19,13 +19,13 @@
 #include <oblibs/types.h>
 #include <oblibs/stream.h>
 
-#include <s6/supervise.h>
-
+#include <66/svc.h>
 #include <66/service.h>
 #include <66/utils.h>
 #include <66/resolve.h>
 #include <66/constants.h>
 #include <66/state.h>
+#include <66/status.h>
 #include <66/enum_parser.h>
 
 int info_graph_display_service(char const *name)
@@ -39,7 +39,7 @@ int info_graph_display_service(char const *name)
     char *ppid ;
 
     ss_state_t sta = STATE_ZERO ;
-    s6_svstatus_t status = S6_SVSTATUS_ZERO ;
+    service_status_t st = STATUS_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
@@ -60,9 +60,9 @@ int info_graph_display_service(char const *name)
 
     if (res.type == E_PARSER_TYPE_CLASSIC) {
 
-        s6_svstatus_read(res.sa.s + res.live.scandir ,&status) ;
-        pid_color = !status.pid ? 1 : 2 ;
-        str_pid[pid_format(str_pid, status.pid)] = 0 ;
+        svc_status(&res, &st) ;
+        pid_color = !st.pid ? 1 : 2 ;
+        str_pid[pid_format(str_pid, st.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
     } else {

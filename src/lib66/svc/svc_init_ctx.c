@@ -23,10 +23,9 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/state.h>
+#include <66/status.h>
 #include <66/enum_parser.h>
 #include <66/graph.h>
-
-#include <s6/supervise.h>
 
 static svc_ctx_t ctx_init(uint32_t len)
 {
@@ -50,7 +49,6 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
 {
     log_flow() ;
 
-    int r = 0 ;
     vertex_t *v ;
     uint32_t pos = 0 ;
     struct resolve_hash_s *hash = NULL ;
@@ -92,16 +90,12 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
 
         } else {
 
-            s6_svstatus_t status ;
+            service_status_t st = STATUS_ZERO ;
 
-            r = s6_svstatus_read(svc.res->sa.s + svc.res->live.scandir, &status) ;
+            svc_status(svc.res, &st) ;
 
-            pid_t pid = !r ? 0 : status.pid ;
-
-            if (pid > 0) {
-
+            if (st.pid > 0)
                 FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
-            }
             else
                 FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
         }

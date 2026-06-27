@@ -14,8 +14,9 @@
  * Oblibs port of s6-supervise. The supervision state machine is preserved
  * verbatim from s6 -- the actions[state][trans] table, the anti-crash-loop
  * (nextstart >= 1s), and the up/down/finish semantics are unchanged. The I/O
- * substrate is oblibs (dropping skalibs) EXCEPT the status/death-tally files,
- * which keep s6's s6_svstatus/s6_dtally (skalibs TAI64N) for now:
+ * substrate is fully oblibs (no skalibs, no libs6): the status file is the
+ * native 66 service_status_t (clock_pack, big-endian, no TAI64N), projected
+ * from the in-RAM runtime flags at each announce():
  *
  *   skalibs iopause          -> oblibs SSE epoll loop (deadline as poll timeout)
  *   skalibs selfpipe+SIGCHLD -> per-child pidfd watcher (sse_start_child), which
@@ -26,10 +27,11 @@
  *   skalibs cspawn           -> oblibs spawn_path_full (posix_spawn)
  *   skalibs djbunix/strerr   -> oblibs fd/io/log
  *   s6 ftrigw                -> 66 event_fifodir_* (lib66/event, native s6 bytes)
+ *   s6 s6_svstatus (TAI64N)  -> 66 service_status_t (lib66/status, clock_pack)
  *
- * The status and death-tally files stay on s6 s6_svstatus/s6_dtally (TAI64N).
- * The control fifo keeps the native s6 single-byte alphabet, and the event
- * fifodir keeps the native s6 single bytes -- minimal divergence (see SPECS).
+ * The death-tally file is dropped (the native crash budget lives inline in the
+ * status record, added later). The control fifo keeps the native s6 single-byte
+ * alphabet, and the event fifodir keeps the native s6 single bytes (see SPECS).
  *
  * CONFIG COMES FROM THE 66 RESOLVE, NOT FROM PER-SERVICE FILES. Where s6-supervise
  * re-reads notification-fd / timeout-finish / timeout-kill / max-death-tally /
@@ -57,10 +59,6 @@
  *     flock-based) to keep the s6 lock semantics.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE   // SIGWINCH, pidfd
-#endif
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -78,25 +76,21 @@
 #include <oblibs/sse.h>
 #include <oblibs/clock.h>
 #include <oblibs/types.h>
+#include <oblibs/string.h>
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 #include <oblibs/files.h>
 #include <oblibs/spawn.h>
 #include <oblibs/environ.h>
 
-#include <skalibs/tai.h>
-
-#include <s6/supervise.h>
-
 #include <66/event.h>
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/constants.h>
+#include <66/status.h>
 #include <66/utils.h>
 
 #define USAGE "66-supervise servicename"
-#define CTL  S6_SUPERVISE_CTLDIR "/control"
-#define LCK  S6_SUPERVISE_CTLDIR "/lock"
 
 #define SUPERVISE_PATH_MAX 512
 
@@ -137,12 +131,28 @@ static int deadline_infinite = 0 ;
 static struct timespec nextstart = { 0, 0 } ;
 static int nextstart_set = 0 ;
 
-static s6_svstatus_t status = S6_SVSTATUS_ZERO ;
+static struct runtime_s
+{
+  pid_t pid ;
+  int wstat ;
+  struct timespec stamp ;      // REALTIME: entry into the current state
+  struct timespec readystamp ; // REALTIME: transition to ready
+  uint8_t flagpaused ;
+  uint8_t flagfinishing ;
+  uint8_t flagwantup ;
+  uint8_t flagready ;
+} status = { .flagwantup = 1 } ; // wants up by default unless a ./down file exists
 static int finish_wstat ;
 static state_t state = DOWN ;
 static char const *servicename = 0 ;
 
 static rlim_t maxfd ;
+
+/** supervise/ leaf paths, relative to the CWD (the service dir), built once at
+ * startup from the general constants -- the supervisor never hardcodes them. */
+static char status_file[SS_SUPERVISEDIR_LEN + 1 + SS_STATUS_LEN + 1] ;
+static char control_file[SS_SUPERVISEDIR_LEN + 1 + SS_CONTROL_LEN + 1] ;
+static char lock_file[SS_SUPERVISEDIR_LEN + 1 + SS_LOCK_LEN + 1] ;
 
 /** the service resolve, loaded once at startup: the source of all config that s6
  * used to read from per-service files (notify, timeouts, maxdeath, downsignal). */
@@ -216,9 +226,36 @@ static int compute_timeout(void)
   return (int)ms ;
 }
 
+static void project_status(service_status_t *st)
+{
+  st->pid = (uint32_t)status.pid ;
+  st->stamp = status.stamp ;
+  st->readystamp = status.readystamp ;
+
+  switch (state)
+  {
+    case UP :
+    case LASTUP :
+      if (!status.flagwantup) st->state = STATUS_STATE_STOPPING ;
+      else if (res.notify && !status.flagready) st->state = STATUS_STATE_STARTING ;
+      else st->state = STATUS_STATE_UP ;
+      break ;
+    case FINISH :
+    case LASTFINISH :
+      st->state = STATUS_STATE_FINISHING ;
+      break ;
+    case DOWN :
+    default :
+      st->state = (status.flagwantup && nextstart_set) ? STATUS_STATE_RESTARTING : STATUS_STATE_DOWN ;
+      break ;
+  }
+}
+
 static inline void announce(void)
 {
-  if (!s6_svstatus_write(".", &status))
+  service_status_t st = STATUS_ZERO ;
+  project_status(&st) ;
+  if (!status_write(&st, status_file))
     log_warnusys("write status file") ;
 }
 
@@ -265,9 +302,9 @@ static void set_down_and_ready(event_t const *ev, unsigned int n)
   state = DOWN ;
   if (nextstart_set) { deadline = nextstart ; deadline_infinite = 0 ; }
   else settimeout(1) ;
-  tain_wallclock_read(&status.readystamp) ;
+  clock_now(&status.readystamp) ;
   announce() ;
-  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, ev, n) ;
+  event_fifodir_emit(SS_EVENTDIR + 1, ev, n) ;
 }
 
 
@@ -412,10 +449,10 @@ static void notify_cb(sse_watcher_t *w, void *data, int revents)
       clock_now_mono(&now) ;
       clock_addsec(&nextstart, &now, 1) ;
       nextstart_set = 1 ;
-      tain_wallclock_read(&status.readystamp) ;
+      clock_now(&status.readystamp) ;
       status.flagready = 1 ;
       announce() ;
-      event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_READY}, 1) ;
+      event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_READY}, 1) ;
       notify_drop_req = 1 ;
       return ;
     }
@@ -481,9 +518,9 @@ static void trystart(void)
   nextstart_set = 0 ;
   state = UP ;
   status.flagready = 0 ;
-  tain_wallclock_read(&status.stamp) ;
+  clock_now(&status.stamp) ;
   announce() ;
-  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_UP}, 1) ;
+  event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_UP}, 1) ;
   return ;
 
  errn:
@@ -544,7 +581,6 @@ static void down_U(void)
 
 static int uplastup_z(void)
 {
-  unsigned int n ;
   char fmt0[16] ;
   char fmt1[16] ;
   char fmt2[24] ;
@@ -553,28 +589,11 @@ static int uplastup_z(void)
   status.flagpaused = 0 ;
   status.flagready = 0 ;
   gflags.dying = 0 ;
-  tain_wallclock_read(&status.stamp) ;
+  clock_now(&status.stamp) ;
   drop_notifyfd() ;
   fmt0[u32_fmt(fmt0, WIFSIGNALED(status.wstat) ? 256 : WEXITSTATUS(status.wstat))] = 0 ;
   fmt1[u32_fmt(fmt1, WTERMSIG(status.wstat))] = 0 ;
   fmt2[pid_format(fmt2, status.pid)] = 0 ;
-
-  n = res.maxdeath ? res.maxdeath : 100 ;
-  if (n > S6_MAX_DEATH_TALLY) n = S6_MAX_DEATH_TALLY ;
-  if (n)
-  {
-    s6_dtally_t tab[n + 1] ;
-    ssize_t m = s6_dtally_read(".", tab, n) ;
-    if (m < 0) log_warnusys("read ", S6_DTALLY_FILENAME) ;
-    else
-    {
-      tab[m].stamp = status.stamp ;
-      tab[m].sig = WIFSIGNALED(status.wstat) ? WTERMSIG(status.wstat) : 0 ;
-      tab[m].exitcode = WIFSIGNALED(status.wstat) ? 128 + WTERMSIG(status.wstat) : WEXITSTATUS(status.wstat) ;
-      if (!((size_t)m >= n ? s6_dtally_write(".", tab + 1, n) : s6_dtally_write(".", tab, (size_t)m + 1)))
-        log_warnusys("write ", S6_DTALLY_FILENAME) ;
-    }
-  }
 
   status.pid = spawn_path_full("./finish", cargv, (char const *const *)environ, 0, 0, SPAWN_FLAG_SETSID, 0, 0) ;
   if (!status.pid)
@@ -593,7 +612,7 @@ static int uplastup_z(void)
   }
   status.flagfinishing = 1 ;
   announce() ;
-  event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_DOWN}, 1) ;
+  event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_DOWN}, 1) ;
   return 1 ;
 }
 
@@ -717,7 +736,7 @@ static void control_cb(sse_watcher_t *w, void *data, int revents)
     if (r < 0)
     {
       if (errno == EPIPE) break ; // EOF: never happens, we hold the write end
-      log_dieusys(111, "read " S6_SUPERVISE_CTLDIR "/control") ;
+      log_dieusys(111, "read ", control_file) ;
     }
     if (!r) break ; // would block
     {
@@ -786,33 +805,33 @@ static inline int control_init(void)
 {
   mode_t m = umask(0) ;
   int fdctl, fdlck, r ;
-  if (!event_fifodir_make(S6_SUPERVISE_EVENTDIR, getegid()))
-    log_dieusys(111, "create event fifodir: ", S6_SUPERVISE_EVENTDIR) ;
+  if (!event_fifodir_make(SS_EVENTDIR + 1, getegid()))
+    log_dieusys(111, "create event fifodir: ", SS_EVENTDIR + 1) ;
 
-  trymkdir(S6_SUPERVISE_CTLDIR) ;
-  fdlck = io_open_mode(LCK, O_WRONLY | O_NONBLOCK | O_CREAT | O_CLOEXEC, 0644) ;
-  if (fdlck < 0) log_dieusys(111, "open " LCK) ;
+  trymkdir(SS_SUPERVISEDIR + 1) ;
+  fdlck = io_open_mode(lock_file, O_WRONLY | O_NONBLOCK | O_CREAT | O_CLOEXEC, 0644) ;
+  if (fdlck < 0) log_dieusys(111, "open ", lock_file) ;
   r = fd_lock(fdlck, 1, 1) ;
-  if (r < 0) log_dieusys(111, "lock " LCK) ;
+  if (r < 0) log_dieusys(111, "lock ", lock_file) ;
   if (!r) log_die(100, "another instance of 66-supervise is already running") ;
  // fdlck leaks but it's coe
 
-  if (mkfifo(CTL, 0600) < 0)
+  if (mkfifo(control_file, 0600) < 0)
   {
     struct stat st ;
     if (errno != EEXIST)
-      log_dieusys(111, "mkfifo " CTL) ;
-    if (stat(CTL, &st) < 0)
-      log_dieusys(111, "stat " CTL) ;
+      log_dieusys(111, "mkfifo ", control_file) ;
+    if (stat(control_file, &st) < 0)
+      log_dieusys(111, "stat ", control_file) ;
     if (!S_ISFIFO(st.st_mode))
-      log_die(100, CTL " is not a FIFO") ;
+      log_die(100, control_file, " is not a FIFO") ;
   }
-  fdctl = io_open(CTL, O_RDONLY | O_NONBLOCK | O_CLOEXEC) ;
+  fdctl = io_open(control_file, O_RDONLY | O_NONBLOCK | O_CLOEXEC) ;
   if (fdctl < 0)
-    log_dieusys(111, "open " CTL " for reading") ;
-  r = io_open(CTL, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
+    log_dieusys(111, "open ", control_file, " for reading") ;
+  r = io_open(control_file, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
   if (r < 0)
-    log_dieusys(111, "open " CTL " for writing") ;
+    log_dieusys(111, "open ", control_file, " for writing") ;
  // r leaks but it's coe
 
   umask(m) ;
@@ -856,6 +875,10 @@ int main(int argc, char const *const *argv)
     if (!sse_new(&g_epoll, 8))
       log_dieusys(111, "create event loop") ;
 
+    auto_strings(status_file, SS_SUPERVISEDIR + 1, "/", SS_STATUS) ;
+    auto_strings(control_file, SS_SUPERVISEDIR + 1, "/", SS_CONTROL) ;
+    auto_strings(lock_file, SS_SUPERVISEDIR + 1, "/", SS_LOCK) ;
+
     controlfd = control_init() ;
 
     if (!sse_start_signal(&g_epoll, &wsignal, signal_cb, NULL, 1))
@@ -870,25 +893,18 @@ int main(int argc, char const *const *argv)
     if (!sse_start_io(&g_epoll, &wcontrol, control_cb, NULL, controlfd, SSE_READ, 0))
       log_dieusys(111, "watch control fifo") ;
 
-    if (!event_fifodir_clean(S6_SUPERVISE_EVENTDIR))
-      log_warnusys("clean ", S6_SUPERVISE_EVENTDIR) ;
-    {
-      int fd = io_open_mode(S6_DTALLY_FILENAME, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644) ;
-      if (fd < 0) log_dieusys(111, "truncate ", S6_DTALLY_FILENAME) ;
-      close_fd(fd) ;
-    }
+    if (!event_fifodir_clean(SS_EVENTDIR + 1))
+      log_warnusys("clean ", SS_EVENTDIR + 1) ;
 
     if (access("down", F_OK) == 0) status.flagwantup = 0 ;
     else if (errno != ENOENT)
       log_dieusys(111, "access ./down") ;
 
     settimeout(0) ;
-    tain_wallclock_read(&status.stamp) ;
+    clock_now(&status.stamp) ;
     status.readystamp = status.stamp ;
-    status.flagpaused = 1 ;
     announce() ;
-    status.flagpaused = 0 ;
-    event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_SUPERVISE_UP}, 1) ;
+    event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_SUPERVISE_UP}, 1) ;
 
     g_epoll.running = true ;
     while (gflags.cont)
@@ -914,7 +930,7 @@ int main(int argc, char const *const *argv)
       if (notify_drop_req) { notify_drop_req = 0 ; drop_notifyfd() ; }
     }
 
-    event_fifodir_emit(S6_SUPERVISE_EVENTDIR, (event_t[]){EVENT_SUPERVISE_DOWN}, 1) ;
+    event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_SUPERVISE_DOWN}, 1) ;
   }
   resolve_free(wres) ;
   return 0 ;

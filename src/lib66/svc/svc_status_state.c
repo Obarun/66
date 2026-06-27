@@ -9,24 +9,36 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <oblibs/log.h>
+#include <string.h>
+#include <unistd.h>
 
-#include <s6/supervise.h>
+#include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <66/svc.h>
+#include <66/status.h>
+#include <66/constants.h>
 
 int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready)
 {
     log_flow() ;
 
-    s6_svstatus_t st ;
-    if (!s6_svstatus_read(dir, &st))
+    char file[strlen(dir) + SS_SUPERVISEDIR_LEN + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, dir, SS_SUPERVISEDIR, "/", SS_STATUS) ;
+
+    if (access(file, F_OK) < 0)
         return 0 ; // no status: the daemon has never been supervised here
 
-    *up = (st.pid && !st.flagfinishing) ? 1 : 0 ;
-    *ready = st.flagready ? 1 : 0 ;
+    service_status_t st = STATUS_ZERO ;
+    if (status_read(&st, file) < 0)
+        return 0 ;
+
+    *up = (st.state == STATUS_STATE_STARTING
+        || st.state == STATUS_STATE_UP
+        || st.state == STATUS_STATE_STOPPING) ? 1 : 0 ;
+    *ready = st.state == STATUS_STATE_UP ? 1 : 0 ;
     return 1 ;
 }
