@@ -141,7 +141,12 @@ static struct runtime_s
   uint8_t flagfinishing ;
   uint8_t flagwantup ;
   uint8_t flagready ;
+  uint8_t result ;            // status_result_e: what last happened to the process
 } status = { .flagwantup = 1 } ; // wants up by default unless a ./down file exists
+
+/** the death we caused with a timeout kill, consumed at the next process death
+ * to override SIGNALED: 1 = uptimeout (TIMEOUT_START), 2 = finishtimeout (TIMEOUT_STOP). */
+static uint8_t kill_timeout = 0 ;
 static int finish_wstat ;
 static state_t state = DOWN ;
 static char const *servicename = 0 ;
@@ -232,17 +237,24 @@ static void project_status(service_status_t *st)
   st->stamp = status.stamp ;
   st->readystamp = status.readystamp ;
 
-  switch (state)
+  st->result = status.result ;
+  if (status.result == STATUS_RESULT_SIGNALED) st->code = (uint32_t)WTERMSIG(status.wstat) ;
+  else if (status.result == STATUS_RESULT_EXITED) st->code = (uint32_t)WEXITSTATUS(status.wstat) ;
+  else st->code = 0 ;
+
+  /* flagfinishing is the canonical "the ./finish script is running" signal: it
+   * is set before uplastup_z announces, while the FSM state is still UP/LASTUP
+   * (up_z/lastup_z set FINISH only after). Read it first so a finishing service
+   * never projects as STOPPING during that window. */
+  if (status.flagfinishing)
+    st->state = STATUS_STATE_FINISHING ;
+  else switch (state)
   {
     case UP :
     case LASTUP :
       if (!status.flagwantup) st->state = STATUS_STATE_STOPPING ;
       else if (res.notify && !status.flagready) st->state = STATUS_STATE_STARTING ;
       else st->state = STATUS_STATE_UP ;
-      break ;
-    case FINISH :
-    case LASTFINISH :
-      st->state = STATUS_STATE_FINISHING ;
       break ;
     case DOWN :
     default :
@@ -518,6 +530,8 @@ static void trystart(void)
   nextstart_set = 0 ;
   state = UP ;
   status.flagready = 0 ;
+  status.result = STATUS_RESULT_SUCCESS ;
+  kill_timeout = 0 ;
   clock_now(&status.stamp) ;
   announce() ;
   event_fifodir_emit(SS_EVENTDIR + 1, (event_t[]){EVENT_UP}, 1) ;
@@ -589,6 +603,17 @@ static int uplastup_z(void)
   status.flagpaused = 0 ;
   status.flagready = 0 ;
   gflags.dying = 0 ;
+
+  /* a commanded stop (wantup cleared, we sent the down signal) is a clean
+   * SUCCESS even though the process was signaled -- the who carries the intent.
+   * Only an intrinsic death (still wanted up) is reported as SIGNALED/EXITED. */
+  if (kill_timeout == 1) status.result = STATUS_RESULT_TIMEOUT_START ;
+  else if (!status.flagwantup) status.result = STATUS_RESULT_SUCCESS ;
+  else if (WIFSIGNALED(status.wstat)) status.result = STATUS_RESULT_SIGNALED ;
+  else if (WEXITSTATUS(status.wstat)) status.result = STATUS_RESULT_EXITED ;
+  else status.result = STATUS_RESULT_SUCCESS ;
+  kill_timeout = 0 ;
+
   clock_now(&status.stamp) ;
   drop_notifyfd() ;
   fmt0[u32_fmt(fmt0, WIFSIGNALED(status.wstat) ? 256 : WEXITSTATUS(status.wstat))] = 0 ;
@@ -631,6 +656,7 @@ static void uptimeout(void)
 {
   if (gflags.dying)
   {
+    kill_timeout = 1 ;
     killk() ;
     settimeout(5) ;
   }
@@ -676,12 +702,16 @@ static void up_term(void)
 static void finishtimeout(void)
 {
   log_warn("finish script lifetime reached maximum value - sending it a SIGKILL") ;
+  kill_timeout = 2 ;
   killc() ; killk() ;
   settimeout(5) ;
 }
 
 static void finish_z(void)
 {
+  if (kill_timeout == 2) status.result = STATUS_RESULT_TIMEOUT_STOP ;
+  kill_timeout = 0 ;
+
   if (WIFEXITED(finish_wstat) && WEXITSTATUS(finish_wstat) == 125)
   {
     status.flagwantup = 0 ;

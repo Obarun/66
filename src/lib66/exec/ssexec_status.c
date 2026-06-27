@@ -26,6 +26,7 @@
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
+#include <oblibs/clock.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
 #include <oblibs/directory.h>
@@ -240,14 +241,47 @@ static void info_get_status(resolve_service_t *res)
         default :                      word = "down" ; warn_color = 1 ; break ;
     }
 
-    char fmt[PID_FMT] ;
-    fmt[pid_format(fmt, st.pid)] = 0 ;
+    // seconds spent in the current state, from the REALTIME stamp
+    struct timespec now ;
+    clock_now(&now) ;
+    char secs[U64_FMT] ;
+    secs[u64_fmt(secs, now.tv_sec > st.stamp.tv_sec ? (uint64_t)(now.tv_sec - st.stamp.tv_sec) : 0)] = 0 ;
+
+    // what last happened to the process (empty for a clean SUCCESS)
+    char code[U64_FMT] ;
+    code[u64_fmt(code, st.code)] = 0 ;
+    char detail[U64_FMT + 16] = "" ;
+    switch (st.result) {
+        case STATUS_RESULT_EXITED :        auto_strings(detail, " (exited ", code, ")") ; break ;
+        case STATUS_RESULT_SIGNALED :      auto_strings(detail, " (signaled ", code, ")") ; break ;
+        case STATUS_RESULT_TIMEOUT_START :
+        case STATUS_RESULT_TIMEOUT_STOP :  auto_strings(detail, " (timeout)") ; break ;
+        case STATUS_RESULT_CRASH_LIMIT :   auto_strings(detail, " (crashed)") ; break ;
+        case STATUS_RESULT_EXEC_FAILED :   auto_strings(detail, " (exec failed)") ; break ;
+        default : break ;
+    }
+
+    char const *color = warn_color > 1 ? log_color->valid : log_color->error ;
 
     if (st.pid > 0) {
-        if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off, fmt))
+
+        char pid[PID_FMT] ;
+        pid[pid_format(pid, st.pid)] = 0 ;
+
+        // a ready time only makes sense once the service is up
+        char ready[U64_FMT + 16] = "" ;
+        if (st.state == STATUS_STATE_UP) {
+            char rsecs[U64_FMT] ;
+            rsecs[u64_fmt(rsecs, now.tv_sec > st.readystamp.tv_sec ? (uint64_t)(now.tv_sec - st.readystamp.tv_sec) : 0)] = 0 ;
+            auto_strings(ready, ", ready ", rsecs, " seconds") ;
+        }
+
+        if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)%s %s seconds%s\n", color, word, log_color->off, pid, detail, secs, ready))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
     } else {
-        if (!ostream_fmt(ostream_1, "%s%s%s\n", warn_color > 1 ? log_color->valid : log_color->error, word, log_color->off))
+
+        if (!ostream_fmt(ostream_1, "%s%s%s%s %s seconds\n", color, word, log_color->off, detail, secs))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }
