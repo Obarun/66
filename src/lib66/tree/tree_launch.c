@@ -21,7 +21,6 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
-#include <spawn.h>
 
 #include <oblibs/log.h>
 #include <oblibs/graph.h>
@@ -33,6 +32,7 @@
 #include <oblibs/environ.h>
 #include <oblibs/sse.h>
 #include <oblibs/fd.h>
+#include <oblibs/spawn.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -215,7 +215,8 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
 
         log_trace("sending start command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-        if (posix_spawnp(&tree->pid, newargv[0], NULL, NULL, newargv, environ)) {
+        tree->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
+        if (!tree->pid) {
             FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
             log_warnusys_return(LOG_EXIT_ZERO, "start services of tree: ", tree->tres->sa.s + tree->tres->name) ;
         }
@@ -224,7 +225,8 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
 
         log_trace("sending stop command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-        if (posix_spawnp(&tree->pid, newargv[0], NULL, NULL, newargv, environ)) {
+        tree->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
+        if (!tree->pid) {
             FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
             log_warnusys_return(LOG_EXIT_ZERO, "stop services of tree: ", tree->tres->sa.s + tree->tres->name) ;
         }

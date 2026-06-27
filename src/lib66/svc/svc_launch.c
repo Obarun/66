@@ -16,7 +16,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
-#include <spawn.h>
 #include <stdbool.h>
 #include <signal.h>
 #include <time.h>
@@ -32,6 +31,7 @@
 #include <oblibs/clock.h>
 #include <oblibs/sse.h>
 #include <oblibs/fd.h>
+#include <oblibs/spawn.h>
 
 #include <66/service.h>
 #include <66/state.h>
@@ -422,7 +422,8 @@ static int launch_service(uint32_t id)
 
         log_trace("sending ", !pmanager->operation ? "start" : "stop", " to: ", scandir) ;
 
-        if (posix_spawnp(&svc->pid, newargv[0], NULL, NULL, newargv, environ)) {
+        svc->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
+        if (!svc->pid) {
             FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
             log_warnusys_return(LOG_EXIT_ZERO, "spawn service: ", svc->res->sa.s + svc->res->name) ;
         }
