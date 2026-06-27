@@ -74,6 +74,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "type", &res->type) ||
         !resolve_get_key(c, "notify", &res->notify) ||
         !resolve_get_key(c, "maxdeath", &res->maxdeath) ||
+        !resolve_get_key(c, "maxdeathtime", &res->maxdeathtime) ||
         !resolve_get_key(c, "earlier", &res->earlier) ||
         !resolve_get_key(c, "copyfrom", &res->copyfrom) ||
         !resolve_get_key(c, "intree", &res->intree) ||

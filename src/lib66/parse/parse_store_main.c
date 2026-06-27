@@ -283,8 +283,15 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
             if (!u32_scan_strict(store->s, &res->maxdeath))
                 parse_error_return(0, 3, table) ;
 
-            if (res->maxdeath > 4096)
+            if (res->maxdeath > 16)
                 parse_error_return(0, 0, table) ;
+
+            break ;
+
+        case E_PARSER_SECTION_MAIN_DEATHTIME:
+
+            if (!u32_scan_strict(store->s, &res->maxdeathtime))
+                parse_error_return(0, 3, table) ;
 
             break ;
 

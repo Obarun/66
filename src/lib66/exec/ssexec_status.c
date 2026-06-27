@@ -65,6 +65,7 @@ static void info_display_description(char const *field, resolve_service_t *res) 
 static void info_display_inns(char const *field, resolve_service_t *res) ;
 static void info_display_notify(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeath(char const *field, resolve_service_t *res) ;
+static void info_display_maxdeathtime(char const *field, resolve_service_t *res) ;
 static void info_display_earlier(char const *field, resolve_service_t *res) ;
 static void info_display_source(char const *field, resolve_service_t *res) ;
 static void info_display_live(char const *field, resolve_service_t *res) ;
@@ -107,6 +108,7 @@ static status_field_t const fields_sv[] = {
     { "partof",      "Part of",                &info_display_inns },
     { "notify",      "Notify",                 &info_display_notify },
     { "maxdeath",    "Max death",              &info_display_maxdeath },
+    { "maxdeathtime","Max death interval",     &info_display_maxdeathtime },
     { "earlier",     "Earlier",                &info_display_earlier },
     { "source",      "Source",                 &info_display_source },
     { "live",        "Live",                   &info_display_live },
@@ -362,6 +364,14 @@ static void info_display_maxdeath(char const *field, resolve_service_t *res)
 
     if (NOFIELD) info_display_field_name(field) ;
     info_display_int(res->maxdeath) ;
+}
+
+static void info_display_maxdeathtime(char const *field, resolve_service_t *res)
+{
+    log_flow() ;
+
+    if (NOFIELD) info_display_field_name(field) ;
+    info_display_int(res->maxdeathtime) ;
 }
 
 static void info_display_earlier(char const *field,resolve_service_t *res)
@@ -1189,12 +1199,12 @@ opt_cmd_t const cmd_status = {
         "    name          version       intree\n"
         "    status        type          description\n"
         "    partof        notify        maxdeath\n"
-        "    earlier       source        live\n"
-        "    depends       requiredby    contents\n"
-        "    optsdepends   start         stop\n"
-        "    envat         envfile       importfile\n"
-        "    stdin         stdout        stderr\n"
-        "    logname       logfile",
+        "    maxdeathtime  earlier       source\n"
+        "    live          depends       requiredby\n"
+        "    contents      optsdepends   start\n"
+        "    stop          envat         envfile\n"
+        "    importfile    stdin         stdout\n"
+        "    stderr        logname       logfile",
 } ;
 
 int ssexec_status(int argc, char const *const *argv, void *data)

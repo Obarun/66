@@ -63,6 +63,11 @@ static int get_config(strbuf *sa, resolve_service_t *res, resolve_service_enum_c
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME:
+            fmt[u32_fmt(fmt,res->maxdeathtime)] = 0 ;
+            str = fmt ;
+            break ;
+
         case E_RESOLVE_SERVICE_CONFIG_EARLIER:
             fmt[u32_fmt(fmt,res->earlier)] = 0 ;
             str = fmt ;

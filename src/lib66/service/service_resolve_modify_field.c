@@ -80,6 +80,10 @@ static void modify_config(resolve_service_t *res, char const *data, uint32_t fie
             res->maxdeath = resolve_add_uint(data) ; ;
             break ;
 
+        case E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME:
+            res->maxdeathtime = resolve_add_uint(data) ;
+            break ;
+
         case E_RESOLVE_SERVICE_CONFIG_EARLIER:
             res->earlier = resolve_add_uint(data) ; ;
             break ;

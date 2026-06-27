@@ -46,6 +46,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "type", res->type) ||
         !resolve_add_cdb_uint(c, "notify", res->notify) ||
         !resolve_add_cdb_uint(c, "maxdeath", res->maxdeath) ||
+        !resolve_add_cdb_uint(c, "maxdeathtime", res->maxdeathtime) ||
         !resolve_add_cdb_uint(c, "earlier", res->earlier) ||
         !resolve_add_cdb_uint(c, "copyfrom", res->copyfrom) ||
         !resolve_add_cdb_uint(c, "intree", res->intree) ||

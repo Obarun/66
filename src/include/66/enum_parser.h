@@ -77,6 +77,7 @@ typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
     macro(TIMESTART,        "TimeoutStart",     E_PARSER_EXPECT_UINT), \
     macro(TIMESTOP,         "TimeoutStop",      E_PARSER_EXPECT_UINT), \
     macro(DEATH,            "MaxDeath",         E_PARSER_EXPECT_UINT), \
+    macro(DEATHTIME,        "MaxDeathInterval", E_PARSER_EXPECT_UINT), \
     macro(COPYFROM,         "CopyFrom",         E_PARSER_EXPECT_BRACKET), \
     macro(SIGNAL,           "DownSignal",       E_PARSER_EXPECT_UINT), \
     macro(FLAGS,            "Flags",            E_PARSER_EXPECT_BRACKET), \

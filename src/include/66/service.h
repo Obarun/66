@@ -233,6 +233,7 @@ struct resolve_service_s
     uint32_t type ; // integer
     uint32_t notify ; // integer
     uint32_t maxdeath ; // integer
+    uint32_t maxdeathtime ; // integer, crash-window length in milliseconds
     uint32_t earlier ; // integer
     uint32_t copyfrom ; // string
     uint32_t intree ; // string
@@ -256,7 +257,7 @@ struct resolve_service_s
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
-                               0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0, \
+                               0,0,0,0,0,5,30000,0,0,0,0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \

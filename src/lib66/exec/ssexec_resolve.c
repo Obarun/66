@@ -40,6 +40,7 @@ static info_field_t const fields[] = {
     { "type",            INFO_FIELD_U32, offsetof(resolve_service_t, type) },
     { "notify",          INFO_FIELD_U32, offsetof(resolve_service_t, notify) },
     { "maxdeath",        INFO_FIELD_U32, offsetof(resolve_service_t, maxdeath) },
+    { "maxdeathtime",    INFO_FIELD_U32, offsetof(resolve_service_t, maxdeathtime) },
     { "earlier",         INFO_FIELD_U32, offsetof(resolve_service_t, earlier) },
     { "copyfrom",        INFO_FIELD_STR, offsetof(resolve_service_t, copyfrom) },
     { "intree",          INFO_FIELD_STR, offsetof(resolve_service_t, intree) },

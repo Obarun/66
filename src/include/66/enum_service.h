@@ -32,6 +32,7 @@
     macro(TYPE,         "type"), \
     macro(NOTIFY,       "notify"), \
     macro(MAXDEATH,     "maxdeath"), \
+    macro(MAXDEATHTIME, "maxdeathtime"), \
     macro(EARLIER,      "earlier"), \
     macro(COPYFROM,     "copyfrom"), \
     macro(INTREE,       "intree"), \

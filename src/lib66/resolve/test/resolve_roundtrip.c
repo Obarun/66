@@ -60,6 +60,7 @@ static void test_roundtrip(char const *dir)
     res.dependencies.ndepends = 2 ;
     res.type = E_PARSER_TYPE_CLASSIC ;
     res.maxdeath = 7 ;
+    res.maxdeathtime = 12345 ;
     res.enabled = 1 ;
     res.notify = 3 ;
     res.execute.timeout.start = 5000 ;
@@ -86,6 +87,7 @@ static void test_roundtrip(char const *dir)
     ASSERT_EQ(back.dependencies.ndepends, 2, "ndepends") ;
     ASSERT_EQ(back.type, E_PARSER_TYPE_CLASSIC, "type") ;
     ASSERT_EQ(back.maxdeath, 7, "maxdeath") ;
+    ASSERT_EQ(back.maxdeathtime, 12345, "maxdeathtime") ;
     ASSERT_EQ(back.enabled, 1, "enabled") ;
     ASSERT_EQ(back.notify, 3, "notify") ;
     ASSERT_EQ(back.execute.timeout.start, 5000, "timeout.start") ;

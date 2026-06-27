@@ -518,10 +518,10 @@ and reports the transition as failed.
 
 **Source Snippet**:
 ```ini
-MaxDeath = 10
+MaxDeath = 5
 ```
 
-Limits the number of recorded service crashes. Exceeding this resets the oldest record when tallying failures.
+Sets the crash budget: the number of times the service may die within a [MaxDeathInterval](#maxdeathinterval) window before the supervisor gives up and declares it *failed*, stopping any further automatic restart.
 
 * mandatory: no
 
@@ -529,9 +529,30 @@ Limits the number of recorded service crashes. Exceeding this resets the oldest 
 
 * valid value:
 
-    * Any valid number.
+    * Any number from `0` to `16`. The default is `5`. A value of `0` disables the budget: the service is restarted indefinitely and is never declared *failed* for crash-looping.
 
-    This will create the file *max-death-tally*. Once this file was created the value will equal the maximum number of service death events that the supervisor will keep track of. If the service dies more than this number of times, the oldest event will be forgotten and the transition ([start](66-start.html) or [stop](66-stop.html)) will be declared as failed. Tracking death events is useful, for example, when throttling service restarts. The value cannot be greater than 4096. Without this file a default of 10 is used.
+    Only an actual *run-then-die* counts against the budget — the service did execute its `run` script, then exited or was signalled while still wanted up. A commanded [stop](66-stop.html) never counts, and a service that never managed to exec its `run` script (missing interpreter, unmounted filesystem, …) is reported as *exec failed* and retried with a progressive backoff without ever consuming the budget. Once the budget is exhausted the service stays *failed* until a new [start](66-start.html) resets the counter and relaunches it.
+
+    Each automatic restart is throttled by a minimum delay of one second, so a crash-looping service consumes its budget at a rate of at most one death per second.
+
+#### MaxDeathInterval
+
+**Source Snippet**:
+```ini
+MaxDeathInterval = 30000
+```
+
+The length, in milliseconds, of the time window over which [MaxDeath](#maxdeath) crashes are counted.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid value:
+
+    * Any valid number, in milliseconds. The default is `30000` (30 seconds).
+
+    The window is measured on a monotonic clock and starts at the first counted death. If the service reaches `MaxDeath` deaths before the window elapses, it is declared *failed*. Otherwise — the window expires with fewer deaths — the window is re-armed: the next death starts a fresh window with the count reset to one. The measurement lives in volatile runtime state and is cleared on reboot. Because restarts are throttled to roughly one per second, exhausting the budget takes on the order of `MaxDeath` seconds; setting `MaxDeathInterval` much below that makes the *failed* state effectively unreachable through crash-looping alone.
 
 #### DownSignal
 
@@ -1717,6 +1738,7 @@ User = ()
 TimeoutStart =
 TimeoutStop =
 MaxDeath =
+MaxDeathInterval =
 DownSignal =
 CopyFrom = ()
 InTree =
