@@ -122,10 +122,10 @@ extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_
 extern int svc_compute_ns(svc_manager_t *mgr, uint32_t id) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
-extern int svc_control_send(char const *scandir, char const *bytes, size_t len) ;
+extern int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who) ;
 extern int svc_send_wait(char const *const *list, uint32_t nservice, char **sig, unsigned int siglen, ssexec_t *info) ;
 extern void svc_unsupervise(service_graph_t *g) ;
-extern void svc_send_daemon(char const *dir, char const *control, event_t wanted, int timeout_ms) ;
+extern void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 extern int svc_status(resolve_service_t *res, service_status_t *st) ;
 extern int svc_is_up(char const *name) ;

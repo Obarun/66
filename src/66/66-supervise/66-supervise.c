@@ -30,8 +30,9 @@
  *   s6 s6_svstatus (TAI64N)  -> 66 service_status_t (lib66/status, clock_pack)
  *
  * The death-tally file is dropped (the native crash budget lives inline in the
- * status record, added later). The control fifo keeps the native s6 single-byte
- * alphabet, and the event fifodir keeps the native s6 single bytes (see SPECS).
+ * status record, added later). The control fifo carries a fixed <op><who> pair
+ * per command (op from the s6 alphabet, who a provenance byte, the two spaces
+ * disjoint); the event fifodir keeps the native s6 single bytes (see SPECS).
  *
  * CONFIG COMES FROM THE 66 RESOLVE, NOT FROM PER-SERVICE FILES. Where s6-supervise
  * re-reads notification-fd / timeout-finish / timeout-kill / max-death-tally /
@@ -147,6 +148,20 @@ static struct runtime_s
 /** the death we caused with a timeout kill, consumed at the next process death
  * to override SIGNALED: 1 = uptimeout (TIMEOUT_START), 2 = finishtimeout (TIMEOUT_STOP). */
 static uint8_t kill_timeout = 0 ;
+
+/** provenance of the current state, latched on the op that actually flips wantup
+ * (anti-race): current_who is the who of the control op being dispatched;
+ * latched_who keeps the who of the last real transition (up or down) and is the
+ * value projected into the record. It defaults to SELF (a service that comes up
+ * on its own owns its transition); a command that changes wantup overwrites it,
+ * and an intrinsic death resets it to SELF. Distinguishing a boot/event-driven
+ * up from a user up requires the origin to be threaded explicitly from the
+ * top-level caller (ssexec_boot/eventd) down to svc_launch, which is not done
+ * yet, so we stay honest with SELF rather than guessing BOOT.
+ * pending_op buffers an op whose who byte has not arrived yet. */
+static uint8_t current_who = STATUS_WHO_USER ;
+static uint8_t latched_who = STATUS_WHO_SELF ;
+static int pending_op = -1 ;
 static int finish_wstat ;
 static state_t state = DOWN ;
 static char const *servicename = 0 ;
@@ -241,6 +256,8 @@ static void project_status(service_status_t *st)
   if (status.result == STATUS_RESULT_SIGNALED) st->code = (uint32_t)WTERMSIG(status.wstat) ;
   else if (status.result == STATUS_RESULT_EXITED) st->code = (uint32_t)WEXITSTATUS(status.wstat) ;
   else st->code = 0 ;
+
+  st->who = latched_who ;
 
   /* flagfinishing is the canonical "the ./finish script is running" signal: it
    * is set before uplastup_z announces, while the FSM state is still UP/LASTUP
@@ -547,12 +564,14 @@ static void trystart(void)
 
 static void wantdown(void)
 {
+  if (status.flagwantup) latched_who = current_who ; // a real 1->0 owns the transition
   status.flagwantup = 0 ;
   announce() ;
 }
 
 static void wantup(void)
 {
+  if (!status.flagwantup) latched_who = current_who ; // a real 0->1 owns the transition
   status.flagwantup = 1 ;
   announce() ;
 }
@@ -614,6 +633,9 @@ static int uplastup_z(void)
   else status.result = STATUS_RESULT_SUCCESS ;
   kill_timeout = 0 ;
 
+  // an intrinsic death (still wanted up) is self-inflicted, whoever started it
+  if (status.flagwantup) latched_who = STATUS_WHO_SELF ;
+
   clock_now(&status.stamp) ;
   drop_notifyfd() ;
   fmt0[u32_fmt(fmt0, WIFSIGNALED(status.wstat) ? 256 : WEXITSTATUS(status.wstat))] = 0 ;
@@ -670,6 +692,7 @@ static void uptimeout(void)
 static void up_d(void)
 {
   unsigned int timeout = res.execute.timeout.start ;   // timeout-kill (0 = infinite)
+  if (status.flagwantup) latched_who = current_who ; // a real 1->0 owns the transition
   status.flagwantup = 0 ;
   killr() ;
   killc() ;
@@ -752,7 +775,21 @@ static action_t_ref const actions[5][31] =
 } ;
 
 
-// control fifo: native s6 single-byte alphabet
+/** 25-byte op alphabet (66 reload 'l' added). NB: upstream s6 commit 923d36d
+ * kept its bound at 24 after inserting 'l', silently dropping the last command
+ * 'Q' (66-svctl -Q); we use the correct 25. Op bytes are letters/digits (>= '0'),
+ * disjoint from the who bytes {0..5}, so the two never collide. */
+static char const control_alphabet[] = "abqhkti12pcyrlPCKoduDUxOQ" ;
+
+static void dispatch_op(char op, uint8_t who)
+{
+  char const *p = memchr(control_alphabet, op, 25) ;
+  if (!p) return ;
+  current_who = who ;
+  (*actions[state][V_a + (size_t)(p - control_alphabet)])() ;
+}
+
+// control fifo: a fixed <op><who> pair per command (see SPECS)
 
 static void control_cb(sse_watcher_t *w, void *data, int revents)
 {
@@ -761,21 +798,39 @@ static void control_cb(sse_watcher_t *w, void *data, int revents)
   if (revents & (SSE_ERROR | SSE_HUP)) { log_warnusys("control watcher") ; return ; }
   for (;;)
   {
-    char c ;
-    ssize_t r = io_read_result(io_read(controlfd, &c, 1)) ;
+    char op ;
+
+    if (pending_op >= 0) { op = (char)pending_op ; pending_op = -1 ; }
+    else
+    {
+      ssize_t r = io_read_result(io_read(controlfd, &op, 1)) ;
+      if (r < 0)
+      {
+        if (errno == EPIPE) break ; // EOF: never happens, we hold the write end
+        log_dieusys(111, "read ", control_file) ;
+      }
+      if (!r) break ; // would block
+      if (!memchr(control_alphabet, op, 25)) continue ; // parasite or orphan who: ignore
+    }
+
+    // op is a valid control byte; read its who.
+    char wbyte ;
+    ssize_t r = io_read_result(io_read(controlfd, &wbyte, 1)) ;
     if (r < 0)
     {
-      if (errno == EPIPE) break ; // EOF: never happens, we hold the write end
+      if (errno == EPIPE) break ;
       log_dieusys(111, "read ", control_file) ;
     }
-    if (!r) break ; // would block
+    if (!r) { pending_op = (unsigned char)op ; break ; } // who not here yet: buffer the op
+
+    if ((unsigned char)wbyte < 6)
+      dispatch_op(op, (uint8_t)wbyte) ;
+    else
     {
-      /** 25-byte alphabet (s6 reload 'l' added). NB: upstream s6 commit 923d36d
-       * kept its bound at 24 after inserting 'l', which silently drops the last
-       * command 'Q' (s6-svc -Q); we use the correct 25 here. */
-      static char const alphabet[] = "abqhkti12pcyrlPCKoduDUxOQ" ;
-      char const *p = memchr(alphabet, c, 25) ;
-      if (p) (*actions[state][V_a + (size_t)(p - alphabet)])() ;
+      // a valid op not followed by a valid who (non-conformant writer): default
+      // to USER and reinject wbyte so an orphan op does not eat the next one.
+      dispatch_op(op, STATUS_WHO_USER) ;
+      if (memchr(control_alphabet, wbyte, 25)) pending_op = (unsigned char)wbyte ;
     }
   }
 }
@@ -926,7 +981,7 @@ int main(int argc, char const *const *argv)
     if (!event_fifodir_clean(SS_EVENTDIR + 1))
       log_warnusys("clean ", SS_EVENTDIR + 1) ;
 
-    if (access("down", F_OK) == 0) status.flagwantup = 0 ;
+    if (access("down", F_OK) == 0) status.flagwantup = 0 ; // latched_who already defaults to SELF
     else if (errno != ENOENT)
       log_dieusys(111, "access ./down") ;
 

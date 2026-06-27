@@ -261,6 +261,17 @@ static void info_get_status(resolve_service_t *res)
         default : break ;
     }
 
+    // who triggered the transition (nothing when the service acted on its own)
+    char const *whoby = "" ;
+    switch (st.who) {
+        case STATUS_WHO_USER :       whoby = " by user" ; break ;
+        case STATUS_WHO_EVENT :      whoby = " by event" ; break ;
+        case STATUS_WHO_DEPENDENCY : whoby = " by dependency" ; break ;
+        case STATUS_WHO_BOOT :       whoby = " by boot" ; break ;
+        case STATUS_WHO_SHUTDOWN :   whoby = " by shutdown" ; break ;
+        default : break ; // SELF
+    }
+
     char const *color = warn_color > 1 ? log_color->valid : log_color->error ;
 
     if (st.pid > 0) {
@@ -276,12 +287,12 @@ static void info_get_status(resolve_service_t *res)
             auto_strings(ready, ", ready ", rsecs, " seconds") ;
         }
 
-        if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)%s %s seconds%s\n", color, word, log_color->off, pid, detail, secs, ready))
+        if (!ostream_fmt(ostream_1, "%s%s%s (pid %s)%s %s seconds%s%s\n", color, word, log_color->off, pid, detail, secs, ready, whoby))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     } else {
 
-        if (!ostream_fmt(ostream_1, "%s%s%s%s %s seconds\n", color, word, log_color->off, detail, secs))
+        if (!ostream_fmt(ostream_1, "%s%s%s%s %s seconds%s\n", color, word, log_color->off, detail, secs, whoby))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }

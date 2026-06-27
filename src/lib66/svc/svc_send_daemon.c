@@ -39,7 +39,7 @@ static int in_state(event_t wanted, int have, unsigned char up, unsigned char re
     return event_match_feed(&m, 0, 0) == EVENT_MATCH_OK ;
 }
 
-void svc_send_daemon(char const *dir, char const *control, event_t wanted, int timeout_ms)
+void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
 {
     log_flow() ;
 
@@ -49,7 +49,7 @@ void svc_send_daemon(char const *dir, char const *control, event_t wanted, int t
     // already in the wanted state: nothing to wait for.
     if (in_state(wanted, have, up, ready)) {
         // an up target is still (idempotently) asserted; a down target is not.
-        if (!is_down(wanted) && !svc_control_send(dir, control, strlen(control)))
+        if (!is_down(wanted) && !svc_control_send(dir, control, strlen(control), who))
             log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
         return ;
     }
@@ -62,7 +62,7 @@ void svc_send_daemon(char const *dir, char const *control, event_t wanted, int t
     if (!event_wait_init(&w, dirs, 1, wanted))
         log_dieusys(LOG_EXIT_SYS, "subscribe to event dir: ", eventdir) ;
 
-    if (!svc_control_send(dir, control, strlen(control))) {
+    if (!svc_control_send(dir, control, strlen(control), who)) {
         event_wait_free(&w) ;
         log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
     }

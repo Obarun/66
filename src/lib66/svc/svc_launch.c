@@ -380,7 +380,7 @@ static int launch_classic(uint32_t id)
     }
 
     log_trace("sending ", pmanager->signal + 1, " to: ", scandir) ;
-    if (!svc_control_send(scandir, pmanager->signal + 1, strlen(pmanager->signal) - 1)) {
+    if (!svc_control_send(scandir, pmanager->signal + 1, strlen(pmanager->signal) - 1, STATUS_WHO_USER)) {
         complete(id, false) ;
         return 1 ;
     }

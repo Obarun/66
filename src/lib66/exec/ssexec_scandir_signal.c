@@ -77,13 +77,13 @@ static void send_fdholder(char const *scandir, uint8_t down)
 
      if (!down) {
 
-        svc_send_daemon(fdholder, "dx", EVENT_SUPERVISE_DOWN, 3000) ;
-        svc_send_daemon(oneshotd, "dx", EVENT_SUPERVISE_DOWN, 3000) ;
+        svc_send_daemon(fdholder, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, 3000) ;
+        svc_send_daemon(oneshotd, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, 3000) ;
 
     } else {
 
-        svc_send_daemon(fdholder, "U", EVENT_READY, 3000) ;
-        svc_send_daemon(oneshotd, "U", EVENT_READY, 3000) ;
+        svc_send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_READY, 3000) ;
+        svc_send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_READY, 3000) ;
     }
 }
 

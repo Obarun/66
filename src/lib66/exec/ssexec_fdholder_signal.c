@@ -73,6 +73,6 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
 
     log_trace(fdh_signame, " fdholder service: ", dir) ;
 
-    svc_send_daemon(dir, control, wanted, (int)fdh_sig_timeout) ;
+    svc_send_daemon(dir, control, STATUS_WHO_USER, wanted, (int)fdh_sig_timeout) ;
     return 0 ;
 }

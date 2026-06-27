@@ -357,7 +357,7 @@ static inline void unsupervise_tree (void)
                 unlinkat(fdd, d->d_name, 0) ;
                 /* if it still fails, too bad, it will restart in stage 4 and race */
             }
-            else svc_control_send(fn, "dx", 2) ;
+            else svc_control_send(fn, "dx", 2, STATUS_WHO_SHUTDOWN) ;
         }
     }
     dir_close(dir) ;

@@ -232,9 +232,9 @@ int main (int argc, char const *const *argv)
 
         if (wait) {
             event_t wanted = downgrade_if_no_notif(argv[i], wait_to_event(wait)) ;
-            svc_send_daemon(argv[i], data, wanted, (int)timeout) ;
+            svc_send_daemon(argv[i], data, STATUS_WHO_USER, wanted, (int)timeout) ;
         }
-        else if (!svc_control_send(argv[i], data, dlen))
+        else if (!svc_control_send(argv[i], data, dlen, STATUS_WHO_USER))
             e = LOG_EXIT_SYS ;
     }
 
