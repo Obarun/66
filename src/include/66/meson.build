@@ -1,14 +1,14 @@
 fs = import('fs')
 
-# Validate s6-log timestamp
-if s6_log_timestamp == 'tai'
-  s6_log_timestamp = '0'
-elif s6_log_timestamp == 'iso'
-  s6_log_timestamp = '1'
-elif s6_log_timestamp == 'none'
-  s6_log_timestamp = '2'
+# Validate 66-log timestamp
+if log_timestamp == 'tai'
+  log_timestamp = '0'
+elif log_timestamp == 'iso'
+  log_timestamp = '1'
+elif log_timestamp == 'none'
+  log_timestamp = '2'
 else
-  error('Invalid s6-log-timestamp value. Valid values are: tai, iso, none')
+  error('Invalid 66-log-timestamp value. Valid values are: tai, iso, none')
 endif
 
 # Validate integer options
@@ -46,9 +46,9 @@ conf.set_quoted('SS_DEFAULT_TREENAME', default_tree_name)
 conf.set_quoted('SS_SYSTEM_DIR', system_dir + '/')
 conf.set_quoted('SS_SKEL_DIR', skeleton_dir + '/')
 conf.set_quoted('SS_LOGGER_SYSDIR', system_log_dir + '/')
-conf.set_quoted('SS_LOGGER_RUNNER', s6_log_user)
-conf.set('SS_LOGGER_TIMESTAMP', s6_log_timestamp)
-conf.set('SS_LOGGER_NOTIFY', s6_log_notification)
+conf.set_quoted('SS_LOGGER_RUNNER', log_user)
+conf.set('SS_LOGGER_TIMESTAMP', log_timestamp)
+conf.set('SS_LOGGER_NOTIFY', log_notification)
 conf.set_quoted('SS_SERVICE_SYSDIR', system_service_dir + '/')
 conf.set_quoted('SS_SERVICE_SYSDIR_USER', system_service_dir + '/user/')
 conf.set_quoted('SS_SERVICE_ADMDIR', sysadmin_service_dir + '/')
@@ -70,6 +70,8 @@ conf.set_quoted('SS_EXTBINPREFIX', '')
 conf.set_quoted('SS_EXTLIBEXECPREFIX', LIBEXECDIR + '/')
 conf.set_quoted('SS_LIBEXECPREFIX', LIBEXECDIR + '/')
 conf.set_quoted('SS_EXECLINE_SHEBANGPREFIX', shebangdir + '/')
+conf.set_quoted('SS_EXECLINE_BINPREFIX', execline_bindir + '/')
+conf.set_quoted('SS_EXECLINE_EXTBINPREFIX', execline_extbindir + '/')
 
 configure_file(
   input: 'config.h.in',

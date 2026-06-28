@@ -16,9 +16,9 @@ project('66',
           'skeleton-dir=/etc/66',
           'system-dir=/var/lib/66',
           'system-log-dir=/var/log/66',
-          's6-log-user=root',
-          's6-log-timestamp=iso',
-          's6-log-notification=true',
+          '66-log-user=root',
+          '66-log-timestamp=iso',
+          '66-log-notification=true',
           'system-service-dir=/usr/share/66/service',
           'system-script-dir=/usr/share/66/script',
           'system-seed-dir=/usr/share/66/seed',
@@ -33,7 +33,6 @@ project('66',
           'user-script-dir=.66/script',
           'user-seed-dir=.66/seed',
           'user-environment-dir=.66/environment',
-          'sysdeps-dir=/usr/lib/skalibs/sysdeps',
           'enable-shared=true',
           'with-doc=false',
           'with-pkgconfig=false',
@@ -48,7 +47,7 @@ message('See INSTALL_MESON.md for detailed configuration instructions and warnin
 fs = import('fs')
 
 # doc-only mode: build only the documentation. Skips C sources and the
-# skalibs/execline/s6/oblibs dependency lookups entirely. Useful for CI
+# oblibs dependency lookup entirely. Useful for CI
 # documentation jobs that do not need the C toolchain.
 if get_option('doc-only')
   if not get_option('with-doc')
@@ -60,9 +59,6 @@ if get_option('doc-only')
 endif
 
 # Versioning
-version_skalibs = '>=2.14.3.0'
-version_execline = '>=2.9.6.1'
-version_s6 = '>=2.13.1.0'
 version_oblibs = '>=0.3.4.0'
 
 # Compiler setup
@@ -80,39 +76,6 @@ user_dynamiclib_dirs = get_option('with-dynamiclib-dir')
 include_dirs = default_include_dirs + user_include_dirs
 lib_dirs = user_staticlib_dirs + user_dynamiclib_dirs + default_lib_dirs
 
-# Dependency: skalibs
-skalibs_lib = cc.find_library('skarnet', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
-skalibs_header = cc.has_header('skalibs.h', args: ['-I', include_dirs], required: false)
-if not skalibs_lib.found() # or not skalibs_header
-  error('skalibs ' + version_skalibs + ' not found. Ensure libskalibs and skalibs.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
-endif
-dep_skalibs = declare_dependency(
-  dependencies: skalibs_lib,
-  include_directories: include_dirs
-)
-
-# Dependency: execline
-execline_lib = cc.find_library('execline', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
-execline_header = cc.has_header('execline.h', args: ['-I', include_dirs], required: false)
-if not execline_lib.found() or not execline_header
-  error('execline ' + version_execline + ' not found. Ensure libexecline and execline/execline.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
-endif
-dep_execline = declare_dependency(
-  dependencies: execline_lib,
-  include_directories: include_dirs
-)
-
-# Dependency: s6
-s6_lib = cc.find_library('s6', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
-s6_header = cc.has_header('s6.h', args: ['-I', include_dirs], required: false)
-if not s6_lib.found() or not s6_header
-  error('s6 ' + version_s6 + ' not found. Ensure libs6 and s6/s6.h are installed, or specify paths with with-include-dir and with-staticlib-dir/with-dynamiclib-dir.')
-endif
-dep_s6 = declare_dependency(
-  dependencies: s6_lib,
-  include_directories: include_dirs
-)
-
 # Dependency: oblibs
 oblibs_lib = cc.find_library('oblibs', dirs: lib_dirs, static: get_option('enable-static-deps'), required: false)
 oblibs_header = cc.has_header('oblibs.h', args: ['-I', include_dirs], required: false)
@@ -125,29 +88,7 @@ dep_oblibs = declare_dependency(
 )
 
 # Define global dependencies
-skalibs_dep = dep_skalibs
-execline_dep = dep_execline
-s6_dep = dep_s6
 oblibs_dep = dep_oblibs
-
-# Read sysdeps libraries
-pthread_lib = ''
-spawn_lib = ''
-socket_lib = ''
-sysclock_lib = ''
-timer_lib = ''
-util_lib = ''
-foreach name : ['pthread', 'spawn', 'socket', 'sysclock', 'timer', 'util']
-  file = get_option('sysdeps-dir') / name + '.lib'
-  if not fs.is_file(file)
-    warning('sysdeps file ' + file + ' does not exist')
-  else
-    content = fs.read(file).strip()
-    if content != ''
-      set_variable(name + '_lib', content)
-    endif
-  endif
-endforeach
 
 # Special case for default_options
 BINDIR = get_option('prefix') / get_option('bindir')
@@ -156,6 +97,8 @@ INCLUDEDIR = get_option('prefix') / get_option('includedir') / '66'
 
 # Final key value
 shebangdir = get_option('shebangdir')
+execline_bindir = get_option('execline-bindir')
+execline_extbindir = get_option('execline-extbindir')
 livedir = get_option('livedir')
 max_service = get_option('max-service')
 max_path_size = get_option('max-path-size')
@@ -165,9 +108,9 @@ default_tree_name = get_option('default-tree-name')
 skeleton_dir = get_option('skeleton-dir')
 system_dir = get_option('system-dir')
 system_log_dir = get_option('system-log-dir')
-s6_log_user = get_option('s6-log-user')
-s6_log_timestamp = get_option('s6-log-timestamp')
-s6_log_notification = get_option('s6-log-notification') ? '1' : '0'
+log_user = get_option('66-log-user')
+log_timestamp = get_option('66-log-timestamp')
+log_notification = get_option('66-log-notification') ? '1' : '0'
 system_service_dir = get_option('system-service-dir')
 system_script_dir = get_option('system-script-dir')
 system_seed_dir = get_option('system-seed-dir')
@@ -182,7 +125,6 @@ user_service_conf_dir = get_option('user-service-conf-dir')
 user_script_dir = get_option('user-script-dir')
 user_seed_dir = get_option('user-seed-dir')
 user_environment_dir = get_option('user-environment-dir')
-sysdeps_dir = get_option('sysdeps-dir')
 
 # Common compiler flags
 base_c_args = [
@@ -299,7 +241,7 @@ if get_option('with-pkgconfig')
   # Generate and install pkg-config file for lib66
   private_libs = []
   if get_option('enable-static') or get_option('enable-static-deps')
-    private_libs += ['-lskalibs', '-ls6', '-loblibs']
+    private_libs += ['-loblibs']
   endif
 
   pkg = import('pkgconfig')

@@ -37,8 +37,6 @@
 #include <66/resolve.h>
 #include <66/service.h>
 
-#include <execline/config.h>
-
 #define CRASH 0
 #define FINISH 1
 #define INT 2
@@ -331,18 +329,18 @@ void write_bootlog(char const *live, char const *scandir)
     shebang(&b,"-P") ;
     if (CONTAINER) {
 
-        if (!auto_strbuf(&b,EXECLINE_BINPREFIX "fdmove -c 1 2\n"))
+        if (!auto_strbuf(&b,SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n"))
             log_die_nomem("strbuf") ;
 
     } else {
 
         if (!auto_strbuf(&b,
-            EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n"))
+            SS_EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n"))
                 log_die_nomem("strbuf") ;
     }
 
     if (!auto_strbuf(&b,
-            EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
+            SS_EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
             SS_BINPREFIX "execl-runas ",
             log_user,
             "\n" SS_BINPREFIX "66-log -bpd3 -- 1"))
@@ -383,20 +381,20 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
             if (!auto_strbuf(&b,
                 SS_BINPREFIX "execl-envfile ",live, SS_BOOT_CONTAINER_DIR "/",OWNERSTR,"\n" \
-                EXECLINE_BINPREFIX "fdclose 1\n" \
-                EXECLINE_BINPREFIX "fdclose 2\n" \
-                EXECLINE_BINPREFIX "wait { }\n" \
-                EXECLINE_BINPREFIX "foreground {\n" \
+                SS_EXECLINE_BINPREFIX "fdclose 1\n" \
+                SS_EXECLINE_BINPREFIX "fdclose 2\n" \
+                SS_EXECLINE_BINPREFIX "wait { }\n" \
+                SS_EXECLINE_BINPREFIX "foreground {\n" \
                 SS_BINPREFIX "66-hpr -f -n -${HALTCODE} -l ",live," \n}\n" \
-                EXECLINE_BINPREFIX "exit ${EXITCODE}\n"))
+                SS_EXECLINE_BINPREFIX "exit ${EXITCODE}\n"))
                     log_die_nomem("strbuf") ;
 
         } else if (BOOT) {
 
             if (!auto_strbuf(&b,
-                EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
-                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
-                EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
+                SS_EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
+                SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir," exited. Rebooting.\" }\n" \
                 SS_BINPREFIX "66-hpr -r -f -l ",
                 live,"\n"))
@@ -418,21 +416,21 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         if (CONTAINER) {
 
             if (!auto_strbuf(&b,
-                EXECLINE_BINPREFIX "foreground {\n" \
-                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                SS_EXECLINE_BINPREFIX "foreground {\n" \
+                SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 SS_BINPREFIX "66-echo \"scandir crashed. Killing everythings and exiting.\"\n}\n" \
-                EXECLINE_BINPREFIX "foreground {\n" \
+                SS_EXECLINE_BINPREFIX "foreground {\n" \
                 SS_BINPREFIX "66-nuke\n}\n" \
-                EXECLINE_BINPREFIX "wait { }\n" \
+                SS_EXECLINE_BINPREFIX "wait { }\n" \
                 SS_BINPREFIX "66-hpr -f -n -p -l ",live,"\n"))
                     log_die_nomem("strbuf") ;
         }
         else {
 
             if (!auto_strbuf(&b,
-                EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
-                EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
-                EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
+                SS_EXECLINE_BINPREFIX "redirfd -w 2 /dev/console\n" \
+                SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
+                SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir, " crashed."))
                     log_die_nomem("strbuf") ;
 
@@ -453,7 +451,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
     if (!BOOT) {
 
         if (!auto_strbuf(&b,
-            EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 -l ",
+            SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 -l ",
             live," tree stop }\n"))
                 log_die_nomem("strbuf") ;
 

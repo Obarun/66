@@ -3,6 +3,16 @@ type: 'string',
 value: '/usr/bin',
 description: 'Absolute path for execline #! invocations')
 
+option('execline-bindir',
+type: 'string',
+value: '/usr/bin',
+description: 'Absolute path prefix for execline binaries used in generated scripts')
+
+option('execline-extbindir',
+type: 'string',
+value: '/usr/bin',
+description: 'Absolute path prefix for external execline binaries used in generated scripts')
+
 option('livedir',
 type: 'string',
 value: '/run/66',
@@ -11,7 +21,7 @@ description: 'Default live directory')
 option('max-service',
 type: 'integer',
 value: 500,
-description: 'Maximum number of services handled by s6-svscan')
+description: 'Maximum number of services handled by 66-scandir')
 
 option('max-path-size',
 type: 'integer',
@@ -118,20 +128,20 @@ type: 'string',
 value: '.66/environment',
 description: 'User environment directory. Do not use absolute paths, it will be prefixed with $HOME')
 
-option('s6-log-user',
+option('66-log-user',
 type: 'string',
 value: 'root',
-description: 'User for running s6-log program')
+description: 'User for running the 66-log program')
 
-option('s6-log-timestamp',
+option('66-log-timestamp',
 type: 'string',
 value: 'iso',
-description: 'Default timestamp for s6-log program (valid values: tai, iso, none)')
+description: 'Default timestamp for the 66-log program (valid values: tai, iso, none)')
 
-option('s6-log-notification',
+option('66-log-notification',
 type: 'boolean',
 value: true,
-description: 'Enable s6-log notification')
+description: 'Enable 66-log notification')
 
 option('with-doc',
 type: 'boolean',
@@ -152,11 +162,6 @@ option('test',
 type: 'boolean',
 value: false,
 description: 'Build and run tests')
-
-option('sysdeps-dir',
-type: 'string',
-value: '/usr/lib/skalibs/sysdeps',
-description: 'Use sysdeps in directory')
 
 option('with-include-dir',
 type: 'array',
@@ -186,7 +191,7 @@ description: 'Build static libraries for static linking')
 option('enable-static-deps',
 type: 'boolean',
 value: false,
-description: 'Prefer static linking for all dependencies (e.g., skalibs, s6), reducing runtime dependencies (requires enable-static=true)')
+description: 'Prefer static linking for all dependencies (e.g., oblibs), reducing runtime dependencies (requires enable-static=true)')
 
 option('enable-static-executable',
 type: 'boolean',

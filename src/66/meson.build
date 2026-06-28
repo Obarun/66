@@ -1,98 +1,73 @@
 fs = import('fs')
 
-sys_lib = ''
-if sysclock_lib != ''
-  sys_lib += sysclock_lib
-endif
-if socket_lib != ''
-  sys_lib += socket_lib
-endif
-
 exe_configs = {
   '66': {
     'sources': ['66.c'],
-    'deps': [lib66_dep],
-    'sysdeps': ''
+    'deps': [lib66_dep]
   },
   '66-echo': {
     'sources': ['66-echo.c'],
-    'deps': [oblibs_dep],
-    'sysdeps': ''
+    'deps': [oblibs_dep]
   },
   '66-execute': {
     'sources': ['66-execute.c'],
-    'deps': [lib66_dep],
-    'sysdeps': ''
+    'deps': [lib66_dep]
   },
   '66-fdholderd': {
     'sources': ['66-fdholderd.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-hpr': {
     'sources': ['66-hpr.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-log': {
     'sources': ['66-log.c'],
-    'deps': [oblibs_dep],
-    'sysdeps': sys_lib
+    'deps': [oblibs_dep]
   },
   '66-nuke': {
     'sources': ['66-nuke.c'],
-    'deps': [oblibs_dep],
-    'sysdeps': ''
+    'deps': [oblibs_dep]
   },
   '66-oneshot': {
     'sources': ['66-oneshot.c'],
-    'deps': [lib66_dep],
-    'sysdeps': ''
+    'deps': [lib66_dep]
   },
   '66-oneshotd': {
     'sources': ['66-oneshotd.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-shutdown': {
     'sources': ['66-shutdown.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-shutdownd': {
     'sources': ['66-shutdownd.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-scandir': {
     'sources': ['66-scandir.c', 'lib/svpool.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-supervise': {
     'sources': ['66-supervise.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-svctl': {
     'sources': ['66-svctl.c'],
-    'deps': [lib66_dep],
-    'sysdeps': sys_lib
+    'deps': [lib66_dep]
   },
   '66-umountall': {
     'sources': ['66-umountall.c'],
-    'deps': [lib66_dep],
-    'sysdeps': ''
+    'deps': [lib66_dep]
   },
   'execl-envfile': {
     'sources': ['execl-envfile.c'],
-    'deps': [oblibs_dep],
-    'sysdeps': ''
+    'deps': [oblibs_dep]
   },
   'execl-runas': {
     'sources': ['execl-runas.c'],
-    'deps': [oblibs_dep],
-    'sysdeps': ''
+    'deps': [oblibs_dep]
   }
 }
 
@@ -137,9 +112,6 @@ foreach dir : exe_dirs
     install_dir = exe_install_dirs.get(exe, get_option('bindir'))
 
     link_args = get_option('enable-static-executable') ? static_link_args : exe_link_args
-    if config['sysdeps'] != ''
-      link_args += config['sysdeps']
-    endif
 
     executable(exe,
       sources: exe_sources,

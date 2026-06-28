@@ -44,8 +44,6 @@
 #include <oblibs/process.h>
 #include <oblibs/directory.h>
 
-#include <execline/config.h>
-
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/svc.h>
@@ -271,12 +269,12 @@ static inline void prepare_stage4 (char what)
 
         if (!ostream_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
-            EXECLINE_EXTBINPREFIX "foreground { "
+            SS_EXECLINE_EXTBINPREFIX "foreground { "
             SS_LIBEXECPREFIX "66-svctl -dx -- . }\n"
-            EXECLINE_EXTBINPREFIX "background\n{\n  ")
+            SS_EXECLINE_EXTBINPREFIX "background\n{\n  ")
 
             || (!nologger && !ostream_puts(&b,
-            EXECLINE_EXTBINPREFIX "foreground { "
+            SS_EXECLINE_EXTBINPREFIX "foreground { "
             SS_LIBEXECPREFIX "66-svctl -dx -- ")
             || !ostream_puts(&b,live)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
@@ -289,9 +287,9 @@ static inline void prepare_stage4 (char what)
     {
         if (!ostream_puts(&b,
             "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
-            EXECLINE_EXTBINPREFIX "foreground { "
+            SS_EXECLINE_EXTBINPREFIX "foreground { "
             SS_BINPREFIX "66-umountall }\n"
-            EXECLINE_EXTBINPREFIX "foreground { tryexec { ")
+            SS_EXECLINE_EXTBINPREFIX "foreground { tryexec { ")
             || !ostream_put(&b,shutfinal,strlen(shutfinal))
             || !ostream_puts(&b," } }\n"
             SS_BINPREFIX "66-hpr -f -")
