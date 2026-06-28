@@ -20,7 +20,7 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 - **-m, --mount**: umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
 
-- **-s, --skeleton** *skel*: an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `--with-skeleton=DIR` option to `./configure`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
+- **-s, --skeleton** *skel*: an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `-D skeleton-dir=DIR` option to `meson setup`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
 
 - **-l, --log-user** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%66log_user%%`. The default can also be changed at compile-time by passing the `-D 66-log-user=user` option to `meson setup`.
 
@@ -79,7 +79,7 @@ In the unusual event that any of the above processes fail, command *boot* will t
 
 ## Skeleton files
 
-Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at `%%skel%%`. Use the `--with-skeleton=DIR` option at compile time to change it.
+Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at `%%skel%%`. Use the `-D skeleton-dir=DIR` option at compile time to change it.
 
 - `init` : the command *boot* binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the `init` skeleton file is used to pass any options to command *boot*. By default command *boot* is launched without options. This file is installed at `%%bindir%%/init`.
 
@@ -87,7 +87,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `VERBOSITY=0` : increases/decreases the verbosity of the *stage1* process.
 
-    * `LIVE=%%livedir%%` : an absolute path; creates the scandir at *LIVE*. The value will depend by default on the `--livedir=live` option set at compile time.
+    * `LIVE=%%livedir%%` : an absolute path; creates the scandir at *LIVE*. The value will depend by default on the `-D livedir=live` option set at compile time.
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/),[s6](https://skarnet.org/software/s6/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 

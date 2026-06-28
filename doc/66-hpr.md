@@ -24,7 +24,7 @@ This is the traditional sysvinit interface for the `halt`, `poweroff` and `reboo
 
 - **-H, --help**: prints this help.
 
-- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
+- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
 - **-b, --banner** *banner*: Text to display before executing the shutdown process. Defaults to:
 

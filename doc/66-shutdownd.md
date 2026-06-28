@@ -22,7 +22,7 @@ This program is a modified copy of [s6-linux-init-shudownd](https://skarnet.org/
 
 - **-h, --help**: prints this help.
 
-- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `--livedir=live` option to `./configure`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
+- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
 - **-s, --skeleton** *skel*: an absolute path; directory of the skeleton file `rc.init`. Default is `%%skel%%`.
 

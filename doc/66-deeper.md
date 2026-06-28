@@ -25,7 +25,7 @@ The rest of this page walks the on-disk directories that hold these stages.
 
 ## %%system_dir%%
 
-This directory is specified at compile time by using the `--with-system-dir=` option to `./configure`.
+This directory is specified at compile time by using the `-D system-dir=` option to `meson setup`.
 
 This directory stores trees and services configuration files. You should see this following structure
 
@@ -279,7 +279,7 @@ For instance, when executing `66 free <service>`, the `tounsupervise` field swit
 
 ## %%skel%%
 
-This directory is specified at compile time by using the `--with-skeleton=` option to `./configure`.
+This directory is specified at compile time by using the `-D skeleton-dir=` option to `meson setup`.
 
 It holds various configuration files utilized by `66`.
 
@@ -287,7 +287,7 @@ User may want to manage some subdirectories with the exception of the `%%service
 
 ### %%service_admconf%%
 
-This directory is specified at compile time by using the `--with-sysadmin-service-conf=` option to `./configure`.
+This directory is specified at compile time by using the `-D sysadmin-service-conf-dir=` option to `meson setup`.
 
 This directory stores the configuration file of a service, which is the outcome of the [[Environment]](66-frontend.html#section-environment) section parsed from the [frontend](66-frontend.html) file.
 
@@ -297,7 +297,7 @@ Its subdirectories contain versioned files per service and are self-explanatory.
 
 ### %%environment_adm%%
 
-This directory is specified at compile time by using the `--with-sysadmin-environment=DIR` option to `./configure`.
+This directory is specified at compile time by using the `-D sysadmin-environment-dir=DIR` option to `meson setup`.
 
 This directory serves as a location for system administrators to provide default environment variables used by a [scandir](66-scandir.html) at runtime and propagated to services handled by the scandir.
 
@@ -305,7 +305,7 @@ See the [Environment](66-scandir.html#environment) explanation for further infor
 
 ### %%seed_adm%%
 
-This directory is specified at compile time by using the `--with-sysadmin-seed=` option to `./configure`.
+This directory is specified at compile time by using the `-D sysadmin-seed-dir=` option to `meson setup`.
 
 This directory is managed by the user and stores [seed](66-tree.html#seed-files) files, used, for example, by the [tree](66-tree.html) command. If a [seed](66-tree.html#seed-files) file exists both in this directory and at `%%service_system%%`, the one in this directory takes precedence.
 
@@ -313,7 +313,7 @@ It's crucial for system administrators to avoid altering this directory or its s
 
 ### %%service_adm%%
 
-This directory is specified at compile time by using the `--with-sysadmin-service=` option to `./configure`.
+This directory is specified at compile time by using the `-D sysadmin-service-dir=` option to `meson setup`.
 
 This directory is designated for users to store [frontend](66-frontend.html) files. If a [frontend](66-frontend.html) file for a service exists both in this directory and at `%%service_system%%`, the file in this directory takes precedence.
 
@@ -321,25 +321,25 @@ It's crucial for system administrators to avoid altering this directory or its s
 
 ## %%service_system%%
 
-This directory is specified at compile time by using the `--with-system-service=` option to `./configure`.
+This directory is specified at compile time by using the `-D system-service-dir=` option to `meson setup`.
 
 This directory is reserved for system administrators to install [frontend](66-frontend.html) file, often through package manager. Any modifications made by users may be overwritten during system updates.
 
 ## %%script_system%%
 
-This directory is specified at compile time by using the `--with-system-script=` option to `./configure`.
+This directory is specified at compile time by using the `-D system-script-dir=` option to `meson setup`.
 
 This directory serves as a location for system administrators to install additional scripts required by [frontend](66-frontend.html) files or those related to the `module` service type. It's a secure area for administrators to manage scripts effectively.
 
 ## %%seed_system%%
 
-This directory is specified at compile time by using the `--with-system-seed=` option to `./configure`.
+This directory is specified at compile time by using the `-D system-seed-dir=` option to `meson setup`.
 
 this directory is intended for system administrators to install [seed](66-tree.html#seed-files) files. User modifications in this directory may be lost during system updates.
 
 ## %%livedir%%
 
-This directory is specified at compile time by using the `--livedir=` option to `./configure`. It also can be specified on-the-fly with the [66 -l](66.html) option.
+This directory is specified at compile time by using the `-D livedir=` option to `meson setup`. It also can be specified on-the-fly with the [66 -l](66.html) option.
 
 This should be within a writable and executable filesystem, likely a RAM filesystem, mounted with `exec` and `rw` mount flag.
 
@@ -383,7 +383,7 @@ At [start](66-start.html) command executed will created the corresponding `%%liv
 
 ## %%system_log%%
 
-This directory is specified at compile time by using the `--with-system-log=` option to `./configure`.
+This directory is specified at compile time by using the `-D system-log-dir=` option to `meson setup`.
 
 This directory is automatically managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 

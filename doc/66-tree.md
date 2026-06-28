@@ -10,7 +10,7 @@ tree [ -h ] create|admin|remove|enable|disable|current|status|resolve|init|start
 
 The `tree` command functions similarly to services, wherein each *tree* can have dependencies or be required-by another *tree*. These subcommands facilitate various actions such as creating, managing, activating, and checking the status of trees, among other functionalities, within the system. Additionally, it manages dependencies between different trees, enabling effective control and organization of *tree* structures.
 
-The default tree named `%%default_treename%%` is provided. This *tree* is automatically created using [basic creation configuration](#basic-creation-configuration), with the key difference that this *tree* is enabled by default. The default name can also be changed at compile time by passing the `--with-default-tree-name=` option to `configure`. If the `%%default_treename%%` is removed, a simple invocation of a `66` command will create it again.
+The default tree named `%%default_treename%%` is provided. This *tree* is automatically created using [basic creation configuration](#basic-creation-configuration), with the key difference that this *tree* is enabled by default. The default name can also be changed at compile time by passing the `-D default-tree-name=` option to `meson setup`. If the `%%default_treename%%` is removed, a simple invocation of a `66` command will create it again.
 
 Configuration of the *tree* during its creation can be managed through a configuration file called `seed`.—see [Seed files](#seed-files).
 
@@ -576,7 +576,7 @@ groups = admin
 
 ## Seed files
 
-A `seed` file can be provided to automatically configure the tree during its creation. This file is expected to be found at `%%seed_adm%%`, `%%seed_system%%` or `$HOME/%%seed_user%%`, depending of the owner of the process. These locations can also be changed at compile time by passing the `--with-sysadmin-seed=`, `--with-system-seed=` and `--with-user-seed=` options in `configure`, respectively.
+A `seed` file can be provided to automatically configure the tree during its creation. This file is expected to be found at `%%seed_adm%%`, `%%seed_system%%` or `$HOME/%%seed_user%%`, depending of the owner of the process. These locations can also be changed at compile time by passing the `-D sysadmin-seed-dir=`, `-D system-seed-dir=` and `-D user-seed-dir=` options in `meson setup`, respectively.
 
 The `seed` file name need to correspond to the name of the tree to be configured.
 
