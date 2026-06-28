@@ -179,8 +179,8 @@ Environment file      : environment variables from: /etc/66/conf/dbus/0.0.1/.dbu
                         cmd_args=!--system --print-pid=4 --nofork --nopidfile --address=unix:path=${socket_name}
                         socket_name=!/run/dbus/system_bus_socket
 
-StdIn                 : s6log:/run/66/scandir/0/fdholder
-StdOut                : s6log:/var/log/66/dbus
+StdIn                 : 66log:/run/66/scandir/0/fdholder
+StdOut                : 66log:/var/log/66/dbus
 StdErr                : inherit:/var/log/66/dbus
 Logger name           : dbus-log
 Logger file           :

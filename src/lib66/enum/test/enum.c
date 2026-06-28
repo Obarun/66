@@ -439,7 +439,7 @@ void test_parser_enums(void) {
     assert(E_PARSER_IO_TYPE_TTY == (m)++);
     assert(E_PARSER_IO_TYPE_FILE == (m)++);
     assert(E_PARSER_IO_TYPE_CONSOLE == (m)++);
-    assert(E_PARSER_IO_TYPE_S6LOG == (m)++);
+    assert(E_PARSER_IO_TYPE_66LOG == (m)++);
     assert(E_PARSER_IO_TYPE_SYSLOG == (m)++);
     assert(E_PARSER_IO_TYPE_INHERIT == (m)++);
     assert(E_PARSER_IO_TYPE_NULL == (m)++);

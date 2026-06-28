@@ -12,7 +12,7 @@ Depending on the definition and combination of these keys, the behavior will be 
 
 This key allows redirection of the Standard Input (file descriptor 0) of the service. As indicated in the documentation for the [[Main]](66-frontend.html#section-main) section, this key accepts several values.
 
-If the key is not defined, it will take the value of StdOut if StdOut is set to s6log or if StdOut is not defined at all.
+If the key is not defined, it will take the value of StdOut if StdOut is set to 66log or if StdOut is not defined at all.
 
 ### Redefinition of StdOut and StdErr based on the value of StdIn
 
@@ -20,9 +20,9 @@ If the key is not defined, it will take the value of StdOut if StdOut is set to 
 
     In this case, the value of StdOut will be the same as StdIn regardless of the value set for StdOut.
 
-- StdIn = s6log
+- StdIn = 66log
 
-    In this case, the value of StdOut will be `s6log` and the value of StdErr will be `inherit` regardless of the values set for StdOut and StdErr.
+    In this case, the value of StdOut will be `66log` and the value of StdErr will be `inherit` regardless of the values set for StdOut and StdErr.
 
 - For the values null, parent, and close, the values of StdOut and StdErr will not be redefined.
 
@@ -32,11 +32,11 @@ This key allows redirection of the Standard Output (file descriptor 1) of the se
 
 If the key is not defined, it will take the value of StdIn as follows:
 
-- If StdIn is set to tty or s6log, the StdOut key will take the same value tty or s6log respectively.
+- If StdIn is set to tty or 66log, the StdOut key will take the same value tty or 66log respectively.
 - If StdIn is set to null, StdOut will take the value inherit.
 - If StdIn is set to parent or close, StdOut will take the value parent.
 
-In all other cases, StdOut will take the value s6log.
+In all other cases, StdOut will take the value 66log.
 
 This key takes precedence over StdErr depending on the chosen value.
 
@@ -48,7 +48,7 @@ This key takes precedence over StdErr depending on the chosen value.
 
     In this case, the value of StdErr will be the same as StdOut regardless of the value set for StdErr.
 
-- For the values tty, file, console, s6log, inherit, null, parent, and close, StdErr will not be redefined.
+- For the values tty, file, console, 66log, inherit, null, parent, and close, StdErr will not be redefined.
 
 ## StdErr
 
@@ -60,7 +60,7 @@ In all other cases, no redefinition is made.
 
 ## Options defined on !log
 
-If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to s6log or not defined at all, StdIn, StdOut, and StdErr will take the value of parent process.
+If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to 66log or not defined at all, StdIn, StdOut, and StdErr will take the value of parent process.
 
 # Examples
 
@@ -87,8 +87,8 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = s6log
-    StdOut = s6log
+    StdIn = 66log
+    StdOut = 66log
     StdErr = inherit
 
     [Start]
@@ -103,7 +103,7 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = s6log
+    StdIn = 66log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
@@ -117,8 +117,8 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = s6log
-    StdOut = s6log
+    StdIn = 66log
+    StdOut = 66log
     StdErr = inherit
 
     [Start]
@@ -133,7 +133,7 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdOut = s6log
+    StdOut = 66log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
@@ -147,8 +147,8 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = s6log
-    StdOut = s6log
+    StdIn = 66log
+    StdOut = 66log
     StdErr = inherit
 
     [Start]
@@ -438,7 +438,7 @@ Let's take some examples:
     Version = 0.0.1
     User = ( root )
     Options = (!log)
-    StdOut = s6log
+    StdOut = 66log
     StdErr = file:/var/log/connmand.log
 
     [Start]

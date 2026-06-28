@@ -208,7 +208,7 @@ typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_e
     macro(TTY,      "tty",      E_PARSER_EXPECT_LINE), \
     macro(FILE,     "file",     E_PARSER_EXPECT_LINE), \
     macro(CONSOLE,  "console",  E_PARSER_EXPECT_LINE), \
-    macro(S6LOG,    "s6log",    E_PARSER_EXPECT_LINE), \
+    macro(66LOG,    "66log",    E_PARSER_EXPECT_LINE), \
     macro(SYSLOG,   "syslog",   E_PARSER_EXPECT_LINE), \
     macro(INHERIT,  "inherit",  E_PARSER_EXPECT_LINE), \
     macro(NULL,     "null",     E_PARSER_EXPECT_LINE), \

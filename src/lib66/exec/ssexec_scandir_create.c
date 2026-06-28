@@ -511,9 +511,8 @@ static void create_service_oneshot(char const *scandir, ssexec_t *info)
 
     char dst[fdlen + 16] ;
 
-    /* 66-oneshotd binds its own socket and self-protects via SO_PEERCRED (no
-     * s6-ipcserver access chain, no ACL): just a service dir, a readiness fd
-     * (>= 3) and a one-line run. */
+    /* 66-oneshotd binds its own socket and self-protects via SO_PEERCRED:
+     * just a service dir, a readiness fd (>= 3) and a one-line run. */
     auto_strings(dst, scandir, "/", SS_ONESHOTD) ;
     auto_dir(dst, 0755) ;
     auto_chown(dst) ;

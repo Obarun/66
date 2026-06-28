@@ -306,7 +306,7 @@ int parse_frontend(char const *sv,
 
     parse_compute_resolve(&res, info) ;
 
-    if ((res.logger.want && res.io.fdin.type == E_PARSER_IO_TYPE_S6LOG) &&
+    if ((res.logger.want && res.io.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
         (!res.inns && res.type != E_PARSER_TYPE_MODULE))
             parse_create_logger(hres, &res, info) ;
 

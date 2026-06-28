@@ -62,7 +62,7 @@ This document outlines the changes, new features, and bug fixes introduced in th
 
 - **Logger Destination Ownership** (Critical) (6079cf7):
 
-   Fixed a significant bug introduced in version `0.8.0.0` that incorrectly set the logger destination owner to `root` for `s6log` type loggers and removed the `runas` field during migration. This release fix the ownership of the logger destination during the migration phase but only for service logger of type `StdOut=s6log`.
+   Fixed a significant bug introduced in version `0.8.0.0` that incorrectly set the logger destination owner to `root` for `66log` type loggers and removed the `runas` field during migration. This release fix the ownership of the logger destination during the migration phase but only for service logger of type `StdOut=66log`.
 
 - **Service Crash Handling** (c035a94):
 
@@ -112,11 +112,11 @@ This document outlines the changes, new features, and bug fixes introduced in th
 
 - **Migration Process for 0.8.2.0** (9e8d6c9):
 
-   A dedicated migration process has been provided to ensure a smooth transition to version `0.8.2.0`. Please, consider the introduced bug below. The migration try its best to fix this issue by itself but it may impact your migration process as the migration process only handle with service logger of type `StdOut=s6log`. If after a restart of a service logger you get a down process, ensure that your loggers directories have the correct permissions. The error should be visible at the `/run/66/log/0/current` uncaught-logs file.
+   A dedicated migration process has been provided to ensure a smooth transition to version `0.8.2.0`. Please, consider the introduced bug below. The migration try its best to fix this issue by itself but it may impact your migration process as the migration process only handle with service logger of type `StdOut=66log`. If after a restart of a service logger you get a down process, ensure that your loggers directories have the correct permissions. The error should be visible at the `/run/66/log/0/current` uncaught-logs file.
 
 - **Logger Destination Ownership** (6079cf7):
 
-   If you are upgrading from version `0.8.0.0` or `0.8.1.1`, verify the ownership of logger destinations for `s6log` type loggers, as the bug fix may affect existing configurations and upgrade process.
+   If you are upgrading from version `0.8.0.0` or `0.8.1.1`, verify the ownership of logger destinations for `66log` type loggers, as the bug fix may affect existing configurations and upgrade process.
 
 - **Meson Build System** (1f68ff1):
 

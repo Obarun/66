@@ -23,7 +23,7 @@ default):
 1. The `log` option is **not** disabled. A logger is created unless you write
    `Options = ( !log )` in `[Main]`.
 2. `StdOut` (and/or `StdIn`) is left at its default, or set explicitly to
-   `s6log`. Routing stdout elsewhere (a file, the console…) bypasses the logger.
+   `66log`. Routing stdout elsewhere (a file, the console…) bypasses the logger.
 3. The `[Logger]` section, if present, tunes it — it never creates it.
 
 For a root service the log lands in `%%system_log%%/<service>/`, for a regular

@@ -921,7 +921,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
                 _cleanup_strbuf_ strbuf log = STRBUF_ZERO ;
 
-                if (res->io.fdout.type == E_PARSER_IO_TYPE_S6LOG) {
+                if (res->io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
 
                     /** the file current may not exist if the service was never started*/

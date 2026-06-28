@@ -314,7 +314,7 @@ static void io_setup_stdin(resolve_service_t *res)
             close_fd(0) ;
             break ;
 
-        case E_PARSER_IO_TYPE_S6LOG:
+        case E_PARSER_IO_TYPE_66LOG:
             if (res->type == E_PARSER_TYPE_CLASSIC && res->islog)
                 io_fdholder_retrieve(res, 0, res->sa.s + res->name, 0) ;
             break ;
@@ -343,7 +343,7 @@ static void io_setup_stdout(resolve_service_t *res)
             io_open_active_console(1) ;
             break ;
 
-        case E_PARSER_IO_TYPE_S6LOG:
+        case E_PARSER_IO_TYPE_66LOG:
 
             if (res->type == E_PARSER_TYPE_CLASSIC && !res->islog) {
 

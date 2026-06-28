@@ -369,9 +369,9 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
         _alloc_sbl_(store, frontend.len + 1) ;
         int r = parse_get_value_of_key(&store, frontend.s, table) ;
         if (r) {
-            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=s6log:", store.s) ;
-            char stdout[store.len + sizeof("StdOut=s6log:") + sizeof("\n\n[Start]")] ;
-            auto_strings(stdout, "StdOut=s6log:", store.s, "\n\n[Start]") ;
+            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=66log:", store.s) ;
+            char stdout[store.len + sizeof("StdOut=66log:") + sizeof("\n\n[Start]")] ;
+            auto_strings(stdout, "StdOut=66log:", store.s, "\n\n[Start]") ;
             if (!sbl_replace(&frontend, "\n[Start]", stdout))
                 log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout) ;
 

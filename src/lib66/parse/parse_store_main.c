@@ -50,7 +50,7 @@ static void io_compute_stdin(resolve_service_t *res, char const *line, uint32_t 
             res->io.fdin.destination = resolve_add_string(wres, line) ;
             break ;
 
-        case E_PARSER_IO_TYPE_S6LOG:
+        case E_PARSER_IO_TYPE_66LOG:
             res->io.fdin.destination = resolve_add_string(wres, res->sa.s + res->live.fdholderdir) ;
             break ;
 
@@ -94,8 +94,9 @@ static void io_compute_stdout(resolve_service_t *res, char const *line, uint32_t
             res->io.fdout.destination = resolve_add_string(wres, "/sys/class/tty/tty0/active") ;
             break ;
 
-        case E_PARSER_IO_TYPE_S6LOG:
-            if (!strcmp(line, enum_str_parser_io_type[E_PARSER_IO_TYPE_S6LOG])) {
+        case E_PARSER_IO_TYPE_66LOG:
+            // "s6log" is the deprecated spelling of "66log" -- both mean the bare keyword (default dir)
+            if (!strcmp(line, enum_str_parser_io_type[E_PARSER_IO_TYPE_66LOG]) || !strcmp(line, "s6log")) {
                 res->io.fdout.destination = compute_log_dir(wres, res, 0) ;
             } else {
                 res->io.fdout.destination = compute_log_dir(wres, res, line) ;
@@ -156,7 +157,7 @@ static void io_compute_stderr(resolve_service_t *res, char const *line, uint32_t
         case E_PARSER_IO_TYPE_INHERIT:
             break ;
 
-        case E_PARSER_IO_TYPE_S6LOG:
+        case E_PARSER_IO_TYPE_66LOG:
         default:
             res->io.fderr.type = E_PARSER_IO_TYPE_NOTSET ;
             break ;
@@ -189,9 +190,16 @@ static int parse_io_type(resolve_service_t *res, char const *line, resolve_enum_
     type = key_to_enum(enum_list_parser_io_type, stype) ;
 
     if (type == -1) {
-        /** default is applied */
-        log_warn("invalid type for ", *table.u.parser.list[table.u.parser.id].name, " key in section main -- applying default") ;
-        return 1 ;
+        // "s6log" is deprecated: accept it as an alias of "66log" so existing
+        // frontends keep working, but warn so users migrate their configuration.
+        if (!strcmp(stype, "s6log")) {
+            log_warn("the 's6log' io type is deprecated -- use '66log' instead; converting it automatically") ;
+            type = E_PARSER_IO_TYPE_66LOG ;
+        } else {
+            /** default is applied */
+            log_warn("invalid type for ", *table.u.parser.list[table.u.parser.id].name, " key in section main -- applying default") ;
+            return 1 ;
+        }
     }
 
     stk.len = 0 ;

@@ -225,7 +225,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
 
     } else {
 
-        log->io.fdin.type = log->io.fdout.type = E_PARSER_IO_TYPE_S6LOG ;
+        log->io.fdin.type = log->io.fdout.type = E_PARSER_IO_TYPE_66LOG ;
         log->io.fdin.destination = resolve_add_string(wres, res->sa.s + res->live.fdholderdir) ;
         log->io.fdout.destination = log->io.fderr.destination = resolve_add_string(wres, res->sa.s + res->io.fdout.destination) ;
         log->io.fderr.type = E_PARSER_IO_TYPE_INHERIT ;
