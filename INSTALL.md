@@ -10,11 +10,7 @@ To build and install the 66 project, you need:
 
 - `Ninja` (typically installed with Meson).
 
-- `skalibs` version `2.14.3.0` or later: [skarnet.org/software/skalibs](https://skarnet.org/software/skalibs/).
-
-- `execline` version `2.9.6.1` or later: [skarnet.org/software/execline](https://skarnet.org/software/execline).
-
-- `s6` version `2.13.1.0` or later: [skarnet.org/software/s6](https://skarnet.org/software/s6).
+- `execline` version `2.9.6.1` or later (runtime dependency, for the generated service scripts): [skarnet.org/software/execline](https://skarnet.org/software/execline).
 
 - `oblibs` version `0.3.4.0` or later: [git.obarun.org/Obarun/oblibs](https://git.obarun.org/Obarun/oblibs).
 
@@ -72,7 +68,7 @@ meson install -C build
 - `with-skeleton`, `with-system-dir`, `with-system-log`, etc.: Set paths for 66 system and user directories (e.g., `/etc/66`, `/var/lib/66`).
 - `enable-shared`: Build shared libraries (e.g., `lib66.so`) for dynamic linking (default: `true`).
 - `enable-static`: Build static libraries (e.g., `lib66.a`) for static linking (default: `false`).
-- `enable-static-deps`: Prefer static linking for dependencies (e.g., `skalibs`, `s6`) to reduce runtime dependencies; requires `-D enable-static=true` (default: `false`).
+- `enable-static-deps`: Prefer static linking for dependencies (e.g., `oblibs`) to reduce runtime dependencies; requires `-D enable-static=true` (default: `false`).
 - `enable-static-executable`: Build fully static executables, including a static `libc`, for maximum portability; requires a static `libc` (e.g., `libc.a`) on the system (default: `false`).
 - `enable-all-pic`: Compile static libraries with position-independent code (`PIC`) for use in shared libraries or `PIE` executables (default: `false`).
 - `enable-pie`: Build executables as position-independent (`PIE`) for enhanced security via Address Space Layout Randomization (`ASLR`) (default: `false`).
@@ -95,7 +91,7 @@ meson install -C build
 
 - Service Directories: `system-service-dir` and `sysadmin-service-dir` must be distinct paths. For example, avoid setting `sysadmin-service=/etc/66/service/sysadmin` if `system-service=/etc/66/service`.
 
-- s6-log Timestamp: Valid values for `s6-log-timestamp` are `tai`, `iso`, or `none`.
+- 66-log Timestamp: Valid values for `66-log-timestamp` are `tai`, `iso`, or `none`.
 
 - Path and Service Size Limits:
   - `max-path-size`: Sets the maximum path length (in KB) for configuration directories. Each `*-dir` path, including the `$HOME` prefix, must not exceed this value.
@@ -132,22 +128,21 @@ By default, executables are linked dynamically with `libc` and other dependencie
 
 - Note: GNU `libc` produces larger static binaries compared to alternatives like `musl`. For smaller, portable binaries, consider using `musl`.
 
-To reduce runtime dependencies without fully static executables, use `enable-static-deps` with `enable-static=true` to link dependencies (e.g., `skalibs`, `s6`) statically.
+To reduce runtime dependencies without fully static executables, use `enable-static-deps` with `enable-static=true` to link dependencies (e.g., `oblibs`) statically.
 
 ## Cross-Compilation
 
-Cross-compilation is simplified once `skalibs` is built for the target platform.
+Cross-compilation is simplified once `oblibs` is built for the target platform.
 To cross-compile:
 
 - Create a Meson cross file (e.g., `cross-file.ini`) specifying the target triplet (e.g., `arm-linux-gnueabihf`) and toolchain paths.
 - Ensure the cross-toolchain binaries (e.g., `arm-linux-gnueabihf-gcc`) are in your `PATH`.
-- Use the correct `skalibs` sysdeps directory for the target, specified via `sysdeps-dir`.
 - Customize include and library paths with `with-include-dir`, `with-staticlib-dir`, and `with-dynamiclib-dir` if needed.
 
 Example:
 
 ```bash
-meson setup build --cross-file=cross-file.ini -D sysdeps-dir=/path/to/target/sysdeps
+meson setup build --cross-file=cross-file.ini -D with-include-dir=/path/to/target/include -D with-dynamiclib-dir=/path/to/target/lib
 meson compile -C build
 meson install -C build
 ```
