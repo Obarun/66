@@ -11,30 +11,29 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * Oblibs port of s6-svscan(skalibs/s6-free). The scanner logic is preserved
- * verbatim from s6 -- the service pool, the two inverse indexes, the `what`
+ * Native oblibs service scanner. It scans a directory of supervised services,
+ * spawns one supervisor per service, reaps dead children and re-scans on demand.
+ * The scanner logic -- the service pool, the two inverse indexes, the `what`
  * trigger flags, scan/start/reap/killthem/remove_service, the logger-by-pipe
- * coupling(peer/p) and the temporize/panic model are unchanged. Only the
- * substrate is swapped:
+ * coupling(peer/p) and the temporize/panic model -- is built on:
  *
- *   skalibs avltreen by_pid/by_devino -> oblibs fhash_cb(typed callbacks)
- *   skalibs genset services           -> svpool(free-list, 66-scandir/lib)
- *   skalibs bitarray active           -> oblibs bitset32_t(bits.h, inline value)
- *   the giant stack VLA                -> one bounded, tested heap alloc at boot
- *   skalibs iopause                    -> oblibs SSE epoll loop(deadline as timeout)
- *   skalibs selfpipe                   -> oblibs SSE signal watcher(sse_start_signal)
- *   skalibs tain deadlines             -> CLOCK_MONOTONIC timespec deadlines
- *   skalibs cspawn                     -> oblibs spawn_path_full(posix_spawn)
- *   skalibs djbunix/strerr             -> oblibs fd/io/log
+ *   inverse indexes by_pid/by_devino -> oblibs fhash_cb(typed callbacks)
+ *   the services pool                -> svpool(free-list, 66-scandir/lib)
+ *   the active bitmap                -> oblibs bitset32_t(bits.h, inline value)
+ *   service storage at boot          -> one bounded, tested heap alloc
+ *   the event loop                   -> oblibs SSE epoll loop(deadline as timeout)
+ *   signal handling                  -> oblibs SSE signal watcher(sse_start_signal)
+ *   deadlines                        -> CLOCK_MONOTONIC timespec deadlines
+ *   process spawning                 -> oblibs spawn_path_full(posix_spawn)
+ *   fd/error helpers                 -> oblibs fd/io/log
  *
- * Minimal-divergence: the control fifo keeps the native s6 single-byte alphabet
- * (.66-scandir/control), the .66-scandir/{finish,crash,SIG*} scripts and the `max`
- * service bound are kept.
+ * The control fifo keeps a single-byte command alphabet (.66-scandir/control),
+ * the .66-scandir/{finish,crash,SIG*} scripts and the `max` service bound are kept.
  *
- * Signals: sse_start_signal now delivers one callback per distinct pending signal
+ * Signals: sse_start_signal delivers one callback per distinct pending signal
  * (level-triggered, no coalescing), so a single signal watcher correctly drives
- * both SIGCHLD reaping AND the per-signal .66-scandir/SIG<name> scripts -- exactly
- * what s6-svscan's handle_signals did, with no manual signalfd draining.
+ * both SIGCHLD reaping AND the per-signal .66-scandir/SIG<name> scripts, with no
+ * manual signalfd draining.
  */
 
 #include <stdint.h>
@@ -110,7 +109,7 @@ static uint32_t const max = SS_MAX_SERVICE ;
 static uint32_t const namemax = SS_MAX_SERVICE_NAME ;
 static uint32_t special ;
 
-// boot-allocated storage (replaces the s6-svscan stack VLA block)
+// boot-allocated storage (replaces the on-stack VLA block)
 static service *services = 0 ;
 static char *names = 0 ;
 static svpool_t pool = SVPOOL_ZERO ;
@@ -122,12 +121,12 @@ static bitset32_t tmpactive = BITSET32_ZERO ;
 #define SERVICE(i) (services + (i))
 #define NAME(i) (names + (size_t)(i) * ((size_t)namemax + 5))
 
-// deadlines live on CLOCK_MONOTONIC (s6-svscan uses a monotonic stopwatch too)
+// deadlines live on CLOCK_MONOTONIC
 typedef struct deadline_s { struct timespec t ; int inf ; } deadline_t ;
 static deadline_t scan_deadline ;
 static deadline_t start_deadline ;
 static struct timespec scantto ; // relative rescan period
-static int scantto_inf = 1 ; // default: no periodic rescan (TAIN_INFINITE_RELATIVE)
+static int scantto_inf = 1 ; // default: no periodic rescan (infinite deadline)
 
 // control/signal callback shared state
 static unsigned int g_what = 0 ;
@@ -697,9 +696,9 @@ static void scan(unsigned int *what)
             if (check(logname, (uint32_t)i, &tmpactive) < 0) {
                 svpool_delete(&pool, (uint32_t)i) ;
                 closedir(dir) ;
-                /* NB: upstream s6 passes -i here (the producer index, >= 0), not the
-                 * inner check()'s negative error code -- ported verbatim (suspected
-                 * upstream quirk; minimal-divergence, not silently "fixed"). */
+                /* NB: the original implementation passes -i here (the producer index,
+                 * >= 0), not the inner check()'s negative error code -- kept verbatim
+                 * (suspected upstream quirk, not silently "fixed"). */
                 set_scan_timeout((unsigned int)(-i)) ;
                 return ;
             }
@@ -849,7 +848,7 @@ static void signal_cb(sse_watcher_t *w, void *data, int revents)
 /* 66-specialised option set: 66 only ever passes -t (rescan period, from the
  * RESCAN boot config) and -d (readiness fd). The service-count and name-length
  * caps are 66 compile-time constants (SS_MAX_SERVICE / SS_MAX_SERVICE_NAME), so
- * s6-svscan's -C/-L/-X are dropped -- this is the 66 scanner, not a general tool. */
+ * The -C/-L/-X options are dropped -- this is the 66 scanner, not a general tool. */
 static opt_t const opts[] =
 {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },

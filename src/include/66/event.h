@@ -20,13 +20,13 @@
  *   - PUMP     (the rock): puts an fd on the oblibs SSE loop, reads it, and
  *     hands the raw bytes up. `event_reader`. Transport- and format-agnostic;
  *     it never interprets the bytes.
- *   - CONSUMER (format): gives the bytes meaning. Today `event_wait` (s6
- *     single-byte transitions); later eventd (rich framed payloads).
+ *   - CONSUMER (format): gives the bytes meaning. Today `event_wait`
+ *     (single-byte transitions); later eventd (rich framed payloads).
  *
- * This replaces the ftrigr / s6-ftrigrd client layer -- and the skalibs it
- * dragged in -- with plain libc plus oblibs. The s6 fifodir broadcast is kept:
- * every subscriber drops its own fifo in the service event directory and the
- * producer (s6-supervise) fans each message out to all of them.
+ * The whole layer is plain libc plus oblibs, no external client library. The
+ * fifodir broadcast model is used: every subscriber drops its own fifo in the
+ * service event directory and the producer (66-supervise) fans each message out
+ * to all of them.
  */
 
 #ifndef SS_EVENT_H
@@ -86,10 +86,10 @@ extern event_t event_from_byte(char c) ;
 #define EVENT_MATCH_OK        1  // wanted state reached
 
 /**
- * @brief Subscriber fifo naming, byte-compatible with s6-supervise's fanout.
+ * @brief Subscriber fifo naming, matching 66-supervise's fanout filter.
  *
  * A subscriber fifo is named `"ftrig1:" + TAI64N stamp + ":" + random suffix`.
- * s6-supervise's fanout filters directory entries on the `"ftrig1:"` prefix
+ * 66-supervise's fanout filters directory entries on the `"ftrig1:"` prefix
  * (`EVENT_FIFO_PREFIXLEN` bytes) AND an exact total name length
  * (`EVENT_FIFO_NAMELEN`), so this layout must match it byte for byte; both
  * `event_fifo_subscribe` and `event_fifodir_clean` rely on it.
@@ -117,7 +117,7 @@ typedef struct event_match_s event_match_t ;
  * Feed it the raw transition bytes as they arrive; it maintains the decoded
  * `(up, ready)` pair and tells the caller when @wanted is reached or has
  * permanently failed. The same matcher backs every waiter (event_wait and the
- * svc launch/daemon waits), so the s6 wait semantics live in exactly one place.
+ * svc launch/daemon waits), so the wait semantics live in exactly one place.
  *
  * @param wanted       The service state being waited for.
  * @param up, ready    Current decoded process state (seed at init, updated on feed).
@@ -173,7 +173,7 @@ extern int event_match_feed(event_match_t *m, char const *buf, size_t len) ;
  * buffer size), and the handler may be called repeatedly within one wakeup as
  * the pump drains the fd until it would block. The pump stays AGNOSTIC to the
  * wire format -- interpreting the bytes is the consumer's job. Today the payload
- * is the s6 single-byte transitions (one byte = one event); a future consumer
+ * is single-byte transitions (one byte = one event); a future consumer
  * can reassemble length-prefixed frames that straddle reads without touching the
  * pump.
  *
@@ -310,11 +310,11 @@ struct event_fifo_s
 /**
  * @brief Drop our own subscriber fifo into a service event fifodir and pump it.
  *
- * Creates a fifo named per the s6 `ftrig1` convention (so s6-supervise's fanout
+ * Creates a fifo named per the `ftrig1` convention (so 66-supervise's fanout
  * writes to it) inside @eventdir, then pumps it into @handler / @data. The fifo
  * is first created under a hidden `"."`-prefixed name; the read end is opened
  * `O_RDONLY | O_NONBLOCK | O_CLOEXEC`, its mode forced to `0622` with `fchmod`
- * (regardless of umask, so a same-group s6-supervise can open it for writing),
+ * (regardless of umask, so a same-group 66-supervise can open it for writing),
  * then a write end is opened `O_WRONLY | O_NONBLOCK | O_CLOEXEC` and held open;
  * only then is the fifo renamed into place. The read end is handed to the pump,
  * which owns it from there. On a transient name clash (`EEXIST`) the loop retries
@@ -375,7 +375,7 @@ extern int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *ev
 extern void event_fifo_unsubscribe(event_fifo_t *f) ;
 
 /**
- * @brief Create (or normalize) a service event fifodir. Replaces ftrigw_fifodir_make.
+ * @brief Create (or normalize) a service event fifodir.
  *
  * Creates @path as a directory `0700` (with umask forced to 0 for the `mkdir`).
  * If @path already exists, it must be a real directory OWNED BY THE CALLER (a
@@ -386,7 +386,7 @@ extern void event_fifo_unsubscribe(event_fifo_t *f) ;
  *
  * Permissions: if @gid is not `(gid_t)-1`, the directory is `chown`ed to that
  * group and `chmod`ed `03730` (setgid + group-write, so a same-group
- * s6-supervise can fan out into it); otherwise it is `chmod`ed `01733`.
+ * 66-supervise can fan out into it); otherwise it is `chmod`ed `01733`.
  *
  * @param[in] path Directory path to create or normalize.
  * @param[in] gid  Group to own the directory, or `(gid_t)-1` to skip the chown
@@ -409,7 +409,7 @@ extern void event_fifo_unsubscribe(event_fifo_t *f) ;
 extern int event_fifodir_make(char const *path, gid_t gid) ;
 
 /**
- * @brief Sweep orphan subscriber fifos from a fifodir. Replaces ftrigw_clean.
+ * @brief Sweep orphan subscriber fifos from a fifodir.
  *
  * Scans @path and, for every entry matching the subscriber naming (the
  * `EVENT_FIFO_PREFIX` prefix AND the exact `EVENT_FIFO_NAMELEN` length),
@@ -438,7 +438,7 @@ extern int event_fifodir_clean(char const *path) ;
 
 /**
  * @brief Fan a message out to every subscriber fifo in a fifodir. The producer
- * side of the broadcast, byte-compatible with s6's ftrigw fanout.
+ * side of the broadcast.
  *
  * Scans @path and, for every entry matching the subscriber naming (the
  * `EVENT_FIFO_PREFIX` prefix AND the exact `EVENT_FIFO_NAMELEN` length), opens it
@@ -497,7 +497,7 @@ extern int event_fifodir_emit(char const *path, event_t const *ev, size_t n) ;
  * `event_wait`'s own handler with a PER-SOURCE cookie (the `data` idiom): the
  * cookie carries the back-pointer to this struct and an "already matched" flag,
  * so no shared index table is needed. This is a consumer of the pump that gives
- * the bytes meaning (the s6 transition bytes).
+ * the bytes meaning (the transition bytes).
  *
  * @param epoll
  * The SSE event loop driving all sources and the deadline timer.

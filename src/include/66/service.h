@@ -171,7 +171,7 @@ struct resolve_service_addon_regex_s
 
 /**
  * Stdin: default -> /dev/null
- * StdOut: default -> /var/log/66/<service>/current through s6-log
+ * StdOut: default -> /var/log/66/<service>/current through 66-log
  * StdErr: default -> inherit from StdOut
  **/
 typedef struct resolve_service_addon_io_type_s resolve_service_addon_io_type_t, *resolve_service_addon_io_type_t_ref ;
@@ -187,7 +187,7 @@ typedef struct resolve_service_addon_io_s resolve_service_addon_io_t, *resolve_s
 struct resolve_service_addon_io_s
 {
     resolve_service_addon_io_type_t fdin ; // default close
-    resolve_service_addon_io_type_t fdout ; // default s6-log
+    resolve_service_addon_io_type_t fdout ; // default 66-log
     resolve_service_addon_io_type_t fderr ; // default inherit
 } ;
 

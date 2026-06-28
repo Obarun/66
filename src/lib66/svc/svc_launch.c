@@ -335,7 +335,7 @@ static int launch_classic(uint32_t id)
 
         char *eventdir = svc->res->sa.s + svc->res->live.eventdir ;
 
-        // map the wait char to a wanted state (the s6 -w alphabet)
+        // map the wait char to a wanted state (the -w wait alphabet)
         event_t wanted ;
         switch (pmanager->wsignal[2]) {
             case 'u' : wanted = EVENT_UP ; break ;

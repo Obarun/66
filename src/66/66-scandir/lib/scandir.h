@@ -11,11 +11,10 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * Data-structure substrate for the 66-scandir port of s6-svscan, private to the
- * binary:
+ * Data-structure substrate for 66-scandir, private to the binary:
  *
- *   - svpool_t : a free-list index allocator with delete-safe iteration
- *                (replaces skalibs genset). Its occupancy is an oblibs bits.h
+ *   - svpool_t : a free-list index allocator with delete-safe iteration.
+ *                Its occupancy is an oblibs bits.h
  *                bitset32_t (inline value, no allocation). The bit-set families
  *                themselves (active/tmpactive) are bitset32_t directly in the
  *                binary -- no bespoke bitmap type is needed because 66's service
@@ -46,8 +45,8 @@
  * is an inline value embedded in the structure. `svpool_new()` pops the lowest
  * free index and `svpool_delete()` pushes it back, both in O(1); the occupancy
  * bitset drives `svpool_iter()`, which walks the live indices by storage position
- * and tolerates the iterator deleting the index it is visiting. This replaces the
- * skalibs `genset` the s6-svscan port used for its services pool.
+ * and tolerates the iterator deleting the index it is visiting. This is the
+ * services pool of the scanner.
  *
  * The structure is created empty by `SVPOOL_ZERO` and must be passed to
  * `svpool_init()` before any other operation; the field invariants below hold
@@ -207,8 +206,8 @@ extern void svpool_delete(svpool_t *p, uint32_t i) ;
  * for each one currently allocated calls `@f(i, @aux)`. If @f returns 0 the
  * iteration stops immediately; any non-zero return continues to the next live
  * index. Indices that were never allocated, and those above the high-water mark,
- * are skipped. This mirrors what s6-svscan's `scan()` does through
- * `genset_iter` + `remove_deadinactive_iter`.
+ * are skipped. This drives the scan over live services, tolerating an entry being
+ * deleted while it is visited.
  *
  * @param[in,out] p   Pool to iterate. Must not be NULL and must have been
  *                    successfully initialised by `svpool_init()`.

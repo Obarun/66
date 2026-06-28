@@ -48,7 +48,7 @@ struct svc_ctx_s
     sse_watcher_t timeout ; // Timeout watcher
 
     // Native readiness wait (CLASSIC services: no child, transitions read from
-    // the service event fifodir instead of a spawned s6-svc -w)
+    // the service event fifodir instead of a spawned external wait helper)
     event_fifo_t fifo ; // subscriber on the service event fifodir
     event_match_t match ; // transition interpreter for this service's wait
     bool native ; // uses the native CLASSIC path (no child process)

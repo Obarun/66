@@ -11,33 +11,31 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * Oblibs port of s6-supervise. The supervision state machine is preserved
- * verbatim from s6 -- the actions[state][trans] table, the anti-crash-loop
- * (nextstart >= 1s), and the up/down/finish semantics are unchanged. The I/O
- * substrate is fully oblibs (no skalibs, no libs6): the status file is the
- * native 66 service_status_t (clock_pack, big-endian, no TAI64N), projected
- * from the in-RAM runtime flags at each announce():
+ * Native oblibs process supervisor. It runs ./run for a service and restarts it
+ * per the actions[state][trans] table, with the anti-crash-loop (nextstart >= 1s)
+ * and the up/down/finish semantics. The I/O substrate is fully oblibs: the status
+ * file is the native 66 service_status_t (clock_pack, big-endian, no TAI64N),
+ * projected from the in-RAM runtime flags at each announce():
  *
- *   skalibs iopause          -> oblibs SSE epoll loop (deadline as poll timeout)
- *   skalibs selfpipe+SIGCHLD -> per-child pidfd watcher (sse_start_child), which
- *                               removes the SIGCHLD/wait_pid_nohang race
- *   skalibs selfpipe signals -> signalfd watcher (sse_start_signal) for the
- *                               control signals TERM/HUP/QUIT/INT
- *   skalibs tain deadlines   -> CLOCK_MONOTONIC timespec deadline
- *   skalibs cspawn           -> oblibs spawn_path_full (posix_spawn)
- *   skalibs djbunix/strerr   -> oblibs fd/io/log
- *   s6 ftrigw                -> 66 event_fifodir_* (lib66/event, native s6 bytes)
- *   s6 s6_svstatus (TAI64N)  -> 66 service_status_t (lib66/status, clock_pack)
+ *   the event loop      -> oblibs SSE epoll loop (deadline as poll timeout)
+ *   child reaping        -> per-child pidfd watcher (sse_start_child), which
+ *                           removes the SIGCHLD/wait_pid_nohang race
+ *   control signals      -> signalfd watcher (sse_start_signal) for TERM/HUP/QUIT/INT
+ *   deadlines            -> CLOCK_MONOTONIC timespec deadline
+ *   process spawning     -> oblibs spawn_path_full (posix_spawn)
+ *   fd/error helpers     -> oblibs fd/io/log
+ *   event broadcast      -> 66 event_fifodir_* (lib66/event)
+ *   status file          -> 66 service_status_t (lib66/status, clock_pack)
  *
  * The death-tally file is dropped (the native crash budget lives inline in the
  * status record, added later). The control fifo carries a fixed <op><who> pair
- * per command (op from the s6 alphabet, who a provenance byte, the two spaces
- * disjoint); the event fifodir keeps the native s6 single bytes (see SPECS).
+ * per command (op from the command alphabet, who a provenance byte, the two
+ * spaces disjoint); the event fifodir keeps the single transition bytes (see SPECS).
  *
- * CONFIG COMES FROM THE 66 RESOLVE, NOT FROM PER-SERVICE FILES. Where s6-supervise
- * re-reads notification-fd / timeout-finish / timeout-kill / max-death-tally /
- * down-signal from files in the service directory, 66 already has every value in
- * the service resolve (the CDB the parser compiles). Like s6-supervise, we are run
+ * CONFIG COMES FROM THE 66 RESOLVE, NOT FROM PER-SERVICE FILES. Where a classic
+ * supervisor re-reads notification-fd / timeout-finish / timeout-kill /
+ * max-death-tally / down-signal from files in the service directory, 66 already
+ * has every value in the service resolve (the CDB the parser compiles). We are run
  * by the scandir (66-scandir) with CWD = scandir and the service NAME as argv[1]:
  * we chdir into the service dir by name, then read the resolve LOCALLY from that
  * dir (./.resolve) -- never from the global system CDB. This keeps the supervisor
@@ -52,12 +50,12 @@
  *   down-signal     -> res.execute.downsignal
  * Only the `down` file stays a file: it is runtime state (66 start/stop toggle it
  * via adddown/deldown), seeded from res.execute.down by the writer at parse time.
- * The s6 lock-fd feature is dropped (66 never produced it). flag-newpidns is
+ * The lock-fd feature is dropped (66 never produced it). flag-newpidns is
  * deferred (posix_spawn cannot CLONE_NEWPID; needs a fork/unshare path).
  *
- * Known divergences from s6 (documented):
+ * Known divergences (documented):
  *   - supervise/lock uses an inline fcntl POSIX lock (not oblibs lock_fd, which is
- *     flock-based) to keep the s6 lock semantics.
+ *     flock-based) to keep the POSIX-lock semantics.
  */
 
 #include <stdint.h>
@@ -126,7 +124,7 @@ struct gflags_s
 typedef void action_t(void) ;
 typedef action_t *action_t_ref ;
 
-// deadline lives on CLOCK_MONOTONIC; deadline_infinite mirrors tain_infinite.
+// deadline lives on CLOCK_MONOTONIC; deadline_infinite is the "no deadline" sentinel.
 static struct timespec deadline ;
 static int deadline_infinite = 0 ;
 static struct timespec nextstart = { 0, 0 } ;
@@ -179,8 +177,8 @@ static char status_file[SS_SUPERVISEDIR_LEN + 1 + SS_STATUS_LEN + 1] ;
 static char control_file[SS_SUPERVISEDIR_LEN + 1 + SS_CONTROL_LEN + 1] ;
 static char lock_file[SS_SUPERVISEDIR_LEN + 1 + SS_LOCK_LEN + 1] ;
 
-/** the service resolve, loaded once at startup: the source of all config that s6
- * used to read from per-service files (notify, timeouts, maxdeath, downsignal). */
+/** the service resolve, loaded once at startup: the source of all config that was
+ * historically read from per-service files (notify, timeouts, maxdeath, downsignal). */
 static resolve_service_t res = RESOLVE_SERVICE_ZERO ;
 
 // SSE loop and its watchers
@@ -200,8 +198,8 @@ static int child_wstat = 0 ;
 static int notify_drop_req = 0 ;
 
 
-/** fcntl POSIX locks, kept compatible with s6/s6-setlock (oblibs lock_fd is
- * flock-based, a different and incompatible mechanism). */
+/** fcntl POSIX locks (oblibs lock_fd is flock-based, a different and incompatible
+ * mechanism, so the lock is done inline here). */
 
 static int fd_lock(int fd, int w, int nb)
 {
@@ -216,7 +214,7 @@ static int fd_lock(int fd, int w, int nb)
 }
 
 
-// deadline helpers (replace tain settimeout/tain_add_g)
+// deadline helpers
 
 static inline void settimeout(int secs)
 {
@@ -512,7 +510,7 @@ static int within_window(struct timespec const *start, struct timespec const *no
 
 /** counted at an intrinsic run-then-die only (caller checks flagwantup): a death
  * inside the live window bumps the count, an expired window re-arms it to 1. A
- * zero MaxDeath disables the budget (s6-style infinite restart). */
+ * zero MaxDeath disables the budget (infinite restart). */
 static void record_death(void)
 {
   if (!res.maxdeath) return ;
@@ -850,10 +848,9 @@ static action_t_ref const actions[5][31] =
 } ;
 
 
-/** 25-byte op alphabet (66 reload 'l' added). NB: upstream s6 commit 923d36d
- * kept its bound at 24 after inserting 'l', silently dropping the last command
- * 'Q' (66-svctl -Q); we use the correct 25. Op bytes are letters/digits (>= '0'),
- * disjoint from the who bytes {0..5}, so the two never collide. */
+/** 25-byte op alphabet (66 reload 'l' included). The bound is the full 25, so the
+ * last command 'Q' (66-svctl -Q) is never dropped. Op bytes are letters/digits
+ * (>= '0'), disjoint from the who bytes {0..5}, so the two never collide. */
 static char const control_alphabet[] = "abqhkti12pcyrlPCKoduDUxOQ" ;
 
 static void dispatch_op(char op, uint8_t who)
@@ -1006,7 +1003,7 @@ int main(int argc, char const *const *argv)
   if (argc < 2) log_usage(USAGE) ;
   servicename = argv[1] ;
 
-  /** s6-supervise contract: 66-scandir runs us with CWD = scandir; chdir into
+  /** scandir contract: 66-scandir runs us with CWD = scandir; chdir into
    * the service dir by name, then read the resolve locally from ./.resolve. */
   if (chdir(servicename) < 0)
     log_dieusys(111, "chdir to ", servicename) ;

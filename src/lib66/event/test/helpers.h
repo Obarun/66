@@ -1,6 +1,6 @@
 /* helpers.h — test scaffolding shared by the event test files.
  *
- * fanout_*: mimic s6-supervise's ftrigw fanout. The real producer scans the
+ * fanout_*: mimic 66-supervise's fanout. The real producer scans the
  * fifodir, keeps only entries whose name starts with "ftrig1:" AND whose length
  * is exactly EVENT_FIFO_NAMELEN (39), opens each O_WRONLY|O_NONBLOCK and writes
  * the transition byte. We replicate that filter byte-for-byte: a test that the
@@ -20,7 +20,7 @@
 
 #include <66/event.h>
 
-/* Count visible producer-eligible fifos in `dir` (the s6 filter). */
+/* Count visible producer-eligible fifos in `dir` (the producer filter). */
 static inline int fanout_count(char const *dir)
 {
     DIR *d = opendir(dir) ;

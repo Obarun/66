@@ -11,11 +11,10 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * Free-list index allocator (replaces skalibs genset). new() pops a free index in
- * O(1); delete() pushes it back. An inline oblibs bitset32_t (occupancy) drives a
- * delete-safe iteration by storage position (bounded by a high-water mark), so the
- * iterator callback may remove the element it is looking at -- exactly what
- * s6-svscan's scan() does through genset_iter + remove_deadinactive_iter.
+ * Free-list index allocator. new() pops a free index in O(1); delete() pushes it
+ * back. An inline oblibs bitset32_t (occupancy) drives a delete-safe iteration by
+ * storage position (bounded by a high-water mark), so the iterator callback may
+ * remove the element it is looking at while it scans the live services.
  */
 
 #include <errno.h>

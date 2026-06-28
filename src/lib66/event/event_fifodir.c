@@ -11,9 +11,8 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * Creating and cleaning a service event fifodir, in plain libc. Replaces s6's
- * ftrigw_fifodir_make / ftrigw_clean (which dragged in skalibs). The directory
- * is owned by the producer (s6-supervise) at runtime; 66 only pre-creates it and
+ * Creating and cleaning a service event fifodir, in plain libc. The directory
+ * is owned by the producer (66-supervise) at runtime; 66 only pre-creates it and
  * sweeps stale subscriber fifos.
  */
 

@@ -11,20 +11,19 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * 66's own logging daemon, oblibs-native. It descends from skarnet's s6-log but
- * is deliberately specialized for the only way 66 ever drives a logger (the boot
- * catch-all and the per-service logger): timestamp a stream of lines and append
- * them to ONE log directory, with size-based rotation and archive trimming,
- * optionally echoing them to fd 1. Everything in s6-log that 66 never generates
- * is gone: selection regexes, rotation processors, status/alert/prefix actions,
- * multiple log directories, time/dir-size rotation, and the q/v/l/t options. A
- * frontend that needs those keeps Build=custom and runs s6-log directly.
+ * 66's own logging daemon, oblibs-native. It is deliberately specialized for the
+ * only way 66 ever drives a logger (the boot catch-all and the per-service
+ * logger): timestamp a stream of lines and append them to ONE log directory, with
+ * size-based rotation and archive trimming, optionally echoing them to fd 1. The
+ * features a general-purpose logger would have are intentionally absent: selection
+ * regexes, rotation processors, status/alert/prefix actions, multiple log
+ * directories, time/dir-size rotation, and the q/v/l/t options. A frontend that
+ * needs those keeps Build=custom and runs its own logger directly.
  *
- * What is kept verbatim from the s6-log contract: the TAI64N archive names and
- * line timestamps, the size-rotation policy, the .u/.s crash-recovery markers,
- * the non-blocking buffering, the -d/-b/-p options, and the exit codes. The
- * event loop is a plain poll() over a signalfd, stdin and (when there is pending
- * output) stdout, exactly like s6-log's iopause loop.
+ * Log format: TAI64N archive names and line timestamps, the size-rotation policy,
+ * the .u/.s crash-recovery markers, the non-blocking buffering, the -d/-b/-p
+ * options, and the exit codes. The event loop is a plain poll() over a signalfd,
+ * stdin and (when there is pending output) stdout.
  */
 
 #include <errno.h>
@@ -54,13 +53,13 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 
-#define LINELIMIT 8192 // s6-log default; 66 never overrides it
+#define LINELIMIT 8192 // default line limit; 66 never overrides it
 #define LASTLINE_MS 2000 // last-line grace after SIGTERM/SIGHUP
 #define RETRY_SEC 2 // backoff after a failed write/rotation step
 #define LOG_STAMP CLOCK_TAI64N_LEN // '@' + 24 hex
 #define LOGBUF_SIZE 8192 // the log directory's output buffer
 
-// Monotonic deadlines, with an explicit "infinite" flag (skalibs TAIN_INFINITE).
+// Monotonic deadlines, with an explicit "infinite" flag.
 
 typedef struct deadline_s deadline_t ;
 struct deadline_s { struct timespec t ; int inf ; } ;
@@ -111,7 +110,7 @@ static int compute_timeout(deadline_t const *d)
   return (int)ms ;
 }
 
-// strict unsigned scan (mirrors skalibs uint0_scan): whole string must be the number
+// strict unsigned scan: whole string must be the number
 static int uint32_scan0(char const *s, uint32_t *u)
 {
   size_t n = u32_scan(s, u) ;

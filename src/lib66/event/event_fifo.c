@@ -11,8 +11,8 @@
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
  *
- * The FIFO SOURCE: drops our own subscriber fifo into a service event fifodir (s6
- * ftrig1 naming so s6-supervise's fanout writes to it) and pumps it through an
+ * The FIFO SOURCE: drops our own subscriber fifo into a service event fifodir
+ * (ftrig1 naming so 66-supervise's fanout writes to it) and pumps it through an
  * event_reader. We create the fifo under a hidden "." name, open both ends, then
  * rename it into place — so the producer never sees a visible fifo without a
  * reader. We hold the write end open so reads never see EOF. Only the fd
@@ -60,7 +60,7 @@ int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir,
 
     char hidden[SS_MAX_PATH] ;
 
-    /* create the fifo under a hidden name (leading '.') so s6-supervise's fanout,
+    /* create the fifo under a hidden name (leading '.') so 66-supervise's fanout,
      * which filters on the visible "ftrig1:" prefix, never opens it before the
      * read end exists; publish it with a rename once both ends are open. Retry
      * with a fresh random suffix on a name clash; file_tmpname returns 0 if
@@ -96,7 +96,7 @@ int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir,
     }
 
     /* force the mode regardless of the umask so a same-group producer
-     * (s6-supervise) can always open the fifo for writing */
+     * (66-supervise) can always open the fifo for writing */
     if (fchmod(rfd, 0622) < 0) {
         close_fd(rfd) ;
         file_tryunlink(hidden) ;

@@ -54,7 +54,7 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
 
     /** timeout family
      * Only write timeout file for classic service.
-     * S6-supervise need it otherwise it's read directly
+     * The supervisor needs it otherwise it's read directly
      * from the resolve file at start process. */
     if (res->type == E_PARSER_TYPE_CLASSIC && res->execute.timeout.start)
         if (!write_uint(dst, "timeout-kill", res->execute.timeout.start))

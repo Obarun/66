@@ -120,9 +120,9 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
         return r ;
     }
 
-    /** s6-supervise do not deal with oneshot service:
-     * The previous send command will bring it down but
-     * s6-supervise will not bring it up automatically.
+    /** the supervisor does not deal with oneshot services:
+     * the previous send command will bring it down but
+     * the supervisor will not bring it up automatically.
      * Well, do it manually */
 
     HASH_FOREACH(&graph.g.vertexes, c, tmp) {

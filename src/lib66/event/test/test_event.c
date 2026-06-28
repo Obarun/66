@@ -464,7 +464,7 @@ static void test_subscribe_trick_hidden_name(void)
 }
 
 /* THE TRICK under a concurrent producer. A child hammers the dir like
- * s6-supervise's fanout while the parent churns subscriptions. Besides the
+ * 66-supervise's fanout while the parent churns subscriptions. Besides the
  * stress/hardening goal (ASan/UBSan stay clean, no hang, no double-free under
  * real fd churn), it ASSERTS the producer never hits ENXIO: now that unsubscribe
  * unlinks before it closes the ends, the visible name only ever exists while the

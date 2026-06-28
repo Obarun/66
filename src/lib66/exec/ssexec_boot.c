@@ -271,7 +271,7 @@ static inline void wait_for_notif (int fd)
             sulogin("read from notification pipe","") ;
 
         if (!r) {
-          log_warn("s6-svscan failed to send a notification byte!") ;
+          log_warn("66-scandir failed to send a notification byte!") ;
           break ;
         }
 
@@ -431,7 +431,7 @@ static void cad(void)
 
     sigset_t ss ;
     sigemptyset(&ss) ;
-    sigaddset(&ss, SIGINT) ; // don't panic on early cad before s6-svscan catches it
+    sigaddset(&ss, SIGINT) ; // don't panic on early cad before the scanner catches it
     sigprocmask(SIG_BLOCK, &ss, 0) ;
 
     if (reboot(RB_DISABLE_CAD) == -1)

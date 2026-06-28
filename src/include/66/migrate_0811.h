@@ -165,7 +165,7 @@ struct resolve_service_addon_regex_s_0811
 
 /**
  * Stdin: default -> /dev/null
- * StdOut: default -> /var/log/66/<service>/current through s6-log
+ * StdOut: default -> /var/log/66/<service>/current through the logger
  * StdErr: default -> inherit from StdOut
  **/
 typedef struct IO_type_s_0811 IO_type_t_0811, *IO_type_t_ref_0811 ;
@@ -181,7 +181,7 @@ typedef struct IO_redirection_s_0811 IO_redirection_t_0811, *IO_redirection_t_re
 struct IO_redirection_s_0811
 {
     IO_type_t_0811 fdin ; // default close
-    IO_type_t_0811 fdout ; // default s6-log
+    IO_type_t_0811 fdout ; // default the logger
     IO_type_t_0811 fderr ; // default inherit
 } ;
 

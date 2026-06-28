@@ -14,8 +14,8 @@
  * The wire codec: the only place that knows an event's single-byte encoding.
  * Keeping it isolated lets the rest of the engine (matcher, waiters) work on the
  * typed event_t, format-independent -- a future rich payload adds a codec beside
- * this one without touching them. The bytes are the s6 transition alphabet, kept
- * byte-compatible with s6-supervise's fanout.
+ * this one without touching them. The bytes are the transition alphabet emitted
+ * by 66-supervise's fanout.
  */
 
 #include <66/event.h>
