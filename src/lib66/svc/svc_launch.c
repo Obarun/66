@@ -446,7 +446,7 @@ static int launch_service(uint32_t id)
     // Setup timeout watcher if any
     uint64_t timeout = !pmanager->operation ? svc->res->execute.timeout.start : svc->res->execute.timeout.stop ;
     if (timeout) {
-        if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, svc->res->execute.timeout.start, 0, 1))
+        if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1))
             log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for service: ",  svc->res->sa.s + svc->res->name) ;
     }
 
@@ -654,7 +654,7 @@ static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
         return ;
     }
 
-    if (!svc && svc->pid > 0) {
+    if (svc && svc->pid > 0) {
         // Kill the service
         log_warn("service timeout, killing: ", svc->res->sa.s + svc->res->name) ;
         kill(svc->pid, SIGTERM) ;
