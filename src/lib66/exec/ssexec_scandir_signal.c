@@ -32,8 +32,6 @@
 #include <66/utils.h>
 #include <66/constants.h>
 
-#include <s6/config.h>
-
 extern opt_on_option_fn on_scandir_create ;
 
 static inline unsigned int lookup (char const *const *table, char const *signal)
@@ -190,7 +188,7 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
 
     if (!uid && uid != info->owner) {
         /** -o <owner> was asked. Respect it
-         * a start the s6-svscan process with the
+         * a start the 66-scandir process with the
          * good uid and gid */
         if (!yourgid(&gid, info->owner))
             log_dieusys(LOG_EXIT_SYS, "get gid of: ", info->ownerstr) ;
@@ -349,7 +347,7 @@ int ssexec_scandir_signal(int argc, char const *const *argv, void *data)
        /** TODO:
         *
         * We have a race condition here with nested scandir.
-        * s6-supervise may have already sent a down signal to the
+        * 66-supervise may have already sent a down signal to the
         * scandir.
         * When the stop script of nested scandir is executed,
         * the scandir is already down and crash.

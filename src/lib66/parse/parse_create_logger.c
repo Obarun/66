@@ -27,8 +27,6 @@
 #include <66/utils.h>
 #include <66/parse.h>
 
-#include <s6/config.h>
-
 #ifndef FAKELEN
 #define FAKELEN strlen(run)
 #endif
