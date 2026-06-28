@@ -54,7 +54,7 @@ release:
   stage: release
   script:
   - ./build_toolchain.sh
-  - meson setup build -D test=true -D with-doc=true -D s6-log-user=s6log
+  - meson setup build -D test=true -D with-doc=true -D 66-log-user=66log
   - meson compile -C build
   - meson test -C build
   - DESTDIR=gitlab-ci meson install -C build
@@ -71,7 +71,7 @@ docbuild:
   before_script:
     - apk add --no-cache build-base meson ninja lowdown
   script:
-    - meson setup build -D with-doc=true -D doc-only=true -D s6-log-user=s6log
+    - meson setup build -D with-doc=true -D doc-only=true -D 66-log-user=66log
     - meson compile -C build doc
     - mkdocs build -f build/doc/mkdocs/mkdocs.yml -d "$PWD/site" --clean
   artifacts:
