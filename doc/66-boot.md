@@ -22,7 +22,7 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 - **-s, --skeleton** *skel*: an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `--with-skeleton=DIR` option to `./configure`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
 
-- **-l, --log-user** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `--with-s6-log-user=user` option to `./configure`.
+- **-l, --log-user** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%66log_user%%`. The default can also be changed at compile-time by passing the `-D 66-log-user=user` option to `meson setup`.
 
 - **-e, --environment** *environment*: an absolute path. *stage 1 init* empties its environment except the *PATH* variable before spawning the `rc.init` skeleton file and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. Then, it import environment from files found at the %%environment_adm%% directory (See [Environment importation](#environment-importation)). If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
 

@@ -216,12 +216,12 @@ s6-fdholder-retrieve /run/66/scandir/0/fdholder/s "pipe:66-r-openntpd-log"
 
 logrun_user      : #!/usr/bin/execlineb -P
 fdmove -c 2 1
-s6-setuidgid s6log
+s6-setuidgid 66log
 s6-log -d3 n3 s1000000 /var/log/66/openntpd
 
 logrun_build     : None
 logrun_shebang   : None
-logrun_runas     : s6log
+logrun_runas     : 66log
 logtimeoutkill   : 0
 logtimeoutfinish : 0
 env              :

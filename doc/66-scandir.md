@@ -91,7 +91,7 @@ Various files and directories is created at `%%livedir%%`. Refers to [deeper und
 
 - **-c, --no-logger**: do not catch logs. On a non-containerized system, that means that all the logs from the *scandir* will go to `/dev/console`, and that `/dev/console` will also be the default `stdout` and `stderr` for services running under the supervision tree: use of this option is discouraged. On a containerized system (when paired with the `-B` option), it simply means that these outputs go to the default `stdout` and `stderr` given to the container's init - this should generally not be the default, but might be useful in some cases.
 
-- **-L, --log-user** *log_user*: run catch-all logger as *log_user* user. Default is `%%s6log_user%%`. The default can also be changed at compile-time by passing the `‑‑with‑s6‑log‑user=user` option to `./configure`.
+- **-L, --log-user** *log_user*: run catch-all logger as *log_user* user. Default is `%%66log_user%%`. The default can also be changed at compile-time by passing the `-D 66-log-user=user` option to `meson setup`.
 
 - **-s, --skeleton** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 

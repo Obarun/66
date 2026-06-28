@@ -51,6 +51,6 @@ The `user:group` colon syntax of `s6-setuidgid` is also not supported: *account*
 ```
     #!/usr/bin/execlineb -P
     redirfd -rnb 0 fifo
-    execl-runas s6log
+    execl-runas 66log
     s6-log -bpd3 -- 1 /run/66/log/0
 ```

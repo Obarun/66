@@ -17,7 +17,7 @@ sed_args = [
   '-e', 's|%%environment_adm%%|@0@|g'.format(get_option('sysadmin-environment-dir')),
   '-e', 's|%%environment_user%%|@0@|g'.format(get_option('user-environment-dir')),
   '-e', 's|%%livedir%%|@0@|g'.format(get_option('livedir')),
-  '-e', 's|%%s6log_user%%|@0@|g'.format(get_option('s6-log-user')),
+  '-e', 's|%%66log_user%%|@0@|g'.format(get_option('66-log-user')),
   '-e', 's|%%script_system%%|@0@|g'.format(get_option('system-script-dir')),
   '-e', 's|%%script_user%%|@0@|g'.format(get_option('user-script-dir')),
   '-e', 's|%%seed_adm%%|@0@|g'.format(get_option('sysadmin-seed-dir')),
