@@ -5,10 +5,10 @@ Low-level control primitive: writes raw command bytes directly to a *service*'s 
 ## Interface
 
 ```
-66-svctl [ -h ] [ -w uUdDrR ] [ -T milliseconds ] [ -abqHkti12pcylsrodDuUxOQ ] [ --stop-group | --cont-group | --kill-group ] servicedir...
+66-svctl [ -h ] [ -w uUdDrR ] [ -T milliseconds ] [ -s signal ] [ -abqHkti12pcylrodDuUxOQ ] [ --stop-group | --cont-group | --kill-group ] servicedir...
 ```
 
-This program sends one or more commands to the `66-supervise` process that monitors a *service*. It operates **directly on a service directory**: it reads nothing — no resolve database, no service name resolution, no state — it just opens `servicedir/supervise/control` and writes the requested bytes.
+This program sends one or more commands to the [66-supervise](66-supervise.html) process that monitors a *service*. It operates **directly on a service directory**: it reads nothing — no resolve database, no service name resolution, no state — it just opens `servicedir/supervise/control` and writes the requested bytes.
 
 This is the reason it exists: it is the recovery path when the resolve database is unusable (a corrupted resolve makes `66 stop foo` unable to map the name, but the control fifo still answers), and the primitive the system scripts rely on. It is installed in the libexec directory and is **not meant for everyday use** — the friendly, resolve-aware path is [66 signal](66-signal.html), which also handles dependencies and accepts service names.
 

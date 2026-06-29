@@ -18,7 +18,7 @@ The *when* provided **must be** on these formats:
 
 ## Options
 
-- **-h**: print this help.
+- **-h, --help**: print this help.
 - **-a, --access**: use access control. The reboot sequence will only be launched if one of the users listed in `/etc/66/shutdown.allow` is currently logged in (as tracked by utmp). `/etc/66/shutdown.allow` is a text file which accepts one user per line. Lines starting with # are commented out.
 - **-f, --force**: do not trigger a clean shutdown procedure; it will just sync the filesystems then tell the kernel to immediately reboot. This should be the last step in the lifetime of the machine.
 - **-F, --force-nosync**: same as `-f` but do not sync the filesystems.
@@ -28,25 +28,25 @@ The *when* provided **must be** on these formats:
 
 ## Usage examples
 
-reboots the system.
+Reboots the system.
 
 ```
 66 reboot
 ```
 
-reboots a broken system
+Reboots a broken system
 
 ```
 66 reboot -f
 ```
 
-reboots the system after 10 minutes
+Reboots the system after 10 minutes
 
 ```
 66 reboot 10
 ```
 
-Sends an "system will be rebooted in 10 minutes" to connected account and reboot the system after 10 minutes
+Sends a "system will be rebooted in 10 minutes" message to connected accounts and reboots the system after 10 minutes
 
 ```
 66 reboot -m "system will be rebooted in 10 minutes" 10

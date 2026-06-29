@@ -1,12 +1,12 @@
 # Service configuration file
 
-If the an `[Environment]` section is set at service [frontend](66-frontend.html) file, the `[Environment]` section is copied to the `%%service_admconf%%/<service_name>/<service_version>/.service_name` file.
+If an `[Environment]` section is set in the service [frontend](66-frontend.html) file, the `[Environment]` section is copied to the `%%service_admconf%%/<service_name>/<service_version>/.service_name` file.
 
 **Note**: The file name is prefixed with a dot.
 
-This file is ***always*** written when the parser is called. That means that every single changes made on this file will be lost. This is ensure you to you always have the environment variables set by upstream matching the needs of the service to be started properly.
+This file is ***always*** written when the parser is called. That means that every single change made on this file will be lost. This ensures you always have the environment variables set by upstream matching the needs of the service to be started properly.
 
-However, to suit your needs you may want to change a value of a `key=value` pair or and a new one for a modified service. In that case, you need to make a copy of the upstream file to a new file at `%%service_admconf%%/<service_name>/<service_version>/` directories.
+However, to suit your needs you may want to change a value of a `key=value` pair or add a new one for a modified service. In that case, you need to make a copy of the upstream file to a new file at `%%service_admconf%%/<service_name>/<service_version>/` directories.
 
 To accomplish this task, you have two solutions:
 

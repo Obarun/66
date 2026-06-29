@@ -2,7 +2,7 @@
 
 Runs a program as a given user *account*: it sets the process credentials (uid, primary gid and supplementary groups) to those of *account* and then executes *prog...*.
 
-It is the self-contained replacement for the privilege-dropping role previously filled by [s6-setuidgid](https://skarnet.org/software/s6/s6-setuidgid.html), with a simpler and more predictable contract — see [Differences with s6-setuidgid](#differences-with-s6-setuidgid).
+It is the self-contained privilege-dropping tool of the `66` suite, with a simple and predictable environment contract — see [Environment contract](#environment-contract).
 
 ## Interface
 
@@ -36,15 +36,11 @@ The credentials are applied in the order groups, gid, uid: the uid is dropped la
 
 - *127*: *prog* could not be found.
 
-## Differences with s6-setuidgid
+## Environment contract
 
-`execl-runas` is **not** a drop-in clone of `s6-setuidgid`. For any non-root target account the credential operations (supplementary groups, gid, uid) are identical, but the environment contract differs:
+`execl-runas` never touches the environment. It resolves and applies the credentials (supplementary groups, gid, uid) in a single step, so it never introduces or removes `UID`/`GID`/`GIDLIST` variables: there is nothing to add and nothing to clean up. *prog* inherits the environment unchanged.
 
-- `s6-setuidgid` is built on top of `s6-envuidgid` + `s6-applyuidgid -Uz`: the first stage *adds* `UID`/`GID`/`GIDLIST` to the environment, and the `-z` of the second stage *removes* them again before exec. As a side effect, any pre-existing `UID`/`GID`/`GIDLIST` in the environment is stripped from the program's environment.
-
-- `execl-runas` never touches the environment. Since it resolves and applies the credentials in a single step, it never introduces `UID`/`GID`/`GIDLIST`, so there is nothing to clean up. *prog* inherits the environment unchanged.
-
-The `user:group` colon syntax of `s6-setuidgid` is also not supported: *account* is always resolved as a single user name, and the supplementary groups are always computed from the group database.
+There is no `user:group` colon syntax: *account* is always resolved as a single user name, and the supplementary groups are always computed from the group database.
 
 ## Usage example
 
@@ -52,5 +48,5 @@ The `user:group` colon syntax of `s6-setuidgid` is also not supported: *account*
     #!/usr/bin/execlineb -P
     redirfd -rnb 0 fifo
     execl-runas 66log
-    s6-log -bpd3 -- 1 /run/66/log/0
+    66-log -bpd3 -- 1 /run/66/log/0
 ```

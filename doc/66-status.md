@@ -12,7 +12,7 @@ By default the dependency graph is rendered in the [start](66-start.html) order 
 
 Without specifying `-f`, all fields are displayed.
 
-If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be use but `-p`, `-f` and `-n` options have no effects.
+If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be used but `-p`, `-f` and `-n` options have no effect.
 
 ## Options
 
@@ -32,7 +32,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 
 - **-p, --print** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 10.
 
-## Valid fields for -f options
+## Valid fields for -f option
 
 - **name**: displays the name.
 - **version**: displays the version of the service.
@@ -43,6 +43,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 - **partof**: displays the module name for services part of that module.
 - **notify**: displays the number of the fd for readiness notification.
 - **maxdeath**: displays the number of maximum death.
+- **maxdeathtime**: displays the maximum death interval.
 - **earlier**: displays if service is an earlier one.
 - **source**: displays the source of the service's [frontend](66-frontend.html) file.
 - **live**: displays the service's live directory.
@@ -54,6 +55,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 - **stop**: displays the service's stop script.
 - **envat**: displays the source of the environment file.
 - **envfile**: displays the contents of the environment file.
+- **importfile**: displays the environment import file.
 - **stdin**: displays the Standard Input type and destination separated by a `(colon(:)`.
 - **stdout**: displays the Standard Output type and destination separated by a `(colon(:)`.
 - **stderr**: displays the Standard Error type and destination separated by a `(colon(:)`.
@@ -122,9 +124,9 @@ type=$(66 status -nf type ${service})
 
 if [ ${type} = "classic" ]; then
     echo ${service} is a classic service
-else if [ ${type} = "module" ]; then
+elif [ ${type} = "module" ]; then
     echo ${service} is a module service
-else if [ ${type} = "oneshot" ]; then
+elif [ ${type} = "oneshot" ]; then
     echo ${service} is a oneshot service
 fi
 ```
@@ -169,7 +171,7 @@ Stop script           :
                         #!/usr/bin/execlineb -P
                         fdmove -c 2 1
                         execl-envfile -v4 /etc/66/conf/dbus/version
-                         s6-rmrf ${socket_name}
+                        rm -f ${socket_name}
 Environment source    : /etc/66/conf/dbus/0.0.1
 Environment file      : environment variables from: /etc/66/conf/dbus/0.0.1/.dbus
                         cmd_args=!--system --print-pid=4 --nofork --nopidfile --address=unix:path=${socket_name}

@@ -2,7 +2,7 @@
 
 The control of IO (Input/Output) redirection can be managed using the keys `StdIn`, `StdOut`, and `StdErr` within the [[Main]](66-frontend.html#section-main) section.
 
-If none of the `StdIn`, `StdOut`, and `StdErr` keys are defined, the default behavior is to use the `s6-log` program. In this case, you can use the [[Logger]](66-frontend.html#section-logger) section to modify the behavior of `s6-log` (see the [[Logger]](66-frontend.html#section-logger) section documentation) such as log file rotation.
+If none of the `StdIn`, `StdOut`, and `StdErr` keys are defined, the default behavior is to use the `66-log` program. In this case, you can use the [[Logger]](66-frontend.html#section-logger) section to modify the behavior of `66-log` (see the [[Logger]](66-frontend.html#section-logger) section documentation) such as log file rotation.
 
 It should be noted that administrative permissions may be required for values `tty`, `console`, and `syslog`. A service run as a regular user will not have the necessary rights to access, for example, `tty3`.
 
@@ -60,7 +60,7 @@ In all other cases, no redefinition is made.
 
 ## Options defined on !log
 
-If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to 66log or not defined at all, StdIn, StdOut, and StdErr will take the value of parent process.
+If the Options key in the [[Main]](66-frontend.html#section-main) section defines `!log`, the [[Logger]](66-frontend.html#section-logger) section will have no effect. Additionally, if the keys StdIn, StdOut, or StdErr are set to 66log or not defined at all, StdIn, StdOut, and StdErr will take the value `parent`.
 
 # Examples
 

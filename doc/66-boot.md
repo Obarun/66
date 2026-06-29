@@ -5,7 +5,7 @@ Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system
 ## Interface
 
 ```
-boot [ -h ] [ -z ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
+boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
 ```
 
 This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [scandir start](66-scandir.html).
@@ -71,7 +71,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It execs into [66 -v VERBOSITY -l LIVE scandir start](66-scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
 
-    * [scandir start](66-scandir.html) transitions into [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
+    * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
     * The child then execs into `rc.init`
 
@@ -85,15 +85,15 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
 - `init.conf` : this file contains a set of `key=value` pairs. ***All*** keys are mandatory where the name of the key ***must not*** be changed. This is the file available to a user to configure the boot process. By default:
 
-    * `VERBOSITY=0` : increases/decreases the verbosity of the *stage1* process.
+    * `VERBOSITY=1` : increases/decreases the verbosity of the *stage1* process.
 
     * `LIVE=%%livedir%%` : an absolute path; creates the scandir at *LIVE*. The value will depend by default on the `-D livedir=live` option set at compile time.
 
-    * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/),[s6](https://skarnet.org/software/s6/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
+    * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
     * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
 
-    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It calls [tree init](66-tree.html#init) command to initiate any enabled services inside of *TREE* except the earlier ones which were already initiated by *stage1*. After that it invokes [66 start](66-start.html) command to bring up all services.
+    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It invokes the [66 tree start](66-tree.html) command to initiate and bring up all enabled services inside of *TREE* (the earlier ones were already initiated by *stage1*).
 
     * `RCSHUTDOWN=%%skel%%/rc.shutdown` : an absolute path. This is launched when a shutdown is requested also called *stage3*. It invokes [66 tree stop](66-tree.html) command to bring down all services of *TREE*.
 
@@ -101,7 +101,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `UMASK=0022` : sets the value of the initial file umask for all starting processes in octal.
 
-    * `RESCAN=0` : forces [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
+    * `RESCAN=0` : forces [66-scandir](66-scandir.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
 
     * `CONTAINER=0` : accepted value are `0` or `1` where `0` ask to boot on a hardware system and `1` ask to boot inside a container. Default `0`. If set to `1`, the `rc.init.container` file is used instead of the `rc.init` file.
 
@@ -117,7 +117,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
 - `rc.init.container` : this file replace the `rc.init` when a boot inside a container is asked. It has the same behavior than the `rc.init` file. However, this file is especially designed to be used for a boot inside a container. It allow to easily define a command(see comment on that file) to launch inside the container and to retrieve the exit code of that command.
 
-- `rc.shutdown` : this file is called at shudown when the administrator requests the `halt`, `poweroff` or `reboot` command. It invokes a single command:
+- `rc.shutdown` : this file is called at shutdown when the administrator requests the `halt`, `poweroff` or `reboot` command. It invokes a single command:
 
     * `66 -v${VERBOSITY} -l ${LIVE} tree stop -f ${TREE}` to bring down all *services* for all *trees* marked as enabled.
 

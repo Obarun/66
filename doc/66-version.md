@@ -5,12 +5,12 @@ This command displays the version of `66`.
 ## Interface
 
 ```
-version
+version [ -h ]
 ```
 
 ## Options
 
-No options
+- **-h, --help**: print this help.
 
 ## Usage example
 

@@ -1,6 +1,6 @@
 # enable
 
-This command enables one or more services within a specified *tree* depending of the method used.
+This command enables one or more services within a specified *tree* depending on the method used.
 
 ## Interface
 
@@ -26,7 +26,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Usage examples
 
-Enable a service while specifying with the tree name(this only takes effect if the service has not been parsed before):
+Enable a service while specifying the tree name (this only takes effect if the service has not been parsed before):
 
 ```
 66 -t treeA enable foo

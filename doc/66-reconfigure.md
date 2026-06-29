@@ -1,6 +1,6 @@
 # reconfigure
 
-This command bring down, unsupervise, parse again and bring up service.
+This command brings down, unsupervises, parses again and brings up the service.
 
 ## Interface
 
@@ -14,7 +14,7 @@ If the *service* is running, it is stopped and then unsupervised. Afterward, the
 
 For `module` *service* types, the same process is applied to all services within the *module*. If the module is part of a tree associated with the boot [group](66-tree.html#groups-behavior), only the parse process is executed to avoid interrupting the boot sequence. The changes will be applied during the next [reboot](66-reboot.html).
 
-Multiple *services* can be disabled by separating their names with a space.
+Multiple *services* can be reconfigured by separating their names with a space.
 
 This command handles [interdependencies](66.html#handling-dependencies) for the [stop](66-stop.html), [free](66-free.html) and [start](66-start.html) process.
 

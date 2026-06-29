@@ -2,7 +2,7 @@
 
 This documentation explains the internal structure of `66` on the system and the roles of the different directories and file components.
 
-**Never manually changes** any directories or files within the `66` ecosystem, as this is the best way to break it.
+**Never manually change** any directories or files within the `66` ecosystem, as this is the best way to break it.
 
 ## The service pipeline
 
@@ -10,7 +10,7 @@ Everything below is a stage in one pipeline, from the file you write to a
 running, supervised process:
 
 ```
- frontend file ─▶ parse ─▶ resolve (CDB) ─▶ tree ─▶ scandir ─▶ s6-supervise ─▶ running service
+ frontend file ─▶ parse ─▶ resolve (CDB) ─▶ tree ─▶ scandir ─▶ 66-supervise ─▶ running service
    you write      compile   parsed state    group    live dir   one per svc
 ```
 
@@ -18,8 +18,8 @@ running, supervised process:
 - **parse** — compiles it, applying [identifiers](66-identifier.html) and validation. See [parse](66-parse.html).
 - **resolve** — the compiled result, stored as a CDB-backed [resolve file](#resolve-files). See [resolve](66-resolve.html).
 - **tree** — the named group the service belongs to. See [tree](66-tree.html).
-- **scandir** — the live supervision directory that `s6-svscan` watches. See [scandir](66-scandir.html).
-- **s6-supervise** — one per service, keeps it in the state you asked for.
+- **scandir** — the live supervision directory that `66-scandir` watches. See [scandir](66-scandir.html).
+- **[66-supervise](66-supervise.html)** — one per service, keeps it in the state you asked for.
 
 The rest of this page walks the on-disk directories that hold these stages.
 
@@ -130,120 +130,132 @@ Every service possesses its individual directory. At its core, this directory ho
 This directory stores the resolve file for each service, mirroring how `%%system_dir%%/system/.resolve/` houses the resolve file for a tree. Running `66 resolve \<service\>` showcases the content of this file, presenting information similar to the following
 
 ```
-name             : openntpd
-description      : ntpd daemon
-version          : 0.2.1
-type             : 0
-notify           : 0
-maxdeath         : 5
-earlier          : 0
-hiercopy         : None
-intree           : None
-ownerstr         : 0
-owner            : 0
-treename         : global
-user             : root
-inns             : None
-enabled          : 1
-home             : /var/lib/66/
-frontend         : /etc/66/service/openntpd
-servicedir       : /var/lib/66/system/service/svc/openntpd
-depends          : sshd openntpd-log
-requiredby       : None
-optsdeps         : None
-contents         : None
-ndepends         : 2
-nrequiredby      : 0
-noptsdeps        : 0
-ncontents        : 0
-run              : #!/usr/bin/execlineb -P
-fdmove 1 0
-s6-fdholder-retrieve /run/66/scandir/0/fdholder/s "pipe:66-w-openntpd-log"
-fdswap 0 1
-./run.user
+name            : dhcpcd
+description     : dhcpcd daemon
+version         : 0.8.0
+type            : 0
+notify          : 0
+maxdeath        : 5
+maxdeathtime    : 30000
+earlier         : 0
+copyfrom        : None
+intree          : None
+ownerstr        : 0
+owner           : 0
+treename        : global
+user            : root
+inns            : None
+enabled         : 1
+islog           : 0
+home            : /var/lib/66/
+frontend        : /usr/share/66/service/dhcpcd
+src_servicedir  : /var/lib/66/system/service/svc/dhcpcd
+depends         : dhcpcd-log
+requiredby      : None
+optsdeps        : None
+contents        : None
+provide         : None
+conflict        : None
+ndepends        : 1
+nrequiredby     : 0
+noptsdeps       : 0
+ncontents       : 0
+nprovide        : 0
+nconflict       : 0
+run             : #!/usr/bin/execlineb -P
+importas -D2 VERBOSITY VERBOSITY
+/usr/libexec/66-execute -v${VERBOSITY} start dhcpcd
 
-run_user         : #!/usr/bin/execlineb -P
-fdmove -c 2 1
-execl-envfile -v4 /etc/66/conf/openntpd/version
+run_user        : #!/usr/bin/execlineb -P
+ /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStart} }
 
-    execl-toc -d /var/empty/openntpd
-    execl-toc -d ${socket_dir}
-    execl-cmdline -s { ntpd ${cmd_args} }
+run_build       : None
+run_runas       : None
+finish          : #!/usr/bin/execlineb -S0
+importas -D2 VERBOSITY VERBOSITY
+/usr/libexec/66-execute -v${VERBOSITY} stop dhcpcd $@
 
+finish_user     : #!/usr/bin/execlineb -P
+ /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStop} }
 
-run_build        : auto
-run_shebang      : None
-run_runas        : None
-finish           : #!/usr/bin/execlineb -S0
-fdmove 1 0
-s6-fdholder-retrieve /run/66/scandir/0/fdholder/s "pipe:66-w-openntpd-log"
-fdswap 0 1
-./finish.user $@
+finish_build    : None
+finish_runas    : None
+timeoutstart    : 0
+timeoutstop     : 0
+down            : 0
+downsignal      : 0
+blockprivileges : 0
+umask           : 0
+want_umask      : 0
+nice            : 0
+want_nice       : 0
+chdir           : None
+capsbound       : None
+capsambient     : None
+ncapsbound      : 0
+ncapsambient    : 0
+livedir         : /run/66/
+status          : /var/lib/66/system/.resolve/service/dhcpcd/state/status
+live_servicedir : /run/66/state/0/dhcpcd
+scandir         : /run/66/scandir/0/dhcpcd
+statedir        : /run/66/state/0/dhcpcd/state
+eventdir        : /run/66/state/0/dhcpcd/event
+notifdir        : /run/66/state/0/dhcpcd/notif
+supervisedir    : /run/66/state/0/dhcpcd/supervise
+fdholderdir     : /run/66/scandir/0/fdholder
+oneshotddir     : /run/66/scandir/0/oneshotd
+logname         : dhcpcd-log
+logbackup       : 3
+logmaxsize      : 1000000
+logwant         : 1
+logtimestamp    : 3
+logrun          : #!/usr/bin/execlineb -P
+/usr/libexec/66-execute start dhcpcd-log
 
-finish_user      : #!/usr/bin/execlineb -P
-fdmove -c 2 1
-execl-envfile -v4 /etc/66/conf/openntpd/version
- s6-rmrf ${socket_dir}/${socket_name}
+logrun_user     : #!/usr/bin/execlineb -P
+/usr/bin/66-log -d3 n3 s1000000 /var/log/66/dhcpcd
 
-finish_build     : auto
-finish_shebang   : None
-finish_runas     : None
-timeoutkill      : 0
-timeoutfinish    : 0
-timeoutup        : 0
-timeoutdown      : 0
-down             : 0
-downsignal       : 0
-livedir          : /run/66/
-status           : /var/lib/66/system/.resolve/service/openntpd/state/status
-servicedir       : /run/66/state/0/openntpd
-scandir          : /run/66/scandir/0/openntpd
-statedir         : /run/66/state/0/openntpd/state
-eventdir         : /run/66/state/0/openntpd/event
-notifdir         : /run/66/state/0/openntpd/notif
-supervisedir     : /run/66/state/0/openntpd/supervise
-fdholderdir      : /run/66/scandir/0/fdholder
-oneshotddir      : /run/66/scandir/0/oneshotd
-logname          : openntpd-log
-logdestination   : /var/log/66/openntpd
-logbackup        : 3
-logmaxsize       : 1000000
-logtimestamp     : 3
-logwant          : 1
-logrun           : #!/usr/bin/execlineb -P
-s6-fdholder-retrieve /run/66/scandir/0/fdholder/s "pipe:66-r-openntpd-log"
-./run.user
+logrun_build    : None
+logrun_runas    : root
+logtimeoutstart : 0
+logtimeoutstop  : 0
+env             : ArgsStart=!-B ${ArgsConfFile}
+ArgsStop=!-x
+ArgsConfFile=!-f /etc/dhcpcd.conf
 
-logrun_user      : #!/usr/bin/execlineb -P
-fdmove -c 2 1
-s6-setuidgid 66log
-s6-log -d3 n3 s1000000 /var/log/66/openntpd
-
-logrun_build     : None
-logrun_shebang   : None
-logrun_runas     : 66log
-logtimeoutkill   : 0
-logtimeoutfinish : 0
-env              :
-cmd_args=!-d
-
-# conf_file=!/etc/ntpd.conf
-
-socket_dir=!/run/openntpd
-
-
-socket_name=!openntpd.sock
-
-
-envdir           : /etc/66/conf/openntpd
-env_overwrite    : 0
-configure        : None
-directories      : None
-files            : None
-infiles          : None
-ndirectories     : 0
-nfiles           : 0
-ninfiles         : 0
+envdir          : /etc/66/conf/dhcpcd
+env_overwrite   : 0
+importfile      : None
+nimportfile     : 0
+configure       : None
+directories     : None
+files           : None
+infiles         : None
+ndirectories    : 0
+nfiles          : 0
+ninfiles        : 0
+stdintype       : 3
+stdindest       : /run/66/scandir/0/fdholder
+stdouttype      : 3
+stdoutdest      : /var/log/66/dhcpcd
+stderrtype      : 5
+stderrdest      : /var/log/66/dhcpcd
+limitas         : 0
+limitcore       : 0
+limitcpu        : 0
+limitdata       : 0
+limitfsize      : 0
+limitlocks      : 0
+limitmemlock    : 0
+limitmsgqueue   : 0
+limitnice       : 0
+limitnofile     : 0
+limitnproc      : 0
+limitrtprio     : 0
+limitrttime     : 0
+limitsigpending : 0
+limitstack      : 0
+rversion        : 0.8.2.1
 ```
 
 The `66 status <service>` command provides a subset of these information. Too much detail might be overwhelming, so it simplifies the output for ease of use.
@@ -254,13 +266,13 @@ Some precision is needed here:
 
 - The `inns` field indicates whether the service is a part of a `module`.
 
-- The `run` and `finish` field contains the content of the `%%system_dir%%/system/svc/service/svc/<service>/run` and `%%system_dir%%/system/svc/service/svc/<service>/finish` file respectively.
+- The `run` and `finish` field contains the content of the `%%system_dir%%/system/service/svc/<service>/run` and `%%system_dir%%/system/service/svc/<service>/finish` file respectively.
 
 - Meanwhile, `run_user`, and `finish_user` fields are derived from the [[Start]](66-frontend.html#section-start) and [[Stop]](66-frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `Execute` in the [[Start]](66-frontend.html#section-start) section, and the others function similarly but for the [[Stop]](66-frontend.html#section-stop) section.
 
-- Other fields like `ownerstr`, `home`, `frontend`, `servicedir`, `livedir`, `status`, `servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
+- Other fields like `ownerstr`, `home`, `frontend`, `src_servicedir`, `livedir`, `status`, `live_servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
 
-#### %%system_dir%%/system/service/svc/\<service\>/status
+#### %%system_dir%%/system/service/svc/\<service\>/state
 
 This directory houses a *binary* file named `status`, which `66` uses to track the service's current operational status. Running `66 state <service>` displays output similar to the following
 
@@ -345,7 +357,7 @@ This should be within a writable and executable filesystem, likely a RAM filesys
 
 This directory and its subdirectories are managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 
-It create at [66 scandir create](66-scandir.html#start) invocation if it doesn't yet.
+It is created at [66 scandir create](66-scandir.html#start) invocation if it does not exist yet.
 
 ### %%livedir%%/log
 
@@ -373,7 +385,7 @@ This directory is managed internally by `66` and contains directories and files 
 
 ### %%livedir%%/state/UID
 
-As `66` can be executed with root or regular account privilegies, this directory contains subdirectories. Each account has its own `state` specified by its number. For intance, `%%livedir%%/state/0` is owned by root, whereas `%%livedir%%/state/1000` is typically owned by the first regular account created on the system.
+As `66` can be executed with root or regular account privileges, this directory contains subdirectories. Each account has its own `state` specified by its number. For instance, `%%livedir%%/state/0` is owned by root, whereas `%%livedir%%/state/1000` is typically owned by the first regular account created on the system.
 
 For instance, the `%%livedir%%/state/0/<service>` contains a verbatim copy of the `%%system_dir%%/system/service/svc/<service>` for each root service.
 

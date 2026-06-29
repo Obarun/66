@@ -38,7 +38,7 @@ whether the service is `up`, `down`, `crashed`, enabled or disabled.
 ## My service starts, then immediately dies (and restarts in a loop)
 
 This is the classic supervision pitfall: **a supervised service must run in the
-foreground.** If your daemon forks into the background (daemonizes), `66`/s6
+foreground.** If your daemon forks into the background (daemonizes), `66`
 sees the foreground process exit and treats it as a crash, then restarts it —
 forever.
 
@@ -92,16 +92,16 @@ A service can be `up` but `disabled` (started by hand, won't survive reboot), or
 ## Reading more than the tail of a log
 
 `66 status foo` shows only the last few lines, but the `--print` (`-p`) option
-prints as many as you ask for — pair it with `--options logfile` to show just
+prints as many as you ask for — pair it with `--field logfile` to show just
 the log:
 
 ```
-66 status --options logfile --print 1000 foo
+66 status --field logfile --print 1000 foo
 ```
 
 The full, rotated history also lives on disk in `%%system_log%%/foo/` (root) or
 `%%user_log%%/foo/` (regular user). If the log is TAI64N-stamped, pipe it
-through `s6-tai64nlocal` for readable timestamps.
+through a TAI64N timestamp converter for readable timestamps.
 
 ## Where to go next
 

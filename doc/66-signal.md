@@ -5,7 +5,7 @@ Controls an already supervised *service*.
 ## Interface
 
 ```
-signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcysodDuUxOrP ] service...
+signal [ -h ] [ -wu | -wU | -wd | -wD | -wr | -wR ] [ -abqHkti12pcyodDuUxOrP ] [ -s signal ] service...
 ```
 
 This command expects to find an already supervised *service* and an already running [scandir](66-scandir.html).
@@ -80,5 +80,5 @@ Take down `foo` and block until the process is down and the finish script has co
 Bring up `foo` and block until it has sent notification that it is ready. Exit if it is still not ready after 5 seconds.
 
 ```
-66 -T 5000 -wU -u foo
+66 -T 5000 signal -wU -u foo
 ```

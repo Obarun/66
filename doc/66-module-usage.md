@@ -2,13 +2,13 @@
 
 This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](66-module-creation.html) page.
 
-A *module* is a [instantiated service](66-instantiated-service.html) and can be managed like any other instantiated services. For intance, to [start](66-start.html) it
+A *module* is an [instantiated service](66-instantiated-service.html) and can be managed like any other instantiated services. For instance, to [start](66-start.html) it
 
 ```
 66 start foo@bar
 ```
 
-where `foo@` is the name of the *module* and `bar` the name of its intance. If the *module* was never parsed before, you will get the default configuration define by the developer of the *module* service.
+where `foo@` is the name of the *module* and `bar` the name of its instance. If the *module* was never parsed before, you will get the default configuration defined by the developer of the *module* service.
 
 Obviously you can [enable](66-enable.html) it
 
@@ -46,7 +46,7 @@ As *module* is a set of services, when you start it, several services may be sta
 66 status foo@bar
 ```
 
-The command display different field notably the `contents` field corresponding to the list of the service within the *module*. You can control the state of these service like you do for any other services applying the following syntax
+The command displays different fields, notably the `contents` field corresponding to the list of the services within the *module*. You can control the state of these services like you do for any other services by applying the following syntax
 
 ```
 66 <command> <module_name>:<service_name>

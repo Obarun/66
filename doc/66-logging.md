@@ -1,7 +1,7 @@
 # Logging
 
 By default, every service `66` starts gets its **own** logger — a dedicated
-[s6-log](https://skarnet.org/software/s6/s6-log.html) process that captures what
+66-log process that captures what
 the service writes and stores it, rotated and optionally timestamped, in a
 human-readable file. This guide explains how that wiring works and how to tune
 or disable it.
@@ -13,7 +13,7 @@ section.
 ## How a service's log is wired
 
 ```
-   service stdout ──▶ s6-log ──▶ /var/log/66/<service>/current
+   service stdout ──▶ 66-log ──▶ /var/log/66/<service>/current
                        (logger)
 ```
 
@@ -69,11 +69,11 @@ RunAs = user
 | --- | --- | --- |
 | `Backup` | number of rotated files kept | `3` |
 | `MaxSize` | bytes before a file rotates (min `4096`) | `1000000` |
-| `Timestamp` | `tai`, `iso` or `none` | `tai` |
+| `Timestamp` | `tai`, `iso` or `none` | `iso` |
 | `RunAs` | user the logger runs as | service owner |
 
 - **`tai`** prefixes each line with a TAI64N stamp (decode with
-  `s6-tai64nlocal` for human-readable time).
+  a TAI64N timestamp converter for human-readable time).
 - **`iso`** prefixes a local ISO-8601 date and time.
 - **`none`** writes the line as-is.
 
@@ -95,7 +95,7 @@ for `file:`, `console`, `syslog`, `null` and the other targets.
 
 With `Build = custom` in `[Logger]`, the `Backup`, `MaxSize` and `Timestamp`
 keys have **no effect**: you write the logging command yourself in the
-`Execute` field. Use this only when you need a logging pipeline `s6-log` cannot
+`Execute` field. Use this only when you need a logging pipeline `66-log` cannot
 express.
 
 ## Where to go next

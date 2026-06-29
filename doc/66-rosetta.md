@@ -2,13 +2,13 @@ This documentation explains the differences in options and interface changes bet
 
 # Changes between `0.7.2.1` and `0.8.0.0`
 
-Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
+Further information can be found on the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
 
 ## Converting service frontend file
 
-The [upgrade process](66-upgrade-process.html) will take about the frontend file convertion but uniquely active services (i.e., those listed when running `66 tree status` with the field `contents`)
+The [upgrade process](66-upgrade-process.html) will handle the frontend file conversion, but only for active services (i.e., those listed when running `66 tree status` with the field `contents`).
 
-So, you may need to convert manually inactive frontend file. This following little script can be used by calling `./migrate_service.sh /path/to/my/<FrontendFile>`.
+So, you may need to manually convert inactive frontend files. The following little script can be used by calling `./migrate_service.sh /path/to/my/<FrontendFile>`.
 
 ```
 #!/bin/sh
@@ -53,9 +53,9 @@ sed -e "s:\[main\]:\[Main\]:g" \
     -i ${service}
 ```
 
-## Keyword table convertion
+## Keyword table conversion
 
-The table below give you the keyword convertion between versions
+The table below gives you the keyword conversion between versions
 
 | 0.7.2.1 | 0.8.0.0 |
 | --- | --- |
@@ -97,7 +97,7 @@ The table below give you the keyword convertion between versions
 
 # Changes between `v0.6.1.3` and `0.7.0.0`.
 
-Futhers information can be found to the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
+Further information can be found on the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
 
 ## General Interface changes
 
@@ -219,7 +219,7 @@ New subcommands was integrated to `66 scandir` to avoid using options from `s6-s
 ### 66-init
 ---
 
-As `s6-rc` was dropped, the specification of the type of the service is not needed anymore. This program was integrated to `66 tree` command -- see [66 tree init](66-tree.html#init) documentation for futhers information.
+As `s6-rc` was dropped, the specification of the type of the service is not needed anymore. This program was integrated into the `66 tree` command -- see the [66 tree init](66-tree.html#init) documentation for further information.
 
 | old argument | new argument |
 | --- | --- |
@@ -310,7 +310,7 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
 
 - The `@extdepends=` field has been removed and has no effect. To address this, switch the service definition in this field to the `@depends=` field. For example, a service declaring `@depends=(consolekit)` and `@extdepends=(dbus)` should be converted by removing the `@extdepends` field and appending dbus to the `@depends=(dbus consolekit)` field.
 
-- The `@shebang` field is deprecated and will be removed in a future release. To define the shebang for our script, place it at the beginning of the `@execute` field **right after** the opened parentheses, **without** any space, new line, or other characters. For example, for an sh script, the beginning of the @execute field must be
+- The `@shebang` field is deprecated and will be removed in a future release. To define the shebang for your script, place it at the beginning of the `@execute` field **right after** the opened parentheses, **without** any space, new line, or other characters. For example, for an sh script, the beginning of the @execute field must be
 
     ```
     @execute = (!#/usr/bin/sh
@@ -319,7 +319,7 @@ Manual intervention is required to upgrade the frontend file to version 0.7.0.0,
     )
     ```
 
-    The incorret way is
+    The incorrect way is
 
     ```
     @execute = (

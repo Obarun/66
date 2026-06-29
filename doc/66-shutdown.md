@@ -42,7 +42,7 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 - **-h, --halt**: halt the system at the end of the shutdown sequence.
 
-- **-p, --poweroff**: power off the system at the end of the shutdown sequence. This option is provided as an extension it is not required-by the LSB interface.
+- **-p, --poweroff**: power off the system at the end of the shutdown sequence. This option is provided as an extension; it is not required by the LSB interface.
 
 - **-r, --reboot**: reboot the system at the end of the shutdown sequence.
 
@@ -54,4 +54,4 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 ## Notes
 
-The **-f** and **-F** exist for compatibility reasons. The LSB sepcification says they are used to advise the system to skip or enforce a `fsck` after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.
+The **-f** and **-F** exist for compatibility reasons. The LSB specification says they are used to advise the system to skip or enforce a `fsck` after rebooting. But they are only advisory and for decades now systems have used other methods of evaluating whether they should perform filesystem checks so these options are largely obsolete nowadays.

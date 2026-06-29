@@ -1,6 +1,6 @@
 # remove
 
-This command remove all components of a service. This operation **cannot be** undone. Process with caution.
+This command removes all components of a service. This operation **cannot be** undone. Proceed with caution.
 
 ## Interface
 
@@ -8,7 +8,7 @@ This command remove all components of a service. This operation **cannot be** un
 remove [ -h ] [ -P ] service...
 ```
 
-This command remove all files belongs to *service* from the system even its log file. The only exception is its [frontend](66-frontend.html) file.
+This command removes all files belonging to *service* from the system even its log file. The only exception is its [frontend](66-frontend.html) file.
 
 If the *service* is running, it will be stopped and unsupervised before removing it. This is also applied to its required-by dependencies except if the `-P` is passed.
 
@@ -22,7 +22,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 - **-h, --help**: prints this help.
 
-- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *remove* command, in these cases, does not delete services that depend on the specified service, treating the removal as temporary. If the service is needed by other services, any 66 command managing [interdependencies](66.html#handling-dependencies) will re-parse the services. Use this option to ensure all components of the service are cleared before reusing it.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *remove* command does not delete services that depend on the specified service, treating the removal as temporary. If the service is needed by other services, any 66 command managing [interdependencies](66.html#handling-dependencies) will re-parse the services. Use this option to ensure all components of the service are cleared before reusing it.
 
 ## Usage example
 

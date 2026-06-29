@@ -1,6 +1,6 @@
 # execl-envfile
 
-A mix of [s6-envdir](https://skarnet.org/software/s6/s6-envdir.html) and [importas](https://skarnet.org/software/execline/importas.html). Reads files containing variable assignments in the given *file/directory*, adds the variables to the environment and then executes a program.
+The environment-file tool of the `66` suite, in the spirit of execline's [importas](https://skarnet.org/software/execline/importas.html). Reads files containing variable assignments in the given *file/directory*, adds the variables to the environment and then executes a program.
 
 ## Interface
 
@@ -61,7 +61,7 @@ If you do not want *key* to be added to the environment at all, prefix the *valu
 
 In this case the *key* will be removed from the environment after the substitution.
 
-Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For intance, an environment file can be declared
+Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get its value. For instance, an environment file can be declared
 
 ```
     PATH=/usr/local/bin:${PATH}
@@ -70,7 +70,7 @@ Reusing the same variable or variable from the actual environment is allowed. In
     socket=${socket_dir}/${socket_name}
 ```
 
-The order of `key=value` pair declaration **do not** matter
+The order of `key=value` pair declaration **does not** matter
 
 ```
     PATH=/usr/local/bin:${PATH}
@@ -79,13 +79,13 @@ The order of `key=value` pair declaration **do not** matter
     socket_dir=dname
 ```
 
-A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot not be found it left the pair as it. For intance,
+A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot be found it leaves the pair as is. For instance,
 
 ```
     PATH=/usr/local/bin:${PATH}
 ```
 
-will only works if `PATH` is already define at the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
+will only work if `PATH` is already defined in the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
 
 ### Limits
 
@@ -102,16 +102,4 @@ will only works if `PATH` is already define at the current environment. If not t
 
 ```
 
-The equivalent with s6-envdir and importas would be:
-
-```
-    #!/usr/bin/execlineb -P
-    fdmove -c 2 1
-    s6-envdir %%service_admconf%%
-    importas -u RUNDIR RUNDIR
-    importas -u CMD_ARGS CMD_ARGS
-    foreground { mkdir -p  -m 0755 ${RUNDIR} }
-    execl-cmdline -s { ntpd ${CMD_ARGS} }
-```
-
-where `%%service_admconf%%` contains two named files `RUNDIR` and `CMD_ARGS` written with `/run/openntpd` and `-d -s` respectively.
+where `%%service_admconf%%/ntpd` is a file containing the two `key=value` pairs `RUNDIR=/run/openntpd` and `CMD_ARGS=-d -s`.

@@ -1,6 +1,6 @@
 # free
 
-This command bring down *services* and remove it from the scandir.
+This command brings down *services* and removes them from the scandir.
 
 ## Interface
 

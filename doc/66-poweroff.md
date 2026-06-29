@@ -18,7 +18,7 @@ The *when* provided **must be** on these formats:
 
 ## Options
 
-- **-h**: print this help.
+- **-h, --help**: print this help.
 - **-a, --access**: use access control. The poweroff sequence will only be launched if one of the users listed in `/etc/66/shutdown.allow` is currently logged in (as tracked by utmp). `/etc/66/shutdown.allow` is a text file which accepts one user per line. Lines starting with # are commented out.
 - **-f, --force**: do not trigger a clean shutdown procedure; it will just sync the filesystems then tell the kernel to immediately poweroff. This should be the last step in the lifetime of the machine.
 - **-F, --force-nosync**: same as `-f` but do not sync the filesystems.
@@ -46,8 +46,8 @@ Shuts down the system after 10 minutes
 66 poweroff 10
 ```
 
-Sends an "system will be shutted down in 10 minutes" to connected account and shuts down the system after 10 minutes
+Sends a "system will be shut down in 10 minutes" message to connected accounts and shuts down the system after 10 minutes
 
 ```
-66 poweroff -m "system will be shutted down in 10 minutes" 10
+66 poweroff -m "system will be shut down in 10 minutes" 10
 ```

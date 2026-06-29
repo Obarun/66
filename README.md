@@ -1,14 +1,14 @@
-![GitLabl Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg) ![latest release](https://git.obarun.org/Obarun/66/-/badges/release.svg)
+![GitLab Build Status](https://git.obarun.org/Obarun/66/badges/master/pipeline.svg) ![latest release](https://git.obarun.org/Obarun/66/-/badges/release.svg)
 
-# 66 - Service Manager Built Around the S6 Supervision Suite
+# 66 - An Independent Linux Service Manager
 
-Sixty-six (66) is a service manager designed around the [s6 supervision suite](http://skarnet.org/software/s6) to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
+Sixty-six (66) is an independent Linux service manager with its own native process supervision (historically inspired by s6), designed to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
 
 ## Key Features of 66 (not exhaustive):
 
 - **Frontend Service Files Declaration**: Service files are written in an INI format, making them straightforward to read and edit.
-- **Simple Scandir Creation**: Easily create [scandir](https://skarnet.org/software/s6/scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
-- **Nested Scandir Supervision**: Regular users have their own independent [scandir](https://skarnet.org/software/s6/scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
+- **Simple Scandir Creation**: Easily create [scandir](66-scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
+- **Nested Scandir Supervision**: Regular users have their own independent [scandir](66-scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
 - **Instance Service File Creation**: Supports instantiated service.
 - **Identifier Interpretation**: Supports specific identifiers that are replaced at parse time to simplify service file creation.
 - **Service Configuration Changes**: Includes built-in versioning for configuration files, including environment variables, to streamline service updates and changes.
@@ -60,27 +60,27 @@ Please consider to make [donation](https://web.obarun.org/index.php?id=18)
 
 ## Frontend service file
 
-66 do not provide any frontend services file by default. 66 works on mechanisms not on policies.
+66 does not provide any frontend service files by default. 66 works on mechanisms not on policies.
 
 ### Boot service file
 
 The boot sequence can be a tedious task to accomplish. A **portable** and **complete** set of services can be found [here](https://git.obarun.org/66-service/arch/boot).
-This set of service work out of the box and highly configurable to suit needs of the distributions.
+This set of services works out of the box and is highly configurable to suit the needs of the distributions.
 POC was made on `Gentoo`, `Funtoo`, `Devuan`, `Void`, `Adelie`, `Antix`, `Arch` and `Obarun`.
 
 ### Runtime service file
 
-You can find several examples for common daemon [here](https://git.obarun.org/66-service) for several distribution(Thanks to all contributors).
+You can find several examples for common daemons [here](https://git.obarun.org/66-service) for several distributions (Thanks to all contributors).
 
 ### Frontend service file scripting
 
 By default, 66 use [execline](http://skarnet.org/software/execline) as scripting language. However, you can specify the scripting language to use.
-[66-tools](https://git.obarun.org/obarun/66-tools) provide some additonal tools to help you on this task.
+[66-tools](https://git.obarun.org/obarun/66-tools) provides some additional tools to help you on this task.
 Some are specific to `execline` where other can be used on classic shell.
 
 ## Roadmap
 
-This Roadmap for the next releases is not writting in the stone. Feel free to make a merge request to this roadmap.
+This Roadmap for the next releases is not written in stone. Feel free to make a merge request to this roadmap.
 
 * [x] Revise the frontend file's keyword field by excluding the `@` symbol:
 
@@ -90,13 +90,13 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Enable the provision of documentation for each service using a [Documentation] section. This documentation will be easily accessible by invoking the 66 doc command.
 
-* [x] Provide a `Conflicts` keyword at frontend file:
+* [x] Provide a `Conflict` keyword at frontend file:
 
-  Allow to declare a conflicting service through the `Conflicts` field, e.g. `connmand` service will declare `Conflicts = ( Networkmanager )`.
+  Allow to declare a conflicting service through the `Conflict` field, e.g. `connmand` service will declare `Conflict = ( networkmanager )`.
 
 * [x] Provide a `Provide` keyword at frontend file:
 
-  Allow to declare a alias service through the `Provide` field, e.g. `connmand` service will declare `Provide = ( Network )`.
+  Allow to declare an alias service through the `Provide` field, e.g. `connmand` service will declare `Provide = ( Network )`.
 
 * [x] Provide keyword for basic operations:
 
@@ -120,9 +120,9 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Allow at specific point of the boot process to execute specific tasks given by user.
 
-* [ ] Hacking s6-supervise
+* [ ] Extend 66-supervise
 
-  Hack the s6-supervise program to include support for a `[Reload]` section, handling tasks before executing the service and managing jobs events.
+  Extend the native `66-supervise` program to include support for a `[Reload]` section, handling tasks before executing the service and managing job events.
 
 * [x] Provide capabilities management
 
@@ -132,6 +132,6 @@ This Roadmap for the next releases is not writting in the stone. Feel free to ma
 
   Implementation of a new `[Namespace]` section to control build and control sandboxing.
 
-* [ ] Provice cgroups management
+* [ ] Provide cgroups management
 
   Ability to configure and control cgroups of the process and sub-process.

@@ -1,12 +1,12 @@
 # What is 66?
 
-Sixty-six (66) is a service manager designed around the [s6 supervision suite](http://skarnet.org/software/s6) to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
+Sixty-six (66) is an independent Linux service manager with its own native process supervision (historically inspired by s6), designed to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
 
 ## Key Features of 66 (not exhaustive):
 
 - **Frontend Service Files Declaration**: Service files are written in an INI format, making them straightforward to read and edit.
-- **Simple Scandir Creation**: Easily create [scandir](https://skarnet.org/software/s6/scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
-- **Nested Scandir Supervision**: Regular users have their own independent [scandir](https://skarnet.org/software/s6/scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
+- **Simple Scandir Creation**: Easily create [scandir](66-scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
+- **Nested Scandir Supervision**: Regular users have their own independent [scandir](66-scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
 - **Instance Service File Creation**: Supports instantiated service.
 - **Identifier Interpretation**: Supports specific identifiers that are replaced at parse time to simplify service file creation.
 - **Service Configuration Changes**: Includes built-in versioning for configuration files, including environment variables, to streamline service updates and changes.
@@ -29,7 +29,7 @@ Sixty-six (66) is a service manager designed around the [s6 supervision suite](h
 
 66 focuses on mechanisms, not policies, and can be compiled with either `glibc` or `musl` for flexibility across different systems.
 
-**Note**: This documentation tries to be complete and self-contained. However, if you have never heard of [s6](https://skarnet.org/software/s6) you might be confused at first. Please refer to the skarnet documentation if in doubt.
+**Note**: This documentation tries to be complete and self-contained. If you are new to process supervision, some concepts may be unfamiliar at first; the rest of this documentation introduces them as needed.
 
 ## Where to begin
 
@@ -59,7 +59,7 @@ Please refer to the [INSTALL.md](https://git.obarun.org/Obarun/66/-/blob/master/
 
 ### Upgrade
 
-See [changes](66-upgrade.html) between version.
+See [changes](66-upgrade.html) between versions.
 
 **(!)** The significant changes in versions `0.7.0.0` and above render them incompatible with versions prior to `0.7.0.0`. You can refer to the [Rosetta Stone](66-rosetta.html#changes-between-v0613-and-0700) to understand the interface and behavioral differences between versions below `0.7.0.0` and version `0.7.0.0`
 
@@ -86,9 +86,12 @@ See [changes](66-upgrade.html) between version.
 - [66-umountall](66-umountall.html)
 - [66-nuke](66-nuke.html)
 - [execl-envfile](execl-envfile.html)
+- [execl-runas](execl-runas.html)
 
 ### Internal tools
 
+- [66-supervise](66-supervise.html)
+- [66-svctl](66-svctl.html)
 - [66-hpr](66-hpr.html)
 - [66-shutdownd](66-shutdownd.html)
 - [66-shutdown](66-shutdown.html)
@@ -107,11 +110,11 @@ See [changes](66-upgrade.html) between version.
 
 ## Why is 66 necessary?
 
-Implementation and handling of service files based on [s6](https://skarnet.org/software/s6) can be complex and difficult to understand. This led to the creation of the `66` program.
+Implementing and handling service supervision can be complex and difficult to understand. This led to the creation of the `66` program.
 
 Why the name?
 
-Previously `66` was the result of the combination of the former [s6](https://skarnet.org/software/s6) and [s6-rc](https://skarnet.org/software/s6-rc). With time and code improvement the `s6-rc` program was dropped. `66` is now a fully independent service manager, although the name has been retained.
+Historically, `66` was built on top of the former `s6` and `s6-rc` programs. With time and code improvement those external dependencies were dropped: `66` is now a fully independent service manager with its own native supervision, although the name has been retained.
 It is a lot faster and easier to write and remember when writing. Apart from that it is a nice command prefix to have. It identifies the origin of the software and it's short.
 
 Expect more use of the `66-` prefix in future [obarun](https://web.obarun.org) software releases and please avoid using it for your own projects.

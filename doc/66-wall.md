@@ -8,7 +8,7 @@ Send a message to all users connected to a tty.
 wall [ -h ] message
 ```
 
-This command sends a *message* to all connected users. It uses `UTMP` to find out which users are logged in. If the *message* contains spaces, it must be enclosed in quotes.
+This command sends a *message* to all connected users. It uses `utmp` to find out which users are logged in. If the *message* contains spaces, it must be enclosed in quotes.
 
 ## Exit codes
 
@@ -18,7 +18,7 @@ This command sends a *message* to all connected users. It uses `UTMP` to find ou
 
 ## Options
 
-- **-h, --help**: prints this help;
+- **-h, --help**: prints this help.
 
 ## Usage examples
 

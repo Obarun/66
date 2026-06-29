@@ -47,7 +47,7 @@ init, these are the genuinely new tools in your hand:
 | [`66 free`](66-free.html) | Stop a service **and** drop it from the live scandir (unsupervise), keeping it parsed and enabled | — (stopping never unsupervises) |
 | [`66 remove`](66-remove.html) | Erase everything 66 generated for the service (parsed form + state); your frontend file is kept | manual `rm` of the unit + `systemctl daemon-reload` |
 | [`66 reconfigure`](66-reconfigure.html) | Stop, unsupervise, re-parse and restart in one step, to apply an edited frontend | partial: `systemctl daemon-reload` then restart |
-| [`66 scandir`](66-scandir.html) | Create / start / stop your own supervision tree (`s6-svscan`) | — (the supervision root is PID 1, not user-managed) |
+| [`66 scandir`](66-scandir.html) | Create / start / stop your own supervision tree (`66-scandir`) | — (the supervision root is PID 1, not user-managed) |
 | [`66 tree`](66-tree.html) | Create and manage named **groups** of services as first-class objects, with their own dependencies | systemd `.target` (static config, not a managed object) |
 | [`66 snapshot`](66-snapshot.html) | Capture, restore or transfer the **whole** 66 ecosystem (e.g. to clone it onto another machine) | — |
 | [`66 resolve`](66-resolve.html) | Print the **complete** service as the system resolved it — every field, the generated run/finish scripts, the resolved on-disk and live paths | OpenRC/runit: none; systemd `systemctl show` is nearest but reports runtime properties, not the compiled definition |
@@ -58,7 +58,7 @@ init, these are the genuinely new tools in your hand:
 exactly what `66` itself acts on — and, like every `66` command, it is made to be
 parsed by scripts. Field selectors give you raw, label-free values:
 `66 resolve -n -f run foo` prints just the generated run script,
-`66 status -n -o pid,status foo` prints exactly those two columns. (`-f`/`-o` pick
+`66 status -n -f pid,status foo` prints exactly those two columns. (`-f` picks
 fields, `-n` drops the labels.) OpenRC and runit offer no structured service
 introspection at all; systemd's `systemctl show` is the closest, but it exposes
 the manager's runtime properties rather than the service's full compiled form the
@@ -66,7 +66,7 @@ way `resolve` does.
 
 ## A few differences worth knowing
 
-**Daemons must run in the foreground.** Like runit and s6 in general, `66`
+**Daemons must run in the foreground.** Like any process supervisor, `66`
 supervises the process it launches. The first choice is always to pass the
 "don't fork" flag (`--foreground`, `-d`, `--nofork`…). See
 [troubleshooting](66-troubleshooting.html).
@@ -130,9 +130,9 @@ becomes, as a `66` frontend file named `mydaemon`:
 Type = classic
 Description = "My daemon"
 Depends = ( network )
-User = ( myuser )
 
 [Start]
+RunAs = myuser
 Execute = ( /usr/bin/mydaemon --foreground )
 ```
 

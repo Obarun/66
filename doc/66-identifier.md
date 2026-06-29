@@ -38,7 +38,7 @@ By understanding these identifiers and their replacements, you can effectively c
 
     [Stop]
     Execute = (
-        /usr/bin/s6-rmrf ${Socket}
+        /usr/bin/rm -f ${Socket}
     )
 
     [Environment]
@@ -65,7 +65,7 @@ By understanding these identifiers and their replacements, you can effectively c
 
     [Stop]
     Execute = (
-        /usr/bin/s6-rmrf ${Socket}
+        /usr/bin/rm -f ${Socket}
     )
 
     [Environment]

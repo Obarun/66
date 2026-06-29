@@ -8,13 +8,13 @@ This command handles snapshot of the 66 ecosystem of the owner of the process.
 snapshot [ -h ] create|restore|remove|list [<subcommand options>] name
 ```
 
-This command creates, removes, restores or list snapshot of the 66 ecosystem for the owner of the current process depending on the provided options. This command requires a functioning 66 ecosystem and does not verify the presence of mandatory 66 directories or files. Therefore, avoid using this command during the initial installation of 66 without first running another 66 command.
+This command creates, removes, restores or lists snapshots of the 66 ecosystem for the owner of the current process depending on the provided options. This command requires a functioning 66 ecosystem and does not verify the presence of mandatory 66 directories or files. Therefore, avoid using this command during the initial installation of 66 without first running another 66 command.
 
-**This command only handle 66 ecosystem for the owner of the process**. Making a snapshot as `root` do not handle users 66 ecosystem.
+**This command only handles the 66 ecosystem for the owner of the process**. Making a snapshot as `root` does not handle users' 66 ecosystem.
 
-This command can be used at any time without impacting the state of the running services and may be usefull to downgrade a 66 ecosystem if a 66 automatic upgrade process go wrong whatever the reason.
+This command can be used at any time without impacting the state of the running services and may be useful to downgrade a 66 ecosystem if a 66 automatic upgrade process goes wrong for whatever the reason.
 
-This command can also usefull to transfert the exact same 66 ecosystem from a machine to another making a snapshot, copying it to the targeted machine and restoring it.
+This command can also be useful to transfer the exact same 66 ecosystem from a machine to another by making a snapshot, copying it to the targeted machine and restoring it.
 
 ## Options
 
@@ -25,7 +25,7 @@ This command can also usefull to transfert the exact same 66 ecosystem from a ma
 - **create**: creates a snapshot of the 66 ecosystem.
 - **restore**: restores a snapshot called *name*.
 - **remove**: deletes a snapshot called *name*.
-- **list**: list available snapshot.
+- **list**: list available snapshots.
 
 ## Usage examples
 
@@ -47,7 +47,7 @@ Deletes a snapshot named foo
 66 snapshot remove foo
 ```
 
-List all available snapshot
+List all available snapshots
 
 ```
 66 snapshot list
@@ -63,7 +63,7 @@ This subcommand creates a snapshot that doesn't exist yet.
 snapshot create [ -h ] *name*
 ```
 
-This subcommand make a snapshot called *named* containing a verbatim copy of the `%%system_dir%%/system`, `%%skel%%`, `%%service_admconf%%`, `%%environment_adm%%`, `%%seed_adm%%`, `%%service_adm%%`, `%%service_system%%`, `%%script_system%%` and `%%seed_system%%` for `root` user, and make a verbatim copy of the `$HOME/%%user_dir%%/system`, `$HOME/%%service_user%%`, `$HOME/%%script_user%%`, `$HOME/%%service_userconf%%`, `$HOME/%%seed_user%%` and `$HOME/%%environment_user%%` directory for regular users.
+This subcommand makes a snapshot called *name* containing a verbatim copy of the `%%system_dir%%/system`, `%%skel%%`, `%%service_admconf%%`, `%%environment_adm%%`, `%%seed_adm%%`, `%%service_adm%%`, `%%service_system%%`, `%%script_system%%` and `%%seed_system%%` for `root` user, and make a verbatim copy of the `$HOME/%%user_dir%%/system`, `$HOME/%%service_user%%`, `$HOME/%%script_user%%`, `$HOME/%%service_userconf%%`, `$HOME/%%seed_user%%` and `$HOME/%%environment_user%%` directory for regular users.
 
 `%%livedir%%`, `%%system_log%%` and `$HOME/%%user_log%%` for regular users are not taken into account.
 
@@ -93,7 +93,7 @@ snapshot restore [ -h ] *name*
 
 This subcommand restores a previously created snapshot called *name*.
 
-You can get a list of available snapshot invocating the [list](#list) subcommand.
+You can get a list of available snapshots by invoking the [list](#list) subcommand.
 
 #### Options
 
@@ -119,7 +119,7 @@ snapshot remove [ -h ] *name*
 
 This subcommand removes a previously created snapshot called *name*. This operation **cannot be** undone. Process with caution.
 
-You can get a list of available snapshot invocating the [list](#list) subcommand.
+You can get a list of available snapshots by invoking the [list](#list) subcommand.
 
 #### Options
 
@@ -135,7 +135,7 @@ Removes a snapshot named `fooback`
 
 ### list
 
-This subcommand list available snapshot.
+This subcommand lists available snapshots.
 
 #### Interface
 
@@ -143,7 +143,7 @@ This subcommand list available snapshot.
 snapshot list [ -h ]
 ```
 
-This subcommand list all available snapshot for the owner of the current process.
+This subcommand lists all available snapshots for the owner of the current process.
 
 #### Options
 
@@ -151,7 +151,7 @@ This subcommand list all available snapshot for the owner of the current process
 
 #### Usage examples
 
-List available snapshot
+List available snapshots
 
 ```
 66 snapshot list

@@ -1,6 +1,6 @@
 # stop
 
-This command stops one ore more *services*.
+This command stops one or more *services*.
 
 ## Interface
 
@@ -12,7 +12,7 @@ This command expects to find an already running [scandir](66-scandir.html) and a
 
 Multiple *services* can be stopped by separating their names with a space.
 
-The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
+The `66 -t` command option has no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 
 In case of `module` *service* type, all *services* declared within the `module` will stop. The **-P** has no effect on the *services* within the `module` and only affects the module's required-by dependencies.
 

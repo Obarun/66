@@ -8,9 +8,9 @@ This command reloads one or more services.
 reload [ -h ] [ -P ] service...
 ```
 
-This command send a `SIGHUP` signal to *service*. Many daemon reacts of `SIGHUP` signal to re-read its configuration file that has been changed. This command expects to find an already running *service*.
+This command sends a `SIGHUP` signal to *service*. Many daemons react to a `SIGHUP` signal to re-read their configuration file when it has changed. This command expects to find an already running *service*.
 
-The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
+The `66 -t` command option has no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 
 In case of `module` service type, all services within the `module` are reloaded.
 

@@ -46,7 +46,7 @@ Halts the system after 10 minutes
 66 halt 10
 ```
 
-Sends an "system will be halted in 10 minutes" to connected account and halt the system after 10 minutes
+Sends a "system will be halted in 10 minutes" message to connected accounts and halts the system after 10 minutes
 
 ```
 66 halt -m "system will be halted in 10 minutes" 10

@@ -10,7 +10,7 @@ disable [ -h ] [ -S ] service...
 
 This command expects to find an already enabled *service*. The targeted service(s) can also be stopped on the fly when disabling it with the **-S** option. Generally speaking this command is the strict opposite of the [enable](66-enable.html) command.
 
-The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
+The `66 -t` command option has no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 
 In case of `module` service type, all services within the `module` are disabled.
 
@@ -32,7 +32,7 @@ Disable the service
 66 disable foo
 ```
 
-Disable an intanced service
+Disable an instanced service
 
 ```
 66 disable foo@foobar

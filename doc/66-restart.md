@@ -8,13 +8,13 @@ This command restarts one or more services.
 restart [ -h ] [ -P ] service...
 ```
 
-This command bring down and bring up again a *service*. This command expects to find an already running *service*.
+This command brings down and brings up again a *service*. This command expects to find an already running *service*.
 
-The `66 -t` command option have no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
+The `66 -t` command option has no effect. `66` will detect automatically the associated *tree* of the service along its required-by dependencies.
 
 In case of `module` service type, all services within the `module` are restarted.
 
-Multiple *services* can be disabled by separating their names with a space.
+Multiple *services* can be restarted by separating their names with a space.
 
 This command handles [interdependencies](66.html#handling-dependencies).
 

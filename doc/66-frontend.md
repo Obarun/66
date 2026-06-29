@@ -1,6 +1,6 @@
 # The frontend service file
 
-The [s6](https://skarnet.org/software/s6) programs use different files. It is quite complex to understand and manage the relationship between all those files. If you're interested in the details you should read [the documentation for the s6 servicedir](https://skarnet.org/software/s6/servicedir.html) and also about [classic](https://skarnet.org/software/s6/servicedir.html) and [module](66-module-creation.html) services. The frontend service file of `66` program allows you to deal with all these different services in a centralized manner and in one single location.
+A supervised service is, under the hood, made of several different files whose relationships can be complex to understand and manage. The frontend service file of the `66` program lets you describe all the different kinds of services — such as [classic](#type) and [module](66-module-creation.html) services — in a centralized manner and in one single location, and `66` generates everything its native supervision needs from it.
 
 By default `66` program expects to find service files in `%%service_system%%` and `%%service_adm%%` for root user, `%%service_system%%/user` and `%%service_adm%%/user` for regular accounts. For regular accounts, `$HOME/%%service_user%%` will take priority over the previous ones. Although this can be changed at compile time by passing the `-D system-service-dir=DIR`, `-D sysadmin-service-dir=DIR` and `-D user-service-dir=DIR` option to `meson setup`.
 
@@ -41,7 +41,7 @@ The parser will **not** accept an empty value. If a *key* is set then the *value
 
 ## Sections
 
-All sections need to be declared with the name written between square brackets `[]` and **must begins** with a uppercase followed by lowercase letters **only**. This means that special characters and numbers are not allowed in the name of a section.
+All sections need to be declared with the name written between square brackets `[]` and **must begin** with an uppercase followed by lowercase letters **only**. This means that special characters and numbers are not allowed in the name of a section.
 
 The `[Main]` section **must be** declared first.
 
@@ -257,7 +257,7 @@ A value specifying a true state for the key. **Must** be on the same line with i
     BlockPrivileges =
     ````
 
-* note: For code simplicity and rapidity, setting e.g. `key = T` is strictly equivalent to `key = True` or `key = TRUE` as the parser only check the first letter of the string value.
+* note: For code simplicity and rapidity, setting e.g. `key = T` is strictly equivalent to `key = True` or `key = TRUE` as the parser only checks the first letter of the string value.
 
 ### Section [Main]
 
@@ -355,7 +355,7 @@ Declares the mandatory service dependencies. Each listed service must start succ
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
-    A service can be commented out by placing the number sign `#` at the begin of the name like this:
+    A service can be commented out by placing the number sign `#` at the beginning of the name like this:
 
     ````
     Depends = ( fooA #fooB fooC )
@@ -380,7 +380,7 @@ Specifies reverse dependencies—services that depend on this service. Starting 
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
-    A service can be commented out by placing the number sign `#` at the begin of the name like this:
+    A service can be commented out by placing the number sign `#` at the beginning of the name like this:
 
     ````
     RequiredBy = ( fooX #fooY )
@@ -407,9 +407,9 @@ Lists optional dependencies. **66** will enable the first available service from
             - If the frontend service file is found, it will enable it.
             - If it is not found, it will warn the user and do nothing.
 
-    The order is *important* (!). The first service found will be used and the parse process of the field will be stopped. So, you can considere `OptsDepends` field as: "enable one on this service or none".
+    The order is *important* (!). The first service found will be used and the parse process of the field will be stopped. So, you can consider `OptsDepends` field as: "enable one on this service or none".
 
-    A service can be commented out by placing the number sign `#` at the begin of the name like this:
+    A service can be commented out by placing the number sign `#` at the beginning of the name like this:
 
     ````
     OptsDepends = ( fooA #fooB fooC )
@@ -436,7 +436,7 @@ Configures optional behaviors for the service. Wrap options in parentheses for m
         Options = ( !log )
         ````
 
-        The behavior of the logger can be configured in the corresponding section—see [[Logger]](66-frontend.html#section-logger).
+        The behavior of the logger can be configured in the corresponding section—see [[Logger]](#section-logger).
 
 #### Flags
 
@@ -451,7 +451,7 @@ Flags = (down earlier)
 
 * valid values:
 
-    * down: This will create the file down corresponding to the file down of [s6](https://skarnet.org/software/s6) program. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
+    * down: This will create the *down* file used by the supervisor. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
     * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
 
 
@@ -472,7 +472,7 @@ Enables readiness notification. Creates `notification-fd` containing the specifi
 
     * Any valid number.
 
-    This will create the file *notification-fd*. Once this file is created the service supports [readiness notification](https://skarnet.org/software/s6/notifywhenup.html). The value equals the number of the file descriptor that the service writes its readiness notification to. (For instance, it should be 1 if the daemon is [s6-ipcserverd](https://skarnet.org/software/s6/s6-ipcserverd.html) run with the -1 option.) When the service receive signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
+    This will create the file *notification-fd*. Once this file is created the service supports readiness notification. The value equals the number of the file descriptor that the service writes its readiness notification to — usually a dedicated descriptor such as `3` (or higher), matching the option your daemon uses to announce its readiness. Standard output (descriptor `1`) is normally unsuitable here, as it is redirected to the logger. When the service receives a signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
 
 #### TimeoutStop
 
@@ -580,7 +580,7 @@ Specifies which signal to send when stopping or reloading the service.
 CopyFrom = (./config /etc/default/service)
 ```
 
-Verbatim copy directories and files on the fly to the main service destination. When dealing with directories, it copies all found files and directories recursively. In case of file, it copy it to the root of the service directory.
+Verbatim copy directories and files on the fly to the main service destination. When dealing with directories, it copies all found files and directories recursively. In case of file, it copies it to the root of the service directory.
 
 * mandatory: no
 
@@ -635,9 +635,9 @@ Controls standard I/O redirection for the standard input entries.
 * valid values:
 
     * tty:/path/to/tty: Redirects Standard Input to the given tty specified by the path and try to become the controlling process of the terminal. The path must be absolute and exist. If the terminal is already being controlled by another process and the operation returns an EPERM failure, 66 will warn the user and continue its execution. If the failure is other than EPERM, it will terminate.
-    * 66log: Redirects Standard Input to the socket of the s6-log program. This is the default.
+    * 66log: Redirects Standard Input to the socket of the `66-log` program. This is the default.
     * null: Redirects Standard Input to `/dev/null`
-    * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the `s6-supervise` program.
+    * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the [66-supervise](66-supervise.html) program.
     * close: Close the Standard Input.
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
@@ -660,10 +660,10 @@ Controls standard I/O redirection for the standard output entries.
     * tty:/path/to/tty: Redirects Standard Output to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
     * file:/path/to/file: Redirects Standard Output to the given file specified by the path. The path must be absolute. If the directory of the file and the file itself do not exist, *66* will create it. In that case, the directory will get `0755` permissions and the file will be set with `0666` permissions.
     * console: Redirects Standard Output to the active console. It does not try to take control of the console.
-    * 66log: Redirects Standard Output to the socket of the `s6-log` program. This is the default.
+    * 66log: Redirects Standard Output to the socket of the `66-log` program. This is the default.
     * syslog: Redirects Standard Output to the `/dev/log` socket.
     * null: Redirects Standard Output to `/dev/null`.
-    * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `s6-supervise` program.
+    * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `66-supervise` program.
     * close: Closes the Standard Output.
 
     Please see [Standard IO redirection](66-standard-io-redirection.html) documentation for further information.
@@ -688,7 +688,7 @@ Controls standard I/O redirection for the standard error entries.
     * console: Redirects Standard Error to the active console. It does not try to take control of the console.
     * syslog: Redirects Standard Error to the `/dev/log` socket.
     * null: Redirects Standard Error to `/dev/null`.
-    * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `s6-supervise` program.
+    * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `66-supervise` program.
     * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
     * close: Closes the Standard Error.
 
@@ -809,22 +809,22 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 
 This section is *optional*.
 
-This section is exactly the same as [[Start]](66-frontend.html#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
+This section is exactly the same as [[Start]](#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
 
 ### Section [Logger]
 
-This section is optional and controls the behavior of the default logging system used by *66*, which utilizes the excellent `s6-log` program.
+This section is optional and controls the behavior of the default logging system used by *66*, which is handled by its native `66-log` program.
 
 It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](#section-main) **must be set** to `66log`, or these keys **must not** be defined at all.
 
-This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](66-frontend.html#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](66-frontend.html#section-main) . These are also valid keys for [[Logger]](66-frontend.html#section-logger) and behave the same way they do in the other sections but they can not be specified except for the mandatory key `Build`—see example below. In such case the default behaviour for those key are apply.
+This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](#section-main) . These are also valid keys for [[Logger]](#section-logger) and behave the same way they do in the other sections, but none of them is mandatory—see example below. When they are not specified, the default behaviour for those keys is applied.
 
 Furthermore there are some keys specific to the log.
 
 The following key names are also valid:
 
-- `Build`, `RunAs`, and `Execute` — See [[Start]](66-frontend.html#section-start)
-- `TimeoutStop`, `TimeoutStart` — See [[Main]](66-frontend.html#section-main)
+- `Build`, `RunAs`, and `Execute` — See [[Start]](#section-start)
+- `TimeoutStop`, `TimeoutStart` — See [[Main]](#section-main)
 
 #### Backup
 
@@ -869,7 +869,7 @@ Byte threshold to trigger log rotation when the current file grows too large.
 Timestamp = iso
 ```
 
-Specifies timestamp format prefixed to each log entry.
+Specifies timestamp format prefixed to each log entry. If not specified, it defaults to `iso` (configurable at compile time).
 
 * mandatory: no
 
@@ -889,7 +889,7 @@ Specifies timestamp format prefixed to each log entry.
 
         The logged line will not be preceded by any timestamp.
 
-        The following are two possible examples for the [[Logger]](66-frontend.html#section-logger) section definition.
+        The following are two possible examples for the [[Logger]](#section-logger) section definition.
 
         ````
         [Logger]
@@ -930,7 +930,7 @@ DirRun=/run/openntpd
         cmd_args=-d -s
         ````
 
-        The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For intance, the following valid example unset the `key=value` pair `dir_run=!/run/openntpd` from the general environment variables of the service.
+        The `!` character can precede the value. Ensure **no** space exists between the exclamation mark and the *value*. This action explicitly avoids setting the value of the *key* for the runtime process but only applies it at the start of the service. For instance, the following valid example unsets the `key=value` pair `dir_run=!/run/openntpd` from the general environment variables of the service.
 
         the following syntax is valid
 

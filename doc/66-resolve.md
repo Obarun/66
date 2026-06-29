@@ -10,7 +10,7 @@ This command is purely a debug command used by system administrators or develope
 resolve [ -h ] [ -n ] [ -f field,... ] service
 ```
 
-This command displays the contents of the service's *resolve* file. This file are used internally by the `66` program to know *service* information.
+This command displays the contents of the service's *resolve* file. This file is used internally by the `66` program to know *service* information.
 
 [Resolve](66-deeper.html#resolve-files) files are at the core of `66` for service information. They are used internally by `66` to build the dependency graph, ascertain file locations, storing the parse process result of a service, and other critical aspects of a service.
 

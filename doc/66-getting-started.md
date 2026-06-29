@@ -19,7 +19,7 @@ page for later.
 - **Frontend file** — a short `INI` file that *declares* a service (its type,
   what to execute, its dependencies…). You write these. See
   [frontend service file](66-frontend.html).
-- **Scandir** — the live supervision tree (a set of `s6-supervise` processes)
+- **Scandir** — the live supervision tree (a set of [66-supervise](66-supervise.html) processes)
   that actually keeps your services running. It must be running before a service
   can run. See [scandir](66-scandir.html).
 - **The pipeline** — `66` turns a frontend file into a running service in three
@@ -33,8 +33,8 @@ page for later.
 ## Step 1 — Make sure a scandir is running
 
 A service can only run inside a **scandir** — the live supervision tree
-([s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) and the
-`s6-supervise` processes under it) for your user. Whether one is already running
+([66-scandir](66-scandir.html) and the
+`66-supervise` processes under it) for your user. Whether one is already running
 depends on how your system was set up, so it is worth knowing where it comes
 from:
 
@@ -55,7 +55,7 @@ One command covers every case, because it is idempotent:
 
 - If a scandir is already running for you, it **returns immediately** — no harm,
   nothing duplicated. (It also creates the scandir first if it does not exist.)
-- If none is running, it launches `s6-svscan` and **stays in the foreground**:
+- If none is running, it launches `66-scandir` and **stays in the foreground**:
   that process *is* your supervisor from now on. In a normal boot this is exactly
   what the `boot-user@<user>` service does, under supervision — which is why you
   do not usually type it. When you bring one up by hand (a from-zero or non-66

@@ -8,15 +8,15 @@ Handles the *scandir* for a given user. Designed to be either root or a branch o
 scandir [ -h ] [ -o owner ] create|start|stop|remove|reconfigure|check|quit|abort|nuke|annihilate|zombies [<subcommand options>]
 ```
 
-This program creates, removes or sends a signal to a *scandir* (directory containing a collection of s6‑supervise processes) for the current owner of the proccess depending on the provided options.
+This program creates, removes or sends a signal to a *scandir* (directory containing a collection of [66-supervise](66-supervise.html) processes) for the current owner of the proccess depending on the provided options.
 
-When the `start` subcommand is invoked, this command launches the [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html), responsible for supervising the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) program, where [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) monitors a single service.
+When the `start` subcommand is invoked, this command launches `66-scandir`, which supervises the `66-supervise` processes, where each `66-supervise` monitors a single service.
 
 ## Options
 
 - **-h, --help**: prints this help.
 
-- **-o, --owner** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the `66  ‑l` option.
+- **-o, --owner** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the `66 -l` option.
 
 ## Subcommands
 
@@ -76,7 +76,7 @@ scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ]
 
 This command create the necessary directory at `%%livedir%%`. If the *scandir* already exist for the given user it will prevent its creation. You *must* remove it first if you don't want to keep it.
 
-Various files and directories is created at `%%livedir%%`. Refers to [deeper understanding](66-deeper.html) documentation for futhers information.
+Various files and directories are created at `%%livedir%%`. Refer to the [deeper understanding](66-deeper.html) documentation for further information.
 
 #### Options
 
@@ -84,7 +84,7 @@ Various files and directories is created at `%%livedir%%`. Refers to [deeper und
 - **-b, --boot**: create scandir for a boot process. Only the root user can use this option. It is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process.
 - **-B, --container**: create scandir for a boot process inside a container. This option modifies some behaviors:
 
-    The ultimate output fallback (i.e. the place where error messages go when nothing catches them, e.g. the error messages from the catch-all logger and the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) process managing the catch-all logger) is not `/dev/console`, but the descriptor that was init's standard error.
+    The ultimate output fallback (i.e. the place where error messages go when nothing catches them, e.g. the error messages from the catch-all logger and the 66-supervise process managing the catch-all logger) is not `/dev/console`, but the descriptor that was init's standard error.
     Stopping the container with reboot will make the container's init program report being killed by a `SIGHUP`. Stopping it with [66 poweroff](66-poweroff.html) will make it report being killed by a `SIGINT`. This is according to the reboot(2) specification.
     Stopping the container with [66 halt](66-halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/<UID>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) This means that in order to run a command in a container managed by [66 boot](66-boot.html) and exit the container when the command dies while reporting the exit code to its parent, [66 boot](66-boot.html) use the `/etc/66/rc.init.container` file instead of the `/etc/66/rc.init` file. This file should be modified to launch the command that you want to start inside this container. Then you need to stop that container calling [66 halt](66-halt.html).
     All the running services will be killed, all the zombies will be reaped, and the container will exit with the required exit code.
@@ -123,9 +123,9 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-h, --help**: prints this help.
 
-- **-d, --notify** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option have no effects.
+- **-d, --notify** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option has no effect.
 
-- **-s, --rescan** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) will only detect new services by issuing either [scandir reload](66-scandir.html#reconfigure) or [scandir check](66-scandir.html#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
+- **-s, --rescan** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and `66-scandir` will only detect new services by issuing either [scandir reconfigure](#reconfigure) or [scandir check](#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
 - **-e, --environment** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `-D sysadmin-environment-dir=DIR `, `-D user-environment-dir=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
 
@@ -151,7 +151,7 @@ This command stops a running *scandir*.
 scandir stop [ -h ]
 ```
 
-This command stops the *scandir* sending a `SIGTERM` to all the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes supervising a service and a `SIGHUP` to all the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes supervising a logger, then exec into its finish procedure. This means that services will be brought down but loggers will exit naturally on `EOF`, and [s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will wait for them to exit before exec'ing into `.s6-svscan/finish` or exiting itself: it's a clean shutdown with no loss of logs.
+This command stops the *scandir* sending a `SIGTERM` to all the 66-supervise processes supervising a service and a `SIGHUP` to all the 66-supervise processes supervising a logger, then exec into its finish procedure. This means that services will be brought down but loggers will exit naturally on `EOF`, and `66-scandir` will wait for them to exit before exec'ing into `.66-scandir/finish` or exiting itself: it's a clean shutdown with no loss of logs.
 
 #### Options
 
@@ -181,7 +181,7 @@ scandir remove [ -h ]
 
 The *scandir* **must** first be stopped with [scandir stop](#stop) subcommand or similar subcommand to be able to remove it.
 
-Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refers to [deeper understanding](66-deeper.html) for futhers information.
+Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refer to the [deeper understanding](66-deeper.html) for further information.
 
 #### Options
 
@@ -196,7 +196,7 @@ Removes a *scandir*
 
 Removes a *scandir* for the owner `owner`
 ```
-66 scandir -o owner scandir
+66 scandir -o owner remove
 ```
 
 ### reconfigure
@@ -209,7 +209,7 @@ This command reconfigure a running *scandir*.
 scandir reconfigure [ -h ]
 ```
 
-[s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will perform a scan, and destroy inactive services.
+`66-scandir` will perform a scan, and destroy inactive services.
 
 #### Options
 
@@ -239,7 +239,7 @@ This command check the *scandir* for services.
 scandir check [ -h ]
 ```
 
-[s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will immediately perform a scan of *scandir* to check for services.
+`66-scandir` will immediately perform a scan of *scandir* to check for services.
 
 #### Options
 
@@ -269,7 +269,7 @@ Quits a running *scandir*.
 scandir quit [ -h ]
 ```
 
-[s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will send all its [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes a `SIGTERM`, then exec into its finish procedure. This is different from `stop` subcommand in that services and loggers will be forcibly killed, so the quit procedure may be faster but in-flight logs may be lost.
+`66-scandir` will send all its 66-supervise processes a `SIGTERM`, then exec into its finish procedure. This is different from `stop` subcommand in that services and loggers will be forcibly killed, so the quit procedure may be faster but in-flight logs may be lost.
 
 #### Options
 
@@ -277,7 +277,7 @@ scandir quit [ -h ]
 
 #### Usage examples
 
-Quits a *scandir* running *scandir*.
+Quits a running *scandir*.
 
 ```
 66 scandir quit
@@ -299,7 +299,7 @@ This command abort a running *scandir*.
 scandir abort [ -h ]
 ```
 
-[s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) will exec into its finishing procedure. It will not kill any of the maintained [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes.
+`66-scandir` will exec into its finishing procedure. It will not kill any of the maintained 66-supervise processes.
 
 #### Options
 
@@ -321,14 +321,14 @@ Aborts a *scandir* for the owner `owner`
 
 ### nuke
 
-Kill all the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes.
+Kill all the 66-supervise processes.
 
 #### Interface
 
 ```
 scandir nuke [ -h ]
 ```
-[s6-svscan](https://skarnet.org/software/s6/s6-svscan.html) kill all the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes it has launched but that did not match a service directory last time *scandir* was scanned, i.e. it prunes the supervision tree so that it matches exactly what was in *scandir* at the time of the last scan. A `SIGTERM` is sent to the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes supervising services and a `SIGHUP` is sent to the [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes supervising loggers.
+`66-scandir` kill all the 66-supervise processes it has launched but that did not match a service directory last time *scandir* was scanned, i.e. it prunes the supervision tree so that it matches exactly what was in *scandir* at the time of the last scan. A `SIGTERM` is sent to the 66-supervise processes supervising services and a `SIGHUP` is sent to the 66-supervise processes supervising loggers.
 
 #### Options
 
@@ -336,13 +336,13 @@ scandir nuke [ -h ]
 
 #### Usage examples
 
-Kill s6-supervise processes from a *scandir*
+Kill 66-supervise processes from a *scandir*
 
 ```
 66 scandir nuke
 ```
 
-Kill s6-supervise processes from a *scandir* for the owner `owner`
+Kill 66-supervise processes from a *scandir* for the owner `owner`
 
 ```
 66 scandir -o owner nuke
@@ -358,7 +358,7 @@ Annihilates a running *scandir*.
 scandir annihilate [ -h ]
 ```
 
-Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the relevant [s6-supervise](https://skarnet.org/software/s6/s6-supervise.html) processes, even if they are supervising loggers. This is not recommended in a situation where you do not need to tear down the supervision tree.
+Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the relevant 66-supervise processes, even if they are supervising loggers. This is not recommended in a situation where you do not need to tear down the supervision tree.
 
 #### Options
 
@@ -388,7 +388,7 @@ Destroy zombies from a running *scandir*.
 scandir zombies [ -h ]
 ```
 
-Immediately triggers s6-svscan's reaper mechanism.
+Immediately triggers 66-scandir's reaper mechanism.
 
 #### Options
 
@@ -410,9 +410,9 @@ Removes zombies from a *scandir* for the owner `owner`
 
 ## Boot specification
 
-The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **‑b** and **-B** will create `.s6‑svscan` control files (see [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) interface documentation) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and  [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **‑s** option.
+The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **-b** and **-B** will create `.66-scandir` control files (see the [Interface](#interface) section) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **-s** option.
 
-The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read‑only root filesystems there needs to be a tmpfs mounted before [s6‑svscan](https://skarnet.org/software/s6/s6-svscan.html) can be run.
+The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read-only root filesystems there needs to be a tmpfs mounted before `66-scandir` can be run.
 
 ## Environment
 
@@ -432,7 +432,7 @@ C escapes, including hexadecimal and octal sequences, are supported in quoted va
 
 If *value* is empty, *key* is still added to the environment, with an empty value.
 
-Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get it value. For intance, an environment file can be declared
+Reusing the same variable or variable from the actual environment is allowed. In such case, variable name **must be** between `${}` to get its value. For instance, an environment file can be declared
 
 ```
     PATH=/usr/local/bin:${PATH}
@@ -441,7 +441,7 @@ Reusing the same variable or variable from the actual environment is allowed. In
     socket=${socket_dir}/${socket_name}
 ```
 
-The order of `key=value` pair declaration **do not** matter
+The order of `key=value` pair declaration **does not** matter
 
 ```
     PATH=/usr/local/bin:${PATH}
@@ -450,13 +450,13 @@ The order of `key=value` pair declaration **do not** matter
     socket_dir=dname
 ```
 
-A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot not be found it left the pair as it. For intance,
+A variable calling itself is **only** allowed if the `key` name can be found at the environment of the current process. If the key of the `key=value` cannot be found it leaves the pair as is. For instance,
 
 ```
     PATH=/usr/local/bin:${PATH}
 ```
 
-will only works if `PATH` is already define at the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
+will only work if `PATH` is already defined in the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
 
 ### Limits
 
