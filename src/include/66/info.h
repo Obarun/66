@@ -76,6 +76,25 @@ struct info_field_s {
     size_t offset ;         // offsetof the member in the resolve struct
 } ;
 
+/* Shared field-listing engine: -f selection, name alignment and the noname
+ * branch live here once. A caller passes the field keys and a writer that
+ * prints the value (followed by a newline) of the field at a given index;
+ * the keys are the only thing the engine knows about the field layout. */
+
+typedef void info_value_writer(void *ctx, size_t index) ;
+typedef info_value_writer *info_value_writer_t_ref ;
+
+/**
+ * @brief Select, align and display a set of named fields.
+ * @param[in] keys     Field keys, one per field, in display order; what -f matches.
+ * @param[in] nfields  Number of keys.
+ * @param[in] select   Comma-separated list of keys to show, or 0 for all.
+ * @param[in] noname   If non-zero, print only the values, not the field names.
+ * @param[in] write    Writer printing the value of field @index, newline included.
+ * @param[in] ctx      Opaque context handed back to @write.
+ */
+extern void info_fields_display(char const *const *keys, size_t nfields, char const *select, uint8_t noname, info_value_writer *write, void *ctx) ;
+
 /**
  * @brief Display the fields of a resolve struct from a declarative table.
  * @param[in] base     Pointer to the resolve struct.

@@ -13,21 +13,21 @@
  */
 
 #include <stddef.h>
-#include <string.h>
 #include <stdint.h>
-#include <wchar.h>
 
 #include <oblibs/log.h>
-#include <oblibs/opt.h>
 #include <oblibs/types.h>
-#include <oblibs/strbuf.h>
-#include <oblibs/sbl.h>
 #include <oblibs/stream.h>
 
 #include <66/info.h>
 #include <66/state.h>
 
-static wchar_t const field_suffix[] = L" :" ;
+typedef struct resolve_ctx_s resolve_ctx_t ;
+struct resolve_ctx_s {
+    void const *base ;
+    char const *rblob ;
+    info_field_t const *fields ;
+} ;
 
 static void display_value(void const *base, char const *rblob, info_field_t const *f)
 {
@@ -76,65 +76,21 @@ static void display_value(void const *base, char const *rblob, info_field_t cons
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
+static void write_value(void *ctx, size_t index)
+{
+    resolve_ctx_t const *c = ctx ;
+    display_value(c->base, c->rblob, &c->fields[index]) ;
+}
+
 void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname)
 {
     log_flow() ;
 
-    /* build the list of field indices to display, in display order */
-    size_t idx[nfields] ;
-    size_t n = 0 ;
+    char const *keys[nfields] ;
+    for (size_t i = 0 ; i < nfields ; i++)
+        keys[i] = fields[i].key ;
 
-    if (select) {
+    resolve_ctx_t ctx = { base, rblob, fields } ;
 
-        _alloc_sbl_(sel, 256) ;
-
-        if (!opt_list(&sel, select, ','))
-            log_dieu(LOG_EXIT_SYS, "parse field list: ", select) ;
-
-        size_t pos = 0 ;
-        FOREACH_SBL(&sel, pos) {
-
-            char const *key = sel.s + pos ;
-            size_t i = 0 ;
-
-            for (; i < nfields ; i++)
-                if (!strcmp(fields[i].key, key))
-                    break ;
-
-            if (i == nfields)
-                log_die(LOG_EXIT_USER, "unknown field: ", key) ;
-
-            idx[n++] = i ;
-        }
-
-    } else {
-
-        for (; n < nfields ; n++)
-            idx[n] = n ;
-    }
-
-    if (noname) {
-
-        for (size_t i = 0 ; i < n ; i++)
-            display_value(base, rblob, &fields[idx[i]]) ;
-
-    } else {
-
-        char buf[nfields][INFO_FIELD_MAXLEN] ;
-        char aligned[nfields][INFO_FIELD_MAXLEN] ;
-
-        for (size_t i = 0 ; i < n ; i++) {
-
-            char const *key = fields[idx[i]].key ;
-            memcpy(buf[i], key, strlen(key) + 1) ;
-        }
-
-        info_field_align(buf, aligned, field_suffix, n) ;
-
-        for (size_t i = 0 ; i < n ; i++) {
-
-            info_display_field_name(aligned[i]) ;
-            display_value(base, rblob, &fields[idx[i]]) ;
-        }
-    }
+    info_fields_display(keys, nfields, select, noname, &write_value, &ctx) ;
 }
