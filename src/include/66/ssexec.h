@@ -84,9 +84,11 @@ extern opt_cmd_fn ssexec_reconfigure ;
 extern opt_cmd_fn ssexec_configure ;
 extern opt_cmd_fn ssexec_resolve ;
 extern opt_cmd_fn ssexec_state ;
+extern opt_cmd_fn ssexec_runstate ;
 extern opt_cmd_fn ssexec_remove ;
 extern opt_cmd_fn ssexec_status ;
 extern opt_cmd_fn ssexec_signal ;
+extern opt_cmd_fn ssexec_log ;
 
 extern opt_cmd_t const cmd_start ;
 extern opt_cmd_t const cmd_stop ;
@@ -100,9 +102,11 @@ extern opt_cmd_t const cmd_reconfigure ;
 extern opt_cmd_t const cmd_configure ;
 extern opt_cmd_t const cmd_resolve ;
 extern opt_cmd_t const cmd_state ;
+extern opt_cmd_t const cmd_runstate ;
 extern opt_cmd_t const cmd_remove ;
 extern opt_cmd_t const cmd_status ;
 extern opt_cmd_t const cmd_signal ;
+extern opt_cmd_t const cmd_log ;
 
 /** wrapper sub-command handlers (opt_dispatch leaves) */
 extern opt_cmd_fn ssexec_scandir_create ;

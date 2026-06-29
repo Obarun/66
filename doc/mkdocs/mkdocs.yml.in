@@ -80,6 +80,7 @@ nav:
     - resolve: 66-resolve.md
     - restart: 66-restart.md
     - rosetta: 66-rosetta.md
+    - runstate: 66-runstate.md
     - scandir: 66-scandir.md
     - signal: 66-signal.md
     - snapshot: 66-snapshot.md

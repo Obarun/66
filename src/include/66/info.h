@@ -20,6 +20,7 @@
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
+#include <66/status.h>
 #include <66/tree.h>
 #include <66/graph.h>
 
@@ -105,6 +106,14 @@ extern void info_fields_display(char const *const *keys, size_t nfields, char co
  * @param[in] noname   If non-zero, print only the values, not the field names.
  */
 extern void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname) ;
+
+/**
+ * @brief Display the runtime status record of a service.
+ * @param[in] st       The status record to display.
+ * @param[in] select   Comma-separated list of keys to show, or 0 for all.
+ * @param[in] noname   If non-zero, print only the values, not the field names.
+ */
+extern void info_status_display(service_status_t const *st, char const *select, uint8_t noname) ;
 
 extern depth_t info_graph_init(void) ;
 extern int service_info_walk(service_graph_t *g, char const *name, char const *treename, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style, ssexec_t *info) ;
