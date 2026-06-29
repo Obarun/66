@@ -15,7 +15,6 @@
 #include <string.h>
 #include <stdint.h>//uintx_t
 #include <sys/stat.h>
-#include <stdio.h>//rename
 #include <pwd.h>
 #include <stdlib.h>//free
 
@@ -59,7 +58,6 @@ enum enum_tree_opts_e
     TREE_OPTS_DEPENDS = 0,
     TREE_OPTS_REQUIREDBY,
     TREE_OPTS_ENABLE,
-    TREE_OPTS_RENAME,
     TREE_OPTS_GROUPS,
     TREE_OPTS_NOSEED,
     TREE_OPTS_ALLOW,
@@ -74,7 +72,6 @@ tree_opts_map_t const tree_opts_table[] =
     { .str = "depends",     .id = TREE_OPTS_DEPENDS },
     { .str = "requiredby",  .id = TREE_OPTS_REQUIREDBY },
     { .str = "enable",      .id = TREE_OPTS_ENABLE },
-    { .str = "rename",      .id = TREE_OPTS_RENAME },
     { .str = "groups",      .id = TREE_OPTS_GROUPS },
     { .str = "noseed",      .id = TREE_OPTS_NOSEED },
     { .str = "allow",       .id = TREE_OPTS_ALLOW },
@@ -97,7 +94,6 @@ struct tree_what_s
     uint8_t clone ;
     uint8_t groups ;
     uint8_t current ;
-    uint8_t rename ;
     uint8_t noseed ;
 
     char gr[6] ;
@@ -109,7 +105,7 @@ struct tree_what_s
 
     uint8_t nopts ;
 } ;
-#define TREE_WHAT_ZERO { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, { 0 }, 1, 1, 0 }
+#define TREE_WHAT_ZERO { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, { 0 }, 1, 1, 0 }
 
 tree_what_t what_init(void)
 {
@@ -368,11 +364,6 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
 
                     case TREE_OPTS_ENABLE :
                         what->enable = 1 ;
-                        break ;
-
-                    case TREE_OPTS_RENAME:
-
-                        what->rename = 1 ;
                         break ;
 
                     case TREE_OPTS_GROUPS:

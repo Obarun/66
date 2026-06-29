@@ -93,7 +93,6 @@ static opt_t const opts_tree_status[] = {
 static char const tree_admin_epilog[] =
     "options for -o (colon-separated):\n"
     "    enable               enable the tree\n"
-    "    rename               rename the tree\n"
     "    noseed               do not apply a seed file\n"
     "    clone                clone an existing tree\n"
     "    depends=tree,...     trees this one depends on (or none)\n"
@@ -126,7 +125,7 @@ static opt_cmd_t const tree_sub[] = {
     { .name = "resolve", .help = "display the resolve files contents of tree", .operands = "tree", .opts = opts_tree_resolve, .nopts = OPT_COUNT(opts_tree_resolve), .on_option = &on_tree_resolve, .fn = &ssexec_tree_resolve, .epilog = tree_resolve_epilog },
     { .name = "status",  .help = "display information about tree", .operands = "tree", .opts = opts_tree_status, .nopts = OPT_COUNT(opts_tree_status), .on_option = &on_tree_status, .fn = &ssexec_tree_status, .epilog = tree_status_epilog },
     { .name = "init",    .help = "initiate all enabled services of a tree to a scandir", .operands = "tree", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &ssexec_tree_init },
-    { .name = "start",   .help = "bring up all services of a tree", .operands = "tree", .opts = opts_tree_signal, .nopts = OPT_COUNT(opts_tree_signal), .on_option = &on_tree_signal, .fn = &do_tree_start },
+    { .name = "start",   .help = "bring up all services of a tree", .operands = "tree", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_tree_start },
     { .name = "stop",    .help = "bring down all services of a tree", .operands = "tree", .opts = opts_tree_signal, .nopts = OPT_COUNT(opts_tree_signal), .on_option = &on_tree_signal, .fn = &do_tree_stop },
     { .name = "free",    .help = "bring down all services of a tree and unsupervise them", .operands = "tree", .opts = opts_tree_signal, .nopts = OPT_COUNT(opts_tree_signal), .on_option = &on_tree_signal, .fn = &do_tree_free },
 } ;

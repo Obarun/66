@@ -32,7 +32,7 @@ When booting your machine and opting for console-only usage, your concern might 
 
 Later, when you need to print a document stored on another server, you'd typically start `cups` and then `nfs`. By leveraging the *tree* concept, you can start `print`, making all necessary services available. After finishing the printing task, instead of individually stopping the required services, you can simply stop `print`, and all services within it will cease automatically.
 
-The functionality extends further: say, you now wish to watch a video, requiring an active X server and potentially other services. Enter `graphics`, specifically designed for such purposes.
+The functionality extends further: say, you now wish to watch a video, requiring an active X server and potentially other services. Enter `graphic`, specifically designed for such purposes.
 
 ## Options
 
@@ -118,7 +118,7 @@ valid fields for `-o` options are:
    - **groups=**: add *tree* to the specified groups. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
    - **allow=**: comma separated list of account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
    - **deny=**: comma separated list of account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
-   - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
+   - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exist in the system.
    - **noseed**: do not use seed file to build the *tree*. Even if a seed file exists, ignore it and create tree only with options passed or [basic creation configuration](#basic-creation-configuration).
    - **enable**: activate the tree at the next boot.
 
@@ -163,7 +163,7 @@ valid fields for `-o` options are:
    - **groups=** *group*: add *tree* to the specified *group*. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
    - **allow=** *user*: comma separated list of *user* account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*. Any user not explicitly allowed is automatically denied for configuring the given *tree*.
    - **deny=** *user*: comma separated list of *user* account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
-   - **clone=** *name*: make a clone *name* of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exists int the system.
+   - **clone=** *name*: make a clone *name* of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exist in the system.
 
 #### Usage examples
 
@@ -258,12 +258,12 @@ Disables `treefoo` tree
 
 ### Current
 
-This command a *tree* as the current one.
+This command marks a *tree* as the current one.
 
 #### Interface
 
 ```
-66 tree [ -h ] current tree
+tree current [ -h ] tree
 ```
 
 After marking a *tree* as current, the `66` command using the `-t` reacts to that *tree* without the need to specify the `-t` option.
@@ -287,7 +287,7 @@ This command displays information about a *tree*.
 #### Interface
 
 ```
-tree status [ -h ] [ -n ] [ -o name,enabled,... ] [ -g ] [ -d depth ] [ -r ] tree
+tree status [ -h ] [ -n ] [ -f field,... ] [ -g ] [ -d depth ] [ -r ] tree
 ```
 
 If *tree* is not specified, the command return information of all trees available of the system.
@@ -295,21 +295,22 @@ If *tree* is not specified, the command return information of all trees availabl
 #### Options
 
 - **-h, --help**: prints this help.
-- **-n, --no-name**: do not display the names of fields. Combining this options with the `-o` facilitates scripting usage.
-- **-o, --options**: comma separated list of field to display.
-- **-f, --field** *field,...*: display only these comma-separated fields.
+- **-n, --no-name**: do not display the names of fields. Combining this option with the `-f` facilitates scripting usage.
+- **-f, --field** *field,...*: comma separated list of fields to display.
+- **-o, --options** *field,...*: deprecated, kept for compatibility. Use `-f` instead.
 - **-g, --graph**: displays the contents field as graph allowing to view interdependencies of services.
-- **-d, --depth**: increase the depth view of the contents field recursion. Default value is `1`. Only have effect with the `-g` option.
+- **-d, --depth**: increase the depth view of the contents field recursion. Default value is `1`. Only has effect with the `-g` option.
 - **-r, --reverse**: reverse the contents field. By default, the order corresponds to a `start` process.
 
-valid fields for `-o` options are:
+valid fields for `-f` option are:
 
    - **name**: displays the name of the tree.
    - **current**: displays a boolean value of the current state.
    - **enabled**: displays a boolean value of the enable state.
+   - **allowed**: displays a list of allowed user to use the tree.
+   - **groups**: displays the groups the tree belongs to.
    - **depends**: displays the list of tree(s) started before.
    - **requiredby**: displays the list of tree(s) started after.
-   - **allowed**: displays a list of allowed user to use the tree.
    - **contents**: displays the list of services associated to tree.
 
 #### Usage and output examples
@@ -323,13 +324,13 @@ Displays all information of all trees
 Only display the field `name` and `enabled` of all trees
 
 ```
-66 tree status -o name,enabled
+66 tree status -f name,enabled
 ```
 
 Only display the field `enabled` of tree `treefoo` without displaying the name of the field
 
 ```
-66 tree status -n -o enabled treefoo
+66 tree status -n -f enabled treefoo
 ```
 
 In a script you can do
@@ -338,7 +339,7 @@ In a script you can do
 #!/bin/sh
 
 tree="${1}"
-isenabled=$(66 tree status -no enabled ${tree})
+isenabled=$(66 tree status -nf enabled ${tree})
 
 if [ ${isenabled} = "no" ]; then
    echo ${tree} is not enabled
@@ -373,7 +374,7 @@ Contents    : \
               ├─networkmanager (pid=746, state=Enabled, type=classic, tree=global)
               └─openntpd (pid=736, state=Enabled, type=classic, tree=global)
 ```
-It also displays information of each associated services of tree `global` within () parentheses, which are self-explainatory.
+It also displays information of each associated services of tree `global` within () parentheses, which are self-explanatory.
 
 Displays information about the associated services of the global tree in reverse graph mode, representing the process for stop
 
@@ -439,9 +440,9 @@ This command initiate services of a tree to a scandir directory
 66 tree init [ -h ] tree
 ```
 
-The behavior of this subcommand will depends of the state of the [scandir](66-scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*, in other case its initiate all *enabled* services within *tree*.
+The behavior of this subcommand depends on the state of the [scandir](66-scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*; otherwise it initiates all *enabled* services within *tree*.
 
-Users, even system administrator, should not need to directly invoke this command. This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command is services was not initiate previously.
+Users, even system administrator, should not need to directly invoke this command. This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command if services were not initiated previously.
 
 #### Options
 
@@ -449,7 +450,7 @@ Users, even system administrator, should not need to directly invoke this comman
 
 #### Initialization process
 
-The command will make an exact copy of the *enabled* service files and directories of the *tree* inside a [scandir](66-scandir.html) directory at `%%livedir%%/state/UID` where *UID* is the uid of the current owner of the process. The [scandir](66-scandir.html) does not need to be necessarily running. This is useful at boot time to initiate an early service before starting the scandir. Once the [scandir](66-scandir.html) starts—see [66 scandir start](66-scandir.html) command, the already present services start automatically.
+The command will make an exact copy of the *enabled* service files and directories of the *tree* inside a [scandir](66-scandir.html) directory at `%%livedir%%/state/UID` where *UID* is the uid of the current owner of the process. The [scandir](66-scandir.html) does not necessarily need to be running. This is useful at boot time to initiate an early service before starting the scandir. Once the [scandir](66-scandir.html) starts—see [66 scandir start](66-scandir.html) command, the already present services start automatically.
 
 #### Usage examples
 
@@ -466,7 +467,7 @@ This command starts all services **marked enabled** within tree
 #### Interface
 
 ```
-tree start [ -h ] [ -f ] tree
+tree start [ -h ] tree
 ```
 
 If *tree* is not specified, the command manages all *enabled* services within all *enabled* trees available of the system.
@@ -545,16 +546,16 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Usage examples
 
-Stops and unsuperives all services from all enabled trees available on the system
+Stops and unsupervises all services from all enabled trees available on the system
 
 ```
-66 tree stop
+66 tree free
 ```
 
 Stops and unsupervise all services of tree `treefoo`
 
 ```
-66 tree stop treefoo
+66 tree free treefoo
 ```
 
 ## Basic creation configuration
