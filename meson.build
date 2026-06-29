@@ -42,7 +42,7 @@ project('66',
           'default_library=shared'
         ])
 
-message('See INSTALL_MESON.md for detailed configuration instructions and warnings.')
+message('See INSTALL.md for detailed configuration instructions and warnings.')
 
 fs = import('fs')
 
