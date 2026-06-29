@@ -34,8 +34,8 @@ This directory stores trees and services configuration files. You should see thi
 └── system
     ├── .resolve
     │   ├── service
-    │   │    ├── services -> %%system_dir%%/system/service/svc/<service>
-    │   │    └── services -> %%system_dir%%/system/service/svc/<service>
+    │   │    ├── <service> -> %%system_dir%%/system/service/svc/<service>
+    │   │    └── <service> -> %%system_dir%%/system/service/svc/<service>
     │   ├── Master
     │   ├── <tree> resolve file
     │   └── <tree> resolve file
@@ -47,14 +47,14 @@ This directory stores trees and services configuration files. You should see thi
             │   ├── state
             │   │   └── status file
             │   ├── file
-            │   └── file     
-            ├── <services>
+            │   └── file
+            ├── <service>
             │   ├── .resolve
             │   │   └── <service> resolve file
             │   ├── state
             │   │   └── status file
             │   ├── file
-            │   └── file    
+            │   └── file
             └── <service>
                 ├── .resolve
                 │   └── <service> resolve file
@@ -258,7 +258,7 @@ limitstack      : 0
 rversion        : 0.8.2.1
 ```
 
-The `66 status <service>` command provides a subset of these information. Too much detail might be overwhelming, so it simplifies the output for ease of use.
+The resolve file is the full, low-level picture. For day-to-day use, the [66 status](66-status.html) command presents a readable summary drawn from this file and from the service's runtime record, rather than dumping every field.
 
 Some precision is needed here:
 
@@ -274,7 +274,7 @@ Some precision is needed here:
 
 #### %%system_dir%%/system/service/svc/\<service\>/state
 
-This directory houses a *binary* file named `status`, which `66` uses to track the service's current operational status. Running `66 state <service>` displays output similar to the following
+This directory houses a *binary* file named `status`, which `66` uses to track the service's *management* state — what has been parsed, supervised, or is pending. Running `66 state <service>` displays output similar to the following
 
 ```
 toinit          : 0
@@ -284,18 +284,38 @@ tounsupervise   : 0
 toparse         : 0
 isparsed        : 1
 issupervised    : 1
-isup            : 1
 ```
 
-For instance, when executing `66 free <service>`, the `tounsupervise` field switches to `1` at the process start and back to `0` at the end. Additionally, `isup` and `issupervised` also become `0`.
+For instance, when executing `66 free <service>`, the `tounsupervise` field switches to `1` at the process start and back to `0` at the end. The `issupervised` field also becomes `0`.
+
+This *management* state is distinct from the *runtime* state — whether the process is actually running right now, since when, and with which result. The runtime state is a separate binary record written by [66-supervise](66-supervise.html) under the live directory, at `%%livedir%%/state/UID/<service>/supervise/status`. A service is therefore described by three complementary views:
+
+- [66 state](66-state.html) — the *management* flags shown above (parsed, supervised, pending actions).
+- [66 runstate](66-runstate.html) — the raw *runtime* record (`state`, `result`, `who`, `pid`, `code`, timestamps, `ndeaths`).
+- [66 status](66-status.html) — a human-readable summary combining both.
 
 ## %%skel%%
 
 This directory is specified at compile time by using the `-D skeleton-dir=` option to `meson setup`.
 
-It holds various configuration files utilized by `66`.
+It holds the boot and shutdown skeleton files together with the system administrator's own configuration subdirectories
 
-User may want to manage some subdirectories with the exception of the `%%service_admconf%%` below.
+```
+%%skel%%
+├── init.conf              boot configuration file, see 66-boot
+├── rc.init                start sequence (tree start ${TREE})
+├── rc.init.container      container variant of rc.init
+├── rc.shutdown            stop sequence (tree stop)
+├── rc.shutdown.final      last-resort hook, empty by default
+├── conf                   %%service_admconf%%
+├── environment            %%environment_adm%%
+├── seed                   %%seed_adm%%
+└── service                %%service_adm%%
+```
+
+The `init.conf` and `rc.*` files are the skeleton files read at boot and shutdown; they are described in [boot](66-boot.html). The four subdirectories below are reserved for the system administrator.
+
+Users may manage these subdirectories, with the exception of `%%service_admconf%%`, which is handled by the [configure](66-configure.html) command.
 
 ### %%service_admconf%%
 
@@ -357,7 +377,38 @@ This should be within a writable and executable filesystem, likely a RAM filesys
 
 This directory and its subdirectories are managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 
-It is created at [66 scandir create](66-scandir.html#start) invocation if it does not exist yet.
+It is created at [66 scandir create](66-scandir.html#start) invocation if it does not exist yet. You should see the following structure
+
+```
+%%livedir%%
+├── scandir
+│   └── 0                                  one directory per UID (0 is root)
+│       ├── .66-scandir                    control of the native 66-scandir
+│       │   ├── control                    command FIFO
+│       │   ├── lock
+│       │   └── SIGINT, SIGTERM, finish…   signal and lifecycle scripts
+│       ├── scandir-log                    scandir internal logger (66-log)
+│       ├── fdholder                       fdholder daemon (fdholderdir field)
+│       ├── oneshotd                       oneshot daemon (oneshotddir field)
+│       ├── <service> -> ../../state/0/<service>     classic: supervised symlink (scandir field)
+│       ├── .<service> -> ../../state/0/<service>    oneshot/module: hidden symlink, skipped by 66-scandir
+│       └── container                      container mode only (66 scandir create -B)
+├── state
+│   └── 0                                  one directory per UID
+│       └── <service>                      runtime copy of the service (live_servicedir field)
+│           ├── run, finish, …             scripts copied from %%system_dir%%
+│           ├── .resolve -> %%system_dir%%/system/service/svc/<service>/.resolve
+│           ├── state
+│           │   └── status                 management flags, see 66 state (statedir field)
+│           ├── supervise
+│           │   └── status                 runtime record, see 66 runstate (supervisedir field)
+│           └── event                      supervision event fifodir (eventdir field)
+└── log
+    └── 0                                  destination of the scandir-log output
+        └── current                        uncaught logs
+```
+
+The annotations in parentheses are the resolve fields ([66 resolve](66-resolve.html)) that hold each path.
 
 ### %%livedir%%/log
 
@@ -375,7 +426,9 @@ This directory is managed through the [scandir](66-scandir.html) comand. Users, 
 
 Given `66` can run with root or regular account privileges, this directory contains subdirectories. Each account possesses its own scandir specified by its number. For example, `%%livedir%%/scandir/0` is owned by root, while `%%livedir%%/scandir/1000` typically belongs to the first regular account created on the system.
 
-This directory consists of service symlinks that point to its corresponding `%%livedir%%/state/UID/<service>` directory.
+This directory consists of service symlinks that point to their corresponding `%%livedir%%/state/UID/<service>` directory. A *classic* service is symlinked under its plain name, so `66-scandir` supervises it. A *oneshot* or a *module*, which is not supervised, is symlinked under a name prefixed with a dot (`.<service>`), which `66-scandir` skips.
+
+It also holds the `.66-scandir` control directory of the running [66-scandir](66-scandir.html) process, along with the `scandir-log` logger and the `fdholder` and `oneshotd` daemons.
 
 *note*: The `66 scandir create -B` invocation create the directory `%%livedir%%/scandir/UID/container` containing a named file *halt*. See [boot](66-boot.html) for further information.
 
@@ -399,7 +452,7 @@ This directory is specified at compile time by using the `-D system-log-dir=` op
 
 This directory is automatically managed by `66`. Users, including system administrators, should avoid directly interacting with these directories.
 
-Each service, if a logger is associated, has its own subdirectory likely `%%system_log%%/66/<service>`.
+Each service, if a logger is associated, has its own subdirectory at `%%system_log%%/<service>`.
 
 User can control the rotation of the log file with:
 
