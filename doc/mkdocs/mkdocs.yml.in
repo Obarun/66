@@ -71,6 +71,7 @@ nav:
     - free: 66-free.md
     - halt: 66-halt.md
     - hibernate: 66-hibernate.md
+    - log: 66-log.md
     - parse: 66-parse.md
     - poweroff: 66-poweroff.md
     - reboot: 66-reboot.md

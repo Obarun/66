@@ -35,13 +35,13 @@ sed_args = [
   '-e', 's|%%user_log%%|@0@|g'.format(get_option('user-log-dir')),
 ]
 
-# 55 pages — HTML output (strict mirror of make-html.sh)
+# 56 pages — HTML output (strict mirror of make-html.sh)
 html_pages = [
   '66', '66-boot', '66-cheatsheet', '66-configure', '66-deeper',
   '66-dependencies', '66-disable',
   '66-echo', '66-enable', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',
-  '66-identifier', '66-instantiated-service', '66-module-creation',
+  '66-identifier', '66-instantiated-service', '66-log', '66-module-creation',
   '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
   '66-reconfigure', '66-reload', '66-remove', '66-resolve', '66-restart',
   '66-rosetta', '66-runstate', '66-scandir', '66-service-configuration-file',
@@ -53,11 +53,11 @@ html_pages = [
   'execl-envfile', 'execl-runas', 'index',
 ]
 
-# 31 pages — man section 1 (strict mirror of make-man.sh)
+# 32 pages — man section 1 (strict mirror of make-man.sh)
 man1_pages = [
   '66', '66-configure', '66-disable', '66-enable', '66-fdholder', '66-free', '66-halt',
   '66-hibernate', '66-parse', '66-poweroff', '66-reboot', '66-reconfigure',
-  '66-reload', '66-remove', '66-resolve', '66-restart', '66-rosetta',
+  '66-log', '66-reload', '66-remove', '66-resolve', '66-restart', '66-rosetta',
   '66-runstate', '66-scandir', '66-signal', '66-snapshot', '66-start', '66-state',
   '66-status', '66-stop', '66-suspend', '66-tree', '66-upgrade',
   '66-version', '66-wall', 'execl-envfile', 'execl-runas',
