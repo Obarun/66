@@ -133,7 +133,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
             auto_strings(run + FAKELEN, "n", pback, " ") ;
 
-            if (res->logger.timestamp < E_PARSER_TIME_NONE)
+            if (timestamp[0])
                 auto_strings(run + FAKELEN, timestamp, " ") ;
 
             auto_strings(run + FAKELEN, "s", pmax, " ", res->sa.s + res->io.fdout.destination, "\n") ;
