@@ -269,6 +269,35 @@ static void test_date_with_failed_time_attempt(void)
     T_ASSERT_EQ(0, ts.tv_nsec, "no nsec") ;
 }
 
+static void test_date_then_digit(void)
+{
+    /* S_DATE_OK on a DIGIT transitions to S_ERR: a 5th day digit does not extend
+     * the date, the match stops at the accepted date (end 10) */
+    struct timespec ts ; size_t end ;
+    T_ASSERT_EQ(1, scan("2026-06-291", &ts, &end), "date accepted") ;
+    T_ASSERT_EQ(10, end, "trailing digit not absorbed into the date") ;
+    T_ASSERT_EQ(1782691200, ts.tv_sec, "2026-06-29 midnight") ;
+}
+
+static void test_datetime_then_digit(void)
+{
+    /* S_DT_OK on a DIGIT -> S_ERR: a 3rd seconds digit does not extend the time */
+    struct timespec ts ; size_t end ;
+    T_ASSERT_EQ(1, scan("2026-06-29T15:17:359", &ts, &end), "datetime accepted") ;
+    T_ASSERT_EQ(19, end, "trailing digit not absorbed into the seconds") ;
+    T_ASSERT_EQ(1782746255, ts.tv_sec, "15:17:35, not 15:17:359") ;
+}
+
+static void test_fraction_then_junk(void)
+{
+    /* S_FR on a non-digit -> S_ERR: the fraction stops, end is the last accepted
+     * fraction digit, the trailing junk is not part of the match */
+    struct timespec ts ; size_t end ;
+    T_ASSERT_EQ(1, scan("2026-06-29T15:17:35.25zzz", &ts, &end), "fraction accepted") ;
+    T_ASSERT_EQ(22, end, "end stops after the two fraction digits") ;
+    T_ASSERT_EQ(250000000, ts.tv_nsec, ".25 -> 2.5e8 ns") ;
+}
+
 T_SUITE("log_iso_scan")
 {
     setenv("TZ", "UTC0", 1) ;
@@ -286,6 +315,9 @@ T_SUITE("log_iso_scan")
     T_RUN(test_trailing_junk_after_date) ;
     T_RUN(test_separator_without_time) ;
     T_RUN(test_date_with_failed_time_attempt) ;
+    T_RUN(test_date_then_digit) ;
+    T_RUN(test_datetime_then_digit) ;
+    T_RUN(test_fraction_then_junk) ;
     T_RUN(test_range_month) ;
     T_RUN(test_range_day) ;
     T_RUN(test_range_hour) ;

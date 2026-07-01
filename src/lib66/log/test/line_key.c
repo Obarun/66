@@ -186,6 +186,29 @@ static void test_tai64n_requires_at_sign(void)
     T_ASSERT_EQ(0, msgoff, "NONE msgoff 0") ;
 }
 
+static void test_iso_no_space_after_stamp(void)
+{
+    /* datetime immediately followed by the message, no separating space: the
+     * space-skip loop must not run and msgoff must equal the stamp end exactly */
+    struct timespec ts ;
+    size_t msgoff = 999 ;
+    char const *l = "2026-06-29T15:17:35x" ;
+    T_ASSERT_EQ(LOG_STAMP_ISO, log_line_key(l, strlen(l), &ts, &msgoff), "ISO no-space") ;
+    T_ASSERT_EQ(19, msgoff, "msgoff is the stamp end, no space skipped") ;
+    T_ASSERT_EQ('x', l[msgoff], "msgoff points at the message char") ;
+}
+
+static void test_iso_whole_line_is_date(void)
+{
+    /* the entire line is a bare date, no message at all: msgoff lands at len */
+    struct timespec ts ;
+    size_t msgoff = 999 ;
+    char const *l = "2026-06-29" ;
+    T_ASSERT_EQ(LOG_STAMP_ISO, log_line_key(l, strlen(l), &ts, &msgoff), "date-only line -> ISO") ;
+    T_ASSERT_EQ(10, msgoff, "msgoff at end of line (empty message)") ;
+    T_ASSERT_EQ((size_t)strlen(l), msgoff, "msgoff == len") ;
+}
+
 T_SUITE("log_line_key")
 {
     setenv("TZ", "UTC0", 1) ;
@@ -194,6 +217,8 @@ T_SUITE("log_line_key")
     T_RUN(test_none) ;
     T_RUN(test_iso) ;
     T_RUN(test_iso_multispace) ;
+    T_RUN(test_iso_no_space_after_stamp) ;
+    T_RUN(test_iso_whole_line_is_date) ;
     T_RUN(test_iso_date_only) ;
     T_RUN(test_tai64n_with_space) ;
     T_RUN(test_tai64n_no_space) ;

@@ -293,6 +293,65 @@ static void test_file_embedded_nul(void)
     unlink(path) ;
 }
 
+static void test_logdir_ignores_lock_and_state(void)
+{
+    /* a 66-log logdir also holds non-log members ('lock', 'state', and possibly
+     * other stray names); only '@...' archives and 'current' must be read. Their
+     * content is crafted so that, were they read, it would surface as extra
+     * lines / recognisable text. */
+    char dir[300], lock[400], state[400], stray[400], arch[400], cur[400] ;
+    snprintf(dir, sizeof dir, "%s/ld_noise", gdir) ;
+    T_ASSERT_EQ(0, mkdir(dir, 0755), "mkdir") ;
+    snprintf(lock, sizeof lock, "%s/lock", dir) ;
+    snprintf(state, sizeof state, "%s/state", dir) ;
+    snprintf(stray, sizeof stray, "%s/notes.txt", dir) ;
+    snprintf(arch, sizeof arch, "%s/@400000006a0000000000000a.s", dir) ;
+    snprintf(cur, sizeof cur, "%s/current", dir) ;
+    write_file(lock, "LOCKNOISE\n", 10) ;
+    write_file(state, "STATENOISE\n", 11) ;
+    write_file(stray, "STRAYNOISE\n", 11) ;
+    write_file(arch, "2026-06-29 09:00:00.0 archived\n", 31) ;
+    write_file(cur, "2026-06-29 12:00:00.0 live\n", 27) ;
+
+    log_source_t s = LOG_SOURCE_ZERO ;
+    T_ASSERT_EQ(1, log_source_logdir(&s, "svc", dir), "load ok") ;
+    T_ASSERT_EQ(2, s.nline, "only archive + current, noise ignored") ;
+    T_ASSERT_EQ(0, strncmp(msg_ptr(&s, 0), "archived", 8), "archive first") ;
+    T_ASSERT_EQ(0, strncmp(msg_ptr(&s, 1), "live", 4), "current last") ;
+    /* prove the noise bytes never entered the buffer at all */
+    T_ASSERT(memmem(s.data.s, s.data.len, "LOCKNOISE", 9) == NULL, "lock content excluded") ;
+    T_ASSERT(memmem(s.data.s, s.data.len, "STATENOISE", 10) == NULL, "state content excluded") ;
+    T_ASSERT(memmem(s.data.s, s.data.len, "STRAYNOISE", 10) == NULL, "stray file excluded") ;
+    log_source_free(&s) ;
+
+    unlink(lock) ; unlink(state) ; unlink(stray) ; unlink(arch) ; unlink(cur) ; rmdir(dir) ;
+}
+
+static void test_file_large_volume(void)
+{
+    /* many lines: exercises the two-pass count/parse over a sizeable buffer and
+     * the exact nline sizing; each stamped line's key must be monotonic. */
+    enum { N = 1000 } ;
+    char path[300] ;
+    snprintf(path, sizeof path, "%s/bulk", gdir) ;
+
+    FILE *f = fopen(path, "wb") ;
+    T_ASSERT(f != NULL, "fopen bulk") ;
+    for (int i = 0 ; i < N ; i++)
+        T_ASSERT(fprintf(f, "2026-06-29 10:00:%02d.0 line %d\n", i % 60, i) > 0, "write bulk line") ;
+    T_ASSERT_EQ(0, fclose(f), "fclose bulk") ;
+
+    log_source_t s = LOG_SOURCE_ZERO ;
+    T_ASSERT_EQ(1, log_source_file(&s, "svc", path), "bulk load ok") ;
+    T_ASSERT_EQ(N, s.nline, "every line counted") ;
+    T_ASSERT_EQ(1, s.stamped, "stamped") ;
+    T_ASSERT_EQ(LOG_STAMP_ISO, s.line[0].type, "first line ISO") ;
+    T_ASSERT_EQ(LOG_STAMP_ISO, s.line[N - 1].type, "last line ISO") ;
+    T_ASSERT_EQ(0, strncmp(msg_ptr(&s, N - 1), "line 999", 8), "last line content") ;
+    log_source_free(&s) ;
+    unlink(path) ;
+}
+
 /* ---- name length guard (bounded inline buffer, no overflow) -------------- */
 
 static void fill_name(char *dst, size_t n)
@@ -397,6 +456,8 @@ T_SUITE("log_source")
     T_RUN(test_logdir_archive_before_current) ;
     T_RUN(test_logdir_archives_sorted) ;
     T_RUN(test_logdir_newline_guard) ;
+    T_RUN(test_logdir_ignores_lock_and_state) ;
+    T_RUN(test_file_large_volume) ;
     T_RUN(test_free_zeroes) ;
 
     rmdir(gdir) ;
