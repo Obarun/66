@@ -21,10 +21,10 @@
 /**main dir*/
 #define SS_SYSTEM "system"
 #define SS_SYSTEM_LEN (sizeof SS_SYSTEM - 1)
-#define SS_TREE_CURRENT "current"
-#define SS_TREE_CURRENT_LEN (sizeof SS_TREE_CURRENT - 1)
-#define SS_CURRENT SS_TREE_CURRENT
-#define SS_CURRENT_LEN SS_TREE_CURRENT_LEN
+#define SS_CURRENT "current"
+#define SS_CURRENT_LEN (sizeof SS_CURRENT - 1)
+#define SS_TREE_CURRENT SS_CURRENT
+#define SS_TREE_CURRENT_LEN SS_CURRENT_LEN
 #define SS_MODULE "module"
 #define SS_MODULE_LEN (sizeof SS_MODULE - 1)
 #define SS_SCANDIR "scandir"

@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <stdint.h>
+#include <regex.h>
 
 #include <oblibs/strbuf.h>
 
@@ -89,5 +90,35 @@ extern int log_source_file(log_source_t *src, char const *name, char const *file
 
 /** @brief Release every buffer owned by @src and zero it. */
 extern void log_source_free(log_source_t *src) ;
+
+/**
+ * @brief Emit one parsed log line to stdout (ostream_1): the timestamp (TAI64N
+ *        reformatted to local time, otherwise the line's own leading stamp kept
+ *        verbatim), an optional "name: " tag placed right after the timestamp
+ *        (syslog-style), then the message and a newline. Does not flush.
+ * @param[in] line     Line bytes (newline excluded).
+ * @param[in] len      Line length.
+ * @param[in] msgoff   Offset of the message within @line (0 for an unstamped line).
+ * @param[in] type     LOG_STAMP_* of the line.
+ * @param[in] stamp    Decoded time key (used only for LOG_STAMP_TAI64N).
+ * @param[in] name     Source name for the tag.
+ * @param[in] withname 1 to emit the "name: " tag, 0 to omit it.
+ * @note Dies (LOG_EXIT_SYS) on a write error.
+ */
+extern void log_emit(char const *line, size_t len, size_t msgoff, uint8_t type, struct timespec const *stamp, char const *name, uint8_t withname) ;
+
+/**
+ * @brief Follow a single log source in real time (tail -f), emitting only the
+ *        lines appended after the call. Blocks in an event loop until SIGINT or
+ *        SIGTERM. For a 66-log logdir it also follows the rotation of `current`.
+ * @param[in] name      Source name for the tag ("system" or a service name).
+ * @param[in] path      The logdir (when @is_logdir) or the plain file to follow.
+ * @param[in] is_logdir 1 for a 66-log logdir, 0 for a plain file.
+ * @param[in] withname  1 to tag each line with @name, 0 otherwise.
+ * @param[in] re        POSIX extended regex to filter lines, or 0 for no filter.
+ * @return 1 on clean exit (signal received).
+ * @return 0 on system error (errno set).
+ */
+extern int log_follow(char const *name, char const *path, uint8_t is_logdir, uint8_t withname, regex_t *re) ;
 
 #endif

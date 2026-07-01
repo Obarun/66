@@ -10,7 +10,7 @@ rotates or alters any log.
 ## Interface
 
 ```
-log [ -h ] [ -s since ] [ -u until ] [ -g regex ] service|system
+log [ -h ] [ -s since ] [ -u until ] [ -g regex ] [ -f ] service|system
 ```
 
 The operand selects what to read:
@@ -35,6 +35,9 @@ lines are printed untagged.
 
 - **-g, --grep** *regex*: only show lines matching the POSIX extended regular
   expression *regex*. The expression is tested against the whole line.
+
+- **-f, --follow**: keep running and print new lines as they are written, in the
+  manner of `tail -f`. See *Follow mode* below.
 
 ## Usage example
 
@@ -91,6 +94,25 @@ filters:
 
 When several sources are read together, their lines are merged into a single
 ascending chronological stream.
+
+## Follow mode
+
+With `-f`, `66 log` does not print the existing history: it opens the log, skips
+to the end, and then prints only the lines appended afterwards, live, until it
+receives `SIGINT` or `SIGTERM`.
+
+Because it must read a single ordered stream, `-f` is accepted **only** with an
+operand — `system` or a `<service>` — never in the aggregated `(none)` form (there
+is no way to interleave several live sources in true chronological order). It is
+also **incompatible with `-s`/`-u`** (there is no history to bound); combining them
+is an error. `-g` still applies, filtering the followed lines.
+
+For a service logged to a **66-log logdir** (and for `system`), follow tracks the
+`current` file and transparently reopens it across log rotation, so no line is
+lost or duplicated when `current` is archived. For a service logged to a **plain
+file**, follow tracks that file. Tagging follows the same rule as the normal
+mode: `system` tags each line with `system:`, a single `<service>` is printed
+untagged.
 
 ## Time format for `-s` and `-u`
 

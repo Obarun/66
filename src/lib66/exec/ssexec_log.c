@@ -23,7 +23,6 @@
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/stream.h>
-#include <oblibs/clock.h>
 #include <oblibs/files.h>
 #include <oblibs/sbl.h>
 
@@ -37,12 +36,14 @@
 static char const *arg_since = 0 ;
 static char const *arg_until = 0 ;
 static char const *arg_grep = 0 ;
+static uint8_t arg_follow = 0 ;
 
 static opt_t const opts_log[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",  .arg = OPT_NONE,                         .help = "print this help" },
-    { .id = 's',         .shortname = 's', .longname = "since", .arg = OPT_REQUIRED, .argname = "time",  .help = "only show lines at or after time" },
-    { .id = 'u',         .shortname = 'u', .longname = "until", .arg = OPT_REQUIRED, .argname = "time",  .help = "only show lines at or before time" },
-    { .id = 'g',         .shortname = 'g', .longname = "grep",  .arg = OPT_REQUIRED, .argname = "regex", .help = "only show lines matching the POSIX extended regex" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                         .help = "print this help" },
+    { .id = 's',         .shortname = 's', .longname = "since",  .arg = OPT_REQUIRED, .argname = "time",  .help = "only show lines at or after time" },
+    { .id = 'u',         .shortname = 'u', .longname = "until",  .arg = OPT_REQUIRED, .argname = "time",  .help = "only show lines at or before time" },
+    { .id = 'g',         .shortname = 'g', .longname = "grep",   .arg = OPT_REQUIRED, .argname = "regex", .help = "only show lines matching the POSIX extended regex" },
+    { .id = 'f',         .shortname = 'f', .longname = "follow", .arg = OPT_NONE,                         .help = "follow new log lines in real time (system or a service)" },
 } ;
 
 static int on_log(int id, char const *arg, void *data)
@@ -53,6 +54,7 @@ static int on_log(int id, char const *arg, void *data)
         case 's' : arg_since = arg ; break ;
         case 'u' : arg_until = arg ; break ;
         case 'g' : arg_grep = arg ; break ;
+        case 'f' : arg_follow = 1 ; break ;
     }
 
     return 0 ;
@@ -92,37 +94,6 @@ static int parse_time(char const *str, struct timespec *ts)
         return 0 ;
 
     return log_iso_scan(str, len, ts, &end) && end == len ;
-}
-
-static void emit_line(log_source_t *src, log_line_t *pline, uint8_t withname)
-{
-    char *base = src->data.s + pline->off ;
-    int ok = 1 ;
-
-    // emit the timestamp first, then the source name (syslog-style TAG), then the
-    // message; for TAI64N the stamp is reformatted to local time, otherwise the
-    // line's own stamp (bytes up to msgoff, empty for an unstamped line) is kept
-    if (pline->type == LOG_STAMP_TAI64N) {
-
-        char local[CLOCK_LOCAL_LEN + 1] ;
-        size_t ll = clock_local_fmt(local, &pline->stamp) ;
-
-        ok = ostream_put(ostream_1, local, ll)
-          && ostream_put(ostream_1, " ", 1) ;
-
-    } else {
-        ok = ostream_put(ostream_1, base, pline->msgoff) ;
-    }
-
-    if (ok && withname)
-        ok = ostream_puts(ostream_1, src->name)
-          && ostream_put(ostream_1, ": ", 2) ;
-
-    if (ok)
-        ok = ostream_put(ostream_1, base + pline->msgoff, pline->len - pline->msgoff) ;
-
-    if (!ok || !ostream_put(ostream_1, "\n", 1))
-        log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
 static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
@@ -251,6 +222,38 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     return src ;
 }
 
+static int follow_source(ssexec_t *info, char const *target, regex_t *re)
+{
+    if (!strcmp(target, SS_SYSTEM)) {
+
+        char p[info->live.len + SS_LOG_LEN + 1 + info->ownerlen + 1] ;
+        auto_strings(p, info->live.s, SS_LOG, "/", info->ownerstr) ;
+
+        return log_follow(SS_SYSTEM, p, 1, 1, re) ;
+    }
+
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+    int r = resolve_read_g(wres, info->base.s, target) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", target) ;
+    if (!r)
+        log_die(LOG_EXIT_USER, "unknown service: ", target) ;
+
+    if (res.io.fdout.type != E_PARSER_IO_TYPE_66LOG && res.io.fdout.type != E_PARSER_IO_TYPE_FILE)
+        log_die(LOG_EXIT_USER, "service has no readable log: ", target) ;
+
+    uint8_t is_logdir = res.io.fdout.type == E_PARSER_IO_TYPE_66LOG ? 1 : 0 ;
+
+    char dest[strlen(res.sa.s + res.io.fdout.destination) + 1] ;
+    auto_strings(dest, res.sa.s + res.io.fdout.destination) ;
+
+    resolve_free(wres) ;
+
+    return log_follow(target, dest, is_logdir, 0, re) ;
+}
+
 int ssexec_log(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
@@ -258,19 +261,31 @@ int ssexec_log(int argc, char const *const *argv, void *data)
     ssexec_t *info = data ;
 
     char const *since = arg_since, *until = arg_until, *grep = arg_grep ;
-    arg_since = arg_until = arg_grep = 0 ;
+    uint8_t follow = arg_follow ;
+    arg_since = arg_until = arg_grep = 0 ; arg_follow = 0 ;
 
     struct timespec tsince, tuntil ;
     uint8_t withname = 0 ;
     regex_t re ;
 
+    char const *target = argc >= 1 ? argv[0] : 0 ;
+
+    if (follow && !target)
+        log_die(LOG_EXIT_USER, "option -f requires an operand: system or a service name") ;
+
     if (since) {
+
+        if (follow)
+            log_die(LOG_EXIT_USER, "option -f cannot be combined with -s") ;
 
         if (!parse_time(since, &tsince))
             log_die(LOG_EXIT_USER, "invalid time (expected YYYY-MM-DDTHH:MM:SS): ", since) ;
     }
 
     if (until) {
+
+        if (follow)
+            log_die(LOG_EXIT_USER, "option -f cannot be combined with -u") ;
 
         if (!parse_time(until, &tuntil))
             log_die(LOG_EXIT_USER, "invalid time (expected YYYY-MM-DDTHH:MM:SS): ", until) ;
@@ -282,7 +297,15 @@ int ssexec_log(int argc, char const *const *argv, void *data)
             log_die(LOG_EXIT_USER, "invalid regular expression: ", grep) ;
     }
 
-    char const *target = argc >= 1 ? argv[0] : 0 ;
+    if (follow) {
+
+        int fr = follow_source(info, target, grep ? &re : 0) ;
+
+        if (grep)
+            regfree(&re) ;
+
+        return fr ? 0 : LOG_EXIT_SYS ;
+    }
 
     log_source_t *src = 0 ;
     size_t nsrc ;
@@ -336,7 +359,7 @@ int ssexec_log(int argc, char const *const *argv, void *data)
                 continue ;
         }
 
-        emit_line(s, pline, withname) ;
+        log_emit(s->data.s + pline->off, pline->len, pline->msgoff, pline->type, &pline->stamp, s->name, withname) ;
     }
 
     if (!ostream_flush(ostream_1))
