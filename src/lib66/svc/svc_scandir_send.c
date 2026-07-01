@@ -29,8 +29,8 @@ int svc_scandir_send(char const *scandir, char const *signal)
     log_flow() ;
 
     size_t slen = strlen(scandir) ;
-    char fn[slen + SS_SVSCAN_LEN + sizeof("/control")] ;
-    auto_strings(fn, scandir, SS_SVSCAN, "/control") ;
+    char fn[slen + SS_SVSCAN_LEN + 1 + SS_CONTROL_LEN + 1] ;
+    auto_strings(fn, scandir, SS_SVSCAN, "/", SS_CONTROL) ;
 
     log_trace("send signal: ", signal, " to scandir: ", scandir) ;
 
@@ -40,6 +40,7 @@ int svc_scandir_send(char const *scandir, char const *signal)
     if (fd < 0) {
         if (errno == ENXIO)
             log_warnu_return(LOG_EXIT_ZERO, "control: ", scandir, ": scandir not listening") ;
+
         log_warnusys_return(LOG_EXIT_ZERO, "open scandir control: ", fn) ;
     }
 
