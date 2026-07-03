@@ -100,9 +100,11 @@ typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main
 #define KEY_SECTION_STARTSTOP(idy, str, exp) { .name = &enum_str_parser_section_startstop[E_PARSER_SECTION_STARTSTOP_##idy], .id = E_PARSER_SECTION_STARTSTOP_##idy, .expected = exp }
 
 #define SECTION_STARTSTOP_TEMPLATE(macro) \
-    macro(BUILD, "Build",   E_PARSER_EXPECT_LINE), \
-    macro(RUNAS, "RunAs",   E_PARSER_EXPECT_LINE), \
-    macro(EXEC,  "Execute", E_PARSER_EXPECT_BRACKET)
+    macro(BUILD,     "Build",        E_PARSER_EXPECT_LINE), \
+    macro(RUNAS,     "RunAs",        E_PARSER_EXPECT_LINE), \
+    macro(EXEC,      "Execute",      E_PARSER_EXPECT_BRACKET), \
+    macro(TIMESTART, "TimeoutStart", E_PARSER_EXPECT_UINT), \
+    macro(TIMESTOP,  "TimeoutStop",  E_PARSER_EXPECT_UINT)
 
 enum resolve_parser_enum_section_startstop_e
 {

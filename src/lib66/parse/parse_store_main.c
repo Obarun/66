@@ -345,6 +345,8 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
+            log_1_warn("key TimeoutStart at section [Main] is deprecated -- declare it at section [Start] instead") ;
+
             if (!u32_scan_strict(store->s, &res->execute.timeout.start))
                 parse_error_return(0, 3, table) ;
 
@@ -353,6 +355,8 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
         case E_PARSER_SECTION_MAIN_TIMESTOP:
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+
+            log_1_warn("key TimeoutStop at section [Main] is deprecated -- declare it at section [Stop] instead") ;
 
             if (!u32_scan_strict(store->s, &res->execute.timeout.stop))
                 parse_error_return(0, 3, table) ;

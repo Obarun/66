@@ -474,44 +474,13 @@ Enables readiness notification. Creates `notification-fd` containing the specifi
 
     This will create the file *notification-fd*. Once this file is created the service supports readiness notification. The value equals the number of the file descriptor that the service writes its readiness notification to — usually a dedicated descriptor such as `3` (or higher), matching the option your daemon uses to announce its readiness. Standard output (descriptor `1`) is normally unsuitable here, as it is redirected to the logger. When the service receives a signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
 
-#### TimeoutStop
+#### TimeoutStart / TimeoutStop (deprecated)
 
-**Source Snippet**:
-```ini
-TimeoutStop = 5000
-```
-
-Specifies the maximum time (in milliseconds) the service's **stop** sequence may
-take. If the stop transition — the stop/`finish` script — does not complete within
-this time, `66` kills the service.
-
-* mandatory: no
-
-* syntax: [uint](#uint)
-
-* valid values:
-
-    * Any valid number, in milliseconds. The default is `0`, which means no stop
-      timeout — the stop script may run as long as it needs.
-
-#### TimeoutStart
-
-**Source Snippet**:
-```ini
-TimeoutStart = 2000
-```
-Specifies the maximum time (in milliseconds) the service may take to **start**. If
-the start transition does not complete within this time, `66` kills the service
-and reports the transition as failed.
-
-* mandatory: no
-
-* syntax: [uint](#uint)
-
-* valid values:
-
-    * Any valid number, in milliseconds. The default is `0`, which means no start
-      timeout — the service may take as long as it needs to come up.
+These keys have moved to the [[Start]](#section-start) and [[Stop]](#section-stop)
+sections respectively. They are still accepted here for backward compatibility, but
+emit a deprecation warning at parse time and will be removed from `[Main]` in a
+future release — declare `TimeoutStart` in [[Start]](#section-start) and
+`TimeoutStop` in [[Stop]](#section-stop) instead.
 
 
 #### MaxDeath
@@ -805,11 +774,51 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 
     **Note**: The field will be used as is. No changes will be applied at all except in `custom` case(see [A word about the execute key](#a-word-about-the-execute-key)). It's the responsibility of the author to make sure that the content of this field is correct.
 
+#### TimeoutStart
+
+**Source Snippet**:
+```ini
+TimeoutStart = 2000
+```
+Specifies the maximum time (in milliseconds) the service may take to **start**. If
+the start transition does not complete within this time, `66` kills the service
+and reports the transition as failed.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+    * Any valid number, in milliseconds. The default is `0`, which means no start
+      timeout — the service may take as long as it needs to come up.
+
 ### Section [Stop]
 
 This section is *optional*.
 
-This section is exactly the same as [[Start]](#section-start) and shares the same keys. With the exception that it will handle the stop process of the service.
+It handles the stop process of the service. It shares the `Build`, `RunAs`, and
+`Execute` keys with [[Start]](#section-start), plus its own `TimeoutStop` key.
+
+#### TimeoutStop
+
+**Source Snippet**:
+```ini
+TimeoutStop = 5000
+```
+
+Specifies the maximum time (in milliseconds) the service's **stop** sequence may
+take. If the stop transition — the stop/`finish` script — does not complete within
+this time, `66` kills the service.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+    * Any valid number, in milliseconds. The default is `0`, which means no stop
+      timeout — the stop script may run as long as it needs.
 
 ### Section [Logger]
 
@@ -817,14 +826,14 @@ This section is optional and controls the behavior of the default logging system
 
 It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](#section-main) **must be set** to `66log`, or these keys **must not** be defined at all.
 
-This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](#section-start) and the `TimeoutStop` and `TimeoutStart` key fields from [[Main]](#section-main) . These are also valid keys for [[Logger]](#section-logger) and behave the same way they do in the other sections, but none of them is mandatory—see example below. When they are not specified, the default behaviour for those keys is applied.
+This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](#section-start) and the `TimeoutStart` and `TimeoutStop` key fields from [[Start]](#section-start) and [[Stop]](#section-stop) . These are also valid keys for [[Logger]](#section-logger) and behave the same way they do in the other sections, but none of them is mandatory—see example below. When they are not specified, the default behaviour for those keys is applied.
 
 Furthermore there are some keys specific to the log.
 
 The following key names are also valid:
 
 - `Build`, `RunAs`, and `Execute` — See [[Start]](#section-start)
-- `TimeoutStop`, `TimeoutStart` — See [[Main]](#section-main)
+- `TimeoutStart` — See [[Start]](#section-start); `TimeoutStop` — See [[Stop]](#section-stop)
 
 #### Backup
 
@@ -1735,8 +1744,6 @@ Options = ()
 Flags = ()
 Notify =
 User = ()
-TimeoutStart =
-TimeoutStop =
 MaxDeath =
 MaxDeathInterval =
 DownSignal =
@@ -1752,11 +1759,13 @@ Conflict = ()
 Build =
 RunAs =
 Execute = ()
+TimeoutStart =
 
 [Stop]
 Build =
 RunAs =
 Execute = ()
+TimeoutStop =
 
 [Logger]
 Build =

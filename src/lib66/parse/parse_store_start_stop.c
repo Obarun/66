@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/string.h>
+#include <oblibs/types.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -67,6 +68,26 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
                 res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
             else if (sid == E_PARSER_SECTION_LOGGER)
                 res->logger.execute.run.run_user = resolve_add_string(wres, store->s) ;
+            break ;
+
+        case E_PARSER_SECTION_STARTSTOP_TIMESTART:
+
+            if (sid != E_PARSER_SECTION_START)
+                log_warn_return(LOG_EXIT_ZERO, "key TimeoutStart is only valid at section [Start]") ;
+
+            if (!u32_scan_strict(store->s, &res->execute.timeout.start))
+                parse_error_return(0, 3, table) ;
+
+            break ;
+
+        case E_PARSER_SECTION_STARTSTOP_TIMESTOP:
+
+            if (sid != E_PARSER_SECTION_STOP)
+                log_warn_return(LOG_EXIT_ZERO, "key TimeoutStop is only valid at section [Stop]") ;
+
+            if (!u32_scan_strict(store->s, &res->execute.timeout.stop))
+                parse_error_return(0, 3, table) ;
+
             break ;
 
         default:
