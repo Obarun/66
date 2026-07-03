@@ -47,33 +47,6 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
             log_warnusys_return(LOG_EXIT_ZERO, "create down file") ;
     }
 
-    /** notification-fd */
-    if (res->notify)
-        if (!write_uint(dst, SS_NOTIFICATION, res->notify))
-            log_warnusys_return(LOG_EXIT_ZERO, "write uint file", SS_NOTIFICATION) ;
-
-    /** timeout family
-     * Only write timeout file for classic service.
-     * The supervisor needs it otherwise it's read directly
-     * from the resolve file at start process. */
-    if (res->type == E_PARSER_TYPE_CLASSIC && res->execute.timeout.start)
-        if (!write_uint(dst, "timeout-kill", res->execute.timeout.start))
-            log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-kill") ;
-
-    if (res->type == E_PARSER_TYPE_CLASSIC && res->execute.timeout.stop)
-        if (!write_uint(dst, "timeout-finish", res->execute.timeout.stop))
-            log_warnusys_return(LOG_EXIT_ZERO, "write uint file timeout-finish") ;
-
-    /** max-death-tally */
-    if (res->maxdeath)
-        if (!write_uint(dst, SS_MAXDEATHTALLY, res->maxdeath))
-            log_warnusys_return(LOG_EXIT_ZERO, "write uint file", SS_MAXDEATHTALLY) ;
-
-    /** down-signal */
-    if (res->execute.downsignal)
-        if (!write_uint(dst, "down-signal", res->execute.downsignal))
-            log_warnusys_return(LOG_EXIT_ZERO, "write uint file down-signal") ;
-
     /** environment for module is already written by the regex_configure() function */
     if (res->environ.env && res->type != E_PARSER_TYPE_MODULE) {
 

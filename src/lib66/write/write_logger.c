@@ -24,7 +24,6 @@
 #include <66/config.h>
 #include <66/write.h>
 #include <66/utils.h>
-#include <66/constants.h>
 #include <66/parse.h>
 
 #ifndef FAKELEN
@@ -45,26 +44,6 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
     if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
-    }
-
-    if (res->execute.timeout.start) {
-        if (!write_uint(destination, "timeout-kill", res->execute.timeout.start)) {
-            parse_cleanup(res, destination, force) ;
-            log_dieusys(LOG_EXIT_SYS, "write uint file timeout-kill") ;
-        }
-    }
-
-    if (res->execute.timeout.stop) {
-        if (!write_uint(destination, "timeout-finish", res->execute.timeout.stop)) {
-            parse_cleanup(res, destination, force) ;
-            log_dieusys(LOG_EXIT_SYS, "write uint file timeout-finish") ;
-        }
-    }
-
-    /** notification */
-    if (!write_uint(destination, SS_NOTIFICATION, 3)) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "write uint file ", SS_NOTIFICATION) ;
     }
 
     /** The creation of the log destination directory is made by the 66-execute program */
