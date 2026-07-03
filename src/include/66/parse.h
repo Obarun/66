@@ -36,6 +36,16 @@
         log_warn_return(LOG_EXIT_ONE, "key: ", enum_to_key(list, idkey), " is not valid for type ", enum_to_key(enum_list_parser_type, type), " -- ignoring it") ; \
 } while (0)
 
+typedef struct parse_validator_s parse_validator_t, *parse_validator_t_ref ;
+struct parse_validator_s
+{
+    char const *frontend ;                       // the static frontend text
+    size_t off[E_PARSER_SECTION_ENDOFKEY] ;      // per-section content offset
+    size_t len[E_PARSER_SECTION_ENDOFKEY] ;      // per-section content length
+    uint8_t present[E_PARSER_SECTION_ENDOFKEY] ; // 1 if the section exists
+    uint32_t computed ;                          // micro-table (parse_compute)
+} ;
+
 /** lexer configuration */
 extern lexer_config LEXER_CONFIG_SECTION ;
 extern lexer_config LEXER_CONFIG_QUOTE ;
@@ -50,7 +60,11 @@ extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t fo
 extern void parse_service(hash_t *href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
 extern int parse_frontend(char const *sv, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
 extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
-extern void parse_create_logger(hash_t *hres, resolve_service_t *res, ssexec_t *info) ;
+extern void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, ssexec_t *info) ;
+
+/** validator */
+extern int parse_validator_init(parse_validator_t *v, char const *frontend) ;
+extern int parse_checker(parse_validator_t *v, resolve_enum_table_t key) ;
 
 /** split */
 extern int parse_section_main(resolve_service_t *res, const char *str) ;

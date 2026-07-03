@@ -307,8 +307,14 @@ int parse_frontend(char const *sv,
     parse_compute_resolve(&res, info) ;
 
     if ((res.logger.want && res.io.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
-        (!res.inns && res.type != E_PARSER_TYPE_MODULE))
-            parse_create_logger(hres, &res, info) ;
+        (!res.inns && res.type != E_PARSER_TYPE_MODULE)) {
+
+        parse_validator_t validator ;
+        if (!parse_validator_init(&validator, sa.s))
+            log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", svname) ;
+
+        parse_create_logger(&validator, hres, &res, info) ;
+    }
 
     hash = resolve_hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {

@@ -63,7 +63,7 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
     return resolve_add_string(wres, dstlog) ;
 }
 
-static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
+static void compute_log_script(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log)
 {
 
     log_flow() ;
@@ -82,8 +82,11 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
 
     log->execute.run.runas = resolve_add_string(wres, logrunner) ;
 
-    /** timestamp */
-    if (res->logger.timestamp != 3)
+    // timestamp
+    resolve_enum_table_t ttable = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
+    ttable.u.parser.id = E_PARSER_SECTION_LOGGER_TIMESTAMP ;
+
+    if (parse_checker(v, ttable))
         timestamp = res->logger.timestamp == E_PARSER_TIME_NONE ? "" : res->logger.timestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
     else
         timestamp = itimestamp == E_PARSER_TIME_NONE ? "" : itimestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
@@ -152,7 +155,7 @@ static void compute_log_script(resolve_service_t *res, resolve_service_t *log)
     free(wres) ;
 }
 
-static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexec_t *info)
+static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, ssexec_t *info)
 {
     log_flow() ;
 
@@ -233,13 +236,13 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, ssexe
 
     // oneshot do not use fdholder daemon
     if (res->type == E_PARSER_TYPE_CLASSIC)
-        compute_log_script(res, log) ;
+        compute_log_script(v, res, log) ;
 
     free(wres) ;
 
 }
 
-void parse_create_logger(hash_t *hres, resolve_service_t *res, ssexec_t *info)
+void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
@@ -268,7 +271,7 @@ void parse_create_logger(hash_t *hres, resolve_service_t *res, ssexec_t *info)
 
         res->dependencies.ndepends++ ;
 
-        compute_logger(res, &lres, info) ;
+        compute_logger(v, res, &lres, info) ;
 
         /** sanitize_init/execute_uidgid use this field */
         res->logger.execute.run.run = resolve_add_string(wres, lres.sa.s + lres.execute.run.run) ;
