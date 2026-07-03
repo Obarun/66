@@ -96,6 +96,7 @@ extern int parse_bracket(strbuf *store, const char *line, resolve_enum_table_t t
 extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
 extern int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table) ;
 extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
+extern void parse_io_resolve(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
