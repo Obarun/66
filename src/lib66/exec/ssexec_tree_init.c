@@ -93,6 +93,8 @@ int ssexec_tree_init(int argc, char const *const *argv, void *data)
     uint8_t earlier = 0 ;
     char const *treename = 0 ;
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
+    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
 
     if (!argc)
         log_die(LOG_EXIT_USER, "missing tree argument") ;
@@ -113,8 +115,10 @@ int ssexec_tree_init(int argc, char const *const *argv, void *data)
     if (r != 1) earlier = 1 ;
 
     table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
-    if (!resolve_get_field_tosa_g(&sa, info->base.s, treename, DATA_TREE, table))
+    if (!resolve_get_field(&sa, wres, info->base.s, treename, table))
         log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
+
+    resolve_free(wres) ;
 
     if (sa.len) {
 

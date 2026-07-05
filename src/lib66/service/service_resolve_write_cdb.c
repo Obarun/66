@@ -57,6 +57,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "inns", res->inns) ||
         !resolve_add_cdb_uint(c, "enabled", res->enabled) ||
         !resolve_add_cdb_uint(c, "islog", res->islog) ||
+        !resolve_add_cdb_uint(c, "has_limit", res->has_limit) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -148,24 +149,39 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "stdouttype", res->io.fdout.type) ||
         !resolve_add_cdb_uint(c, "stdoutdest", res->io.fdout.destination) ||
         !resolve_add_cdb_uint(c, "stderrtype", res->io.fderr.type) ||
-        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination) ||
+        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination))
+            return 0 ;
 
-        // limit
-        !resolve_add_cdb_uint64(c, "limitas", res->limit.limitas) ||
-        !resolve_add_cdb_uint64(c, "limitcore", res->limit.limitcore) ||
-        !resolve_add_cdb_uint64(c, "limitcpu", res->limit.limitcpu) ||
-        !resolve_add_cdb_uint64(c, "limitdata", res->limit.limitdata) ||
-        !resolve_add_cdb_uint64(c, "limitfsize", res->limit.limitfsize) ||
-        !resolve_add_cdb_uint64(c, "limitlocks", res->limit.limitlocks) ||
-        !resolve_add_cdb_uint64(c, "limitmemlock", res->limit.limitmemlock) ||
-        !resolve_add_cdb_uint64(c, "limitmsgqueue", res->limit.limitmsgqueue) ||
-        !resolve_add_cdb_uint64(c, "limitnice", res->limit.limitnice) ||
-        !resolve_add_cdb_uint64(c, "limitnofile", res->limit.limitnofile) ||
-        !resolve_add_cdb_uint64(c, "limitnproc", res->limit.limitnproc) ||
-        !resolve_add_cdb_uint64(c, "limitrtprio", res->limit.limitrtprio) ||
-        !resolve_add_cdb_uint64(c, "limitrttime", res->limit.limitrttime) ||
-        !resolve_add_cdb_uint64(c, "limitsigpending", res->limit.limitsigpending) ||
-        !resolve_add_cdb_uint64(c, "limitstack", res->limit.limitstack))
+    return 1 ;
+}
+
+int service_resolve_write_addon_limit_cdb(ocdbmaker *c, resolve_service_addon_limit_t *l)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_LIMIT, l) ;
+    l->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, l->sa.s, l->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", l->rversion) ||
+        !resolve_add_cdb_uint64(c, "limitas", l->limitas) ||
+        !resolve_add_cdb_uint64(c, "limitcore", l->limitcore) ||
+        !resolve_add_cdb_uint64(c, "limitcpu", l->limitcpu) ||
+        !resolve_add_cdb_uint64(c, "limitdata", l->limitdata) ||
+        !resolve_add_cdb_uint64(c, "limitfsize", l->limitfsize) ||
+        !resolve_add_cdb_uint64(c, "limitlocks", l->limitlocks) ||
+        !resolve_add_cdb_uint64(c, "limitmemlock", l->limitmemlock) ||
+        !resolve_add_cdb_uint64(c, "limitmsgqueue", l->limitmsgqueue) ||
+        !resolve_add_cdb_uint64(c, "limitnice", l->limitnice) ||
+        !resolve_add_cdb_uint64(c, "limitnofile", l->limitnofile) ||
+        !resolve_add_cdb_uint64(c, "limitnproc", l->limitnproc) ||
+        !resolve_add_cdb_uint64(c, "limitrtprio", l->limitrtprio) ||
+        !resolve_add_cdb_uint64(c, "limitrttime", l->limitrttime) ||
+        !resolve_add_cdb_uint64(c, "limitsigpending", l->limitsigpending) ||
+        !resolve_add_cdb_uint64(c, "limitstack", l->limitstack))
             return 0 ;
 
     return 1 ;

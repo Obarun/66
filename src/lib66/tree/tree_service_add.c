@@ -71,7 +71,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 
     table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
 
-    if (!resolve_modify_field(wres, table, stk.s))
+    if (!resolve_modify_field_by(wres, table, stk.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", treename) ;
 
     if (!resolve_write(wres, info->base.s, treename))

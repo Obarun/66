@@ -31,11 +31,15 @@ uint32_t tree_graph_build_master(tree_graph_t *g, ssexec_t *info, uint32_t flag)
     uint32_t n = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
+    resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CONTENTS ;
 
-    if (!resolve_get_field_tosa_g(&sa, info->base.s, SS_MASTER + 1, DATA_TREE_MASTER, table))
+    if (!resolve_get_field(&sa, wres, info->base.s, SS_MASTER + 1, table))
         log_dieu(LOG_EXIT_SYS, "get resolve Master file of trees") ;
+
+    resolve_free(wres) ;
 
     n = tree_graph_ncollect(g, sa.s, sa.len, info) ;
     if (!n)

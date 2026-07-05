@@ -1,5 +1,5 @@
 /*
- * resolve_get_field_tosa.c
+ * resolve_get_field_from.c
  *
  * Copyright (c) 2022 Eric Vidal <eric@obarun.org>
  *
@@ -21,7 +21,7 @@
 #include <66/service.h>
 #include <66/tree.h>
 
-int resolve_get_field_tosa(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table)
+int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -30,6 +30,12 @@ int resolve_get_field_tosa(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_
         resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
 
         return service_resolve_get_field_tosa(sa, res, table.u.service) ;
+
+    } else if (wres->type == DATA_SERVICE_LIMIT) {
+
+        resolve_service_addon_limit_t *l = (resolve_service_addon_limit_t *)wres->obj ;
+
+        return service_resolve_get_limit_field(sa, l, table.u.service) ;
 
     } else if (wres->type == DATA_TREE) {
 

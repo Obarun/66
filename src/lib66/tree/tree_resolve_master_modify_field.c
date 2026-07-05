@@ -21,17 +21,6 @@
 #include <66/tree.h>
 #include <66/resolve.h>
 
-static uint32_t resolve_add_uint(char const *data)
-{
-    uint32_t u ;
-
-    if (!data)
-        data = "0" ;
-    if (!u32_scan_strict(data, &u))
-        return 0 ;
-    return u ;
-}
-
 void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t field, char const *data)
 {
     log_flow() ;
@@ -61,11 +50,11 @@ void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t fiel
             break ;
 
         case E_RESOLVE_TREE_MASTER_NALLOW:
-            mres->nallow = resolve_add_uint(data) ;
+            mres->nallow = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NCONTENTS:
-            mres->ncontents = resolve_add_uint(data) ;
+            mres->ncontents = resolve_add_uint32(data) ;
             break ;
 
         default:

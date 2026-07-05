@@ -131,7 +131,7 @@ int ssexec_state(int argc, char const *const *argv, void *data)
             log_dieusys(111,"read state file of: ", svname) ;
     }
 
-    info_resolve_display(&sta, 0, fields_state, OPT_COUNT(fields_state), field, noname) ;
+    info_resolve_display(&sta, 0, fields_state, OPT_COUNT(fields_state), field, noname, 0, 0) ;
 
     resolve_free(wres) ;
 

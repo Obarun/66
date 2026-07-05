@@ -60,7 +60,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
 
     if (hash == NULL) {
 
-        /** double pass with resolve_read_at.
+        /** double pass with resolve_read.
          * The service may already exist, respects the treename before the
          * call of sanitize_source if the -t option was not set by user.
          * The service do not exist yet, sanitize it with sanitize_source

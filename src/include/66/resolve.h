@@ -28,6 +28,7 @@
 #define DATA_TREE 1
 #define DATA_TREE_MASTER 2
 #define DATA_SERVICE 0
+#define DATA_SERVICE_LIMIT 3 // autonomous addon of a service resolve
 
 typedef struct resolve_wrapper_s resolve_wrapper_t, *resolve_wrapper_t_ref ;
 struct resolve_wrapper_s
@@ -41,7 +42,8 @@ struct resolve_wrapper_s
     strbuf_ref sbwres = 0 ; \
     if (wres->type == DATA_SERVICE) sbwres = (&((resolve_service_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_TREE) sbwres = (&((resolve_tree_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_TREE_MASTER) sbwres = (&((resolve_tree_master_t *)wres->obj)->sa) ;
+    else if (wres->type == DATA_TREE_MASTER) sbwres = (&((resolve_tree_master_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_SERVICE_LIMIT) sbwres = (&((resolve_service_addon_limit_t *)wres->obj)->sa) ;
 #endif
 
 /**
@@ -77,8 +79,8 @@ extern int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name
 extern int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove(char const *base, char const *name, uint8_t data_type) ;
-extern int resolve_get_field_tosa_g(strbuf *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table) ;
-extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value) ;
+extern int resolve_get_field(strbuf *sa, resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table) ;
+extern int resolve_modify_field(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
 
 /**
@@ -91,8 +93,8 @@ extern int resolve_check_at(char const *base, char const *name) ;
 extern int resolve_read_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_write_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern void resolve_remove_at(char const *base, char const *name) ;
-extern int resolve_get_field_tosa(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table) ;
-extern int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
+extern int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table) ;
+extern int resolve_modify_field_by(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
 extern int resolve_add_cdb(ocdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
@@ -100,5 +102,7 @@ extern int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data) ;
 extern int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data) ;
 extern int resolve_get_sa(strbuf *sa, const ocdb *c) ;
 extern int resolve_get_key(const ocdb *c, const char *key, uint32_t *field) ;
+extern uint32_t resolve_add_uint32(char const *data) ;
+extern uint64_t resolve_add_uint64(char const *data) ;
 
 #endif

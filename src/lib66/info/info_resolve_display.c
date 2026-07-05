@@ -25,12 +25,29 @@
 typedef struct resolve_ctx_s resolve_ctx_t ;
 struct resolve_ctx_s {
     void const *base ;
-    char const *rblob ;
+    char const *blob ;
     info_field_t const *fields ;
+    info_addon_t const *addons ;
+    size_t naddons ;
 } ;
 
-static void display_value(void const *base, char const *rblob, info_field_t const *f)
+static void display_value(void const *base, char const *blob, info_field_t const *f)
 {
+    if (!base) {
+
+        if (f->type == INFO_FIELD_STR) {
+            if (!ostream_fmt(ostream_1, "%s%s", log_color->warning, "None"))
+                log_dieu(LOG_EXIT_SYS, "write to stdout") ;
+        } else {
+            if (!ostream_puts(ostream_1, "0"))
+                log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+        }
+
+        if (!ostream_putflush(ostream_1, "\n", 1))
+            log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
+        return ;
+    }
+
     void const *p = (char const *)base + f->offset ;
 
     if (f->type == INFO_FIELD_STR) {
@@ -44,7 +61,7 @@ static void display_value(void const *base, char const *rblob, info_field_t cons
 
         } else {
 
-            if (!ostream_puts(ostream_1, rblob + off))
+            if (!ostream_puts(ostream_1, blob + off))
                 log_dieu(LOG_EXIT_SYS, "write to stdout") ;
         }
 
@@ -79,10 +96,23 @@ static void display_value(void const *base, char const *rblob, info_field_t cons
 static void write_value(void *ctx, size_t index)
 {
     resolve_ctx_t const *c = ctx ;
-    display_value(c->base, c->rblob, &c->fields[index]) ;
+    info_field_t const *f = &c->fields[index] ;
+    void const *base = c->base ;
+    char const *blob = c->blob ;
+
+    if (f->addon) {
+        /* the field lives in an addon; base is 0 when the addon is absent */
+        if (f->addon < c->naddons) {
+            base = c->addons[f->addon].base ;
+            blob = c->addons[f->addon].blob ;
+        } else
+            base = 0 ;
+    }
+
+    display_value(base, blob, f) ;
 }
 
-void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname)
+void info_resolve_display(void const *base, char const *blob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname, info_addon_t const *addons, size_t naddons)
 {
     log_flow() ;
 
@@ -90,7 +120,7 @@ void info_resolve_display(void const *base, char const *rblob, info_field_t cons
     for (size_t i = 0 ; i < nfields ; i++)
         keys[i] = fields[i].key ;
 
-    resolve_ctx_t ctx = { base, rblob, fields } ;
+    resolve_ctx_t ctx = { base, blob, fields, addons, naddons } ;
 
     info_fields_display(keys, nfields, select, noname, &write_value, &ctx) ;
 }

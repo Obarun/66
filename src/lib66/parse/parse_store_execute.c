@@ -27,19 +27,6 @@
 #include <66/enum_parser.h>
 #include <66/caps.h>
 
-static int limit_compute(strbuf *store, uint64_t *u, resolve_enum_table_t table)
-{
-    if (store->s[0] == 'u') {
-        (*u) = (uint64_t)(RLIM_INFINITY) ;
-        return 1 ;
-    }
-
-    if (!u64_scan_strict(store->s, u))
-        parse_error_return(0, 3, table) ;
-
-    return 1 ;
-}
-
 int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
@@ -50,145 +37,22 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
     switch(kid) {
 
         case E_PARSER_SECTION_EXECUTE_LIMITAS:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitas, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITCORE:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitcore, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITCPU:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitcpu, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITDATA:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitdata, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITFSIZE:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitfsize, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITLOCKS:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitlocks, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITMEMLOCK:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitmemlock, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITMSGQUEUE:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitmsgqueue, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITNICE:
-
-            {
-                parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-
-                if (store->s[0] == 'u') {
-                    res->limit.limitnice = RLIM_INFINITY;
-                    break;
-                }
-
-                int64_t n = 0 ;
-                if (!i64_scan_base_max(store->s, &n, 10, INT64_MAX))
-                    parse_error_return(0, 3, table) ;
-
-                if (n < -20 || n > 19)
-                    parse_error_return(0, 0, table) ;
-
-                if (!n) {
-                    res->limit.limitnice = 1 ;
-                } else {
-                    res->limit.limitnice = (uint64_t)(20 - n) ;
-                }
-            }
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITNOFILE:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitnofile, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITNPROC:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitnproc, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITRTPRIO:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitrtprio, table))
-                return 0 ;
-
-            if (res->limit.limitrtprio > 100)
-                res->limit.limitrtprio = 100 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITRTTIME:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitrttime, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITSIGPENDING:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitsigpending, table))
-                return 0 ;
-
-            break ;
-
         case E_PARSER_SECTION_EXECUTE_LIMITSTACK:
-
-            parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
-            if (!limit_compute(store, &res->limit.limitstack, table))
-                return 0 ;
-
+            /* the `limit` addon is resolved separately by parse_limit() */
             break ;
-
         case E_PARSER_SECTION_EXECUTE_BLOCK_PRIVILEGES:
 
             parse_error_type(res->type, enum_list_parser_section_execute, kid) ;

@@ -202,7 +202,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
 
                 table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
 
-                if (!resolve_modify_field(wres, table, deps.len ? deps.s : ""))
+                if (!resolve_modify_field_by(wres, table, deps.len ? deps.s : ""))
                     log_dieusys(LOG_EXIT_SYS, "modify resolve file of service: ", dres.sa.s + dres.name) ;
             }
 

@@ -13,50 +13,31 @@
  */
 
 #include <stdint.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 
 #include <66/resolve.h>
-#include <66/service.h>
-#include <66/tree.h>
-#include <66/enum_service.h>
-#include <66/enum_tree.h>
 
-int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by)
+int resolve_modify_field(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value)
 {
     log_flow() ;
 
-    key_description_t const *list = enum_get_list(table) ;
+    if (resolve_read(wres, base, name) <= 0) {
 
-    if (wres->type == DATA_SERVICE) {
+        /* an addon (any non-core type) may not exist yet: ENOENT means "start
+         * from an empty one and create it". The core (DATA_SERVICE) is never
+         * created here, and any other failure is real. */
+        int e = errno ;
+        if (e != ENOENT || wres->type == DATA_SERVICE || wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER)
+            return 0 ;
+    }
 
-        resolve_service_t_ref res = (resolve_service_t *)wres->obj  ;
+    if (!resolve_modify_field_by(wres, table, value))
+        return 0 ;
 
-        log_trace("store field ", list->name[table.u.service.id], " of service ", res->sa.s + res->name, " with value: ", by) ;
+    if (!resolve_write(wres, base, name))
+        return 0 ;
 
-        service_resolve_modify_field(res, table.u.service, by) ;
-
-        return 1 ;
-
-    } else if (wres->type == DATA_TREE) {
-
-        resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;
-
-        log_trace("store field ", list->name[table.u.tree.id], " of tree ", res->sa.s + res->name, " with value: ", by) ;
-
-        tree_resolve_modify_field(res, table.u.tree.id, by) ;
-
-        return 1 ;
-
-    } else if (wres->type == DATA_TREE_MASTER) {
-
-        resolve_tree_master_t_ref res = (resolve_tree_master_t *)wres->obj  ;
-
-        log_trace("store field ", list->name[table.u.tree.id], " of resolve Master file of trees with value: ", by) ;
-
-        tree_resolve_master_modify_field(res, table.u.tree.id, by) ;
-
-        return 1 ;
-
-    } else return 0 ;
+    return 1 ;
 }

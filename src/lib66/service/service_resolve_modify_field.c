@@ -22,28 +22,6 @@
 #include <66/service.h>
 #include <66/enum_service.h>
 
-static uint64_t resolve_add_uint64(char const *data)
-{
-    uint64_t u ;
-
-    if (!data)
-        data = "0" ;
-    if (!u64_scan_strict(data, &u))
-        return 0 ;
-    return u ;
-}
-
-static uint32_t resolve_add_uint(char const *data)
-{
-    uint32_t u ;
-
-    if (!data)
-        data = "0" ;
-    if (!u32_scan_strict(data, &u))
-        return 0 ;
-    return u ;
-}
-
 static void modify_config(resolve_service_t *res, char const *data, uint32_t field)
 {
     log_flow() ;
@@ -69,23 +47,23 @@ static void modify_config(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_TYPE:
-            res->type = resolve_add_uint(data) ;
+            res->type = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_NOTIFY:
-            res->notify = resolve_add_uint(data) ;
+            res->notify = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_MAXDEATH:
-            res->maxdeath = resolve_add_uint(data) ; ;
+            res->maxdeath = resolve_add_uint32(data) ; ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME:
-            res->maxdeathtime = resolve_add_uint(data) ;
+            res->maxdeathtime = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_EARLIER:
-            res->earlier = resolve_add_uint(data) ; ;
+            res->earlier = resolve_add_uint32(data) ; ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_COPYFROM:
@@ -101,7 +79,7 @@ static void modify_config(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_OWNER:
-            res->owner = resolve_add_uint(data) ;
+            res->owner = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_TREENAME:
@@ -117,11 +95,11 @@ static void modify_config(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_ENABLED:
-            res->enabled = resolve_add_uint(data) ;
+            res->enabled = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_CONFIG_ISLOG:
-            res->islog = resolve_add_uint(data) ;
+            res->islog = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -191,27 +169,27 @@ static void modify_deps(resolve_service_t *res, char const *data, uint32_t field
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
-            res->dependencies.ndepends = resolve_add_uint(data) ;
+            res->dependencies.ndepends = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NREQUIREDBY:
-            res->dependencies.nrequiredby = resolve_add_uint(data) ;
+            res->dependencies.nrequiredby = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NOPTSDEPS:
-            res->dependencies.noptsdeps = resolve_add_uint(data) ;
+            res->dependencies.noptsdeps = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NCONTENTS:
-            res->dependencies.ncontents = resolve_add_uint(data) ;
+            res->dependencies.ncontents = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NPROVIDE:
-            res->dependencies.nprovide = resolve_add_uint(data) ;
+            res->dependencies.nprovide = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NCONFLICT:
-            res->dependencies.nconflict = resolve_add_uint(data) ;
+            res->dependencies.nconflict = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -262,39 +240,39 @@ static void modify_execute(resolve_service_t *res, char const *data, uint32_t fi
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART:
-            res->execute.timeout.start = resolve_add_uint(data) ;
+            res->execute.timeout.start = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP:
-            res->execute.timeout.stop = resolve_add_uint(data) ;
+            res->execute.timeout.stop = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_DOWN:
-            res->execute.down = resolve_add_uint(data) ;
+            res->execute.down = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL:
-            res->execute.downsignal = resolve_add_uint(data) ;
+            res->execute.downsignal = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES:
-            res->execute.blockprivileges = resolve_add_uint(data) ;
+            res->execute.blockprivileges = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_UMASK:
-            res->execute.umask = resolve_add_uint(data) ;
+            res->execute.umask = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK:
-            res->execute.want_umask = resolve_add_uint(data) ;
+            res->execute.want_umask = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_NICE:
-            res->execute.nice = resolve_add_uint(data) ;
+            res->execute.nice = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_WANT_NICE:
-            res->execute.want_nice = resolve_add_uint(data) ;
+            res->execute.want_nice = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
@@ -384,19 +362,19 @@ static void modify_logger(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGBACKUP:
-            res->logger.backup = resolve_add_uint(data) ;
+            res->logger.backup = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE:
-            res->logger.maxsize = resolve_add_uint(data) ;
+            res->logger.maxsize = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP:
-            res->logger.timestamp = resolve_add_uint(data) ;
+            res->logger.timestamp = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGWANT:
-            res->logger.want = resolve_add_uint(data) ;
+            res->logger.want = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGRUN:
@@ -416,11 +394,11 @@ static void modify_logger(resolve_service_t *res, char const *data, uint32_t fie
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
-            res->logger.execute.timeout.start = resolve_add_uint(data) ;
+            res->logger.execute.timeout.start = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
-            res->logger.execute.timeout.stop = resolve_add_uint(data) ;
+            res->logger.execute.timeout.stop = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -447,7 +425,7 @@ static void modify_environ(resolve_service_t *res, char const *data, uint32_t fi
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE:
-            res->environ.env_overwrite = resolve_add_uint(data) ;
+            res->environ.env_overwrite = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE:
@@ -455,7 +433,7 @@ static void modify_environ(resolve_service_t *res, char const *data, uint32_t fi
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE:
-            res->environ.nimportfile = resolve_add_uint(data) ;
+            res->environ.nimportfile = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -491,15 +469,15 @@ static void modify_regex(resolve_service_t *res, char const *data, uint32_t fiel
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
-            res->regex.ndirectories = resolve_add_uint(data) ;
+            res->regex.ndirectories = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_NFILES:
-            res->regex.nfiles = resolve_add_uint(data) ;
+            res->regex.nfiles = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_NINFILES:
-            res->regex.ninfiles = resolve_add_uint(data) ;
+            res->regex.ninfiles = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -518,27 +496,27 @@ static void modify_io(resolve_service_t *res, char const *data, uint32_t field)
     switch (field) {
 
         case E_RESOLVE_SERVICE_IO_STDIN:
-            res->io.fdin.type = resolve_add_uint(data) ;
+            res->io.fdin.type = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDINDEST:
-            res->io.fdin.destination = resolve_add_uint(data) ;
+            res->io.fdin.destination = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDOUT:
-            res->io.fdout.type = resolve_add_uint(data) ;
+            res->io.fdout.type = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDOUTDEST:
-            res->io.fdout.destination = resolve_add_uint(data) ;
+            res->io.fdout.destination = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDERR:
-            res->io.fderr.type = resolve_add_uint(data) ;
+            res->io.fderr.type = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDERRDEST:
-            res->io.fderr.destination = resolve_add_uint(data) ;
+            res->io.fderr.destination = resolve_add_uint32(data) ;
             break ;
 
         default:
@@ -548,80 +526,6 @@ static void modify_io(resolve_service_t *res, char const *data, uint32_t field)
     free(wres) ;
 }
 
-static void modify_limit(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_LIMIT_AS:
-            res->limit.limitas = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_CORE:
-            res->limit.limitcore = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_CPU:
-            res->limit.limitcpu = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_DATA:
-            res->limit.limitdata = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_FSIZE:
-            res->limit.limitfsize = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_LOCKS:
-            res->limit.limitlocks = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_MEMLOCK:
-            res->limit.limitmemlock = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_MSGQUEUE:
-            res->limit.limitmsgqueue = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NICE:
-            res->limit.limitnice = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NOFILE:
-            res->limit.limitnofile = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NPROC:
-            res->limit.limitnproc = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_RTPRIO:
-            res->limit.limitrtprio = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_RTTIME:
-            res->limit.limitrttime = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_SIGPENDING:
-            res->limit.limitsigpending = resolve_add_uint64(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_STACK:
-            res->limit.limitstack = resolve_add_uint64(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
 
 void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data)
 {
@@ -663,10 +567,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_IO:
             modify_io(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_LIMIT:
-            modify_limit(res, data, table.id) ;
             break ;
 
         default:

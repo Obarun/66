@@ -613,103 +613,6 @@ static int get_io(strbuf *sa, resolve_service_t *res, resolve_service_enum_limit
     return e ;
 }
 
-static int get_limit(strbuf *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
-{
-    log_flow() ;
-
-    char fmt[U64_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_LIMIT_AS:
-            fmt[u64_fmt(fmt,res->limit.limitas)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_CORE:
-            fmt[u64_fmt(fmt,res->limit.limitcore)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_CPU:
-            fmt[u64_fmt(fmt,res->limit.limitcpu)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_DATA:
-            fmt[u64_fmt(fmt,res->limit.limitdata)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_FSIZE:
-            fmt[u64_fmt(fmt,res->limit.limitfsize)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_LOCKS:
-            fmt[u64_fmt(fmt,res->limit.limitlocks)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_MEMLOCK:
-            fmt[u64_fmt(fmt,res->limit.limitmemlock)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_MSGQUEUE:
-            fmt[u64_fmt(fmt,res->limit.limitmsgqueue)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NICE:
-            fmt[u64_fmt(fmt,res->limit.limitnice)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NOFILE:
-            fmt[u64_fmt(fmt,res->limit.limitnofile)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_NPROC:
-            fmt[u64_fmt(fmt,res->limit.limitnproc)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_RTPRIO:
-            fmt[u64_fmt(fmt,res->limit.limitrtprio)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_RTTIME:
-            fmt[u64_fmt(fmt,res->limit.limitrttime)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_SIGPENDING:
-            fmt[u64_fmt(fmt,res->limit.limitsigpending)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LIMIT_STACK:
-            fmt[u64_fmt(fmt,res->limit.limitstack)] = 0 ;
-            str = fmt ;
-            break ;
-
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
 int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table)
 {
     log_flow() ;
@@ -742,9 +645,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_IO:
             return get_io(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_LIMIT:
-            return get_limit(sa, res, table.id) ;
 
         default:
             return 0 ;

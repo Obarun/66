@@ -50,23 +50,16 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
-    if (resolve_get_sa(&res->sa,c) <= 0) {
-        free(wres) ;
+    if (resolve_get_sa(&res->sa,c) <= 0)
         return (errno = EINVAL, 0)  ;
-    }
 
-    if (!res->sa.len) {
-        free(wres) ;
+    if (!res->sa.len)
         return (errno = EINVAL, 0)  ;
-    }
 
     /* configuration */
-    if (!resolve_get_key(c, "rversion", &res->rversion)) {
-        free(wres) ;
+    if (!resolve_get_key(c, "rversion", &res->rversion))
         return (errno = EINVAL, 0)  ;
-    }
 
     if (!resolve_get_key(c, "name", &res->name) ||
         !resolve_get_key(c, "description", &res->description) ||
@@ -85,6 +78,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "inns", &res->inns) ||
         !resolve_get_key(c, "enabled", &res->enabled) ||
         !resolve_get_key(c, "islog", &res->islog) ||
+        !resolve_get_key(c, "has_limit", &res->has_limit) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -176,29 +170,38 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "stdouttype", &res->io.fdout.type) ||
         !resolve_get_key(c, "stdoutdest", &res->io.fdout.destination) ||
         !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
-        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination) ||
-
-    /* limit */
-        !resolve_get_key_u64(c, "limitas", &res->limit.limitas) ||
-        !resolve_get_key_u64(c, "limitcore", &res->limit.limitcore) ||
-        !resolve_get_key_u64(c, "limitcpu", &res->limit.limitcpu) ||
-        !resolve_get_key_u64(c, "limitdata", &res->limit.limitdata) ||
-        !resolve_get_key_u64(c, "limitfsize", &res->limit.limitfsize) ||
-        !resolve_get_key_u64(c, "limitlocks", &res->limit.limitlocks) ||
-        !resolve_get_key_u64(c, "limitmemlock", &res->limit.limitmemlock) ||
-        !resolve_get_key_u64(c, "limitmsgqueue", &res->limit.limitmsgqueue) ||
-        !resolve_get_key_u64(c, "limitnice", &res->limit.limitnice) ||
-        !resolve_get_key_u64(c, "limitnofile", &res->limit.limitnofile) ||
-        !resolve_get_key_u64(c, "limitnproc", &res->limit.limitnproc) ||
-        !resolve_get_key_u64(c, "limitrtprio", &res->limit.limitrtprio) ||
-        !resolve_get_key_u64(c, "limitrttime", &res->limit.limitrttime) ||
-        !resolve_get_key_u64(c, "limitsigpending", &res->limit.limitsigpending) ||
-        !resolve_get_key_u64(c, "limitstack", &res->limit.limitstack)) {
-            free(wres) ;
+        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
             return (errno = EINVAL, 0)  ;
     }
 
-    free(wres) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_limit_cdb(ocdb *c, resolve_service_addon_limit_t *l)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&l->sa, c) <= 0 || !l->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &l->rversion) ||
+        !resolve_get_key_u64(c, "limitas", &l->limitas) ||
+        !resolve_get_key_u64(c, "limitcore", &l->limitcore) ||
+        !resolve_get_key_u64(c, "limitcpu", &l->limitcpu) ||
+        !resolve_get_key_u64(c, "limitdata", &l->limitdata) ||
+        !resolve_get_key_u64(c, "limitfsize", &l->limitfsize) ||
+        !resolve_get_key_u64(c, "limitlocks", &l->limitlocks) ||
+        !resolve_get_key_u64(c, "limitmemlock", &l->limitmemlock) ||
+        !resolve_get_key_u64(c, "limitmsgqueue", &l->limitmsgqueue) ||
+        !resolve_get_key_u64(c, "limitnice", &l->limitnice) ||
+        !resolve_get_key_u64(c, "limitnofile", &l->limitnofile) ||
+        !resolve_get_key_u64(c, "limitnproc", &l->limitnproc) ||
+        !resolve_get_key_u64(c, "limitrtprio", &l->limitrtprio) ||
+        !resolve_get_key_u64(c, "limitrttime", &l->limitrttime) ||
+        !resolve_get_key_u64(c, "limitsigpending", &l->limitsigpending) ||
+        !resolve_get_key_u64(c, "limitstack", &l->limitstack))
+            return (errno = EINVAL, 0) ;
 
     return 1 ;
 }

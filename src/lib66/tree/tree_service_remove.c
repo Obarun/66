@@ -60,7 +60,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
         table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
 
-        if (!resolve_modify_field(wres, table, str))
+        if (!resolve_modify_field_by(wres, table, str))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
         if (!resolve_write(wres, base, treename))

@@ -22,6 +22,16 @@
 #include <66/constants.h>
 #include <66/service.h>
 
+static int resolve_path(char *path, char *lname, char const *base, char const *name)
+{
+    auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+    if (!service_resolve_symlink(base, path, lname))
+        log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+
+    return 1 ;
+}
+
 int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
@@ -36,10 +46,15 @@ int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 
     if (wres->type == DATA_SERVICE) {
 
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        if (!resolve_path(path, lname, base, name))
+            return 0 ;
 
-        if (!service_resolve_symlink(base, path, lname))
-            log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+    } else if (wres->type == DATA_SERVICE_LIMIT) {
+
+        if (!resolve_path(path, lname, base, name))
+            return 0 ;
+
+        auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
 
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 

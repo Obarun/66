@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
@@ -28,10 +29,6 @@
 #include <66/constants.h>
 #include <66/config.h>
 #include <66/state.h>
-
-/* One row per cdb key, in the exact order and with the exact names written by
- * service_resolve_write_cdb.c -- the key is what lives in the resolve file and
- * is what -f selects (and what a future modify-by-field would target). */
 
 static info_field_t const fields[] = {
     { "name",            INFO_FIELD_STR, offsetof(resolve_service_t, name) },
@@ -51,6 +48,7 @@ static info_field_t const fields[] = {
     { "inns",            INFO_FIELD_STR, offsetof(resolve_service_t, inns) },
     { "enabled",         INFO_FIELD_U32, offsetof(resolve_service_t, enabled) },
     { "islog",           INFO_FIELD_U32, offsetof(resolve_service_t, islog) },
+    { "has_limit",       INFO_FIELD_U32, offsetof(resolve_service_t, has_limit) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
@@ -136,21 +134,21 @@ static info_field_t const fields[] = {
     { "stderrtype",      INFO_FIELD_U32, offsetof(resolve_service_t, io.fderr.type) },
     { "stderrdest",      INFO_FIELD_STR, offsetof(resolve_service_t, io.fderr.destination) },
 
-    { "limitas",         INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitas) },
-    { "limitcore",       INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitcore) },
-    { "limitcpu",        INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitcpu) },
-    { "limitdata",       INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitdata) },
-    { "limitfsize",      INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitfsize) },
-    { "limitlocks",      INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitlocks) },
-    { "limitmemlock",    INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitmemlock) },
-    { "limitmsgqueue",   INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitmsgqueue) },
-    { "limitnice",       INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitnice) },
-    { "limitnofile",     INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitnofile) },
-    { "limitnproc",      INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitnproc) },
-    { "limitrtprio",     INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitrtprio) },
-    { "limitrttime",     INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitrttime) },
-    { "limitsigpending", INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitsigpending) },
-    { "limitstack",      INFO_FIELD_U64, offsetof(resolve_service_t, limit.limitstack) },
+    { "limitas",         INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitas),        DATA_SERVICE_LIMIT },
+    { "limitcore",       INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitcore),      DATA_SERVICE_LIMIT },
+    { "limitcpu",        INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitcpu),       DATA_SERVICE_LIMIT },
+    { "limitdata",       INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitdata),      DATA_SERVICE_LIMIT },
+    { "limitfsize",      INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitfsize),     DATA_SERVICE_LIMIT },
+    { "limitlocks",      INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitlocks),     DATA_SERVICE_LIMIT },
+    { "limitmemlock",    INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitmemlock),   DATA_SERVICE_LIMIT },
+    { "limitmsgqueue",   INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitmsgqueue),  DATA_SERVICE_LIMIT },
+    { "limitnice",       INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitnice),      DATA_SERVICE_LIMIT },
+    { "limitnofile",     INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitnofile),    DATA_SERVICE_LIMIT },
+    { "limitnproc",      INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitnproc),     DATA_SERVICE_LIMIT },
+    { "limitrtprio",     INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitrtprio),    DATA_SERVICE_LIMIT },
+    { "limitrttime",     INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitrttime),    DATA_SERVICE_LIMIT },
+    { "limitsigpending", INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitsigpending),DATA_SERVICE_LIMIT },
+    { "limitstack",      INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitstack),     DATA_SERVICE_LIMIT },
 
     { "rversion",        INFO_FIELD_STR, offsetof(resolve_service_t, rversion) },
 } ;
@@ -239,8 +237,20 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname) ;
+    /* addons a field may live in, indexed by addon id; loaded on demand */
+    resolve_service_addon_limit_t limit = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
+    info_addon_t addons[DATA_SERVICE_LIMIT + 1] = {{0,0}} ;
 
+    resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
+    if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_LIMIT].base = &limit ;
+        addons[DATA_SERVICE_LIMIT].blob = limit.sa.s ;
+    }
+    free(wlimit) ;
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_LIMIT + 1) ;
+
+    strbuf_free(&limit.sa) ;
     resolve_free(wres) ;
 
     return 0 ;

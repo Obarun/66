@@ -74,7 +74,16 @@ typedef struct info_field_s info_field_t ;
 struct info_field_s {
     char const *key ;       // cdb key, also what -f matches
     uint8_t type ;          // info_field_type_e
-    size_t offset ;         // offsetof the member in the resolve struct
+    size_t offset ;         // offsetof the member in the core resolve OR the addon struct
+    uint8_t addon ;         // 0 = core resolve; else the addon id (DATA_SERVICE_LIMIT, ...)
+} ;
+
+/* a loaded addon a field may live in; indexed by the addon id used in the
+ * field table. base==0 means the addon is absent (the field renders as default). */
+typedef struct info_addon_s info_addon_t ;
+struct info_addon_s {
+    void const *base ;      // the loaded addon struct, or 0 if absent
+    char const *blob ;     // the addon's string blob
 } ;
 
 /* Shared field-listing engine: -f selection, name alignment and the noname
@@ -98,14 +107,19 @@ extern void info_fields_display(char const *const *keys, size_t nfields, char co
 
 /**
  * @brief Display the fields of a resolve struct from a declarative table.
- * @param[in] base     Pointer to the resolve struct.
- * @param[in] blob     The struct's string blob (res->sa.s).
+ * @param[in] base     Pointer to the core resolve struct.
+ * @param[in] blob    The core struct's string blob (res->sa.s).
  * @param[in] fields   Field table, one row per cdb key, in display order.
  * @param[in] nfields  Number of rows in @fields.
  * @param[in] select   Comma-separated list of keys to show, or 0 for all.
  * @param[in] noname   If non-zero, print only the values, not the field names.
+ * @param[in] addons   Loaded addons indexed by the addon id used in @fields; an
+ *                     entry with base==0 renders its fields as the default. May
+ *                     be 0 when @fields references core fields only.
+ * @param[in] naddons  Number of entries in @addons; an addon id >= this is
+ *                     treated as absent.
  */
-extern void info_resolve_display(void const *base, char const *rblob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname) ;
+extern void info_resolve_display(void const *base, char const *blob, info_field_t const *fields, size_t nfields, char const *select, uint8_t noname, info_addon_t const *addons, size_t naddons) ;
 
 /**
  * @brief Display the runtime status record of a service.

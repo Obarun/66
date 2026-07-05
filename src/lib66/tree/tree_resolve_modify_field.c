@@ -21,17 +21,6 @@
 #include <66/resolve.h>
 #include <66/tree.h>
 
-static uint32_t resolve_add_uint(char const *data)
-{
-    uint32_t u ;
-
-    if (!data)
-        data = "0" ;
-    if (!u32_scan_strict(data, &u))
-        return 0 ;
-    return u ;
-}
-
 void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data)
 {
     log_flow() ;
@@ -50,7 +39,7 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const 
 
         case E_RESOLVE_TREE_ENABLED:
 
-            tres->enabled = resolve_add_uint(data) ;
+            tres->enabled = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_DEPENDS:
@@ -74,31 +63,31 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const 
             break ;
 
         case E_RESOLVE_TREE_NDEPENDS:
-            tres->ndepends = resolve_add_uint(data) ;
+            tres->ndepends = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_NREQUIREDBY:
-            tres->nrequiredby = resolve_add_uint(data) ;
+            tres->nrequiredby = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_NALLOW:
-            tres->nallow = resolve_add_uint(data) ;
+            tres->nallow = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_NGROUPS:
-            tres->ngroups = resolve_add_uint(data) ;
+            tres->ngroups = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_NCONTENTS:
-            tres->ncontents = resolve_add_uint(data) ;
+            tres->ncontents = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_INIT:
-            tres->init = resolve_add_uint(data) ;
+            tres->init = resolve_add_uint32(data) ;
             break ;
 
         case E_RESOLVE_TREE_SUPERVISED:
-            tres->supervised = resolve_add_uint(data) ;
+            tres->supervised = resolve_add_uint32(data) ;
             break ;
 
         default:

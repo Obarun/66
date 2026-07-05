@@ -34,7 +34,7 @@ int tree_switch_current(char const *base, char const *treename)
         goto freed ;
     }
 
-    if (!resolve_modify_field_g(wres, base, SS_MASTER + 1, table,  treename)) {
+    if (!resolve_modify_field(wres, base, SS_MASTER + 1, table,  treename)) {
         log_warnu("modify field: ", enum_to_key(table.u.tree.list, table.u.tree.id)," of Master resolve file with value: ", treename) ;
         goto freed ;
     }

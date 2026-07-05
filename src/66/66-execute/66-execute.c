@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 #include <sys/resource.h> // limit
 #include <stdint.h>
+#include <stdlib.h> // free
 #include <sys/prctl.h>
 
 #include <oblibs/log.h>
@@ -612,50 +613,58 @@ static void execute_limit(resolve_service_t *res)
 {
     log_flow() ;
 
+    resolve_service_addon_limit_t la = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_LIMIT, &la) ;
+
+    if (res->has_limit && resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "read limit addon of: ", res->sa.s + res->name) ;
+
+    free(w) ;
+
 #ifdef RLIMIT_AS
-    limit_setup(res, RLIMIT_AS, res->limit.limitas ? res->limit.limitas : 0) ;
+    limit_setup(res, RLIMIT_AS, la.limitas ? la.limitas : 0) ;
 #endif
 #ifdef RLIMIT_CORE
-    limit_setup(res, RLIMIT_CORE, res->limit.limitcore ? res->limit.limitcore : 0) ;
+    limit_setup(res, RLIMIT_CORE, la.limitcore ? la.limitcore : 0) ;
 #endif
 #ifdef RLIMIT_CPU
-    limit_setup(res, RLIMIT_CPU, res->limit.limitcpu ? res->limit.limitcpu : 0) ;
+    limit_setup(res, RLIMIT_CPU, la.limitcpu ? la.limitcpu : 0) ;
 #endif
 #ifdef RLIMIT_DATA
-    limit_setup(res, RLIMIT_DATA, res->limit.limitdata ? res->limit.limitdata : 0) ;
+    limit_setup(res, RLIMIT_DATA, la.limitdata ? la.limitdata : 0) ;
 #endif
 #ifdef RLIMIT_FSIZE
-    limit_setup(res, RLIMIT_FSIZE, res->limit.limitfsize ? res->limit.limitfsize : 0) ;
+    limit_setup(res, RLIMIT_FSIZE, la.limitfsize ? la.limitfsize : 0) ;
 #endif
 #ifdef RLIMIT_LOCKS
-    limit_setup(res, RLIMIT_LOCKS, res->limit.limitlocks ? res->limit.limitlocks : 0) ;
+    limit_setup(res, RLIMIT_LOCKS, la.limitlocks ? la.limitlocks : 0) ;
 #endif
 #ifdef RLIMIT_MEMLOCK
-    limit_setup(res, RLIMIT_MEMLOCK, res->limit.limitmemlock ? res->limit.limitmemlock : 0) ;
+    limit_setup(res, RLIMIT_MEMLOCK, la.limitmemlock ? la.limitmemlock : 0) ;
 #endif
 #ifdef RLIMIT_MSGQUEUE
-    limit_setup(res, RLIMIT_MSGQUEUE, res->limit.limitmsgqueue ? res->limit.limitmsgqueue : 0) ;
+    limit_setup(res, RLIMIT_MSGQUEUE, la.limitmsgqueue ? la.limitmsgqueue : 0) ;
 #endif
 #ifdef RLIMIT_NICE
-    limit_setup(res, RLIMIT_NICE, res->limit.limitnice ? res->limit.limitnice : 0) ;
+    limit_setup(res, RLIMIT_NICE, la.limitnice ? la.limitnice : 0) ;
 #endif
 #ifdef RLIMIT_NOFILE
-    limit_setup(res, RLIMIT_NOFILE, res->limit.limitnofile ? res->limit.limitnofile : 0) ;
+    limit_setup(res, RLIMIT_NOFILE, la.limitnofile ? la.limitnofile : 0) ;
 #endif
 #ifdef RLIMIT_NPROC
-    limit_setup(res, RLIMIT_NPROC, res->limit.limitnproc ? res->limit.limitnproc : 0) ;
+    limit_setup(res, RLIMIT_NPROC, la.limitnproc ? la.limitnproc : 0) ;
 #endif
 #ifdef RLIMIT_RTPRIO
-    limit_setup(res, RLIMIT_RTPRIO, res->limit.limitrtprio ? res->limit.limitrtprio : 0) ;
+    limit_setup(res, RLIMIT_RTPRIO, la.limitrtprio ? la.limitrtprio : 0) ;
 #endif
 #ifdef RLIMIT_RTTIME
-    limit_setup(res, RLIMIT_RTTIME, res->limit.limitrttime ? res->limit.limitrttime : 0) ;
+    limit_setup(res, RLIMIT_RTTIME, la.limitrttime ? la.limitrttime : 0) ;
 #endif
 #ifdef RLIMIT_SIGPENDING
-    limit_setup(res, RLIMIT_SIGPENDING, res->limit.limitsigpending ? res->limit.limitsigpending : 0) ;
+    limit_setup(res, RLIMIT_SIGPENDING, la.limitsigpending ? la.limitsigpending : 0) ;
 #endif
 #ifdef RLIMIT_STACK
-    limit_setup(res, RLIMIT_STACK, res->limit.limitstack ? res->limit.limitstack : 0) ;
+    limit_setup(res, RLIMIT_STACK, la.limitstack ? la.limitstack : 0) ;
 #endif
 
 }

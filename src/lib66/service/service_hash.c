@@ -66,6 +66,7 @@ void resolve_hash_free(hash_t *hash)
 
 	HASH_FOREACH(hash, c, tmp) {
 		strbuf_free(&c->res.sa) ;
+		strbuf_free(&c->limit.sa) ;
 		free(c) ;
 	}
 

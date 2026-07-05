@@ -200,6 +200,9 @@ struct resolve_service_addon_io_s
 typedef struct resolve_service_addon_limit_s resolve_service_addon_limit_t, *resolve_service_addon_limit_t_ref;
 struct resolve_service_addon_limit_s
 {
+    strbuf sa ;
+    uint32_t rversion ;
+
     // all integer
     uint64_t limitas ;        // RLIMIT_AS (address space/virtual memory)
     uint64_t limitcore ;      // RLIMIT_CORE (core dump size)
@@ -218,7 +221,7 @@ struct resolve_service_addon_limit_s
     uint64_t limitstack ;     // RLIMIT_STACK (stack size)
 } ;
 
-#define RESOLVE_SERVICE_ADDON_LIMIT_ZERO { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_LIMIT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
@@ -245,6 +248,9 @@ struct resolve_service_s
     uint32_t enabled ; // integer, 0 not enabled
     uint32_t islog ; // integer, 0 not a logger service
 
+    // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists
+    uint32_t has_limit ;
+
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
     resolve_service_addon_execute_t execute ;
@@ -253,11 +259,11 @@ struct resolve_service_s
     resolve_service_addon_environ_t environ ;
     resolve_service_addon_regex_t regex ;
     resolve_service_addon_io_t io ;
-    resolve_service_addon_limit_t limit ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,30000,0,0,0,0,0,0,0,0,0,0, \
+                               0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
@@ -265,8 +271,7 @@ struct resolve_service_s
                                RESOLVE_SERVICE_ADDON_LOGGER_ZERO, \
                                RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, \
                                RESOLVE_SERVICE_ADDON_REGEX_ZERO, \
-                               RESOLVE_SERVICE_ADDON_IO_ZERO, \
-                               RESOLVE_SERVICE_ADDON_LIMIT_ZERO }
+                               RESOLVE_SERVICE_ADDON_IO_ZERO }
 
 
 extern const resolve_service_t service_resolve_zero ;
@@ -275,11 +280,12 @@ struct resolve_hash_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
 	uint8_t visit ;
 	resolve_service_t res ;
+	resolve_service_addon_limit_t limit ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -294,6 +300,12 @@ extern int service_resolve_read_cdb(ocdb *c, resolve_service_t *res) ;
 extern void service_resolve_write(resolve_service_t *res) ;
 extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *sres) ;
+
+extern int service_resolve_write_addon_limit_cdb(ocdbmaker *c, resolve_service_addon_limit_t *l) ;
+extern int service_resolve_read_addon_limit_cdb(ocdb *c, resolve_service_addon_limit_t *l) ;
+extern void service_resolve_sanitize_addon_limit(resolve_service_addon_limit_t *l) ;
+extern void service_resolve_modify_limit_field(resolve_service_addon_limit_t *l, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_limit_field(strbuf *sa, resolve_service_addon_limit_t *l, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;

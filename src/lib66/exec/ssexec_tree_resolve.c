@@ -155,9 +155,9 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
     }
 
     if (master)
-        info_resolve_display(&mres, mres.sa.s, fields_master, OPT_COUNT(fields_master), field, noname) ;
+        info_resolve_display(&mres, mres.sa.s, fields_master, OPT_COUNT(fields_master), field, noname, 0, 0) ;
     else
-        info_resolve_display(&tres, tres.sa.s, fields_tree, OPT_COUNT(fields_tree), field, noname) ;
+        info_resolve_display(&tres, tres.sa.s, fields_tree, OPT_COUNT(fields_tree), field, noname, 0, 0) ;
 
     resolve_free(wres) ;
 
