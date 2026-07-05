@@ -150,7 +150,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
                 log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
         }
 
-        if (resolve_read_g(wres, info->base.s, treename) <= 0)
+        if (resolve_read(wres, info->base.s, treename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
 

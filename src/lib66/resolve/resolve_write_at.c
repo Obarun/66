@@ -1,5 +1,5 @@
 /*
- * resolve_write_g.c
+ * resolve_write_at.c
  *
  * Copyright (c) 2022 Eric Vidal <eric@obarun.org>
  *
@@ -20,24 +20,15 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name)
+int resolve_write_at(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
     size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
 
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
+    char path[baselen + SS_RESOLVE_LEN + 2] ;
+    auto_strings(path, base, SS_RESOLVE, "/") ;
 
-    if (wres->type == DATA_SERVICE) {
+    return resolve_write_cdb(wres, path, name) ;
 
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
-
-        auto_strings(path, base, SS_SYSTEM) ;
-
-    } else return 0 ;
-
-    return resolve_write(wres, path, name) ;
 }

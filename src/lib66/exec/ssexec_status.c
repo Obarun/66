@@ -1114,7 +1114,7 @@ void info_status_one(const char *service, int *what)
     if (!r || r == STATE_FLAGS_FALSE)
         log_die(LOG_EXIT_SYS, "service: ", service, " is not parsed -- try to parse it using '66 parse ", service, "'") ;
 
-    if (resolve_read_g(wres, pinfo->base.s, service) <= 0)
+    if (resolve_read(wres, pinfo->base.s, service) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", service) ;
 
     info_display_all(&res, what) ;

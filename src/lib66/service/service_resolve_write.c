@@ -45,7 +45,7 @@ void service_resolve_write(resolve_service_t *res)
     dst[homelen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_SVC_LEN + 1 + namelen] = 0  ;
 
     log_trace("write resolve file: ",dst, SS_RESOLVE, "/", name) ;
-    if (!resolve_write(wres, dst, name))
+    if (!resolve_write_at(wres, dst, name))
         log_dieusys(LOG_EXIT_ZERO, "write resolve file: ", dst, SS_RESOLVE, "/", name) ;
 
     free(wres) ;

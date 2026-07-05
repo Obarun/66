@@ -762,7 +762,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!set_ownersysdir_stack(base, getuid()))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (!resolve_read_g(wres, base, service))
+    if (!resolve_read(wres, base, service))
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
 
     run = (action == EXECUTE_START) ? "/run" : "/finish" ;

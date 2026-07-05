@@ -48,7 +48,7 @@ void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8
     dest[dstlen] = 0  ;
 
     log_trace("write resolve file: ", dest, SS_RESOLVE, "/", name) ;
-    if (!resolve_write(wres, dest, name)) {
+    if (!resolve_write_at(wres, dest, name)) {
         parse_cleanup(res, dst, force) ;
         free(wres) ;
         log_dieusys(LOG_EXIT_SYS, "write resolve file: ", dest, SS_RESOLVE, "/", name) ;

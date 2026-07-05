@@ -29,7 +29,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     char *str = 0 ;
 
-    if (resolve_read_g(wres, base, treename) <= 0)
+    if (resolve_read(wres, base, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
     if (tres.ncontents) {
@@ -63,7 +63,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
         if (!resolve_modify_field(wres, table, str))
             log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
 
-        if (!resolve_write_g(wres, base, treename))
+        if (!resolve_write(wres, base, treename))
             log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
     }
 

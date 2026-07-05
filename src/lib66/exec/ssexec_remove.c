@@ -67,7 +67,7 @@ static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexe
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &dres) ;
 
-        r = resolve_read_g(wres, info->base.s, stk.s + pos) ;
+        r = resolve_read(wres, info->base.s, stk.s + pos) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", stk.s + pos) ;
 
@@ -169,7 +169,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &dres) ;
 
-        r = resolve_read_g(wres, info->base.s, name) ;
+        r = resolve_read(wres, info->base.s, name) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 
@@ -206,7 +206,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
                     log_dieusys(LOG_EXIT_SYS, "modify resolve file of service: ", dres.sa.s + dres.name) ;
             }
 
-            if (!resolve_write_g(wres, info->base.s, dres.sa.s + dres.name))
+            if (!resolve_write(wres, info->base.s, dres.sa.s + dres.name))
                 log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", dres.sa.s + dres.name) ;
 
         }
@@ -232,7 +232,7 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
     }
 
-    r = resolve_read_g(lwres, info->base.s, name) ;
+    r = resolve_read(lwres, info->base.s, name) ;
     if (r <= 0) {
         log_warn("service: ", name, " is already removed -- ignoring it") ;
         resolve_free(lwres) ;
@@ -365,7 +365,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-        r = resolve_read_g(wres, info->base.s, argv[pos]) ;
+        r = resolve_read(wres, info->base.s, argv[pos]) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", argv[pos]) ;
 
@@ -453,7 +453,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
 
             FOREACH_SBL(&stk, pos) {
 
-                r = resolve_read_g(dwres, info->base.s, stk.s + pos) ;
+                r = resolve_read(dwres, info->base.s, stk.s + pos) ;
                 if (r <= 0) {
                     log_warnusys("read resolve file of: ", stk.s + pos) ;
                     continue ;

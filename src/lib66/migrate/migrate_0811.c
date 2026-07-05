@@ -289,7 +289,7 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 
     migrate_ensure_log_owner(&new) ;
 
-    if (!resolve_write_g(wres, info->base.s, name))
+    if (!resolve_write(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
     resolve_free(wres) ;

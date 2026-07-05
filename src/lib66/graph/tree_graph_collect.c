@@ -51,7 +51,7 @@ uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *inf
 
     if (hash == NULL) {
 
-        if (resolve_read_g(wres, info->base.s, treename) <= 0)
+        if (resolve_read(wres, info->base.s, treename) <= 0)
             log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
         log_trace("add tree: ", treename, " to the tree selection") ;

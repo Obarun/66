@@ -152,7 +152,7 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     auto_dir(rdir, 0755) ;
 
     log_trace("write resolve of: ", name, " at: ", dir) ;
-    if (!resolve_write(wres, dir, name))
+    if (!resolve_write_at(wres, dir, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve of: ", name) ;
 
     resolve_free(wres) ;

@@ -13,21 +13,38 @@
  */
 
 #include <string.h>
+#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
+#include <66/service.h>
 
 int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
-    size_t baselen = strlen(base) ;
+    if (!resolve_check(wres, base, name))
+        return 0 ;
 
-    char path[baselen + SS_RESOLVE_LEN + 2] ;
-    auto_strings(path, base, SS_RESOLVE, "/") ;
+    char path[SS_MAX_PATH_LEN] ;
+    char lname[SS_MAX_PATH_LEN + 1] ;
 
-    return resolve_read_cdb(wres, path, name) ;
+    auto_strings(lname, name) ;
+
+    if (wres->type == DATA_SERVICE) {
+
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        if (!service_resolve_symlink(base, path, lname))
+            log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+
+    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+
+        auto_strings(path, base, SS_SYSTEM) ;
+    }
+
+    return resolve_read_at(wres, path, lname) ;
 }

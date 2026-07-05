@@ -1008,7 +1008,7 @@ int main(int argc, char const *const *argv)
   if (chdir(servicename) < 0)
     log_dieusys(111, "chdir to ", servicename) ;
 
-  if (!resolve_read(wres, ".", servicename)) {
+  if (!resolve_read_at(wres, ".", servicename)) {
     log_dieusys(111, "read resolve file of: ", servicename) ;
   }
 

@@ -25,10 +25,19 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
     log_flow() ;
 
     size_t baselen = strlen(base) ;
+    size_t namelen = strlen(name) ;
 
-    char path[baselen + SS_RESOLVE_LEN + 2] ;
-    auto_strings(path, base, SS_RESOLVE, "/") ;
+    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    return resolve_write_cdb(wres, path, name) ;
+    if (wres->type == DATA_SERVICE) {
 
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+
+        auto_strings(path, base, SS_SYSTEM) ;
+
+    } else return 0 ;
+
+    return resolve_write_at(wres, path, name) ;
 }

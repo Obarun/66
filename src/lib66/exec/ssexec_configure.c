@@ -277,7 +277,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
         log_die(LOG_EXIT_SYS, "service: ", sv, " is not parsed -- try to parse it first using '66 parse ", sv, "'") ;
     }
 
-    if (resolve_read_g(wres, info->base.s, sv) <= 0)
+    if (resolve_read(wres, info->base.s, sv) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
     if (!res.environ.envdir) {

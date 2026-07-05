@@ -107,7 +107,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
             char *dname = sold.s + pos ;
             dres = service_resolve_zero ;
 
-            r = resolve_read_g(dwres, base, dname) ;
+            r = resolve_read(dwres, base, dname) ;
             if (r < 0)
                 log_die(LOG_EXIT_USER, "read resolve file of: ") ;
             if (!r)
@@ -155,7 +155,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                          * */
                     }
 
-                    if (!resolve_write_g(dwres, dres.sa.s + dres.path.home, dname))
+                    if (!resolve_write(dwres, dres.sa.s + dres.path.home, dname))
                         log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", dname) ;
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * resolve_remove_g.c
+ * resolve_remove_at.c
  *
  * Copyright (c) 2022 Eric Vidal <eric@obarun.org>
  *
@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -24,28 +23,18 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-void resolve_remove_g(char const *base, char const *name, uint8_t data_type)
+void resolve_remove_at(char const *base, char const *name)
 {
     log_flow() ;
 
     int e = errno ;
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    if (data_type == DATA_SERVICE) {
+    char file[baselen + SS_RESOLVE_LEN + 1 + namelen +1] ;
+    auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        resolve_remove(path, name) ;
-
-        file_tryunlink(path) ;
-        errno = e ;
-
-    } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {
-
-        auto_strings(path, base, SS_SYSTEM) ;
-
-        resolve_remove(path, name) ;
-    }
+    file_tryunlink(file) ;
+    errno = e ;
 }
+

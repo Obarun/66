@@ -25,7 +25,7 @@ int tree_isvalid(char const *base, char const *treename)
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_wrapper_t_ref twres = resolve_set_struct(DATA_TREE, &tres) ;
 
-    e = resolve_check_g(twres, base, treename) ;
+    e = resolve_check(twres, base, treename) ;
 
     resolve_free(twres) ;
 

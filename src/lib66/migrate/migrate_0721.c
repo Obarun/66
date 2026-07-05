@@ -233,7 +233,7 @@ static void migrate_tree_0721(ssexec_t *info)
      * The update can crash at some point and relaunched. In that
      * case the resolve file can be already written with the current
      * format. */
-    if (resolve_read_g(wmres, info->base.s, SS_MASTER + 1) <= 0) {
+    if (resolve_read(wmres, info->base.s, SS_MASTER + 1) <= 0) {
 
         mres = tree_resolve_master_zero ;
 
@@ -243,7 +243,7 @@ static void migrate_tree_0721(ssexec_t *info)
         log_trace("upgrading master resolve file") ;
         tree_resolve_master_read_cdb_0721(&c, &mres) ;
 
-        if (!resolve_write_g(wmres, info->base.s, SS_MASTER + 1))
+        if (!resolve_write(wmres, info->base.s, SS_MASTER + 1))
             log_dieu(LOG_EXIT_SYS, "write resolve master file") ;
 
         ocdb_free(&c) ;
@@ -265,7 +265,7 @@ static void migrate_tree_0721(ssexec_t *info)
             tres = tree_resolve_zero ;
             wtres = resolve_set_struct(DATA_TREE, &tres) ;
 
-            if (resolve_read_g(wtres, info->base.s, stk.s + pos) <= 0) {
+            if (resolve_read(wtres, info->base.s, stk.s + pos) <= 0) {
 
                 if (resolve_open_cdb(&fd, &c, path, stk.s + pos) <= 0)
                     log_dieusys(LOG_EXIT_SYS, "open resolve file of tree: ", stk.s + pos) ;
@@ -273,7 +273,7 @@ static void migrate_tree_0721(ssexec_t *info)
                 log_trace("upgrading resolve file of tree: ", stk.s + pos) ;
                 tree_resolve_read_cdb_0721(&c, &tres) ;
 
-                if (!resolve_write_g(wtres, info->base.s, tres.sa.s + tres.name))
+                if (!resolve_write(wtres, info->base.s, tres.sa.s + tres.name))
                     log_dieu(LOG_EXIT_SYS, "write resolve file of tree: ", tres.sa.s + tres.name) ;
 
                 close_fd(fd) ;

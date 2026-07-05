@@ -60,12 +60,12 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
 
     if (hash == NULL) {
 
-        /** double pass with resolve_read.
+        /** double pass with resolve_read_at.
          * The service may already exist, respects the treename before the
          * call of sanitize_source if the -t option was not set by user.
          * The service do not exist yet, sanitize it with sanitize_source
          * and read again the resolve file to know the change */
-        r = resolve_read_g(wres, info->base.s, name) ;
+        r = resolve_read(wres, info->base.s, name) ;
         if (r < 0)
             log_dieu(LOG_EXIT_SYS, "read resolve file: ", name) ;
 
@@ -92,7 +92,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
         }
 
         if (readagain)
-            if (resolve_read_g(wres, info->base.s, name) <= 0)
+            if (resolve_read(wres, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
 
         if (!state_read(&ste, &res))

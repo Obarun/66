@@ -42,7 +42,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
 
     }
 
-    if (resolve_read_g(wres, info->base.s, treename) <= 0)
+    if (resolve_read(wres, info->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
 
     _alloc_sbl_(stk, strlen(tres.sa.s + tres.contents) + len + 3) ;
@@ -74,7 +74,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     if (!resolve_modify_field(wres, table, stk.s))
         log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", treename) ;
 
-    if (!resolve_write_g(wres, info->base.s, treename))
+    if (!resolve_write(wres, info->base.s, treename))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
 
     resolve_free(wres) ;

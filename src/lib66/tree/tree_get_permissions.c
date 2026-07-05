@@ -35,7 +35,7 @@ int tree_get_permissions(char const *base, char const *treename)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
     uid_t uid = getuid(), treeuid = -1 ;
 
-    if (resolve_read_g(wres, base, treename) <= 0)
+    if (resolve_read(wres, base, treename) <= 0)
         goto freed ;
 
     if (tres.nallow) {

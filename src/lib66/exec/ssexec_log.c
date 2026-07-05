@@ -119,7 +119,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-        if (resolve_read_g(wres, info->base.s, name) <= 0) {
+        if (resolve_read(wres, info->base.s, name) <= 0) {
             resolve_free(wres) ;
             continue ;
         }
@@ -189,7 +189,7 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     log_source_t *src = 0 ;
     int r ;
 
-    r = resolve_read_g(wres, info->base.s, name) ;
+    r = resolve_read(wres, info->base.s, name) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
     if (!r)
@@ -235,7 +235,7 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
-    int r = resolve_read_g(wres, info->base.s, target) ;
+    int r = resolve_read(wres, info->base.s, target) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", target) ;
     if (!r)

@@ -52,7 +52,7 @@ int svc_is_up(char const *name)
 
     base[baselen] = 0 ;
 
-    r = resolve_read_g(wres, base, name) ;
+    r = resolve_read(wres, base, name) ;
     if (r == -1)
         goto freed ;
     else if (!r) {

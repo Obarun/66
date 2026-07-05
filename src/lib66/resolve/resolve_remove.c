@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -23,18 +24,28 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-void resolve_remove(char const *base, char const *name)
+void resolve_remove(char const *base, char const *name, uint8_t data_type)
 {
     log_flow() ;
 
     int e = errno ;
     size_t baselen = strlen(base) ;
     size_t namelen = strlen(name) ;
+    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
 
-    char file[baselen + SS_RESOLVE_LEN + 1 + namelen +1] ;
-    auto_strings(file, base, SS_RESOLVE, "/", name) ;
+    if (data_type == DATA_SERVICE) {
 
-    file_tryunlink(file) ;
-    errno = e ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        resolve_remove_at(path, name) ;
+
+        file_tryunlink(path) ;
+        errno = e ;
+
+    } else if (data_type == DATA_TREE || data_type == DATA_TREE_MASTER) {
+
+        auto_strings(path, base, SS_SYSTEM) ;
+
+        resolve_remove_at(path, name) ;
+    }
 }
-

@@ -89,7 +89,7 @@ void sanitize_graph(ssexec_t *info)
                 c->res.dependencies.requiredby = parse_compute_list(wres, &stk, &c->res.dependencies.nrequiredby, 0) ;
         }
 
-        if (!resolve_write_g(wres, info->base.s, name))
+        if (!resolve_write(wres, info->base.s, name))
             log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
         resolve_free(wres) ;

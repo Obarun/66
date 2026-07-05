@@ -61,7 +61,7 @@ static int sanitize_service(ssexec_t *info)
 
         service_resolve_sanitize(&c->res) ;
 
-        if (!resolve_write_g(wres, info->base.s, name))
+        if (!resolve_write(wres, info->base.s, name))
             log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of service: ", name) ;
     }
 
@@ -104,7 +104,7 @@ static int sanitize_tree(ssexec_t *info)
 
         tree_resolve_sanitize(&c->tres) ;
 
-        if (!resolve_write_g(wres, info->base.s, name))
+        if (!resolve_write(wres, info->base.s, name))
             log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of tree: ", name) ;
     }
 
@@ -123,12 +123,12 @@ static int sanitize_tree_master(ssexec_t *info)
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
 
-    if (resolve_read_g(wres, info->base.s, SS_MASTER + 1) <= 0)
+    if (resolve_read(wres, info->base.s, SS_MASTER + 1) <= 0)
         log_warnusys_return(LOG_EXIT_ZERO, "read Master resolve file") ;
 
     tree_resolve_master_sanitize(&mres) ;
 
-    if (!resolve_write_g(wres, info->base.s, SS_MASTER + 1))
+    if (!resolve_write(wres, info->base.s, SS_MASTER + 1))
         log_warnusys_return(LOG_EXIT_ZERO, "write Master resolve file") ;
 
     resolve_free(wres) ;

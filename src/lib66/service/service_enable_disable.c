@@ -77,7 +77,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
             FOREACH_SBL(&stk, pos) {
 
-                if (resolve_read_g(w, info->base.s, stk.s + pos) > 0 && c.enabled)
+                if (resolve_read(w, info->base.s, stk.s + pos) > 0 && c.enabled)
                     log_die(LOG_EXIT_SYS,"conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please disable the '", c.sa.s + c.name, "' service first.") ;
             }
 
@@ -89,7 +89,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         else
             treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
 
-        /** detach treename: resolve_write_g() below appends SS_VERSION to res->sa
+        /** detach treename: resolve_write() below appends SS_VERSION to res->sa
          * (service_resolve_write_cdb), which reallocates it and would leave treename
          * (a pointer into res->sa) dangling for the tree_service_add() calls. */
         char treename_buf[strlen(treename) + 1] ;
@@ -107,7 +107,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         res->enabled = action ? 1 : 0 ;
 
-        if (!resolve_write_g(wres, res->sa.s + res->path.home, res->sa.s + res->name))
+        if (!resolve_write(wres, res->sa.s + res->path.home, res->sa.s + res->name))
             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
 
         free(wres) ;
@@ -128,7 +128,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
                 h->res.enabled = action ? 1 : 0 ;
 
-                if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
+                if (!resolve_write(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
                     log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
                 log_info("Disabled successfully: ", name) ;
@@ -185,7 +185,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
                         h->res.enabled = action ? 1 : 0 ;
 
-                        if (!resolve_write_g(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
+                        if (!resolve_write(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
                             log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
 
                         mark_isdone(&g->hres, h->res.sa.s + h->res.name) ;

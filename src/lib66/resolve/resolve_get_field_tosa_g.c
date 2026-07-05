@@ -52,7 +52,7 @@ int resolve_get_field_tosa_g(strbuf *sa, char const *base, char const *name, uin
 
     } else return 0 ;
 
-    if (resolve_read_g(wres, base, name) <= 0)
+    if (resolve_read(wres, base, name) <= 0)
         goto err ;
 
     if (!resolve_get_field_tosa(sa, wres, table))

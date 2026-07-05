@@ -47,7 +47,7 @@ int tree_resolve_master_create(char const *base, uid_t owner)
     mres.nallow++ ;
 
     log_trace("write Master resolve file of trees") ;
-    if (!resolve_write_g(wres, base, SS_MASTER + 1))
+    if (!resolve_write(wres, base, SS_MASTER + 1))
         goto err ;
 
     e  = 1 ;

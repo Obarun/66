@@ -79,7 +79,7 @@ int service_get_treename(char *atree, char const *name)
 
     base[baselen] = 0 ;
 
-    r = resolve_read_g(wres, base, name) ;
+    r = resolve_read(wres, base, name) ;
     if (r == -1 || !r)
         goto freed ;
 
@@ -130,7 +130,7 @@ int service_is_g(char const *name, uint32_t flag)
 
     base[baselen] = 0 ;
 
-    r = resolve_read_g(wres, base, name) ;
+    r = resolve_read(wres, base, name) ;
     if (r == -1)
         goto freed ;
     else if (!r) {

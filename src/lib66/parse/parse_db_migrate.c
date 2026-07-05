@@ -99,7 +99,7 @@ void parse_db_migrate(resolve_service_t *res, ssexec_t *info)
      * Do not crash if it does not find it. User
      * can use -f options even if it's the first parse
      * process of the module.*/
-    r = resolve_read_g(owres, info->base.s, res->sa.s + res->name) ;
+    r = resolve_read(owres, info->base.s, res->sa.s + res->name) ;
     if (r < 0) {
 
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", res->sa.s + res->name) ;

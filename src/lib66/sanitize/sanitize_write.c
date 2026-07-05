@@ -38,7 +38,7 @@ static void resolve_compare(resolve_service_t *res)
     ss_state_t sta = STATE_ZERO ;
     char *name = res->sa.s + res->name ;
 
-    r = resolve_read_g(wres, res->sa.s + res->path.home, name) ;
+    r = resolve_read(wres, res->sa.s + res->path.home, name) ;
     if (r < 0)
         log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 

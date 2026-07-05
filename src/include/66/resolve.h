@@ -72,11 +72,11 @@ extern void resolve_wrapper_free(resolve_wrapper_t **wres) ;
  *
  * */
 
-extern int resolve_check_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name) ;
 extern int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name) ;
-extern int resolve_read_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern int resolve_write_g(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern void resolve_remove_g(char const *base, char const *name, uint8_t data_type) ;
+extern int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern void resolve_remove(char const *base, char const *name, uint8_t data_type) ;
 extern int resolve_get_field_tosa_g(strbuf *sa, char const *base, char const *name, uint8_t data_type, resolve_enum_table_t table) ;
 extern int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
@@ -87,10 +87,10 @@ extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
  *
  * */
 
-extern int resolve_check(char const *base, char const *name) ;
-extern int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern void resolve_remove(char const *base, char const *name) ;
+extern int resolve_check_at(char const *base, char const *name) ;
+extern int resolve_read_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern int resolve_write_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern void resolve_remove_at(char const *base, char const *name) ;
 extern int resolve_get_field_tosa(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table) ;
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;

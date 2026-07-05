@@ -13,26 +13,36 @@
  */
 
 #include <string.h>
-#include <unistd.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
 #include <66/resolve.h>
 #include <66/constants.h>
+#include <66/service.h>
 
-int resolve_check(char const *base, char const *name)
+int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
-    size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
+    char path[SS_MAX_PATH_LEN] ;
+    char lname[SS_MAX_SERVICE_NAME + 1] ;
 
-    char file[baselen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
-    auto_strings(file, base, SS_RESOLVE, "/", name) ;
+    auto_strings(lname, name) ;
 
-    if (access(file, F_OK) < 0)
-        return 0 ;
+    if (wres->type == DATA_SERVICE) {
 
-    return 1 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        if (!service_resolve_symlink(base, path, lname))
+            log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+
+    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+
+        auto_strings(path, base, SS_SYSTEM) ;
+
+    } else return 0 ;
+
+    return resolve_check_at(path, lname) ;
+
 }

@@ -171,7 +171,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
 
             char *name = stk->s + pos ;
 
-            r = resolve_read_g(wres, info->base.s, name) ;
+            r = resolve_read(wres, info->base.s, name) ;
             if (r == -1)
                 log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
             if (!r)

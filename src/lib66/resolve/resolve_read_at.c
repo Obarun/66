@@ -1,5 +1,5 @@
 /*
- * resolve_modify_field_g.c
+ * resolve_read_at.c
  *
  * Copyright (c) 2022 Eric Vidal <eric@obarun.org>
  *
@@ -12,24 +12,22 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdint.h>
+#include <string.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 
 #include <66/resolve.h>
+#include <66/constants.h>
 
-int resolve_modify_field_g(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value)
+int resolve_read_at(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
-    if (resolve_read(wres, base, name) <= 0)
-        return 0 ;
+    size_t baselen = strlen(base) ;
 
-    if (!resolve_modify_field(wres, table, value))
-        return 0 ;
+    char path[baselen + SS_RESOLVE_LEN + 2] ;
+    auto_strings(path, base, SS_RESOLVE, "/") ;
 
-    if (!resolve_write(wres, base, name))
-        return 0 ;
-
-    return 1 ;
+    return resolve_read_cdb(wres, path, name) ;
 }

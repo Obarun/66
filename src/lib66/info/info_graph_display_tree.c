@@ -50,7 +50,7 @@ int info_graph_display_tree(char const *name)
         goto freed ;
     }
 
-    if (resolve_read_g(wres, sa.s, name) <= 0)
+    if (resolve_read(wres, sa.s, name) <= 0)
         goto freed ;
 
     sa.len = 0 ;
