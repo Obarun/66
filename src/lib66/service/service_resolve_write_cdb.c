@@ -60,6 +60,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "has_logger", res->has_logger) ||
         !resolve_add_cdb_uint(c, "has_execute", res->has_execute) ||
         !resolve_add_cdb_uint(c, "has_dependencies", res->has_dependencies) ||
+        !resolve_add_cdb_uint(c, "has_regex", res->has_regex) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -76,16 +77,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "notifdir", res->live.notifdir) ||
         !resolve_add_cdb_uint(c, "supervisedir", res->live.supervisedir) ||
         !resolve_add_cdb_uint(c, "fdholderdir", res->live.fdholderdir) ||
-        !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir) ||
-
-        // regex
-        !resolve_add_cdb_uint(c, "configure", res->regex.configure) ||
-        !resolve_add_cdb_uint(c, "directories", res->regex.directories) ||
-        !resolve_add_cdb_uint(c, "files", res->regex.files) ||
-        !resolve_add_cdb_uint(c, "infiles", res->regex.infiles) ||
-        !resolve_add_cdb_uint(c, "ndirectories", res->regex.ndirectories) ||
-        !resolve_add_cdb_uint(c, "nfiles", res->regex.nfiles) ||
-        !resolve_add_cdb_uint(c, "ninfiles", res->regex.ninfiles))
+        !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir))
             return 0 ;
 
     return 1 ;
@@ -260,6 +252,30 @@ int service_resolve_write_addon_dependencies_cdb(ocdbmaker *c, resolve_service_a
         !resolve_add_cdb_uint(c, "ncontents", dep->ncontents) ||
         !resolve_add_cdb_uint(c, "nprovide", dep->nprovide) ||
         !resolve_add_cdb_uint(c, "nconflict", dep->nconflict))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_regex_cdb(ocdbmaker *c, resolve_service_addon_regex_t *rx)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
+    rx->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, rx->sa.s, rx->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", rx->rversion) ||
+        !resolve_add_cdb_uint(c, "configure", rx->configure) ||
+        !resolve_add_cdb_uint(c, "directories", rx->directories) ||
+        !resolve_add_cdb_uint(c, "files", rx->files) ||
+        !resolve_add_cdb_uint(c, "infiles", rx->infiles) ||
+        !resolve_add_cdb_uint(c, "ndirectories", rx->ndirectories) ||
+        !resolve_add_cdb_uint(c, "nfiles", rx->nfiles) ||
+        !resolve_add_cdb_uint(c, "ninfiles", rx->ninfiles))
             return 0 ;
 
     return 1 ;

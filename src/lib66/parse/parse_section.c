@@ -41,12 +41,6 @@ int parse_section_stop(resolve_service_t *res, resolve_service_addon_execute_t *
     return parse_section(res, ex, dep, str, table) ;
 }
 
-int parse_section_regex(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, const char *str)
-{
-    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_REGEX_ZERO ;
-    return parse_section(res, ex, dep, str, table) ;
-}
-
 int parse_section_execute(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, const char *str)
 {
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;

@@ -67,6 +67,12 @@ int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_
 
         return service_resolve_get_dependencies_field(sa, dep, table.u.service) ;
 
+    } else if (wres->type == DATA_SERVICE_REGEX) {
+
+        resolve_service_addon_regex_t *rx = (resolve_service_addon_regex_t *)wres->obj ;
+
+        return service_resolve_get_regex_field(sa, rx, table.u.service) ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

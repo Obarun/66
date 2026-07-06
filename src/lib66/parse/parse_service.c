@@ -404,6 +404,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                 free(wex) ;
             }
 
+            if (c->res.has_regex) {
+                char const *rxname = c->res.sa.s + c->res.name ;
+                char aname[strlen(rxname) + SS_ADDON_REGEX_SUFFIX_LEN + 1] ;
+                auto_strings(aname, rxname, SS_ADDON_REGEX_SUFFIX) ;
+                resolve_wrapper_t_ref wrx = resolve_set_struct(DATA_SERVICE_REGEX, &c->regex) ;
+                if (!resolve_write_at(wrx, sa.s, aname)) {
+                    free(wrx) ;
+                    log_dieusys(LOG_EXIT_SYS, "write regex addon of: ", rxname) ;
+                }
+                free(wrx) ;
+            }
+
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
             /** do not die here, just warn the user */

@@ -179,51 +179,6 @@ static void modify_live(resolve_service_t *res, char const *data, uint32_t field
     free(wres) ;
 }
 
-static void modify_regex(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
-            res->regex.configure = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_DIRECTORIES:
-            res->regex.directories = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_FILES:
-            res->regex.files = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_INFILES:
-            res->regex.infiles = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
-            res->regex.ndirectories = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NFILES:
-            res->regex.nfiles = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NINFILES:
-            res->regex.ninfiles = resolve_add_uint32(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
-
-
-
 void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data)
 {
     log_flow() ;
@@ -240,10 +195,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             modify_live(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_REGEX:
-            modify_regex(res, data, table.id) ;
             break ;
 
         default:

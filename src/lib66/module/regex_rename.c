@@ -24,7 +24,7 @@
 
 #include <66/module.h>
 
-void regex_rename(strbuf *list, resolve_service_t *res, uint32_t element)
+void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t element)
 {
     log_flow() ;
 
@@ -33,9 +33,9 @@ void regex_rename(strbuf *list, resolve_service_t *res, uint32_t element)
 
     size_t pos = 0, idx = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    _alloc_sbl_(stk, strlen(res->sa.s + element)) ;
+    _alloc_sbl_(stk, strlen(rx->sa.s + element)) ;
 
-    if (!sbl_clean_string(&stk, res->sa.s + element))
+    if (!sbl_clean_string(&stk, rx->sa.s + element))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     FOREACH_SBL(&stk, pos) {

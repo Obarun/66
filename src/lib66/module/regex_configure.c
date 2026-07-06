@@ -39,13 +39,13 @@ size_t bcount (char const *s, size_t len, char b)
   return n ;
 }
 
-void regex_configure(resolve_service_t *res, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name)
+void regex_configure(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name)
 {
     log_flow() ;
 
     int wstat, r ;
     pid_t pid ;
-    size_t clen = res->regex.configure > 0 ? 1 : 0 ;
+    size_t clen = rx->configure > 0 ? 1 : 0 ;
     size_t pathlen = strlen(path), n ;
 
     _cleanup_strbuf_ strbuf env = STRBUF_ZERO ;
@@ -132,8 +132,8 @@ void regex_configure(resolve_service_t *res, resolve_service_addon_environ_t *e,
         m = 0 ;
         newargv[m++] = config_script ;
 
-        if (res->regex.configure > 0)
-            newargv[m++] = res->sa.s + res->regex.configure ;
+        if (rx->configure > 0)
+            newargv[m++] = rx->sa.s + rx->configure ;
 
         newargv[m++] = 0 ;
 

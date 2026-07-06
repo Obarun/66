@@ -35,7 +35,7 @@
 #include <66/migrate_0802.h>
 #include <66/migrate.h>
 
-static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, resolve_service_t_0802 *old)
+static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, resolve_service_addon_regex_t *rx, resolve_service_t_0802 *old)
 {
     log_flow() ;
 
@@ -146,14 +146,22 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
         free(ewres) ;
     }
 
-    // regex
-    new->regex.configure = old->regex.configure ? resolve_add_string(wres, old->sa.s + old->regex.configure) : 0 ;
-    new->regex.directories = old->regex.directories ? resolve_add_string(wres, old->sa.s + old->regex.directories) : 0 ;
-    new->regex.files = old->regex.files ? resolve_add_string(wres, old->sa.s + old->regex.files) : 0 ;
-    new->regex.infiles = old->regex.infiles ? resolve_add_string(wres, old->sa.s + old->regex.infiles) : 0 ;
-    new->regex.ndirectories = old->regex.ndirectories ;
-    new->regex.nfiles = old->regex.nfiles ;
-    new->regex.ninfiles = old->regex.ninfiles ;
+    // regex -> autonomous addon (module services only)
+    new->has_regex = (old->regex.configure || old->regex.directories || old->regex.files ||
+                      old->regex.infiles || old->regex.ndirectories || old->regex.nfiles ||
+                      old->regex.ninfiles) ? 1 : 0 ;
+    if (new->has_regex) {
+        resolve_wrapper_t_ref rxwres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
+        resolve_init(rxwres) ;
+        rx->configure = old->regex.configure ? resolve_add_string(rxwres, old->sa.s + old->regex.configure) : 0 ;
+        rx->directories = old->regex.directories ? resolve_add_string(rxwres, old->sa.s + old->regex.directories) : 0 ;
+        rx->files = old->regex.files ? resolve_add_string(rxwres, old->sa.s + old->regex.files) : 0 ;
+        rx->infiles = old->regex.infiles ? resolve_add_string(rxwres, old->sa.s + old->regex.infiles) : 0 ;
+        rx->ndirectories = old->regex.ndirectories ;
+        rx->nfiles = old->regex.nfiles ;
+        rx->ninfiles = old->regex.ninfiles ;
+        free(rxwres) ;
+    }
 
     // IO
     // io -> autonomous addon (always present)
@@ -315,7 +323,8 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    service_resolve_sanitize_0802(&new, &environ, &io, &logger, &execute, &dependencies, &res) ;
+    resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
+    service_resolve_sanitize_0802(&new, &environ, &io, &logger, &execute, &dependencies, &regex, &res) ;
 
     migrate_ensure_log_owner(&new, &io, &logger) ;
 
@@ -356,6 +365,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write dependencies addon of service: ", name) ;
         }
         resolve_free(wdep) ;
+    }
+
+    if (new.has_regex) {
+        resolve_wrapper_t_ref wrx = resolve_set_struct(DATA_SERVICE_REGEX, &regex) ;
+        if (!resolve_write(wrx, info->base.s, name)) {
+            resolve_free(wrx) ;
+            log_dieusys(LOG_EXIT_SYS, "write regex addon of service: ", name) ;
+        }
+        resolve_free(wrx) ;
     }
 
     if (new.has_execute) {

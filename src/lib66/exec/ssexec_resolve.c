@@ -120,13 +120,13 @@ static info_field_t const fields[] = {
     { "importfile",      INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, importfile),    DATA_SERVICE_ENVIRON },
     { "nimportfile",     INFO_FIELD_U32, offsetof(resolve_service_addon_environ_t, nimportfile),   DATA_SERVICE_ENVIRON },
 
-    { "configure",       INFO_FIELD_STR, offsetof(resolve_service_t, regex.configure) },
-    { "directories",     INFO_FIELD_STR, offsetof(resolve_service_t, regex.directories) },
-    { "files",           INFO_FIELD_STR, offsetof(resolve_service_t, regex.files) },
-    { "infiles",         INFO_FIELD_STR, offsetof(resolve_service_t, regex.infiles) },
-    { "ndirectories",    INFO_FIELD_U32, offsetof(resolve_service_t, regex.ndirectories) },
-    { "nfiles",          INFO_FIELD_U32, offsetof(resolve_service_t, regex.nfiles) },
-    { "ninfiles",        INFO_FIELD_U32, offsetof(resolve_service_t, regex.ninfiles) },
+    { "configure",       INFO_FIELD_STR, offsetof(resolve_service_addon_regex_t, configure),    DATA_SERVICE_REGEX },
+    { "directories",     INFO_FIELD_STR, offsetof(resolve_service_addon_regex_t, directories),  DATA_SERVICE_REGEX },
+    { "files",           INFO_FIELD_STR, offsetof(resolve_service_addon_regex_t, files),        DATA_SERVICE_REGEX },
+    { "infiles",         INFO_FIELD_STR, offsetof(resolve_service_addon_regex_t, infiles),      DATA_SERVICE_REGEX },
+    { "ndirectories",    INFO_FIELD_U32, offsetof(resolve_service_addon_regex_t, ndirectories), DATA_SERVICE_REGEX },
+    { "nfiles",          INFO_FIELD_U32, offsetof(resolve_service_addon_regex_t, nfiles),       DATA_SERVICE_REGEX },
+    { "ninfiles",        INFO_FIELD_U32, offsetof(resolve_service_addon_regex_t, ninfiles),     DATA_SERVICE_REGEX },
 
     { "stdintype",       INFO_FIELD_U32, offsetof(resolve_service_addon_io_t, fdin.type),         DATA_SERVICE_IO },
     { "stdindest",       INFO_FIELD_STR, offsetof(resolve_service_addon_io_t, fdin.destination),  DATA_SERVICE_IO },
@@ -245,7 +245,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    info_addon_t addons[DATA_SERVICE_DEPENDENCIES + 1] = {{0,0}} ;
+    resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
+    info_addon_t addons[DATA_SERVICE_REGEX + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -283,7 +284,13 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_DEPENDENCIES].blob = dependencies.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_DEPENDENCIES + 1) ;
+    resolve_wrapper_t_ref wregex = resolve_set_struct(DATA_SERVICE_REGEX, &regex) ;
+    if (res.has_regex && resolve_read(wregex, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_REGEX].base = &regex ;
+        addons[DATA_SERVICE_REGEX].blob = regex.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_REGEX + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
@@ -291,6 +298,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_free(wlogger) ;
     resolve_free(wexecute) ;
     resolve_free(wdependencies) ;
+    resolve_free(wregex) ;
     resolve_free(wres) ;
 
     return 0 ;

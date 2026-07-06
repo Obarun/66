@@ -87,6 +87,13 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(lname + strlen(lname), SS_ADDON_DEPENDENCIES_SUFFIX) ;
 
+    } else if (wres->type == DATA_SERVICE_REGEX) {
+
+        if (!resolve_path(path, lname, base, name))
+            return 0 ;
+
+        auto_strings(lname + strlen(lname), SS_ADDON_REGEX_SUFFIX) ;
+
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM) ;

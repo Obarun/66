@@ -26,20 +26,20 @@
 #include <66/constants.h>
 #include <66/module.h>
 
-void regex_replace(strbuf *filelist, resolve_service_t *res)
+void regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_service_t *res)
 {
     log_flow() ;
 
     int r ;
     size_t pos = 0, idx = 0 ;
 
-    if (!res->regex.ninfiles)
+    if (!rx->ninfiles)
         return ;
 
     _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
-    _alloc_sbl_(infiles, strlen(res->sa.s + res->regex.infiles)) ;
+    _alloc_sbl_(infiles, strlen(rx->sa.s + rx->infiles)) ;
 
-    if (!sbl_clean_string(&infiles, res->sa.s + res->regex.infiles))
+    if (!sbl_clean_string(&infiles, rx->sa.s + rx->infiles))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     FOREACH_SBL(filelist, pos) {

@@ -200,59 +200,6 @@ static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_liv
     return e ;
 }
 
-static int get_regex(strbuf *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
-            str = res->sa.s + res->regex.directories ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_DIRECTORIES:
-            str = res->sa.s + res->regex.directories ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_FILES:
-            str = res->sa.s + res->regex.files ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_INFILES:
-            str = res->sa.s + res->regex.infiles ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
-            fmt[u32_fmt(fmt,res->regex.ndirectories)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NFILES:
-            fmt[u32_fmt(fmt,res->regex.nfiles)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_REGEX_NINFILES:
-            fmt[u32_fmt(fmt,res->regex.ninfiles)] = 0 ;
-            str = fmt ;
-            break ;
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
-
 int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table)
 {
     log_flow() ;
@@ -267,9 +214,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             return get_live(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_REGEX:
-            return get_regex(sa, res, table.id) ;
 
         default:
             return 0 ;

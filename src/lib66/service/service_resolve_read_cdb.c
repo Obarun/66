@@ -81,6 +81,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "has_logger", &res->has_logger) ||
         !resolve_get_key(c, "has_execute", &res->has_execute) ||
         !resolve_get_key(c, "has_dependencies", &res->has_dependencies) ||
+        !resolve_get_key(c, "has_regex", &res->has_regex) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -97,16 +98,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "notifdir", &res->live.notifdir) ||
         !resolve_get_key(c, "supervisedir", &res->live.supervisedir) ||
         !resolve_get_key(c, "fdholderdir", &res->live.fdholderdir) ||
-        !resolve_get_key(c, "oneshotddir", &res->live.oneshotddir) ||
-
-    /* regex */
-        !resolve_get_key(c, "configure", &res->regex.configure) ||
-        !resolve_get_key(c, "directories", &res->regex.directories) ||
-        !resolve_get_key(c, "files", &res->regex.files) ||
-        !resolve_get_key(c, "infiles", &res->regex.infiles) ||
-        !resolve_get_key(c, "ndirectories", &res->regex.ndirectories) ||
-        !resolve_get_key(c, "nfiles", &res->regex.nfiles) ||
-        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles)) {
+        !resolve_get_key(c, "oneshotddir", &res->live.oneshotddir)) {
             return (errno = EINVAL, 0)  ;
     }
 
@@ -259,6 +251,26 @@ int service_resolve_read_addon_dependencies_cdb(ocdb *c, resolve_service_addon_d
         !resolve_get_key(c, "ncontents", &dep->ncontents) ||
         !resolve_get_key(c, "nprovide", &dep->nprovide) ||
         !resolve_get_key(c, "nconflict", &dep->nconflict))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_regex_cdb(ocdb *c, resolve_service_addon_regex_t *rx)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&rx->sa, c) <= 0 || !rx->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &rx->rversion) ||
+        !resolve_get_key(c, "configure", &rx->configure) ||
+        !resolve_get_key(c, "directories", &rx->directories) ||
+        !resolve_get_key(c, "files", &rx->files) ||
+        !resolve_get_key(c, "infiles", &rx->infiles) ||
+        !resolve_get_key(c, "ndirectories", &rx->ndirectories) ||
+        !resolve_get_key(c, "nfiles", &rx->nfiles) ||
+        !resolve_get_key(c, "ninfiles", &rx->ninfiles))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

@@ -62,13 +62,6 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->live.fdholderdir = res->live.fdholderdir ? resolve_add_string(wres, stk + res->live.fdholderdir) : 0 ;
     res->live.oneshotddir = res->live.oneshotddir ? resolve_add_string(wres, stk + res->live.oneshotddir) : 0 ;
 
-    // regex
-    res->regex.configure = res->regex.configure ? resolve_add_string(wres, stk + res->regex.configure) : 0 ;
-    res->regex.directories = res->regex.directories ? resolve_add_string(wres, stk + res->regex.directories) : 0 ;
-    res->regex.files = res->regex.files ? resolve_add_string(wres, stk + res->regex.files) : 0 ;
-    res->regex.infiles = res->regex.infiles ? resolve_add_string(wres, stk + res->regex.infiles) : 0 ;
-
-
     res->rversion = res->rversion ? resolve_add_string(wres, stk + res->rversion) : 0 ;
 
     free(wres) ;

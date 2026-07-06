@@ -174,6 +174,9 @@ struct resolve_service_addon_environ_s
 typedef struct resolve_service_addon_regex_s resolve_service_addon_regex_t, *resolve_service_addon_regex_t_ref ;
 struct resolve_service_addon_regex_s
 {
+    strbuf sa ;
+    uint32_t rversion ;
+
     uint32_t configure ; // string
     uint32_t directories ; // string
     uint32_t files ; // string
@@ -185,7 +188,7 @@ struct resolve_service_addon_regex_s
 
 } ;
 
-#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { 0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_REGEX_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0 }
 
 /**
  * Stdin: default -> /dev/null
@@ -276,18 +279,17 @@ struct resolve_service_s
     uint32_t has_logger ;
     uint32_t has_execute ;
     uint32_t has_dependencies ;
+    uint32_t has_regex ;
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_live_t live ;
-    resolve_service_addon_regex_t regex ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
-                               0,0,0,0,0,0, \
+                               0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
-                               RESOLVE_SERVICE_ADDON_LIVE_ZERO, \
-                               RESOLVE_SERVICE_ADDON_REGEX_ZERO }
+                               RESOLVE_SERVICE_ADDON_LIVE_ZERO }
 
 
 extern const resolve_service_t service_resolve_zero ;
@@ -302,11 +304,12 @@ struct resolve_hash_s {
 	resolve_service_addon_logger_t logger ;
 	resolve_service_addon_execute_t execute ;
 	resolve_service_addon_dependencies_t dependencies ;
+	resolve_service_addon_regex_t regex ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, RESOLVE_SERVICE_ADDON_REGEX_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -352,6 +355,11 @@ extern int service_resolve_read_addon_dependencies_cdb(ocdb *c, resolve_service_
 extern void service_resolve_sanitize_addon_dependencies(resolve_service_addon_dependencies_t *dep) ;
 extern void service_resolve_modify_dependencies_field(resolve_service_addon_dependencies_t *dep, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_dependencies_field(strbuf *sa, resolve_service_addon_dependencies_t *dep, resolve_service_enum_table_t table) ;
+extern int service_resolve_write_addon_regex_cdb(ocdbmaker *c, resolve_service_addon_regex_t *rx) ;
+extern int service_resolve_read_addon_regex_cdb(ocdb *c, resolve_service_addon_regex_t *rx) ;
+extern void service_resolve_sanitize_addon_regex(resolve_service_addon_regex_t *rx) ;
+extern void service_resolve_modify_regex_field(resolve_service_addon_regex_t *rx, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_regex_field(strbuf *sa, resolve_service_addon_regex_t *rx, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby) ;

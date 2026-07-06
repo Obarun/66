@@ -93,7 +93,7 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, reso
     free(wres) ;
 }
 
-static void parse_module_regex(resolve_service_t *res, resolve_service_addon_environ_t *e, char *dir, size_t copylen, ssexec_t *info)
+static void parse_module_regex(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, char *dir, size_t copylen, ssexec_t *info)
 {
     log_flow() ;
 
@@ -107,7 +107,7 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_env
         char const *exclude[1] = { 0 } ;
 
         get_list(&list, dir, name, S_IFREG, exclude) ;
-        regex_replace(&list, res) ;
+        regex_replace(&list, rx, res) ;
     }
 
     {
@@ -117,18 +117,18 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_env
 
         /** directories */
         get_list(&list, dir, name, S_IFDIR, exclude) ;
-        regex_rename(&list, res, res->regex.directories) ;
+        regex_rename(&list, rx, rx->directories) ;
 
         /** filename */
         get_list(&list, dir, name, S_IFREG, exclude) ;
-        regex_rename(&list, res, res->regex.files) ;
+        regex_rename(&list, rx, rx->files) ;
     }
 
     /** configure script */
-    regex_configure(res, e, info, dir, name) ;
+    regex_configure(res, rx, e, info, dir, name) ;
 }
 
-void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e, resolve_service_addon_dependencies_t *dep)
+void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e, resolve_service_addon_dependencies_t *dep, resolve_service_addon_regex_t *rx)
 {
     log_flow() ;
 
@@ -165,7 +165,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
     if (!tree_copy(dirname, tmpdir))
         log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir) ;
 
-    parse_module_regex(res, e, tmpdir, tmplen, info) ;
+    parse_module_regex(res, rx, e, tmpdir, tmplen, info) ;
 
     /** handle new activated depends/requiredby service.*/
     {

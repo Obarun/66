@@ -342,8 +342,18 @@ int parse_frontend(char const *sv,
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
+    resolve_service_addon_regex_t regexaddon = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
+    {
+        uint8_t has_regex = 0 ;
+        if (!parse_regex(&st, &res, &regexaddon, &has_regex)) {
+            parse_store_free(&st) ;
+            log_die(LOG_EXIT_SYS, "parse regex of service: ", svname) ;
+        }
+        res.has_regex = has_regex ;
+    }
+
     if (res.type == E_PARSER_TYPE_MODULE)
-        parse_module(&res, hres, info, force, conf, &environaddon, &depaddon) ;
+        parse_module(&res, hres, info, force, conf, &environaddon, &depaddon, &regexaddon) ;
 
     parse_compute_resolve(&res, &execaddon, info) ;
     res.has_execute = 1 ;
@@ -425,6 +435,11 @@ int parse_frontend(char const *sv,
         if (res.has_dependencies) {
             hash = resolve_hash_search(hres, name) ;
             hash->dependencies = depaddon ;
+        }
+
+        if (res.has_regex) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->regex = regexaddon ;
         }
     }
 
