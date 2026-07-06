@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/opt.h>
 #include <oblibs/hash.h>
 #include <oblibs/types.h>
@@ -26,6 +27,7 @@
 
 #include <66/ssexec.h>
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/graph.h>
 #include <66/enum_parser.h>
 #include <66/config.h>
@@ -125,11 +127,14 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
 
             service_switch_tree(&hash->res, info->treename.s, info) ;
 
-            if (hash->res.logger.want && hash->res.type == E_PARSER_TYPE_CLASSIC) {
+            if (hash->res.has_logger && hash->res.type == E_PARSER_TYPE_CLASSIC) {
 
-                struct resolve_hash_s *log = resolve_hash_search(&graph.hres, hash->res.sa.s + hash->res.logger.name) ;
+                char logname[strlen(hash->res.sa.s + hash->res.name) + SS_LOG_SUFFIX_LEN + 1] ;
+                auto_strings(logname, hash->res.sa.s + hash->res.name, SS_LOG_SUFFIX) ;
+
+                struct resolve_hash_s *log = resolve_hash_search(&graph.hres, logname) ;
                 if (log == NULL)
-                    log_die(LOG_EXIT_USER, "service: ", hash->res.sa.s + hash->res.logger.name, " not available -- please make a bug report") ;
+                    log_die(LOG_EXIT_USER, "service: ", logname, " not available -- please make a bug report") ;
 
                 service_switch_tree(&log->res, info->treename.s, info) ;
             }

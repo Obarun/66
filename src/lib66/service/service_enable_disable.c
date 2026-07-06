@@ -23,6 +23,7 @@
 #include <oblibs/string.h>
 
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/graph.h>
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -114,9 +115,11 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
-        if (res->logger.want && !action && res->type == E_PARSER_TYPE_CLASSIC && !res->inns) {
+        if (res->has_logger && !action && res->type == E_PARSER_TYPE_CLASSIC && !res->inns) {
 
-            char *name = res->sa.s + res->logger.name ;
+            char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+            auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
+            char *name = logname ;
 
             struct resolve_hash_s *h = resolve_hash_search(&g->hres, name) ;
             if (h == NULL)

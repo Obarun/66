@@ -380,6 +380,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                 free(wio) ;
             }
 
+            if (c->res.has_logger) {
+                char const *lgname = c->res.sa.s + c->res.name ;
+                char aname[strlen(lgname) + SS_ADDON_LOGGER_SUFFIX_LEN + 1] ;
+                auto_strings(aname, lgname, SS_ADDON_LOGGER_SUFFIX) ;
+                resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &c->logger) ;
+                if (!resolve_write_at(wlg, sa.s, aname)) {
+                    free(wlg) ;
+                    log_dieusys(LOG_EXIT_SYS, "write logger addon of: ", lgname) ;
+                }
+                free(wlg) ;
+            }
+
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
             /** do not die here, just warn the user */

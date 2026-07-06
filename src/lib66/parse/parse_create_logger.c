@@ -63,14 +63,14 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
     return resolve_add_string(wres, dstlog) ;
 }
 
-static void compute_log_script(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io)
+static void compute_log_script(parse_validator_t *v, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
 {
 
     log_flow() ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
 
-    int build = !strcmp(res->sa.s + res->logger.execute.run.build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
+    int build = !strcmp(lg->sa.s + lg->execute.run.build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
 
     char *pmax = 0 ;
     char *pback = 0 ;
@@ -78,7 +78,7 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
     char back[U32_FMT] ;
     char *timestamp = 0 ;
     int itimestamp = SS_LOGGER_TIMESTAMP ;
-    char *logrunner = res->logger.execute.run.runas ? res->sa.s + res->logger.execute.run.runas : SS_LOGGER_RUNNER ;
+    char *logrunner = lg->execute.run.runas ? lg->sa.s + lg->execute.run.runas : SS_LOGGER_RUNNER ;
 
     log->execute.run.runas = resolve_add_string(wres, logrunner) ;
 
@@ -87,22 +87,22 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
     ttable.u.parser.id = E_PARSER_SECTION_LOGGER_TIMESTAMP ;
 
     if (parse_checker(v, ttable))
-        timestamp = res->logger.timestamp == E_PARSER_TIME_NONE ? "" : res->logger.timestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
+        timestamp = lg->timestamp == E_PARSER_TIME_NONE ? "" : lg->timestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
     else
         timestamp = itimestamp == E_PARSER_TIME_NONE ? "" : itimestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
 
     /** backup */
-    if (res->logger.backup) {
+    if (lg->backup) {
 
-        back[u32_fmt(back,res->logger.backup)] = 0 ;
+        back[u32_fmt(back,lg->backup)] = 0 ;
         pback = back ;
 
     }
 
     /** file size */
-    if (res->logger.maxsize) {
+    if (lg->maxsize) {
 
-        max[u32_fmt(max,res->logger.maxsize)] = 0 ;
+        max[u32_fmt(max,lg->maxsize)] = 0 ;
         pmax = max ;
 
     }
@@ -145,8 +145,8 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
 
         } else {
 
-            char run[strlen(res->sa.s + res->logger.execute.run.run_user) + 2] ;
-            auto_strings(run, res->sa.s + res->logger.execute.run.run_user, "\n") ;
+            char run[strlen(lg->sa.s + lg->execute.run.run_user) + 2] ;
+            auto_strings(run, lg->sa.s + lg->execute.run.run_user, "\n") ;
 
             log->execute.run.run_user = resolve_add_string(wres, run) ;
         }
@@ -155,11 +155,11 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
     free(wres) ;
 }
 
-static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, ssexec_t *info)
+static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, ssexec_t *info)
 {
     log_flow() ;
 
-    if (!res->logger.name)
+    if (!res->has_logger)
         return ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
@@ -167,11 +167,11 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     resolve_init(wres) ;
 
     char *str = res->sa.s ;
-    size_t namelen = strlen(str + res->logger.name) ;
-    char name[namelen + 1] ;
-    char description[namelen + 7 + 1] ;
+    size_t pnamelen = strlen(str + res->name) ;
+    char name[pnamelen + SS_LOG_SUFFIX_LEN + 1] ; // logger name is always <service>-log
+    char description[pnamelen + 7 + 1] ;
 
-    auto_strings(name, str + res->logger.name) ;
+    auto_strings(name, str + res->name, SS_LOG_SUFFIX) ;
 
     auto_strings(description, str + res->name, " logger") ;
 
@@ -198,12 +198,12 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     log->path.servicedir = compute_src_servicedir(wres, info) ;
     log->dependencies.requiredby = resolve_add_string(wres, str + res->name) ;
     log->dependencies.nrequiredby = 1 ;
-    log->execute.run.build = res->logger.execute.run.build ? resolve_add_string(wres, str + res->logger.execute.run.build) : 0 ;
-    log->execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
-    log->execute.timeout.start = res->logger.execute.timeout.start ;
-    log->execute.timeout.stop = res->logger.execute.timeout.stop ;
-    log->execute.down = res->logger.execute.down ;
-    log->execute.downsignal = res->logger.execute.downsignal ;
+    log->execute.run.build = lg->execute.run.build ? resolve_add_string(wres, lg->sa.s + lg->execute.run.build) : 0 ;
+    log->execute.run.runas = resolve_add_string(wres, lg->sa.s + lg->execute.run.runas) ;
+    log->execute.timeout.start = lg->execute.timeout.start ;
+    log->execute.timeout.stop = lg->execute.timeout.stop ;
+    log->execute.down = lg->execute.down ;
+    log->execute.downsignal = lg->execute.downsignal ;
 
     log->live.livedir = resolve_add_string(wres, info->live.s) ;
     log->live.status = compute_status(wres, info) ;
@@ -216,17 +216,11 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     log->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
     log->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
 
-    log->logger.backup = res->logger.backup ;
-    log->logger.maxsize = res->logger.maxsize ;
-    log->logger.timestamp = res->logger.timestamp ;
-    log->logger.want = 0 ;
-    log->logger.execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
-
     {
         resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, logio) ;
         resolve_init(iowres) ;
 
-        if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
+        if (!strcmp(lg->sa.s + lg->execute.run.build, "custom")) {
 
             logio->fdin.type = logio->fdout.type = logio->fderr.type = E_PARSER_IO_TYPE_PARENT ;
 
@@ -244,18 +238,18 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
 
     // oneshot do not use fdholder daemon
     if (res->type == E_PARSER_TYPE_CLASSIC)
-        compute_log_script(v, res, log, io) ;
+        compute_log_script(v, log, io, lg) ;
 
     free(wres) ;
 
 }
 
-void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, ssexec_t *info)
+void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, ssexec_t *info)
 {
     log_flow() ;
 
-    char logname[strlen(res->sa.s + res->logger.name) + 1] ;
-    auto_strings(logname, res->sa.s + res->logger.name) ;
+    char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+    auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
 
     struct resolve_hash_s *hash ;
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
@@ -280,11 +274,15 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
 
         res->dependencies.ndepends++ ;
 
-        compute_logger(v, res, &lres, io, &logio, info) ;
+        compute_logger(v, res, &lres, io, &logio, lg, info) ;
 
-        /** sanitize_init/execute_uidgid use this field */
-        res->logger.execute.run.run = resolve_add_string(wres, lres.sa.s + lres.execute.run.run) ;
-        res->logger.execute.run.run_user = resolve_add_string(wres, lres.sa.s + lres.execute.run.run_user) ;
+        /** keep the derived run scripts on the parent's logger addon (dump/reference) */
+        {
+            resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
+            lg->execute.run.run = resolve_add_string(lgwres, lres.sa.s + lres.execute.run.run) ;
+            lg->execute.run.run_user = resolve_add_string(lgwres, lres.sa.s + lres.execute.run.run_user) ;
+            free(lgwres) ;
+        }
 
         if (resolve_hash_count(hres) > SS_MAX_SERVICE)
             log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;

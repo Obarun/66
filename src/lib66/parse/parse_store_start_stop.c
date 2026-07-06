@@ -55,8 +55,6 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
                     res->execute.run.runas = resolve_add_string(wres, tmp) ;
                 else if (sid == E_PARSER_SECTION_STOP)
                     res->execute.finish.runas = resolve_add_string(wres, tmp) ;
-                else if (sid == E_PARSER_SECTION_LOGGER)
-                    res->logger.execute.run.runas = resolve_add_string(wres, tmp) ;
             }
             break ;
 
@@ -66,8 +64,6 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
                 res->execute.run.run_user = resolve_add_string(wres, store->s) ;
             else if (sid == E_PARSER_SECTION_STOP)
                 res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
-            else if (sid == E_PARSER_SECTION_LOGGER)
-                res->logger.execute.run.run_user = resolve_add_string(wres, store->s) ;
             break ;
 
         case E_PARSER_SECTION_STARTSTOP_TIMESTART:

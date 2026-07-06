@@ -72,7 +72,7 @@ extern void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t fo
 extern void parse_service(hash_t *href, char const *sv, ssexec_t *info, uint8_t force, uint8_t conf) ;
 extern int parse_frontend(char const *sv, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
 extern int parse_interdependences(char const *service, char const *list, unsigned int listlen, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, char const *forced_directory, char const *main, char const *inns, char const *intree, resolve_service_t *moduleres) ;
-extern void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, ssexec_t *info) ;
+extern void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, ssexec_t *info) ;
 
 /** validator */
 extern int parse_validator_init(parse_validator_t *v, char const *frontend) ;
@@ -88,7 +88,6 @@ extern void parse_store_free(parse_store_t *st) ;
 extern int parse_section_main(resolve_service_t *res, const char *str) ;
 extern int parse_section_start(resolve_service_t *res, const char *str) ;
 extern int parse_section_stop(resolve_service_t *res, const char *str) ;
-extern int parse_section_logger(resolve_service_t *res, const char *str) ;
 extern int parse_section_regex(resolve_service_t *res, const char *str) ;
 extern int parse_section_execute(resolve_service_t *res, const char *str) ;
 extern int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t table) ;
@@ -99,7 +98,6 @@ extern int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_
 extern int parse_store_g(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
-extern int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 
@@ -111,11 +109,12 @@ extern int parse_list(strbuf *stk) ;
 extern int parse_bracket(strbuf *store, const char *line, resolve_enum_table_t table) ;
 extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
 extern int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table) ;
-extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
+extern int parse_mandatory(resolve_service_t *res, resolve_service_addon_logger_t *lg, ssexec_t *info) ;
 extern int parse_io(parse_store_t *st, resolve_service_t *res, resolve_service_addon_io_t *io, uint8_t *has_io, ssexec_t *info) ;
 extern void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info) ;
 extern int parse_limit(parse_store_t *st, resolve_service_addon_limit_t *l, uint8_t *has_limit) ;
 extern int parse_environ(parse_store_t *st, resolve_service_t *res, resolve_service_addon_environ_t *e, uint8_t conf, uint8_t *has_environ) ;
+extern int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addon_logger_t *lg, uint8_t *has_logger) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;

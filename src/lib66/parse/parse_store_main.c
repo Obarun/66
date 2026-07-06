@@ -214,7 +214,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
                     /** do no set a logger by default */
                     if (reverse && r == E_PARSER_OPTS_LOGGER)
-                        res->logger.want = 0 ;
+                        res->has_logger = 0 ;
                 }
             }
 

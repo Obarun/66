@@ -31,6 +31,7 @@
 #define DATA_SERVICE_LIMIT 3 // autonomous addon of a service resolve
 #define DATA_SERVICE_ENVIRON 4 // autonomous addon of a service resolve
 #define DATA_SERVICE_IO 5 // autonomous addon of a service resolve
+#define DATA_SERVICE_LOGGER 6 // autonomous addon of a service resolve
 
 typedef struct resolve_wrapper_s resolve_wrapper_t, *resolve_wrapper_t_ref ;
 struct resolve_wrapper_s
@@ -47,7 +48,8 @@ struct resolve_wrapper_s
     else if (wres->type == DATA_TREE_MASTER) sbwres = (&((resolve_tree_master_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_SERVICE_LIMIT) sbwres = (&((resolve_service_addon_limit_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_SERVICE_ENVIRON) sbwres = (&((resolve_service_addon_environ_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_SERVICE_IO) sbwres = (&((resolve_service_addon_io_t *)wres->obj)->sa) ;
+    else if (wres->type == DATA_SERVICE_IO) sbwres = (&((resolve_service_addon_io_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_SERVICE_LOGGER) sbwres = (&((resolve_service_addon_logger_t *)wres->obj)->sa) ;
 #endif
 
 /**

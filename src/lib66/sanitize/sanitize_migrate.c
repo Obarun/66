@@ -112,9 +112,9 @@ void migrate_create_snap(ssexec_t *info, const char *version)
  * This function fix it, but its should only valuable for version
  * under 0.8.2.0 which fix the bug.
  */
-void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io)
+void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
 {
-    if (res->logger.want && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
+    if (res->has_logger && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
         _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char const *exclude[1] = { 0 } ;
@@ -122,21 +122,16 @@ void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t
         uid_t uid ;
         gid_t gid ;
 
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-        res->logger.execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
-
-        /** derive dest after resolve_add_string above: it appends to res->sa and
-         * may relocate it, which would dangle a pointer taken earlier. */
         char *dest = io->sa.s + io->fdout.destination ;
+        char const *runas = lg->execute.run.runas ? lg->sa.s + lg->execute.run.runas : SS_LOGGER_RUNNER ;
 
         if (access(dest, F_OK) < 0) {
             log_warnusys("find logger directory: '", dest, "' -- ignoring it") ;
             return ;
         }
 
-        if (!youruid(&uid, res->sa.s + res->logger.execute.run.runas))
-            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", res->sa.s + res->logger.execute.run.runas) ;
+        if (!youruid(&uid, runas))
+            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", runas) ;
 
         if (!yourgid(&gid, uid))
             log_dieusys(LOG_EXIT_SYS, "get gid") ;
@@ -151,8 +146,6 @@ void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t
             if (chown(sa.s + pos, uid, gid) < 0)
                 log_dieusys(LOG_EXIT_SYS, "chown: ", sa.s + pos) ;
         }
-
-        free(wres) ;
     }
 
 }

@@ -48,12 +48,6 @@ int parse_store_g(resolve_service_t *res, strbuf *store, resolve_enum_table_t ta
 
             break ;
 
-        case E_PARSER_SECTION_LOGGER:
-
-            if (!parse_store_logger(res, store, table))
-                log_warnu_return(LOG_EXIT_ZERO, "store value of section: ", enum_str_parser_section[E_PARSER_SECTION_LOGGER]);
-            break ;
-
         case E_PARSER_SECTION_REGEX:
 
             if (!parse_store_regex(res, store, table))

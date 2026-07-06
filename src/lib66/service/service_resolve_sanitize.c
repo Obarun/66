@@ -83,13 +83,6 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->live.fdholderdir = res->live.fdholderdir ? resolve_add_string(wres, stk + res->live.fdholderdir) : 0 ;
     res->live.oneshotddir = res->live.oneshotddir ? resolve_add_string(wres, stk + res->live.oneshotddir) : 0 ;
 
-    // logger
-    res->logger.name = res->logger.name ? resolve_add_string(wres, stk + res->logger.name) : 0 ;
-    res->logger.execute.run.run = res->logger.execute.run.run ? resolve_add_string(wres, stk + res->logger.execute.run.run) : 0 ;
-    res->logger.execute.run.run_user = res->logger.execute.run.run_user ? resolve_add_string(wres, stk + res->logger.execute.run.run_user) : 0 ;
-    res->logger.execute.run.build = res->logger.execute.run.build ? resolve_add_string(wres, stk + res->logger.execute.run.build) : 0 ;
-    res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, stk + res->logger.execute.run.runas) : 0 ;
-
     // regex
     res->regex.configure = res->regex.configure ? resolve_add_string(wres, stk + res->regex.configure) : 0 ;
     res->regex.directories = res->regex.directories ? resolve_add_string(wres, stk + res->regex.directories) : 0 ;

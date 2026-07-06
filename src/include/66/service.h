@@ -125,19 +125,20 @@ struct resolve_service_addon_live_s
 typedef struct resolve_service_addon_logger_s resolve_service_addon_logger_t, *resolve_service_addon_logger_t_ref ;
 struct resolve_service_addon_logger_s
 {
-    // logger
-    uint32_t name ; // string, typically "name-log" or 0 if it's the resolve of the logger
+    strbuf sa ;
+    uint32_t rversion ;
+
     uint32_t backup ; // integer
     uint32_t maxsize ; // integer
     /** integer, default 3 which mean not touched, in this case the value configured
      * at compilation take precedence */
     uint32_t timestamp ; // integer
-    uint32_t want ; // 1 want, 0 do not want. Want by default
     resolve_service_addon_execute_t execute ;
 } ;
 
 #define RESOLVE_SERVICE_ADDON_LOGGER_ZERO { \
-    0,3,1000000,3,1, \
+    STRBUF_ZERO, 0, \
+    3,1000000,3, \
     RESOLVE_SERVICE_ADDON_EXECUTE_ZERO \
 }
 
@@ -255,27 +256,27 @@ struct resolve_service_s
     uint32_t enabled ; // integer, 0 not enabled
     uint32_t islog ; // integer, 0 not a logger service
 
-    // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists
+    // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists.
+    // has_logger doubles as the old logger.want: >0 ⇔ the service has a logger companion.
     uint32_t has_limit ;
     uint32_t has_environ ;
     uint32_t has_io ;
+    uint32_t has_logger ;
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
     resolve_service_addon_execute_t execute ;
     resolve_service_addon_live_t live ;
-    resolve_service_addon_logger_t logger ;
     resolve_service_addon_regex_t regex ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,30000,0,0,0,0,0,0,0,0,0,0, \
-                               0,0,0, \
+                               0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO, \
-                               RESOLVE_SERVICE_ADDON_LOGGER_ZERO, \
                                RESOLVE_SERVICE_ADDON_REGEX_ZERO }
 
 
@@ -288,11 +289,12 @@ struct resolve_hash_s {
 	resolve_service_addon_limit_t limit ;
 	resolve_service_addon_environ_t environ ;
 	resolve_service_addon_io_t io ;
+	resolve_service_addon_logger_t logger ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -323,6 +325,11 @@ extern int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t
 extern void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io) ;
 extern void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_io_field(strbuf *sa, resolve_service_addon_io_t *io, resolve_service_enum_table_t table) ;
+extern int service_resolve_write_addon_logger_cdb(ocdbmaker *c, resolve_service_addon_logger_t *lg) ;
+extern int service_resolve_read_addon_logger_cdb(ocdb *c, resolve_service_addon_logger_t *lg) ;
+extern void service_resolve_sanitize_addon_logger(resolve_service_addon_logger_t *lg) ;
+extern void service_resolve_modify_logger_field(resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_logger_field(strbuf *sa, resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;

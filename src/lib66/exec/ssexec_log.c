@@ -128,7 +128,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
         resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
         uint8_t io_ok = res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0 ;
 
-        char const *dest = io_ok ? io.sa.s + io.fdout.destination ;
+        char const *dest = io_ok ? io.sa.s + io.fdout.destination : 0 ;
 
         if (io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_66LOG && scan_mode(dest, S_IFDIR) == 1) {
 

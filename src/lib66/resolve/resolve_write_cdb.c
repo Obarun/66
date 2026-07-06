@@ -81,6 +81,11 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
         if (!service_resolve_write_addon_io_cdb(&c, ((resolve_service_addon_io_t *)wres->obj)))
             goto err ;
+
+    } else if (wres->type == DATA_SERVICE_LOGGER) {
+
+        if (!service_resolve_write_addon_logger_cdb(&c, ((resolve_service_addon_logger_t *)wres->obj)))
+            goto err ;
     }
 
     if (!ocdb_make_finish(&c) || fsync(fd) < 0) {

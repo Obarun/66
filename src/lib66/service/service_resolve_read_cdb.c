@@ -81,6 +81,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "has_limit", &res->has_limit) ||
         !resolve_get_key(c, "has_environ", &res->has_environ) ||
         !resolve_get_key(c, "has_io", &res->has_io) ||
+        !resolve_get_key(c, "has_logger", &res->has_logger) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -136,19 +137,6 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "supervisedir", &res->live.supervisedir) ||
         !resolve_get_key(c, "fdholderdir", &res->live.fdholderdir) ||
         !resolve_get_key(c, "oneshotddir", &res->live.oneshotddir) ||
-
-    /* logger */
-        !resolve_get_key(c, "logname", &res->logger.name) ||
-        !resolve_get_key(c, "logbackup", &res->logger.backup) ||
-        !resolve_get_key(c, "logmaxsize", &res->logger.maxsize) ||
-        !resolve_get_key(c, "logtimestamp", &res->logger.timestamp) ||
-        !resolve_get_key(c, "logwant", &res->logger.want) ||
-        !resolve_get_key(c, "logrun", &res->logger.execute.run.run) ||
-        !resolve_get_key(c, "logrun_user", &res->logger.execute.run.run_user) ||
-        !resolve_get_key(c, "logrun_build", &res->logger.execute.run.build) ||
-        !resolve_get_key(c, "logrun_runas", &res->logger.execute.run.runas) ||
-        !resolve_get_key(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
-        !resolve_get_key(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
 
     /* regex */
         !resolve_get_key(c, "configure", &res->regex.configure) ||
@@ -225,6 +213,28 @@ int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t *io)
         !resolve_get_key(c, "stdoutdest", &io->fdout.destination) ||
         !resolve_get_key(c, "stderrtype", &io->fderr.type) ||
         !resolve_get_key(c, "stderrdest", &io->fderr.destination))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_logger_cdb(ocdb *c, resolve_service_addon_logger_t *lg)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&lg->sa, c) <= 0 || !lg->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &lg->rversion) ||
+        !resolve_get_key(c, "logbackup", &lg->backup) ||
+        !resolve_get_key(c, "logmaxsize", &lg->maxsize) ||
+        !resolve_get_key(c, "logtimestamp", &lg->timestamp) ||
+        !resolve_get_key(c, "logrun", &lg->execute.run.run) ||
+        !resolve_get_key(c, "logrun_user", &lg->execute.run.run_user) ||
+        !resolve_get_key(c, "logrun_build", &lg->execute.run.build) ||
+        !resolve_get_key(c, "logrun_runas", &lg->execute.run.runas) ||
+        !resolve_get_key(c, "logtimeoutstart", &lg->execute.timeout.start) ||
+        !resolve_get_key(c, "logtimeoutstop", &lg->execute.timeout.stop))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

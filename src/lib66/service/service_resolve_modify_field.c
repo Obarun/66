@@ -349,65 +349,6 @@ static void modify_live(resolve_service_t *res, char const *data, uint32_t field
     free(wres) ;
 }
 
-static void modify_logger(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGNAME:
-            res->logger.name = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGBACKUP:
-            res->logger.backup = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE:
-            res->logger.maxsize = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP:
-            res->logger.timestamp = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGWANT:
-            res->logger.want = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN:
-            res->logger.execute.run.run = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER:
-            res->logger.execute.run.run_user = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD:
-            res->logger.execute.run.build = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS:
-            res->logger.execute.run.runas = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
-            res->logger.execute.timeout.start = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
-            res->logger.execute.timeout.stop = resolve_add_uint32(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
-
 static void modify_regex(resolve_service_t *res, char const *data, uint32_t field)
 {
     log_flow() ;
@@ -477,10 +418,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             modify_live(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
-            modify_logger(res, data, table.id) ;
             break ;
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:

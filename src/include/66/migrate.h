@@ -22,7 +22,7 @@
 #include <66/migrate_0811.h>
 
 extern void migrate_create_snap(ssexec_t *info, const char *version) ;
-extern void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io) ;
+extern void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg) ;
 extern void migrate_0721(ssexec_t *info) ;
 extern void migrate_0802() ;
 extern void migrate_0811() ;

@@ -82,11 +82,19 @@ static void execute_setup_destination(resolve_service_t *res, const char *dest)
 
     /** stdout/stderr directory destination.It may no exists
      * on tmpfs filesystem i.e. boot time */
-    uid_t uid ;
+    uid_t uid = res->owner ;
     gid_t gid ;
 
-    // root by default as !res->logger.execute.run.runas if not set
-    setup_uidgid(&uid, &gid, res, res->logger.execute.run.runas) ;
+    resolve_service_addon_logger_t lg = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
+    resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &lg) ;
+    if (res->has_logger && resolve_read(wlg, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && lg.execute.run.runas) {
+        if (!youruid(&uid, lg.sa.s + lg.execute.run.runas))
+            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", lg.sa.s + lg.execute.run.runas) ;
+    }
+    resolve_free(wlg) ;
+
+    if (!yourgid(&gid, uid))
+        log_dieusys(LOG_EXIT_SYS, "get gid") ;
 
     log_trace("check logger destination directory: ", dest) ;
     if (!dir_create_parent(dest, 0755))
@@ -348,7 +356,10 @@ static void io_setup_stdout(resolve_service_t *res, resolve_service_addon_io_t *
 
             if (res->type == E_PARSER_TYPE_CLASSIC && !res->islog) {
 
-                io_fdholder_retrieve(res, 1, res->sa.s + res->logger.name, 1) ;
+                char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+                auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
+
+                io_fdholder_retrieve(res, 1, logname, 1) ;
 
             } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
@@ -561,7 +572,8 @@ static void execute_uidgid(resolve_service_t *res)
 
     uid_t uid = - 1 ;
     gid_t gid = - 1 ;
-    uint32_t want = (action == EXECUTE_START) ? (res->islog) ? res->logger.execute.run.runas : res->execute.run.runas : res->execute.finish.runas ;
+
+    uint32_t want = (action == EXECUTE_START) ? res->execute.run.runas : res->execute.finish.runas ;
     char *as = res->sa.s + want ;
 
     if (want) {

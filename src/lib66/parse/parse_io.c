@@ -220,7 +220,7 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
     resolve_service_addon_io_type_t_ref out = &io->fdout ;
     resolve_service_addon_io_type_t_ref err = &io->fderr ;
 
-    if (!res->logger.want) {
+    if (!res->has_logger) {
 
         if (!res->islog) {
 

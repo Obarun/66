@@ -124,17 +124,14 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
             if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
                 parse_prefix_name(&c->res, hres, prefix) ;
 
-            if (c->res.logger.want && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
+            if (c->res.has_logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
 
                 size_t namelen = strlen(c->res.sa.s + c->res.name) ;
                 char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
-                wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
 
+                // the logger name is always <service>-log; the logger config lives
+                // in c->logger, untouched by the rename above.
                 auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
-
-                c->res.logger.name = resolve_add_string(wres, logname) ;
-
-                c->res.logger.execute.run.runas = c->res.logger.execute.run.runas ? resolve_add_string(wres, c->res.sa.s + c->res.logger.execute.run.runas) : resolve_add_string(wres, SS_LOGGER_RUNNER) ;
 
                 /** the validator answers "was the key set?" from the frontend;
                  * this post-parse path has only the resolve, so re-read the
@@ -153,14 +150,12 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
                 if (!parse_validator_init(&validator, fe.s))
                     log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", fname) ;
 
-                parse_create_logger(&validator, hres, &c->res, &c->io, info) ;
+                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, info) ;
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!sbl_add(&stk, logname))
                         log_die_nomem("stack overflow") ;
                 }
-
-                free(wres) ;
 
             }
 

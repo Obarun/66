@@ -47,7 +47,7 @@ static int get_shebang(strbuf *stk, char const *line)
     return 1 ;
 }
 
-int parse_mandatory(resolve_service_t *res, ssexec_t *info)
+int parse_mandatory(resolve_service_t *res, resolve_service_addon_logger_t *lg, ssexec_t *info)
 {
     log_flow() ;
 
@@ -127,17 +127,19 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
                 }
             }
 
-            if (res->logger.execute.run.run_user) {
+            if (lg->execute.run.run_user) {
 
-                size_t len = strlen(res->sa.s + res->logger.execute.run.run_user) ;
+                _cleanup_wres_ resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
+
+                size_t len = strlen(lg->sa.s + lg->execute.run.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                int r = get_shebang(&stk, res->sa.s + res->logger.execute.run.run_user) ;
+                int r = get_shebang(&stk, lg->sa.s + lg->execute.run.run_user) ;
                 if (r < 0)
                     return 0 ;
                 if (r) {
-                    res->logger.execute.run.run_user = resolve_add_string(wres, stk.s) ;
-                    res->logger.execute.run.build = resolve_add_string(wres, "custom") ;
+                    lg->execute.run.run_user = resolve_add_string(lgwres, stk.s) ;
+                    lg->execute.run.build = resolve_add_string(lgwres, "custom") ;
                 }
             }
 

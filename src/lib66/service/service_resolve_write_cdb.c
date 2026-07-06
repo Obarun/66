@@ -60,6 +60,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "has_limit", res->has_limit) ||
         !resolve_add_cdb_uint(c, "has_environ", res->has_environ) ||
         !resolve_add_cdb_uint(c, "has_io", res->has_io) ||
+        !resolve_add_cdb_uint(c, "has_logger", res->has_logger) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -115,19 +116,6 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "supervisedir", res->live.supervisedir) ||
         !resolve_add_cdb_uint(c, "fdholderdir", res->live.fdholderdir) ||
         !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir) ||
-
-        // logger
-        !resolve_add_cdb_uint(c, "logname", res->logger.name) ||
-        !resolve_add_cdb_uint(c, "logbackup", res->logger.backup) ||
-        !resolve_add_cdb_uint(c, "logmaxsize", res->logger.maxsize) ||
-        !resolve_add_cdb_uint(c, "logwant", res->logger.want) ||
-        !resolve_add_cdb_uint(c, "logtimestamp", res->logger.timestamp) ||
-        !resolve_add_cdb_uint(c, "logrun", res->logger.execute.run.run) ||
-        !resolve_add_cdb_uint(c, "logrun_user", res->logger.execute.run.run_user) ||
-        !resolve_add_cdb_uint(c, "logrun_build", res->logger.execute.run.build) ||
-        !resolve_add_cdb_uint(c, "logrun_runas", res->logger.execute.run.runas) ||
-        !resolve_add_cdb_uint(c, "logtimeoutstart", res->logger.execute.timeout.start) ||
-        !resolve_add_cdb_uint(c, "logtimeoutstop", res->logger.execute.timeout.stop) ||
 
         // regex
         !resolve_add_cdb_uint(c, "configure", res->regex.configure) ||
@@ -214,6 +202,32 @@ int service_resolve_write_addon_io_cdb(ocdbmaker *c, resolve_service_addon_io_t 
         !resolve_add_cdb_uint(c, "stdoutdest", io->fdout.destination) ||
         !resolve_add_cdb_uint(c, "stderrtype", io->fderr.type) ||
         !resolve_add_cdb_uint(c, "stderrdest", io->fderr.destination))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_logger_cdb(ocdbmaker *c, resolve_service_addon_logger_t *lg)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
+    lg->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, lg->sa.s, lg->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", lg->rversion) ||
+        !resolve_add_cdb_uint(c, "logbackup", lg->backup) ||
+        !resolve_add_cdb_uint(c, "logmaxsize", lg->maxsize) ||
+        !resolve_add_cdb_uint(c, "logtimestamp", lg->timestamp) ||
+        !resolve_add_cdb_uint(c, "logrun", lg->execute.run.run) ||
+        !resolve_add_cdb_uint(c, "logrun_user", lg->execute.run.run_user) ||
+        !resolve_add_cdb_uint(c, "logrun_build", lg->execute.run.build) ||
+        !resolve_add_cdb_uint(c, "logrun_runas", lg->execute.run.runas) ||
+        !resolve_add_cdb_uint(c, "logtimeoutstart", lg->execute.timeout.start) ||
+        !resolve_add_cdb_uint(c, "logtimeoutstop", lg->execute.timeout.stop))
             return 0 ;
 
     return 1 ;

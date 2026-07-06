@@ -35,7 +35,7 @@
 #include <66/migrate_0802.h>
 #include <66/migrate.h>
 
-static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_t_0802 *old)
+static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_t_0802 *old)
 {
     log_flow() ;
 
@@ -102,20 +102,23 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     new->live.fdholderdir = old->live.fdholderdir ? resolve_add_string(wres, old->sa.s + old->live.fdholderdir) : 0 ;
     new->live.oneshotddir = old->live.oneshotddir ? resolve_add_string(wres, old->sa.s + old->live.oneshotddir) : 0 ;
 
-    // logger
-    new->logger.name = old->logger.name ? resolve_add_string(wres, old->sa.s + old->logger.name) : 0 ;
-    new->logger.backup = old->logger.backup ;
-    new->logger.maxsize = old->logger.maxsize ;
-    new->logger.timestamp = old->logger.timestamp ;
-    new->logger.want = old->logger.want ;
-    new->logger.execute.run.run = old->logger.execute.run.run ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.run) : 0 ;
-    new->logger.execute.run.run_user = old->logger.execute.run.run_user ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.run_user) : 0 ;
-    new->logger.execute.run.build = old->logger.execute.run.build ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.build) : 0 ;
-    new->logger.execute.run.runas = old->logger.execute.run.runas ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.runas) : 0 ;
-    new->logger.execute.timeout.start = old->logger.execute.timeout.start ;
-    new->logger.execute.timeout.stop = old->logger.execute.timeout.stop ;
-    new->logger.execute.down = old->logger.execute.down ;
-    new->logger.execute.downsignal = old->logger.execute.downsignal ;
+    // logger -> autonomous addon (routed out of the core). The name is no longer
+    // stored (always <service>-log) and want becomes the has_logger manifest flag.
+    new->has_logger = old->logger.want ? 1 : 0 ;
+    if (new->has_logger) {
+        resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
+        resolve_init(lgwres) ;
+        lg->backup = old->logger.backup ;
+        lg->maxsize = old->logger.maxsize ;
+        lg->timestamp = old->logger.timestamp ;
+        lg->execute.run.run = old->logger.execute.run.run ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.run) : 0 ;
+        lg->execute.run.run_user = old->logger.execute.run.run_user ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.run_user) : 0 ;
+        lg->execute.run.build = old->logger.execute.run.build ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.build) : 0 ;
+        lg->execute.run.runas = old->logger.execute.run.runas ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.runas) : 0 ;
+        lg->execute.timeout.start = old->logger.execute.timeout.start ;
+        lg->execute.timeout.stop = old->logger.execute.timeout.stop ;
+        free(lgwres) ;
+    }
 
     // environment -> autonomous addon (routed out of the core; 0802 had no importfile)
     new->has_environ = old->environ.env ? 1 : 0 ;
@@ -296,9 +299,10 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    service_resolve_sanitize_0802(&new, &environ, &io, &res) ;
+    resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
+    service_resolve_sanitize_0802(&new, &environ, &io, &logger, &res) ;
 
-    migrate_ensure_log_owner(&new, &io) ;
+    migrate_ensure_log_owner(&new, &io, &logger) ;
 
     if (!resolve_write(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
@@ -319,6 +323,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write io addon of service: ", name) ;
         }
         resolve_free(wio) ;
+    }
+
+    if (new.has_logger) {
+        resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
+        if (!resolve_write(wlg, info->base.s, name)) {
+            resolve_free(wlg) ;
+            log_dieusys(LOG_EXIT_SYS, "write logger addon of service: ", name) ;
+        }
+        resolve_free(wlg) ;
     }
 
     resolve_free(wres) ;

@@ -18,12 +18,14 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/hash.h>
 #include <oblibs/graph.h>
 
 #include <66/graph.h>
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
 
@@ -249,9 +251,12 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
 {
     log_flow() ;
 
-    if (res->type == E_PARSER_TYPE_CLASSIC && res->logger.want && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
+    if (res->type == E_PARSER_TYPE_CLASSIC && res->has_logger && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
-        if (isdone(g, res->sa.s + res->logger.name) || res->earlier)
+        char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+        auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
+
+        if (isdone(g, logname) || res->earlier)
             return 1 ;
 
         if (FLAGS_ISSET(flag, GRAPH_WANT_SUPERVISED)) {
@@ -264,11 +269,11 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
             }
         }
 
-        struct resolve_hash_s *h = resolve_hash_search(&g->hres, res->sa.s + res->logger.name) ;
+        struct resolve_hash_s *h = resolve_hash_search(&g->hres, logname) ;
         if (h == NULL)
             return (errno = EINVAL, 0) ;
 
-        log_trace("add logger: ", res->sa.s + res->logger.name, " of service: ", res->sa.s + res->name, " to the graph") ;
+        log_trace("add logger: ", logname, " of service: ", res->sa.s + res->name, " to the graph") ;
         if (!graph_action(g, &h->res, flag))
              return (errno = EINVAL, 0) ;
     }

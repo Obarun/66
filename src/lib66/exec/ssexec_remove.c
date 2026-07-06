@@ -219,7 +219,9 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
     log_flow() ;
 
     int r ;
-    char *name = res->sa.s + res->logger.name ;
+    char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+    auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
+    char *name = logname ;
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
 
@@ -281,7 +283,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     if (res->dependencies.nprovide)
         remove_provide(res, info) ;
 
-    if (res->logger.want)
+    if (res->has_logger)
         remove_logger(res, info) ;
 
     if (res->dependencies.ndepends)

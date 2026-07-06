@@ -54,7 +54,7 @@ static void io_case(char const *name, int want, int islog, int i, int o, int e,
     resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
     resolve_init(w) ;
 
-    res.logger.want = want ;
+    res.has_logger = want ;
     res.islog = islog ;
     io.fdin.type = i ;
     io.fdout.type = o ;
@@ -66,11 +66,11 @@ static void io_case(char const *name, int want, int islog, int i, int o, int e,
     assert(io.fdout.type == (uint32_t)xo) ;
     assert(io.fderr.type == (uint32_t)xe) ;
 
-    /* the machine leaves logger.want untouched */
-    assert(res.logger.want == (uint32_t)want) ;
+    /* the machine leaves has_logger untouched */
+    assert(res.has_logger == (uint32_t)want) ;
 
     /* logger effective (as parse_frontend derives it from the resolved io) */
-    int eff = res.logger.want && (io.fdin.type == LG || io.fdout.type == LG) ;
+    int eff = res.has_logger && (io.fdin.type == LG || io.fdout.type == LG) ;
     assert(eff == xwant) ;
 
     free(w) ;

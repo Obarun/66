@@ -400,76 +400,6 @@ static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_liv
     return e ;
 }
 
-static int get_logger(strbuf *sa, resolve_service_t *res, resolve_service_enum_logger_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGNAME:
-            str = res->sa.s + res->logger.name ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGBACKUP:
-            fmt[u32_fmt(fmt,res->logger.backup)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE:
-            fmt[u32_fmt(fmt,res->logger.maxsize)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP:
-            fmt[u32_fmt(fmt,res->logger.timestamp)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGWANT:
-            fmt[u32_fmt(fmt,res->logger.want)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN:
-            str = res->sa.s + res->logger.execute.run.run ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER:
-            str = res->sa.s + res->logger.execute.run.run_user ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD:
-            str = res->sa.s + res->logger.execute.run.build ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS:
-            str = res->sa.s + res->logger.execute.run.runas ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART:
-            fmt[u32_fmt(fmt,res->logger.execute.timeout.start)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP:
-            fmt[u32_fmt(fmt,res->logger.execute.timeout.stop)] = 0 ;
-            str = fmt ;
-            break ;
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
 static int get_regex(strbuf *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
 {
     log_flow() ;
@@ -543,9 +473,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             return get_live(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
-            return get_logger(sa, res, table.id) ;
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:
             return get_regex(sa, res, table.id) ;

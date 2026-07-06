@@ -64,6 +64,11 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
 
         if (!service_resolve_read_addon_io_cdb(&c, ((resolve_service_addon_io_t *)wres->obj)))
             goto err ;
+
+    } else if (wres->type == DATA_SERVICE_LOGGER) {
+
+        if (!service_resolve_read_addon_logger_cdb(&c, ((resolve_service_addon_logger_t *)wres->obj)))
+            goto err ;
     }
 
     e = 1 ;

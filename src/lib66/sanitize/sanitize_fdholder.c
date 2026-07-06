@@ -20,6 +20,7 @@
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
 #include <66/fdholder.h>
@@ -53,11 +54,13 @@ int sanitize_fdholder(resolve_service_t *res, fdholder_client_t *c, ss_state_t *
     (void)sta ;
     (void)init ;
 
-    if (res->logger.want && res->type == E_PARSER_TYPE_CLASSIC) {
+    if (res->has_logger && res->type == E_PARSER_TYPE_CLASSIC) {
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 
-            char *name = res->sa.s + res->logger.name ;
+            char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
+            auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
+            char *name = logname ;
 
             log_trace("delete fdholder flow: ", name) ;
             if (!fdholder_pipe_delete(c, name, -1) && c->status != FDHOLDER_NOTFOUND)

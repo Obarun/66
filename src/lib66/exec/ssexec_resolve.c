@@ -49,6 +49,7 @@ static info_field_t const fields[] = {
     { "enabled",         INFO_FIELD_U32, offsetof(resolve_service_t, enabled) },
     { "islog",           INFO_FIELD_U32, offsetof(resolve_service_t, islog) },
     { "has_limit",       INFO_FIELD_U32, offsetof(resolve_service_t, has_limit) },
+    { "has_logger",      INFO_FIELD_U32, offsetof(resolve_service_t, has_logger) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
@@ -101,17 +102,15 @@ static info_field_t const fields[] = {
     { "fdholderdir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.fdholderdir) },
     { "oneshotddir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.oneshotddir) },
 
-    { "logname",         INFO_FIELD_STR, offsetof(resolve_service_t, logger.name) },
-    { "logbackup",       INFO_FIELD_U32, offsetof(resolve_service_t, logger.backup) },
-    { "logmaxsize",      INFO_FIELD_U32, offsetof(resolve_service_t, logger.maxsize) },
-    { "logwant",         INFO_FIELD_U32, offsetof(resolve_service_t, logger.want) },
-    { "logtimestamp",    INFO_FIELD_U32, offsetof(resolve_service_t, logger.timestamp) },
-    { "logrun",          INFO_FIELD_STR, offsetof(resolve_service_t, logger.execute.run.run) },
-    { "logrun_user",     INFO_FIELD_STR, offsetof(resolve_service_t, logger.execute.run.run_user) },
-    { "logrun_build",    INFO_FIELD_STR, offsetof(resolve_service_t, logger.execute.run.build) },
-    { "logrun_runas",    INFO_FIELD_STR, offsetof(resolve_service_t, logger.execute.run.runas) },
-    { "logtimeoutstart", INFO_FIELD_U32, offsetof(resolve_service_t, logger.execute.timeout.start) },
-    { "logtimeoutstop",  INFO_FIELD_U32, offsetof(resolve_service_t, logger.execute.timeout.stop) },
+    { "logbackup",       INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, backup),                DATA_SERVICE_LOGGER },
+    { "logmaxsize",      INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, maxsize),               DATA_SERVICE_LOGGER },
+    { "logtimestamp",    INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, timestamp),             DATA_SERVICE_LOGGER },
+    { "logrun",          INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.run),       DATA_SERVICE_LOGGER },
+    { "logrun_user",     INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.run_user),  DATA_SERVICE_LOGGER },
+    { "logrun_build",    INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.build),     DATA_SERVICE_LOGGER },
+    { "logrun_runas",    INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.runas),     DATA_SERVICE_LOGGER },
+    { "logtimeoutstart", INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, execute.timeout.start), DATA_SERVICE_LOGGER },
+    { "logtimeoutstop",  INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, execute.timeout.stop),  DATA_SERVICE_LOGGER },
 
     { "env",             INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, env),           DATA_SERVICE_ENVIRON },
     { "envdir",          INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, envdir),        DATA_SERVICE_ENVIRON },
@@ -241,7 +240,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_limit_t limit = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    info_addon_t addons[DATA_SERVICE_IO + 1] = {{0,0}} ;
+    resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
+    info_addon_t addons[DATA_SERVICE_LOGGER + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -261,11 +261,18 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_IO].blob = io.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_IO + 1) ;
+    resolve_wrapper_t_ref wlogger = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
+    if (res.has_logger && resolve_read(wlogger, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_LOGGER].base = &logger ;
+        addons[DATA_SERVICE_LOGGER].blob = logger.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_LOGGER + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
     resolve_free(wio) ;
+    resolve_free(wlogger) ;
     resolve_free(wres) ;
 
     return 0 ;

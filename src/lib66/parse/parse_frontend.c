@@ -245,11 +245,6 @@ int parse_frontend(char const *sv,
         }
     }
 
-    /** logger is set by default. if service is a module
-     * we don't want logger. So, set it false by default. */
-    if (res.type == E_PARSER_TYPE_MODULE)
-        res.logger.want = 0 ;
-
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
     if (scan_mode(sv, S_IFDIR) == 1 && res.type != E_PARSER_TYPE_MODULE) {
@@ -273,10 +268,22 @@ int parse_frontend(char const *sv,
         res.has_environ = has_environ ;
     }
 
+    /** the parent's logger config; the effective has_logger is refined below,
+     * once the io is resolved. */
+    resolve_service_addon_logger_t loggeraddon = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
+    {
+        uint8_t has_logger = 0 ;
+        if (!parse_logger(&st, &res, &loggeraddon, &has_logger)) {
+            parse_store_free(&st) ;
+            log_die(LOG_EXIT_SYS, "parse logger of service: ", svname) ;
+        }
+        res.has_logger = has_logger ;
+    }
+
     if (!parse_contents(&res, sa.s))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
 
-    if (!parse_mandatory(&res, info))
+    if (!parse_mandatory(&res, &loggeraddon, info))
         log_die(LOG_EXIT_SYS, "some mandatory field is missing for service: ", svname) ;
 
     /** try to create the tree if not exist yet with
@@ -327,20 +334,20 @@ int parse_frontend(char const *sv,
             log_die(LOG_EXIT_SYS, "parse io of service: ", svname) ;
         }
         res.has_io = has_io ;
-        /* logger "effective": keep want only if the resolved io is 66log-bound.
-         * The io machine no longer mutates logger.want -- the orchestrator does. */
-        if (res.logger.want && ioaddon.fdin.type != E_PARSER_IO_TYPE_66LOG && ioaddon.fdout.type != E_PARSER_IO_TYPE_66LOG)
-            res.logger.want = 0 ;
+        /* logger "effective": keep it only if the resolved io is 66log-bound.
+         * The io machine no longer mutates has_logger -- the orchestrator does. */
+        if (res.has_logger && ioaddon.fdin.type != E_PARSER_IO_TYPE_66LOG && ioaddon.fdout.type != E_PARSER_IO_TYPE_66LOG)
+            res.has_logger = 0 ;
     }
 
-    if ((res.logger.want && ioaddon.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
+    if ((res.has_logger && ioaddon.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
         (!res.inns && res.type != E_PARSER_TYPE_MODULE)) {
 
         parse_validator_t validator ;
         if (!parse_validator_init(&validator, sa.s))
             log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", svname) ;
 
-        parse_create_logger(&validator, hres, &res, &ioaddon, info) ;
+        parse_create_logger(&validator, hres, &res, &ioaddon, &loggeraddon, info) ;
     }
 
     resolve_service_addon_limit_t limitaddon = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
@@ -377,6 +384,11 @@ int parse_frontend(char const *sv,
         if (res.has_io) {
             hash = resolve_hash_search(hres, name) ;
             hash->io = ioaddon ;
+        }
+
+        if (res.has_logger) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->logger = loggeraddon ;
         }
     }
 
