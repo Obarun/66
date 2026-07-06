@@ -80,10 +80,6 @@ int parse_contents(resolve_service_t *res, char const *str)
                 if (!parse_section_logger(res, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break ;
-            case E_PARSER_SECTION_ENVIRONMENT:
-                if (!parse_section_environment(res, tmp))
-                    log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
-                break ;
             case E_PARSER_SECTION_REGEX:
                 if (!parse_section_regex(res, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;

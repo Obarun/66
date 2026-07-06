@@ -47,25 +47,6 @@ int parse_section_logger(resolve_service_t *res, const char *str)
     return parse_section(res, str, table) ;
 }
 
-int parse_section_environment(resolve_service_t *res, const char *str)
-{
-    int r = get_len_until(str, '\n') ;
-    if (r < 0)
-        r = 0 ;
-    r++ ;
-    size_t len = strlen(str + r) ;
-    _alloc_sbl_(store, len + 1) ;
-    if (!sbl_add(&store, str + r))
-        log_warnu_return(LOG_EXIT_ZERO, "stack overflow") ;
-
-    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_ENVIRON_ZERO ;
-    table.u.parser.id = E_PARSER_SECTION_ENVIRON_ENVAL ;
-    if (!parse_store_g(res, &store, table))
-        log_warnu_return(LOG_EXIT_ZERO, "store resolve file of: ", res->sa.s + res->name) ;
-
-    return 1 ;
-}
-
 int parse_section_regex(resolve_service_t *res, const char *str)
 {
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_REGEX_ZERO ;

@@ -46,6 +46,18 @@ struct parse_validator_s
     uint32_t computed ;                          // micro-table (parse_compute)
 } ;
 
+#define SS_PARSE_STORE_NKEY 32 // must be >= every SECTION_<X>_ENDOFKEY (largest is [Main])
+
+typedef struct parse_store_s parse_store_t, *parse_store_t_ref ;
+struct parse_store_s
+{
+    char const *frontend ;                                            // static source text
+    strbuf arena ;                                                    // raw values, NUL-separated
+    uint32_t off[E_PARSER_SECTION_ENDOFKEY][SS_PARSE_STORE_NKEY] ;    // (sid,kid) -> value offset in arena
+    uint32_t len[E_PARSER_SECTION_ENDOFKEY][SS_PARSE_STORE_NKEY] ;    // (sid,kid) -> value length (bytes)
+    uint8_t present[E_PARSER_SECTION_ENDOFKEY][SS_PARSE_STORE_NKEY] ; // (sid,kid) -> written by the user ?
+} ;
+
 /** lexer configuration */
 extern lexer_config LEXER_CONFIG_SECTION ;
 extern lexer_config LEXER_CONFIG_QUOTE ;
@@ -66,12 +78,17 @@ extern void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_serv
 extern int parse_validator_init(parse_validator_t *v, char const *frontend) ;
 extern int parse_checker(parse_validator_t *v, resolve_enum_table_t key) ;
 
+/** two-pass store (pass 1) */
+extern int parse_store_build(parse_store_t *st, char const *frontend) ;
+extern char const *parse_store_get(parse_store_t *st, uint32_t sid, uint32_t kid, size_t *len) ;
+extern uint8_t parse_store_present(parse_store_t *st, uint32_t sid, uint32_t kid) ;
+extern void parse_store_free(parse_store_t *st) ;
+
 /** split */
 extern int parse_section_main(resolve_service_t *res, const char *str) ;
 extern int parse_section_start(resolve_service_t *res, const char *str) ;
 extern int parse_section_stop(resolve_service_t *res, const char *str) ;
 extern int parse_section_logger(resolve_service_t *res, const char *str) ;
-extern int parse_section_environment(resolve_service_t *res, const char *str) ;
 extern int parse_section_regex(resolve_service_t *res, const char *str) ;
 extern int parse_section_execute(resolve_service_t *res, const char *str) ;
 extern int parse_section(resolve_service_t *res, char const *str, resolve_enum_table_t table) ;
@@ -83,7 +100,6 @@ extern int parse_store_g(resolve_service_t *res, strbuf *store, resolve_enum_tab
 extern int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
-extern int parse_store_environ(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_regex(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 extern int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table) ;
 
@@ -97,13 +113,15 @@ extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
 extern int parse_get_value_of_key(strbuf *store, char const *str, resolve_enum_table_t table) ;
 extern int parse_mandatory(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_io_resolve(resolve_service_t *res, ssexec_t *info) ;
+extern int parse_limit(parse_store_t *st, resolve_service_addon_limit_t *l, uint8_t *has_limit) ;
+extern int parse_environ(parse_store_t *st, resolve_service_t *res, resolve_service_addon_environ_t *e, uint8_t conf, uint8_t *has_environ) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, ssexec_t *info) ;
 extern void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force) ;
 
 /** module */
-extern void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force) ;
+extern void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e) ;
 
 /** resolve */
 extern void parse_compute_resolve(resolve_service_t *res, ssexec_t *info) ;

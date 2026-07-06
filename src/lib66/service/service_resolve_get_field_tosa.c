@@ -470,49 +470,6 @@ static int get_logger(strbuf *sa, resolve_service_t *res, resolve_service_enum_l
     return e ;
 }
 
-static int get_environ(strbuf *sa, resolve_service_t *res, resolve_service_enum_environ_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENV:
-        str = res->sa.s + res->environ.env ;
-        break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENVDIR:
-            str = res->sa.s + res->environ.envdir ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE:
-            fmt[u32_fmt(fmt,res->environ.env_overwrite)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE:
-            str = res->sa.s + res->environ.importfile ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE:
-            fmt[u32_fmt(fmt,res->environ.nimportfile)] = 0 ;
-            str = fmt ;
-            break ;
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
 static int get_regex(strbuf *sa, resolve_service_t *res, resolve_service_enum_regex_t table)
 {
     log_flow() ;
@@ -636,9 +593,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
             return get_logger(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_ENVIRON:
-            return get_environ(sa, res, table.id) ;
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:
             return get_regex(sa, res, table.id) ;

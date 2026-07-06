@@ -36,7 +36,7 @@
 #include <66/enum_parser.h>
 #include <66/parse.h>
 
-int write_common(resolve_service_t *res, char const *dst, uint8_t force)
+int write_common(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
 {
     log_flow() ;
 
@@ -48,14 +48,14 @@ int write_common(resolve_service_t *res, char const *dst, uint8_t force)
     }
 
     /** environment for module is already written by the regex_configure() function */
-    if (res->environ.env && res->type != E_PARSER_TYPE_MODULE) {
+    if (res->has_environ && e->env && res->type != E_PARSER_TYPE_MODULE) {
 
         _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
         _cleanup_strbuf_ strbuf contents = STRBUF_ZERO ;
         char name[strlen(res->sa.s + res->name) + 2] ;
         auto_strings(name, ".", res->sa.s + res->name) ;
 
-        if (!env_prepare_for_write(&dst, &contents, res))
+        if (!env_prepare_for_write(&dst, &contents, res, e))
             log_warnusys_return(LOG_EXIT_ZERO, "prepare environment for: ", res->sa.s + res->name) ;
 
         if (!write_environ(name, contents.s, dst.s))

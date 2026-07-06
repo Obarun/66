@@ -113,11 +113,11 @@ static info_field_t const fields[] = {
     { "logtimeoutstart", INFO_FIELD_U32, offsetof(resolve_service_t, logger.execute.timeout.start) },
     { "logtimeoutstop",  INFO_FIELD_U32, offsetof(resolve_service_t, logger.execute.timeout.stop) },
 
-    { "env",             INFO_FIELD_STR, offsetof(resolve_service_t, environ.env) },
-    { "envdir",          INFO_FIELD_STR, offsetof(resolve_service_t, environ.envdir) },
-    { "env_overwrite",   INFO_FIELD_U32, offsetof(resolve_service_t, environ.env_overwrite) },
-    { "importfile",      INFO_FIELD_STR, offsetof(resolve_service_t, environ.importfile) },
-    { "nimportfile",     INFO_FIELD_U32, offsetof(resolve_service_t, environ.nimportfile) },
+    { "env",             INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, env),           DATA_SERVICE_ENVIRON },
+    { "envdir",          INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, envdir),        DATA_SERVICE_ENVIRON },
+    { "env_overwrite",   INFO_FIELD_U32, offsetof(resolve_service_addon_environ_t, env_overwrite), DATA_SERVICE_ENVIRON },
+    { "importfile",      INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, importfile),    DATA_SERVICE_ENVIRON },
+    { "nimportfile",     INFO_FIELD_U32, offsetof(resolve_service_addon_environ_t, nimportfile),   DATA_SERVICE_ENVIRON },
 
     { "configure",       INFO_FIELD_STR, offsetof(resolve_service_t, regex.configure) },
     { "directories",     INFO_FIELD_STR, offsetof(resolve_service_t, regex.directories) },
@@ -239,18 +239,25 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 
     /* addons a field may live in, indexed by addon id; loaded on demand */
     resolve_service_addon_limit_t limit = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-    info_addon_t addons[DATA_SERVICE_LIMIT + 1] = {{0,0}} ;
+    resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+    info_addon_t addons[DATA_SERVICE_ENVIRON + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_LIMIT].base = &limit ;
         addons[DATA_SERVICE_LIMIT].blob = limit.sa.s ;
     }
-    free(wlimit) ;
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_LIMIT + 1) ;
+    resolve_wrapper_t_ref wenviron = resolve_set_struct(DATA_SERVICE_ENVIRON, &environ) ;
+    if (res.has_environ && resolve_read(wenviron, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_ENVIRON].base = &environ ;
+        addons[DATA_SERVICE_ENVIRON].blob = environ.sa.s ;
+    }
 
-    strbuf_free(&limit.sa) ;
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_ENVIRON + 1) ;
+
+    resolve_free(wlimit) ;
+    resolve_free(wenviron) ;
     resolve_free(wres) ;
 
     return 0 ;

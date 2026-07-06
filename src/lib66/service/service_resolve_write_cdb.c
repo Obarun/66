@@ -58,6 +58,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "enabled", res->enabled) ||
         !resolve_add_cdb_uint(c, "islog", res->islog) ||
         !resolve_add_cdb_uint(c, "has_limit", res->has_limit) ||
+        !resolve_add_cdb_uint(c, "has_environ", res->has_environ) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -127,13 +128,6 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "logtimeoutstart", res->logger.execute.timeout.start) ||
         !resolve_add_cdb_uint(c, "logtimeoutstop", res->logger.execute.timeout.stop) ||
 
-        // environ
-        !resolve_add_cdb_uint(c, "env", res->environ.env) ||
-        !resolve_add_cdb_uint(c, "envdir", res->environ.envdir) ||
-        !resolve_add_cdb_uint(c, "env_overwrite", res->environ.env_overwrite) ||
-        !resolve_add_cdb_uint(c, "importfile", res->environ.importfile) ||
-        !resolve_add_cdb_uint(c, "nimportfile", res->environ.nimportfile) ||
-
         // regex
         !resolve_add_cdb_uint(c, "configure", res->regex.configure) ||
         !resolve_add_cdb_uint(c, "directories", res->regex.directories) ||
@@ -182,6 +176,28 @@ int service_resolve_write_addon_limit_cdb(ocdbmaker *c, resolve_service_addon_li
         !resolve_add_cdb_uint64(c, "limitrttime", l->limitrttime) ||
         !resolve_add_cdb_uint64(c, "limitsigpending", l->limitsigpending) ||
         !resolve_add_cdb_uint64(c, "limitstack", l->limitstack))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_environ_cdb(ocdbmaker *c, resolve_service_addon_environ_t *e)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+    e->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, e->sa.s, e->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", e->rversion) ||
+        !resolve_add_cdb_uint(c, "env", e->env) ||
+        !resolve_add_cdb_uint(c, "envdir", e->envdir) ||
+        !resolve_add_cdb_uint(c, "env_overwrite", e->env_overwrite) ||
+        !resolve_add_cdb_uint(c, "importfile", e->importfile) ||
+        !resolve_add_cdb_uint(c, "nimportfile", e->nimportfile))
             return 0 ;
 
     return 1 ;

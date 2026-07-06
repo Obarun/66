@@ -280,8 +280,13 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
 
     auto_remove(res->sa.s + res->path.servicedir) ;
 
-    if (res->environ.envdir)
-        auto_remove(res->sa.s + res->environ.envdir) ;
+    if (res->has_environ) {
+        resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+        resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
+        if (resolve_read(we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && e.envdir)
+            auto_remove(e.sa.s + e.envdir) ;
+        resolve_free(we) ;
+    }
 
     tree_service_remove(info->base.s, res->sa.s + res->treename, res->sa.s + res->name) ;
 

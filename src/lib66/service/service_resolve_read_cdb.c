@@ -79,6 +79,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "enabled", &res->enabled) ||
         !resolve_get_key(c, "islog", &res->islog) ||
         !resolve_get_key(c, "has_limit", &res->has_limit) ||
+        !resolve_get_key(c, "has_environ", &res->has_environ) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -148,13 +149,6 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
         !resolve_get_key(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
 
-    /* environment */
-        !resolve_get_key(c, "env", &res->environ.env) ||
-        !resolve_get_key(c, "envdir", &res->environ.envdir) ||
-        !resolve_get_key(c, "env_overwrite", &res->environ.env_overwrite) ||
-        !resolve_get_key(c, "importfile", &res->environ.importfile) ||
-        !resolve_get_key(c, "nimportfile", &res->environ.nimportfile) ||
-
     /* regex */
         !resolve_get_key(c, "configure", &res->regex.configure) ||
         !resolve_get_key(c, "directories", &res->regex.directories) ||
@@ -201,6 +195,24 @@ int service_resolve_read_addon_limit_cdb(ocdb *c, resolve_service_addon_limit_t 
         !resolve_get_key_u64(c, "limitrttime", &l->limitrttime) ||
         !resolve_get_key_u64(c, "limitsigpending", &l->limitsigpending) ||
         !resolve_get_key_u64(c, "limitstack", &l->limitstack))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_environ_cdb(ocdb *c, resolve_service_addon_environ_t *e)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&e->sa, c) <= 0 || !e->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &e->rversion) ||
+        !resolve_get_key(c, "env", &e->env) ||
+        !resolve_get_key(c, "envdir", &e->envdir) ||
+        !resolve_get_key(c, "env_overwrite", &e->env_overwrite) ||
+        !resolve_get_key(c, "importfile", &e->importfile) ||
+        !resolve_get_key(c, "nimportfile", &e->nimportfile))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

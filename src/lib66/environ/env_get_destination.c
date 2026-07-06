@@ -23,11 +23,11 @@
 #include <66/constants.h>
 #include <66/service.h>
 
-int env_get_destination(strbuf *sa, resolve_service_t *res)
+int env_get_destination(strbuf *sa, resolve_service_addon_environ_t *e)
 {
     log_flow() ;
 
-    char *conf = res->sa.s + res->environ.envdir ;
+    char *conf = e->sa.s + e->envdir ;
     size_t conflen = strlen(conf) ;
     char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
 

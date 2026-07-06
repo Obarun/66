@@ -408,42 +408,6 @@ static void modify_logger(resolve_service_t *res, char const *data, uint32_t fie
     free(wres) ;
 }
 
-static void modify_environ(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENV:
-            res->environ.env = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENVDIR:
-            res->environ.envdir = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE:
-            res->environ.env_overwrite = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE:
-            res->environ.importfile = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE:
-            res->environ.nimportfile = resolve_add_uint32(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-
-}
-
 static void modify_regex(resolve_service_t *res, char const *data, uint32_t field)
 {
     log_flow() ;
@@ -555,10 +519,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
             modify_logger(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_ENVIRON:
-            modify_environ(res, data, table.id) ;
             break ;
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:

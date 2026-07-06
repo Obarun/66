@@ -31,6 +31,8 @@ int resolve_modify_field(resolve_wrapper_t_ref wres, char const *base, char cons
         int e = errno ;
         if (e != ENOENT || wres->type == DATA_SERVICE || wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER)
             return 0 ;
+
+        resolve_init(wres) ;
     }
 
     if (!resolve_modify_field_by(wres, table, value))

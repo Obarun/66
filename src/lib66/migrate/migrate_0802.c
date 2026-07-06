@@ -35,7 +35,7 @@
 #include <66/migrate_0802.h>
 #include <66/migrate.h>
 
-static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_t_0802 *old)
+static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_t_0802 *old)
 {
     log_flow() ;
 
@@ -117,12 +117,18 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     new->logger.execute.down = old->logger.execute.down ;
     new->logger.execute.downsignal = old->logger.execute.downsignal ;
 
-    // environment
-    new->environ.env = old->environ.env ? resolve_add_string(wres, old->sa.s + old->environ.env) : 0 ;
-    new->environ.envdir = old->environ.envdir ? resolve_add_string(wres, old->sa.s + old->environ.envdir) : 0 ;
-    new->environ.env_overwrite = old->environ.env_overwrite ;
-    new->environ.importfile = 0 ;
-    new->environ.nimportfile = 0 ;
+    // environment -> autonomous addon (routed out of the core; 0802 had no importfile)
+    new->has_environ = old->environ.env ? 1 : 0 ;
+    if (new->has_environ) {
+        resolve_wrapper_t_ref ewres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+        resolve_init(ewres) ;
+        e->env = old->environ.env ? resolve_add_string(ewres, old->sa.s + old->environ.env) : 0 ;
+        e->envdir = old->environ.envdir ? resolve_add_string(ewres, old->sa.s + old->environ.envdir) : 0 ;
+        e->env_overwrite = old->environ.env_overwrite ;
+        e->importfile = 0 ;
+        e->nimportfile = 0 ;
+        free(ewres) ;
+    }
 
     // regex
     new->regex.configure = old->regex.configure ? resolve_add_string(wres, old->sa.s + old->regex.configure) : 0 ;
@@ -281,12 +287,22 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     if (!service_resolve_read_cdb_0802(&c, &res))
         log_dieusys(LOG_EXIT_SYS, "read resolve file of service: ", name) ;
 
-    service_resolve_sanitize_0802(&new, &res) ;
+    resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+    service_resolve_sanitize_0802(&new, &environ, &res) ;
 
     migrate_ensure_log_owner(&new) ;
 
     if (!resolve_write(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
+
+    if (new.has_environ) {
+        resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &environ) ;
+        if (!resolve_write(we, info->base.s, name)) {
+            resolve_free(we) ;
+            log_dieusys(LOG_EXIT_SYS, "write environ addon of service: ", name) ;
+        }
+        resolve_free(we) ;
+    }
 
     resolve_free(wres) ;
 }

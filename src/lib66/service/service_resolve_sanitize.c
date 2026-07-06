@@ -90,12 +90,6 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->logger.execute.run.build = res->logger.execute.run.build ? resolve_add_string(wres, stk + res->logger.execute.run.build) : 0 ;
     res->logger.execute.run.runas = res->logger.execute.run.runas ? resolve_add_string(wres, stk + res->logger.execute.run.runas) : 0 ;
 
-    // environment
-    res->environ.env = res->environ.env ? resolve_add_string(wres, stk + res->environ.env) : 0 ;
-    res->environ.envdir = res->environ.envdir ? resolve_add_string(wres, stk + res->environ.envdir) : 0 ;
-    res->environ.importfile = res->environ.importfile ? resolve_add_string(wres, stk + res->environ.importfile) : 0 ;
-    res->environ.nimportfile = res->environ.nimportfile ? resolve_add_string(wres, stk + res->environ.nimportfile) : 0 ;
-
     // regex
     res->regex.configure = res->regex.configure ? resolve_add_string(wres, stk + res->regex.configure) : 0 ;
     res->regex.directories = res->regex.directories ? resolve_add_string(wres, stk + res->regex.directories) : 0 ;

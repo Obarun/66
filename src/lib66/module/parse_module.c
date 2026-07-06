@@ -93,7 +93,7 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint
     free(wres) ;
 }
 
-static void parse_module_regex(resolve_service_t *res, char *dir, size_t copylen, ssexec_t *info)
+static void parse_module_regex(resolve_service_t *res, resolve_service_addon_environ_t *e, char *dir, size_t copylen, ssexec_t *info)
 {
     log_flow() ;
 
@@ -125,15 +125,15 @@ static void parse_module_regex(resolve_service_t *res, char *dir, size_t copylen
     }
 
     /** configure script */
-    regex_configure(res, info, dir, name) ;
+    regex_configure(res, e, info, dir, name) ;
 }
 
-void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force)
+void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e)
 {
     log_flow() ;
 
     size_t pos = 0, tmplen = 0, namelen = strlen(res->sa.s + res->name) ;
-    uint8_t opt_tree = info->opt_tree, conf = res->environ.env_overwrite ;
+    uint8_t opt_tree = info->opt_tree ;
     char name[namelen + 1] ;
     char dirname[strlen(res->sa.s + res->path.frontend) + 1] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
@@ -165,7 +165,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
     if (!tree_copy(dirname, tmpdir))
         log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir) ;
 
-    parse_module_regex(res, tmpdir, tmplen, info) ;
+    parse_module_regex(res, e, tmpdir, tmplen, info) ;
 
     /** handle new activated depends/requiredby service.*/
     {

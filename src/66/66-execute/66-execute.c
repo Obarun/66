@@ -442,22 +442,26 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
 {
     log_flow() ;
 
-    _alloc_strbuf_(path, strlen(res->sa.s + res->environ.envdir) + SS_SYM_VERSION_LEN + 1) ;
+    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+    resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
+    uint8_t loaded = res->has_environ && resolve_read(we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
 
-    if (res->environ.env > 0) {
+    if (loaded && e.env > 0) {
 
-        if (!auto_strbuf(&path, res->sa.s + res->environ.envdir, SS_SYM_VERSION))
+        _alloc_strbuf_(path, strlen(e.sa.s + e.envdir) + SS_SYM_VERSION_LEN + 1) ;
+
+        if (!auto_strbuf(&path, e.sa.s + e.envdir, SS_SYM_VERSION))
             log_die_nomem("stack") ;
 
         if (!environ_merge_dir(eram, path.s))
             log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", path.s) ;
 
-        if (res->environ.nimportfile) {
+        if (e.nimportfile) {
 
-            _alloc_sbl_(stk, strlen(res->sa.s + res->environ.importfile)) ;
+            _alloc_sbl_(stk, strlen(e.sa.s + e.importfile)) ;
             size_t pos = 0 ;
 
-            if (!sbl_clean_string(&stk, res->sa.s + res->environ.importfile))
+            if (!sbl_clean_string(&stk, e.sa.s + e.importfile))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_SBL(&stk, pos) {
@@ -473,6 +477,8 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         if (!environ_clean_unexport(eram))
             log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
     }
+
+    resolve_free(we) ;
 
     if (!environ_create_environ(nenvp, env, eram))
         log_dieusys(LOG_EXIT_SYS, "create environment") ;

@@ -1,7 +1,7 @@
 /*
- * parse_store_environ.c
+ * parse_environ.c
  *
- * Copyright (c) 2022 Eric Vidal <eric@obarun.org>
+ * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
  *
  * All rights reserved.
  *
@@ -9,11 +9,12 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdlib.h> //free
-#include <errno.h>
+#include <stdlib.h> // free
+#include <stdint.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
@@ -21,14 +22,14 @@
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/environ.h>
-#include <oblibs/types.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
+#include <66/service.h>
 #include <66/enum_parser.h>
 #include <66/environ.h>
 
-static int get_import_field(resolve_service_t *res, strbuf *store)
+static int env_import_field(resolve_service_addon_environ_t *e, resolve_wrapper_t_ref ewres, strbuf *store)
 {
     log_flow() ;
 
@@ -37,7 +38,6 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
     _cleanup_strbuf_ strbuf clean = STRBUF_ZERO ;
     size_t pos = 0 ;
     uint32_t n = 0 ;
-    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (!environ_merge_string(&sa, store->s))
         log_warnusys_return(LOG_EXIT_SYS, "merge environment string") ;
@@ -77,8 +77,8 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
         if (!sbl_rebuild_oneline(&list))
             return 0 ;
 
-        res->environ.nimportfile = n ;
-        res->environ.importfile = resolve_add_string(wres, list.s) ;
+        e->nimportfile = n ;
+        e->importfile = resolve_add_string(ewres, list.s) ;
     }
 
     store->len = 0 ;
@@ -89,43 +89,46 @@ static int get_import_field(resolve_service_t *res, strbuf *store)
     return 1 ;
 }
 
-static int store_environ(resolve_service_t *res, strbuf *store)
-{
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    if (!get_import_field(res, store))
-        return 0 ;
-
-    res->environ.env = resolve_add_string(wres, store->s) ;
-
-    if (!env_resolve_conf(&sa, res))
-        return 0 ;
-
-    res->environ.envdir = resolve_add_string(wres, sa.s) ;
-
-    return 1 ;
-}
-
-int parse_store_environ(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
+int parse_environ(parse_store_t *st, resolve_service_t *res, resolve_service_addon_environ_t *e, uint8_t conf, uint8_t *has_environ)
 {
     log_flow() ;
 
-    uint32_t kid = table.u.parser.id ;
+    *has_environ = 0 ;
 
-    switch(kid) {
+    if (!parse_store_present(st, E_PARSER_SECTION_ENVIRONMENT, E_PARSER_SECTION_ENVIRON_ENVAL))
+        return 1 ;
 
-        case E_PARSER_SECTION_ENVIRON_ENVAL:
+    *has_environ = 1 ;
 
-            if (!store_environ(res, store))
-                return 0 ;
+    size_t len = 0 ;
+    char const *raw = parse_store_get(st, E_PARSER_SECTION_ENVIRONMENT, E_PARSER_SECTION_ENVIRON_ENVAL, &len) ;
 
-            break ;
+    _cleanup_strbuf_ strbuf store = STRBUF_ZERO ;
+    if (!strbuf_copyb(&store, raw, len) || !strbuf_uncounted(&store))
+        return 0 ;
 
-        default:
-            /** never happen*/
-            log_warn_return(LOG_EXIT_ZERO, "unknown id key in section environment -- please make a bug report") ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    resolve_wrapper_t_ref ewres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+
+    resolve_init(ewres) ; // offset 0 = "" convention
+
+    if (!env_import_field(e, ewres, &store)) {
+        free(ewres) ;
+        return 0 ;
     }
+
+    e->env = resolve_add_string(ewres, store.s) ;
+
+    if (!env_resolve_conf(&sa, res)) {
+        free(ewres) ;
+        return 0 ;
+    }
+
+    e->envdir = resolve_add_string(ewres, sa.s) ;
+
+    e->env_overwrite = conf ;
+
+    free(ewres) ;
 
     return 1 ;
 }

@@ -34,10 +34,10 @@
 #define SS_MODULE_REQUIREDBY "/requiredby"
 #define SS_MODULE_REQUIREDBY_LEN (sizeof SS_MODULE_REQUIREDBY - 1)
 
-extern void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force) ;
+extern void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e) ;
 extern void parse_module_check_dir(char const *src,char const *dir) ;
 
-extern void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, char const *name) ;
+extern void regex_configure(resolve_service_t *res, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name) ;
 extern void regex_rename(strbuf *list, resolve_service_t *res, uint32_t element) ;
 extern void regex_replace(strbuf *list, resolve_service_t *res) ;
 extern uint32_t regex_get_file_name(strbuf *filename, char const *str) ;

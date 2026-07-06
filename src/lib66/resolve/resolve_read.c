@@ -56,6 +56,13 @@ int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
 
+    } else if (wres->type == DATA_SERVICE_ENVIRON) {
+
+        if (!resolve_path(path, lname, base, name))
+            return 0 ;
+
+        auto_strings(lname + strlen(lname), SS_ADDON_ENVIRON_SUFFIX) ;
+
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM) ;

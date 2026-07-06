@@ -682,6 +682,18 @@ static void info_display_stop(char const *field,resolve_service_t *res)
         info_display_empty() ;
 }
 
+static uint8_t status_environ_load(resolve_service_addon_environ_t *e, resolve_service_t *res)
+{
+    if (!res->has_environ)
+        return 0 ;
+
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+    uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
+    free(w) ;
+
+    return ok ;
+}
+
 static void info_display_envat(char const *field,resolve_service_t *res)
 {
     log_flow() ;
@@ -689,9 +701,11 @@ static void info_display_envat(char const *field,resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     _cleanup_strbuf_ strbuf salink = STRBUF_ZERO ;
 
-    if (res->environ.envdir) {
+    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
 
-        char *src = res->sa.s + res->environ.envdir ;
+    if (status_environ_load(&e, res)) {
+
+        char *src = e.sa.s + e.envdir ;
 
         size_t srclen = strlen(src) ;
         char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
@@ -712,9 +726,11 @@ static void info_display_envat(char const *field,resolve_service_t *res)
 
         info_display_string(salink.s) ;
 
+        strbuf_free(&e.sa) ;
         return ;
     }
 
+    strbuf_free(&e.sa) ;
     info_display_empty() ;
 }
 
@@ -731,9 +747,11 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
     _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
     char const *exclude[1] = { 0 } ;
 
-    if (res->environ.envdir)
+    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+
+    if (status_environ_load(&e, res))
     {
-        char *src = res->sa.s + res->environ.envdir ;
+        char *src = e.sa.s + e.envdir ;
         size_t srclen = strlen(src), newlen ;
         char sym[srclen + SS_SYM_VERSION_LEN + 1] ;
 
@@ -821,6 +839,8 @@ static void info_display_envfile(char const *field,resolve_service_t *res)
         info_display_empty() ;
     }
 
+    strbuf_free(&e.sa) ;
+
 }
 
 static void info_display_importfile(char const *field,resolve_service_t *res)
@@ -829,13 +849,17 @@ static void info_display_importfile(char const *field,resolve_service_t *res)
 
     if (NOFIELD) info_display_field_name(field) ;
 
-    if (res->environ.nimportfile) {
+    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
 
-        info_display_string(res->sa.s + res->environ.importfile) ;
+    if (status_environ_load(&e, res) && e.nimportfile) {
 
+        info_display_string(e.sa.s + e.importfile) ;
+
+        strbuf_free(&e.sa) ;
         return ;
     }
 
+    strbuf_free(&e.sa) ;
     info_display_empty() ;
 }
 

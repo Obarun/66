@@ -23,12 +23,12 @@
 #include <66/service.h>
 #include <66/symlink.h>
 
-int env_make_symlink(resolve_service_t *res)
+int env_make_symlink(resolve_service_t *res, resolve_service_addon_environ_t *e)
 {
     log_flow() ;
 
     /** svconf-> /etc/66/conf/<service_name> */
-    char *svconf = res->sa.s + res->environ.envdir ;
+    char *svconf = e->sa.s + e->envdir ;
     char *version = res->sa.s + res->version ;
     size_t version_len = strlen(version), svconf_len = strlen(svconf) ;
     char sym_version[svconf_len + SS_SYM_VERSION_LEN + 1] ;

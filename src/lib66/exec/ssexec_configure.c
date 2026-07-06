@@ -280,20 +280,25 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     if (resolve_read(wres, info->base.s, sv) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
-    if (!res.environ.envdir) {
+    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+    resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
+    if (!res.has_environ || resolve_read(we, res.sa.s + res.path.home, res.sa.s + res.name) <= 0 || !e.envdir) {
         log_1_warn(sv," do not have configuration file") ;
+        resolve_free(we) ;
         resolve_free(wres) ;
         return 0 ;
     }
 
-    if (!env_get_destination(&src, &res))
+    if (!env_get_destination(&src, &e))
         log_dieusys(LOG_EXIT_SYS, "get current environment version") ;
 
-    /** detach svconf from res.sa: resolve_free(wres) below frees res.sa while
-     * the T_VLIST branch still reads svconf after the free. */
-    char svconf_buf[strlen(res.sa.s + res.environ.envdir) + 1] ;
-    auto_strings(svconf_buf, res.sa.s + res.environ.envdir) ;
+    /** detach svconf from the addon arena: it is freed right below while the
+     * T_VLIST branch still reads svconf later (res.sa is freed even later). */
+    char svconf_buf[strlen(e.sa.s + e.envdir) + 1] ;
+    auto_strings(svconf_buf, e.sa.s + e.envdir) ;
     svconf = svconf_buf ;
+
+    resolve_free(we) ;
 
     if (import) {
         do_import(sv,svconf,import,res.type) ;

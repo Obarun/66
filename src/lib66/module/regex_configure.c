@@ -39,7 +39,7 @@ size_t bcount (char const *s, size_t len, char b)
   return n ;
 }
 
-void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, char const *name)
+void regex_configure(resolve_service_t *res, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name)
 {
     log_flow() ;
 
@@ -101,14 +101,14 @@ void regex_configure(resolve_service_t *res, ssexec_t *info, char const *path, c
         }
 
         /** environment is not mandatory */
-        if (res->environ.env > 0)
+        if (res->has_environ && e->env > 0)
         {
             _cleanup_strbuf_ strbuf oenv = STRBUF_ZERO ;
             _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
             char name[strlen(res->sa.s + res->name) + 2] ;
             auto_strings(name, ".", res->sa.s + res->name) ;
 
-            if (!env_prepare_for_write(&dst, &oenv, res))
+            if (!env_prepare_for_write(&dst, &oenv, res, e))
                 log_dieu(LOG_EXIT_SYS, "prepare environment") ;
 
             if (!write_environ(name, oenv.s, dst.s))

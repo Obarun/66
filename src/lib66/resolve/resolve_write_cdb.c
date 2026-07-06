@@ -71,6 +71,11 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
         if (!service_resolve_write_addon_limit_cdb(&c, ((resolve_service_addon_limit_t *)wres->obj)))
             goto err ;
+
+    } else if (wres->type == DATA_SERVICE_ENVIRON) {
+
+        if (!service_resolve_write_addon_environ_cdb(&c, ((resolve_service_addon_environ_t *)wres->obj)))
+            goto err ;
     }
 
     if (!ocdb_make_finish(&c) || fsync(fd) < 0) {

@@ -36,6 +36,7 @@ static int core_set_has(char const *base, char const *name, uint8_t type)
     switch (type) {
 
         case DATA_SERVICE_LIMIT: has = &core.has_limit ; break ;
+        case DATA_SERVICE_ENVIRON: has = &core.has_environ ; break ;
 
         default: break ;
     }
@@ -59,7 +60,7 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
     size_t namelen = strlen(name) ;
 
     char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
-    char aname[namelen + SS_ADDON_LIMIT_SUFFIX_LEN + 1] ;
+    char aname[namelen + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ; // longest addon suffix
 
     auto_strings(aname, name) ;
 
@@ -71,6 +72,14 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
         auto_strings(aname, name, SS_ADDON_LIMIT_SUFFIX) ;
+
+        if (!core_set_has(base, name, wres->type))
+            return (errno = EINVAL, 0) ;
+
+    } else if (wres->type == DATA_SERVICE_ENVIRON) {
+
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        auto_strings(aname, name, SS_ADDON_ENVIRON_SUFFIX) ;
 
         if (!core_set_has(base, name, wres->type))
             return (errno = EINVAL, 0) ;

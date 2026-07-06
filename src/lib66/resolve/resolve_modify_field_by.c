@@ -48,6 +48,16 @@ int resolve_modify_field_by(resolve_wrapper_t_ref wres, resolve_enum_table_t tab
 
         return 1 ;
 
+    } else if (wres->type == DATA_SERVICE_ENVIRON) {
+
+        resolve_service_addon_environ_t *e = (resolve_service_addon_environ_t *)wres->obj ;
+
+        log_trace("store environ field ", list->name[table.u.service.id], " with value: ", by) ;
+
+        service_resolve_modify_environ_field(e, table.u.service, by) ;
+
+        return 1 ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

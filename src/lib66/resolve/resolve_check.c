@@ -36,7 +36,7 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
     log_flow() ;
 
     char path[SS_MAX_PATH_LEN] ;
-    char lname[SS_MAX_SERVICE_NAME + SS_ADDON_LIMIT_SUFFIX_LEN + 1] ;
+    char lname[SS_MAX_SERVICE_NAME + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ; // longest addon suffix
 
     auto_strings(lname, name) ;
 
@@ -51,6 +51,13 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
             return 0 ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
+
+    } else if (wres->type == DATA_SERVICE_ENVIRON) {
+
+        if (!resolve_path(path, lname, base, name))
+            return 0 ;
+
+        auto_strings(lname + strlen(lname), SS_ADDON_ENVIRON_SUFFIX) ;
 
     } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 

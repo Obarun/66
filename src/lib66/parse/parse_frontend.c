@@ -250,14 +250,27 @@ int parse_frontend(char const *sv,
     if (res.type == E_PARSER_TYPE_MODULE)
         res.logger.want = 0 ;
 
-    // keep overwrite_conf
-    res.environ.env_overwrite = conf ;
-
     /** contents of directory should be listed by service_frontend_path
      * except for module type */
     if (scan_mode(sv, S_IFDIR) == 1 && res.type != E_PARSER_TYPE_MODULE) {
         resolve_free(wres) ;
         return 1 ;
+    }
+
+    /** pass 1: lex the frontend once into the (section,key) store; consumed by
+     * parse_environ (right below, before parse_module needs it) and parse_limit. */
+    parse_store_t st ;
+    if (!parse_store_build(&st, sa.s))
+        log_die(LOG_EXIT_SYS, "build parse store of service: ", svname) ;
+
+    resolve_service_addon_environ_t environaddon = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+    {
+        uint8_t has_environ = 0 ;
+        if (!parse_environ(&st, &res, &environaddon, conf, &has_environ)) {
+            parse_store_free(&st) ;
+            log_die(LOG_EXIT_SYS, "parse environment of service: ", svname) ;
+        }
+        res.has_environ = has_environ ;
     }
 
     if (!parse_contents(&res, sa.s))
@@ -302,7 +315,7 @@ int parse_frontend(char const *sv,
     }
 
     if (res.type == E_PARSER_TYPE_MODULE)
-        parse_module(&res, hres, info, force) ;
+        parse_module(&res, hres, info, force, conf, &environaddon) ;
 
     parse_compute_resolve(&res, info) ;
 
@@ -316,6 +329,16 @@ int parse_frontend(char const *sv,
         parse_create_logger(&validator, hres, &res, info) ;
     }
 
+    resolve_service_addon_limit_t limitaddon = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
+    {
+        uint8_t has_limit = 0 ;
+        if (!parse_limit(&st, &limitaddon, &has_limit)) {
+            parse_store_free(&st) ;
+            log_die(LOG_EXIT_SYS, "parse limits of service: ", svname) ;
+        }
+        res.has_limit = has_limit ;
+    }
+
     hash = resolve_hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {
 
@@ -326,8 +349,19 @@ int parse_frontend(char const *sv,
         char *name = res.sa.s + res.name ; // resolve_hash_add + log_dieu doesn't accept res.sa.s + res.name
         if (!resolve_hash_add(hres, name, res))
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
+
+        if (res.has_limit) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->limit = limitaddon ;
+        }
+
+        if (res.has_environ) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->environ = environaddon ;
+        }
     }
 
+    parse_store_free(&st) ;
     free(wres) ;
     return 1 ;
 }

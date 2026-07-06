@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <unistd.h> //access
+#include <unistd.h> //access, unlink
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -169,6 +169,53 @@ void parse_cleanup(resolve_service_t *res, char const *tmpdir, uint8_t force)
     }
 }
 
+/** Make the servicedir's .resolve/ match the freshly parsed result: drop any
+ * resolve file the parse did not produce. .resolve/ holds only parse output (the
+ * core <name> and the autonomous addons <name>.<addon>), nothing runtime, so an
+ * entry of @dst absent from @src is stale -- this is what removes a <name>.<addon>
+ * when an addon disappears from the frontend. .resolve/ is flat, so a filename
+ * match is exact (unlike the shallow, basename-vs-root prune below, which is why
+ * .resolve stays out of it). */
+static void parse_prune_resolve(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
+{
+    log_flow() ;
+
+    size_t pos = 0, srclen = strlen(src) ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+
+    char dres[strlen(dst) + SS_RESOLVE_LEN + 1] ;
+    auto_strings(dres, dst, SS_RESOLVE) ;
+
+    if (access(dres, F_OK) < 0)
+        return ; // no .resolve yet (first parse): nothing to prune
+
+    char const *exclude[1] = { 0 } ;
+    if (!sbl_dir_get_recursive(&sa, dres, exclude, S_IFREG, 1)) {
+        parse_cleanup(res, src, force) ;
+        log_dieusys(LOG_EXIT_SYS, "get file list of: ", dres) ;
+    }
+
+    FOREACH_SBL(&sa, pos) {
+
+        char base[strlen(sa.s + pos) + 1] ;
+        if (!ob_basename(base, sa.s + pos)) {
+            parse_cleanup(res, src, force) ;
+            log_dieusys(LOG_EXIT_SYS, "basename of: ", sa.s + pos) ;
+        }
+
+        char peer[srclen + SS_RESOLVE_LEN + 1 + strlen(base) + 1] ;
+        auto_strings(peer, src, SS_RESOLVE, "/", base) ;
+
+        if (access(peer, F_OK) < 0) {
+            log_trace("remove stale resolve: ", sa.s + pos) ;
+            if (unlink(sa.s + pos) < 0) {
+                parse_cleanup(res, src, force) ;
+                log_dieusys(LOG_EXIT_SYS, "remove stale resolve: ", sa.s + pos) ;
+            }
+        }
+    }
+}
+
 void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force)
 {
     log_flow() ;
@@ -206,6 +253,7 @@ void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *r
             }
         }
 
+        parse_prune_resolve(dst, src, res, force) ;
     }
 
     if (access(dst, F_OK) < 0) {
@@ -290,11 +338,35 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
             if (!mkdtemp(sa.s))
                 log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-            write_services(&c->res, sa.s, rforce) ;
+            write_services(&c->res, &c->environ, sa.s, rforce) ;
 
             parse_write_state(&c->res, sa.s, rforce) ;
 
             service_resolve_write_remote(&c->res, sa.s, rforce) ;
+
+            if (c->res.has_limit) {
+                char const *lname = c->res.sa.s + c->res.name ;
+                char aname[strlen(lname) + SS_ADDON_LIMIT_SUFFIX_LEN + 1] ;
+                auto_strings(aname, lname, SS_ADDON_LIMIT_SUFFIX) ;
+                resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &c->limit) ;
+                if (!resolve_write_at(wlimit, sa.s, aname)) {
+                    free(wlimit) ;
+                    log_dieusys(LOG_EXIT_SYS, "write limit addon of: ", lname) ;
+                }
+                free(wlimit) ;
+            }
+
+            if (c->res.has_environ) {
+                char const *ename = c->res.sa.s + c->res.name ;
+                char aname[strlen(ename) + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ;
+                auto_strings(aname, ename, SS_ADDON_ENVIRON_SUFFIX) ;
+                resolve_wrapper_t_ref wenv = resolve_set_struct(DATA_SERVICE_ENVIRON, &c->environ) ;
+                if (!resolve_write_at(wenv, sa.s, aname)) {
+                    free(wenv) ;
+                    log_dieusys(LOG_EXIT_SYS, "write environ addon of: ", ename) ;
+                }
+                free(wenv) ;
+            }
 
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 

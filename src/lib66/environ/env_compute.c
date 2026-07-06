@@ -22,20 +22,20 @@
 #include <66/environ.h>
 #include <66/service.h>
 
-int env_compute(strbuf *result, resolve_service_t *res)
+int env_compute(strbuf *result, resolve_service_t *res, resolve_service_addon_environ_t *e)
 {
     log_flow() ;
 
     int r ;
-    uint32_t conf = res->environ.env_overwrite ;
-    size_t conflen = strlen(res->sa.s + res->environ.envdir), versionlen = strlen(res->sa.s + res->version), namelen = strlen(res->sa.s + res->name) ;
+    uint32_t conf = e->env_overwrite ;
+    size_t conflen = strlen(e->sa.s + e->envdir), versionlen = strlen(res->sa.s + res->version), namelen = strlen(res->sa.s + res->name) ;
     char version[versionlen + 1] ;
     char svconf[conflen + 1] ;
     char name[namelen + 1] ;
     char src[conflen + 1 + versionlen + 1] ;
 
     auto_strings(version, res->sa.s + res->version) ;
-    auto_strings(svconf, res->sa.s + res->environ.envdir) ;
+    auto_strings(svconf, e->sa.s + e->envdir) ;
     auto_strings(name, res->sa.s + res->name) ;
     auto_strings(src, svconf, "/", version) ;
 
@@ -51,7 +51,7 @@ int env_compute(strbuf *result, resolve_service_t *res)
     if (r == -1)
         log_warnu_return(LOG_EXIT_ZERO, "find previous configuration file version") ;
 
-    if(!env_make_symlink(res))
+    if(!env_make_symlink(res, e))
         return 0 ;
 
     /** !r means that previous version doesn't exist, no need to import anything */
@@ -79,7 +79,7 @@ int env_compute(strbuf *result, resolve_service_t *res)
     if (!auto_strbuf(result, \
     "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66 configure ", \
     name,"\' command instead.\n## Or make a copy of this file at ", src, "/", name, \
-    " and modify it.\n## [ENDWARN]\n", res->sa.s + res->environ.env))
+    " and modify it.\n## [ENDWARN]\n", e->sa.s + e->env))
         log_warnu_return(LOG_EXIT_ZERO,"strbuf") ;
 
 

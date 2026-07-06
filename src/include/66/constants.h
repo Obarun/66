@@ -75,6 +75,8 @@
 #define SS_RESOLVE_LEN (sizeof SS_RESOLVE - 1)
 #define SS_ADDON_LIMIT_SUFFIX ".limit"
 #define SS_ADDON_LIMIT_SUFFIX_LEN (sizeof SS_ADDON_LIMIT_SUFFIX - 1)
+#define SS_ADDON_ENVIRON_SUFFIX ".environ"
+#define SS_ADDON_ENVIRON_SUFFIX_LEN (sizeof SS_ADDON_ENVIRON_SUFFIX - 1)
 
 #define SS_FDHOLDER "fdholder"
 #define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)
