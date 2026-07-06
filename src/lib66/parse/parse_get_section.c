@@ -17,6 +17,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
@@ -37,9 +38,8 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
         cfg.pos = pos ;
         stk.len = 0 ;
 
-        if (!lexer(&stk, &cfg) || !strbuf_terminate(&stk))
+        if (!lexer(&stk, &cfg) || !strbuf_uncounted(&stk))
             return 0 ;
-        stk.len-- ;
 
         if (cfg.found) {
 
