@@ -167,6 +167,14 @@ int parse_frontend(char const *sv,
         free(exwres) ;
     }
 
+    /** the dependencies addon: depends/requiredby/optsdeps/contents/provide/conflict + counts. */
+    resolve_service_addon_dependencies_t depaddon = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    {
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &depaddon) ;
+        resolve_init(depwres) ;
+        free(depwres) ;
+    }
+
     {
 
         table.u.parser.id = E_PARSER_SECTION_MAIN_TYPE ;
@@ -174,7 +182,7 @@ int parse_frontend(char const *sv,
         if (!parse_get_value_of_key(&store, sa.s, table))
             log_dieu(LOG_EXIT_SYS, "get field ", enum_to_key(table.u.parser.list, table.u.parser.id), " of service: ", svname) ;
 
-        if (!parse_store_main(&res, &execaddon, &store, table))
+        if (!parse_store_main(&res, &execaddon, &depaddon, &store, table))
             log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
     }
 
@@ -187,7 +195,7 @@ int parse_frontend(char const *sv,
          * This field is not mandatory, do not crash if it not found */
         if (parse_get_value_of_key(&store, sa.s, table)) {
 
-            if (!parse_store_main(&res, &execaddon, &store, table))
+            if (!parse_store_main(&res, &execaddon, &depaddon, &store, table))
                 log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;
 
             info->treename.len = 0 ;
@@ -289,7 +297,7 @@ int parse_frontend(char const *sv,
         res.has_logger = has_logger ;
     }
 
-    if (!parse_contents(&res, &execaddon, sa.s))
+    if (!parse_contents(&res, &execaddon, &depaddon, sa.s))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
 
     if (!parse_mandatory(&res, &loggeraddon, &execaddon, info))
@@ -307,31 +315,35 @@ int parse_frontend(char const *sv,
     if (opt_tree_forced)
         info->opt_tree = 0 ;
 
-    /** append res.dependencies.depends list with the optional dependencies list */
-    if (res.dependencies.noptsdeps) {
+    /** append the depends list with the optional dependencies list */
+    if (depaddon.noptsdeps) {
 
-        if (res.dependencies.ndepends) {
-            size_t len = strlen(res.sa.s + res.dependencies.depends) ;
-            char t[len + strlen(res.sa.s + res.dependencies.optsdeps) + 2] ;
-            auto_strings(t,res.sa.s + res.dependencies.depends, " ", res.sa.s + res.dependencies.optsdeps) ;
-            res.dependencies.depends = resolve_add_string(wres, t) ;
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &depaddon) ;
+
+        if (depaddon.ndepends) {
+            size_t len = strlen(depaddon.sa.s + depaddon.depends) ;
+            char t[len + strlen(depaddon.sa.s + depaddon.optsdeps) + 2] ;
+            auto_strings(t, depaddon.sa.s + depaddon.depends, " ", depaddon.sa.s + depaddon.optsdeps) ;
+            depaddon.depends = resolve_add_string(depwres, t) ;
 
         } else {
 
-            res.dependencies.depends = resolve_add_string(wres, res.sa.s + res.dependencies.optsdeps) ;
+            depaddon.depends = resolve_add_string(depwres, depaddon.sa.s + depaddon.optsdeps) ;
         }
-        res.dependencies.ndepends += res.dependencies.noptsdeps ;
+        depaddon.ndepends += depaddon.noptsdeps ;
+
+        free(depwres) ;
     }
 
     /** parse interdependences if the service was never parsed */
     if (isparsed == STATE_FLAGS_FALSE) {
 
-        if (!parse_interdependences(svname, res.sa.s + res.dependencies.depends, res.dependencies.ndepends, hres, info, force, conf, forced_directory, main, inns, intree, moduleres))
+        if (!parse_interdependences(svname, depaddon.sa.s + depaddon.depends, depaddon.ndepends, hres, info, force, conf, forced_directory, main, inns, intree, moduleres))
             log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", svname) ;
     }
 
     if (res.type == E_PARSER_TYPE_MODULE)
-        parse_module(&res, hres, info, force, conf, &environaddon) ;
+        parse_module(&res, hres, info, force, conf, &environaddon, &depaddon) ;
 
     parse_compute_resolve(&res, &execaddon, info) ;
     res.has_execute = 1 ;
@@ -357,7 +369,7 @@ int parse_frontend(char const *sv,
         if (!parse_validator_init(&validator, sa.s))
             log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", svname) ;
 
-        parse_create_logger(&validator, hres, &res, &ioaddon, &loggeraddon, &execaddon, info) ;
+        parse_create_logger(&validator, hres, &res, &ioaddon, &loggeraddon, &execaddon, &depaddon, info) ;
     }
 
     resolve_service_addon_limit_t limitaddon = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
@@ -369,6 +381,10 @@ int parse_frontend(char const *sv,
         }
         res.has_limit = has_limit ;
     }
+
+    /** a service has a dependencies addon iff any relation is set. */
+    res.has_dependencies = (depaddon.ndepends || depaddon.nrequiredby || depaddon.noptsdeps ||
+                            depaddon.ncontents || depaddon.nprovide || depaddon.nconflict) ? 1 : 0 ;
 
     hash = resolve_hash_search(hres, res.sa.s + res.name) ;
     if (hash == NULL) {
@@ -404,6 +420,11 @@ int parse_frontend(char const *sv,
         if (res.has_execute) {
             hash = resolve_hash_search(hres, name) ;
             hash->execute = execaddon ;
+        }
+
+        if (res.has_dependencies) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->dependencies = depaddon ;
         }
     }
 

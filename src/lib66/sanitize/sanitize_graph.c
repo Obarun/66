@@ -53,6 +53,7 @@ void sanitize_graph(ssexec_t *info)
     HASH_FOREACH(&graph.hres, c, tmp) {
 
         wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
         char name[strlen(c->res.sa.s + c->res.name) + 1] ;
         auto_strings(name, c->res.sa.s + c->res.name) ;
 
@@ -68,11 +69,11 @@ void sanitize_graph(ssexec_t *info)
             if (!graph_get_stkedge(&stk, &graph.g, v, false))
                 log_die_nomem("stack") ;
 
-            c->res.dependencies.ndepends = 0 ;
-            c->res.dependencies.depends = 0 ;
+            c->dependencies.ndepends = 0 ;
+            c->dependencies.depends = 0 ;
 
             if (stk.len)
-                c->res.dependencies.depends = parse_compute_list(wres, &stk, &c->res.dependencies.ndepends, 0) ;
+                c->dependencies.depends = parse_compute_list(depwres, &stk, &c->dependencies.ndepends, 0) ;
         }
 
         stk.len = 0 ;
@@ -82,17 +83,25 @@ void sanitize_graph(ssexec_t *info)
             if (!graph_get_stkedge(&stk, &graph.g, v, true))
                 log_die_nomem("stack") ;
 
-            c->res.dependencies.nrequiredby = 0 ;
-            c->res.dependencies.requiredby = 0 ;
+            c->dependencies.nrequiredby = 0 ;
+            c->dependencies.requiredby = 0 ;
 
             if (stk.len)
-                c->res.dependencies.requiredby = parse_compute_list(wres, &stk, &c->res.dependencies.nrequiredby, 0) ;
+                c->dependencies.requiredby = parse_compute_list(depwres, &stk, &c->dependencies.nrequiredby, 0) ;
         }
+
+        c->res.has_dependencies = (c->dependencies.ndepends || c->dependencies.nrequiredby ||
+                                   c->dependencies.noptsdeps || c->dependencies.ncontents ||
+                                   c->dependencies.nprovide || c->dependencies.nconflict) ? 1 : 0 ;
 
         if (!resolve_write(wres, info->base.s, name))
             log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
+        if (c->res.has_dependencies && !resolve_write(depwres, info->base.s, name))
+            log_dieu(LOG_EXIT_SYS, "write dependencies addon of service: ", name) ;
+
         resolve_free(wres) ;
+        free(depwres) ;
     }
     service_graph_destroy(&graph) ;
 }

@@ -97,13 +97,13 @@ void svc_unsupervise(service_graph_t *g)
 
         sanitize_it(&hash->res, &a) ;
 
-        if (hash->res.type == E_PARSER_TYPE_MODULE && hash->res.dependencies.ncontents) {
+        if (hash->res.type == E_PARSER_TYPE_MODULE && hash->dependencies.ncontents) {
 
             bpos = 0 ;
 
-            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.contents) + 1) ;
+            _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.contents) + 1) ;
 
-            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.contents))
+            if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_SBL(&stk, bpos) {

@@ -59,34 +59,36 @@ static void get_frontend_list(strbuf *sa, const char *name, const char *frontend
 
     table.u.parser.id = requiredby ? E_PARSER_SECTION_MAIN_REQUIREDBY :  E_PARSER_SECTION_MAIN_DEPENDS ;
 
-    /** only a core dependency field is parsed here; the execute addon is unused */
+    /** parse a single dependency field into a throwaway execute + dependencies addon */
     resolve_service_addon_execute_t dex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    if (!parse_store_main(&dres, &dex, &stk, table))
+    resolve_service_addon_dependencies_t ddep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    if (!parse_store_main(&dres, &dex, &ddep, &stk, table))
         log_dieu(LOG_EXIT_SYS, "get field depends of service: ", basename) ;
 
     sa->len = 0 ;
-    if ((requiredby ? dres.dependencies.nrequiredby : dres.dependencies.ndepends))
-       if (!sbl_clean_string(sa, dres.sa.s + (requiredby ? dres.dependencies.requiredby : dres.dependencies.depends)))
+    if ((requiredby ? ddep.nrequiredby : ddep.ndepends))
+       if (!sbl_clean_string(sa, ddep.sa.s + (requiredby ? ddep.requiredby : ddep.depends)))
            log_dieusys(LOG_EXIT_SYS,"clean the string") ;
 
+    strbuf_free(&ddep.sa) ;
     resolve_free(wres) ;
 }
 
-void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby)
+void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby)
 {
     log_flow() ;
 
 
-    uint32_t *ofield = !requiredby ? &old->dependencies.depends : &old->dependencies.requiredby ;
-    uint32_t *onfield = !requiredby ? &old->dependencies.ndepends : &old->dependencies.nrequiredby ;
-    uint32_t *nfield = !requiredby ? &new->dependencies.depends : &new->dependencies.requiredby ;
+    uint32_t *ofield = !requiredby ? &olddep->depends : &olddep->requiredby ;
+    uint32_t *onfield = !requiredby ? &olddep->ndepends : &olddep->nrequiredby ;
+    uint32_t *nfield = !requiredby ? &newdep->depends : &newdep->requiredby ;
 
     if (*onfield) {
 
         _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ; _cleanup_strbuf_ strbuf dfront = STRBUF_ZERO ;
-        size_t pos = 0, olen = strlen(old->sa.s + *ofield) ;
+        size_t pos = 0, olen = strlen(olddep->sa.s + *ofield) ;
         _alloc_sbl_(sold, olen + 1) ;
-        size_t clen = strlen(new->sa.s + *nfield) ;
+        size_t clen = strlen(newdep->sa.s + *nfield) ;
         _alloc_sbl_(snew, clen + 1) ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
@@ -94,12 +96,12 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
 
         get_frontend_list(&frontend, old->sa.s + old->name, old->sa.s + old->path.frontend, (!requiredby ? false : true)) ;
 
-        if (!sbl_clean_string(&sold, old->sa.s + *ofield))
+        if (!sbl_clean_string(&sold, olddep->sa.s + *ofield))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         /** new module configuration depends field may be empty.*/
         if (clen)
-            if (!sbl_clean_string(&snew, new->sa.s + *nfield))
+            if (!sbl_clean_string(&snew, newdep->sa.s + *nfield))
                 log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
         /** check if the service was deactivated.*/
@@ -112,22 +114,27 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
             r = resolve_read(dwres, base, dname) ;
             if (r < 0)
                 log_die(LOG_EXIT_USER, "read resolve file of: ") ;
-            if (!r)
+            if (!r || !dres.has_dependencies)
                 continue ;
+
+            resolve_service_addon_dependencies_t ddep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+            resolve_wrapper_t_ref ddepwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &ddep) ;
+            if (resolve_read(ddepwres, base, dname) <= 0)
+                log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", dname) ;
 
             get_frontend_list(&dfront, dres.sa.s + dres.name, dres.sa.s + dres.path.frontend, (!requiredby ? false : true)) ;
 
             if ((sbl_search(&snew, dname) < 0 || !clen) && sbl_search(&frontend, dname) < 0 && sbl_search(&dfront, old->sa.s + old->name) < 0) {
 
-                uint32_t *dfield = requiredby ? &dres.dependencies.depends : &dres.dependencies.requiredby ;
-                uint32_t *dnfield = requiredby ? &dres.dependencies.ndepends : &dres.dependencies.nrequiredby ;
+                uint32_t *dfield = requiredby ? &ddep.depends : &ddep.requiredby ;
+                uint32_t *dnfield = requiredby ? &ddep.ndepends : &ddep.nrequiredby ;
 
                 if (*dnfield) {
 
-                    size_t len = strlen(dres.sa.s + *dfield) ;
+                    size_t len = strlen(ddep.sa.s + *dfield) ;
                     _alloc_sbl_(stk, len + 1) ;
 
-                    if (!sbl_clean_string(&stk, dres.sa.s + *dfield))
+                    if (!sbl_clean_string(&stk, ddep.sa.s + *dfield))
                         log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
                     /** remove the module name to the depends field of the old service dependency*/
@@ -141,11 +148,11 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                         if (!sbl_rebuild_with_delim(&stk, ' '))
                             log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
 
-                        (*dfield) = resolve_add_string(dwres, stk.s) ;
+                        (*dfield) = resolve_add_string(ddepwres, stk.s) ;
 
                     } else {
 
-                        (*dfield) = resolve_add_string(dwres, "") ;
+                        (*dfield) = resolve_add_string(ddepwres, "") ;
 
                         /** If the module was enabled, the service dependency was as well.
                          * If the service dependency was only activated by the module
@@ -157,10 +164,18 @@ void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char con
                          * */
                     }
 
+                    dres.has_dependencies = (ddep.ndepends || ddep.nrequiredby || ddep.noptsdeps ||
+                                             ddep.ncontents || ddep.nprovide || ddep.nconflict) ? 1 : 0 ;
+
                     if (!resolve_write(dwres, dres.sa.s + dres.path.home, dname))
                         log_dieusys(LOG_EXIT_SYS, "write resolve file of: ", dname) ;
+
+                    if (dres.has_dependencies && !resolve_write(ddepwres, dres.sa.s + dres.path.home, dname))
+                        log_dieusys(LOG_EXIT_SYS, "write dependencies addon of: ", dname) ;
                 }
             }
+            free(ddepwres) ;
+            strbuf_free(&ddep.sa) ;
         }
         resolve_free(dwres) ;
     }

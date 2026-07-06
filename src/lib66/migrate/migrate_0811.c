@@ -162,7 +162,7 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
     return 1 ;
 }
 
-void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_t_0811 *old)
+void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, resolve_service_t_0811 *old)
 {
     log_flow() ;
 
@@ -191,17 +191,25 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon
     new->path.frontend = old->path.frontend ? resolve_add_string(wres, old->sa.s + old->path.frontend) : 0 ;
     new->path.servicedir = old->path.servicedir ? resolve_add_string(wres, old->sa.s + old->path.servicedir) : 0 ;
 
-    // dependencies
-    new->dependencies.depends = old->dependencies.depends ? resolve_add_string(wres, old->sa.s + old->dependencies.depends)  : 0 ;
-    new->dependencies.requiredby = old->dependencies.requiredby ? resolve_add_string(wres, old->sa.s + old->dependencies.requiredby)  : 0 ;
-    new->dependencies.optsdeps = old->dependencies.optsdeps ? resolve_add_string(wres, old->sa.s + old->dependencies.optsdeps)  : 0 ;
-    new->dependencies.contents = old->dependencies.contents ? resolve_add_string(wres, old->sa.s + old->dependencies.contents)  : 0 ;
-    new->dependencies.provide = old->dependencies.provide ? resolve_add_string(wres, old->sa.s + old->dependencies.provide)  : 0 ;
-    new->dependencies.ndepends = old->dependencies.ndepends ;
-    new->dependencies.nrequiredby = old->dependencies.nrequiredby ;
-    new->dependencies.noptsdeps = old->dependencies.noptsdeps ;
-    new->dependencies.ncontents = old->dependencies.ncontents ;
-    new->dependencies.nprovide = old->dependencies.nprovide ;
+    // dependencies -> autonomous addon
+    new->has_dependencies = (old->dependencies.ndepends || old->dependencies.nrequiredby ||
+                             old->dependencies.noptsdeps || old->dependencies.ncontents ||
+                             old->dependencies.nprovide) ? 1 : 0 ;
+    if (new->has_dependencies) {
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+        resolve_init(depwres) ;
+        dep->depends = old->dependencies.depends ? resolve_add_string(depwres, old->sa.s + old->dependencies.depends) : 0 ;
+        dep->requiredby = old->dependencies.requiredby ? resolve_add_string(depwres, old->sa.s + old->dependencies.requiredby) : 0 ;
+        dep->optsdeps = old->dependencies.optsdeps ? resolve_add_string(depwres, old->sa.s + old->dependencies.optsdeps) : 0 ;
+        dep->contents = old->dependencies.contents ? resolve_add_string(depwres, old->sa.s + old->dependencies.contents) : 0 ;
+        dep->provide = old->dependencies.provide ? resolve_add_string(depwres, old->sa.s + old->dependencies.provide) : 0 ;
+        dep->ndepends = old->dependencies.ndepends ;
+        dep->nrequiredby = old->dependencies.nrequiredby ;
+        dep->noptsdeps = old->dependencies.noptsdeps ;
+        dep->ncontents = old->dependencies.ncontents ;
+        dep->nprovide = old->dependencies.nprovide ;
+        free(depwres) ;
+    }
 
     // execute -> autonomous addon (notify/maxdeath/maxdeathtime relocated here)
     new->has_execute = 1 ;
@@ -313,7 +321,8 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    service_resolve_sanitize_0811(&new, &environ, &io, &logger, &execute, &res) ;
+    resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    service_resolve_sanitize_0811(&new, &environ, &io, &logger, &execute, &dependencies, &res) ;
 
     migrate_ensure_log_owner(&new, &io, &logger) ;
 
@@ -354,6 +363,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write execute addon of service: ", name) ;
         }
         resolve_free(wex) ;
+    }
+
+    if (new.has_dependencies) {
+        resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dependencies) ;
+        if (!resolve_write(wdep, info->base.s, name)) {
+            resolve_free(wdep) ;
+            log_dieusys(LOG_EXIT_SYS, "write dependencies addon of service: ", name) ;
+        }
+        resolve_free(wdep) ;
     }
 
     resolve_free(wres) ;

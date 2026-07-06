@@ -62,18 +62,18 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
         bool same = sbl_search(argv, hash->name) >= 0 ? true : false ;
         bool ns = hash->res.inns ? true : false ;
 
-        if (hash->res.dependencies.nprovide)
+        if (hash->dependencies.nprovide)
             if (!symlink_provide(info->base.s, res, action))
                 log_dieu(LOG_EXIT_SYS, "make provide symlink") ;
 
-        if (hash->res.dependencies.nconflict && action) {
+        if (hash->dependencies.nconflict && action) {
 
-            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
             resolve_service_t c = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &c) ;
             size_t pos = 0 ;
 
-            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+            if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.conflict))
                 log_dieu(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_SBL(&stk, pos) {
@@ -144,18 +144,18 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         if (res->type == E_PARSER_TYPE_MODULE) {
 
-            if (res->dependencies.ncontents) {
+            if (hash->dependencies.ncontents) {
 
                 service_graph_t graph = GRAPH_SERVICE_ZERO ;
                 uint32_t nservice = 0, flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY ;
                 vertex_t *v, *tmp ;
                 struct resolve_hash_s *h = NULL ;
-                _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.contents) + 1) ;
+                _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.contents) + 1) ;
 
-                if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.contents))
+                if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.contents))
                     log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-                if (!service_graph_new(&graph, res->dependencies.ncontents))
+                if (!service_graph_new(&graph, hash->dependencies.ncontents))
                     log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
 
                 /** build the graph of the ns */

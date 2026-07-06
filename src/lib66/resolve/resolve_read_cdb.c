@@ -74,6 +74,11 @@ int resolve_read_cdb(resolve_wrapper_t *wres, char const *path, const char *name
 
         if (!service_resolve_read_addon_execute_cdb(&c, ((resolve_service_addon_execute_t *)wres->obj)))
             goto err ;
+
+    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
+
+        if (!service_resolve_read_addon_dependencies_cdb(&c, ((resolve_service_addon_dependencies_t *)wres->obj)))
+            goto err ;
     }
 
     e = 1 ;

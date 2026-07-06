@@ -47,20 +47,33 @@ static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexe
 {
     log_flow() ;
 
-    if (!res->dependencies.nrequiredby)
+    if (!res->has_dependencies)
         return ;
+
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    resolve_wrapper_t_ref dw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
+    if (resolve_read(dw, info->base.s, res->sa.s + res->name) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", res->sa.s + res->name) ;
+    free(dw) ;
+
+    if (!dep.nrequiredby) {
+        strbuf_free(&dep.sa) ;
+        return ;
+    }
 
     int r ;
     unsigned int pos = 0 ;
     ss_state_t ste = STATE_ZERO ;
     resolve_wrapper_t_ref wres = 0 ;
-    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
+    _alloc_sbl_(stk, strlen(dep.sa.s + dep.requiredby) + 1) ;
 
-    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
+    if (!sbl_clean_string(&stk, dep.sa.s + dep.requiredby))
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     if (propagate)
-        log_1_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", res->sa.s + res->dependencies.requiredby) ;
+        log_1_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", dep.sa.s + dep.requiredby) ;
+
+    strbuf_free(&dep.sa) ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -93,7 +106,7 @@ static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexe
                     log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
             }
 
-            if (dres.dependencies.nrequiredby && !propagate)
+            if (dres.has_dependencies && !propagate)
                 compute_deps(&dres, hres, sa, info, propagate) ;
         }
 
@@ -107,13 +120,24 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
 
     size_t pos = 0 ;
 
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    resolve_wrapper_t_ref dw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
+    if (!res->has_dependencies || resolve_read(dw, info->base.s, res->sa.s + res->name) <= 0) {
+        free(dw) ;
+        strbuf_free(&dep.sa) ;
+        return ;
+    }
+    free(dw) ;
+
     _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
-    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.provide)) ;
+    _alloc_sbl_(stk, strlen(dep.sa.s + dep.provide)) ;
     _alloc_strbuf_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
     _alloc_strbuf_(lname, SS_MAX_PATH_LEN) ;
 
-    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.provide))
+    if (!sbl_clean_string(&stk, dep.sa.s + dep.provide))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
+
+    strbuf_free(&dep.sa) ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -149,19 +173,29 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
 {
     log_flow() ;
 
-    if (!res->dependencies.ndepends)
+    if (!res->has_dependencies || propagate)
         return ;
 
-    if (propagate)
+    resolve_service_addon_dependencies_t rdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    resolve_wrapper_t_ref rdw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &rdep) ;
+    if (resolve_read(rdw, info->base.s, res->sa.s + res->name) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", res->sa.s + res->name) ;
+    free(rdw) ;
+
+    if (!rdep.ndepends) {
+        strbuf_free(&rdep.sa) ;
         return ;
+    }
 
     int r ;
     size_t pos = 0 ;
     resolve_wrapper_t_ref wres = 0 ;
-    _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.depends)) ;
+    _alloc_sbl_(stk, strlen(rdep.sa.s + rdep.depends)) ;
 
-    if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
+    if (!sbl_clean_string(&stk, rdep.sa.s + rdep.depends))
         log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+    strbuf_free(&rdep.sa) ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -173,17 +207,22 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
 
-        if (!r || dres.islog) {
+        if (!r || dres.islog || !dres.has_dependencies) {
             resolve_free(wres) ;
             continue ;
         }
 
-        if (dres.dependencies.nrequiredby) {
+        resolve_service_addon_dependencies_t ddep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+        resolve_wrapper_t_ref ddw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &ddep) ;
+        if (resolve_read(ddw, info->base.s, name) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
+
+        if (ddep.nrequiredby) {
 
             resolve_enum_table_t table = E_TABLE_SERVICE_DEPS_ZERO ;
-            _alloc_sbl_(deps, strlen(dres.sa.s + dres.dependencies.requiredby)) ;
+            _alloc_sbl_(deps, strlen(ddep.sa.s + ddep.requiredby)) ;
 
-            if (!sbl_clean_string(&deps, dres.sa.s + dres.dependencies.requiredby))
+            if (!sbl_clean_string(&deps, ddep.sa.s + ddep.requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             if (!sbl_remove(&deps, res->sa.s + res->name))
@@ -192,8 +231,8 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
 
             if (!deps.len) {
 
-                dres.dependencies.nrequiredby = 0 ;
-                dres.dependencies.requiredby = 0 ;
+                ddep.nrequiredby = 0 ;
+                ddep.requiredby = 0 ;
 
             } else {
 
@@ -202,14 +241,21 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
 
                 table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
 
-                if (!resolve_modify_field_by(wres, table, deps.len ? deps.s : ""))
-                    log_dieusys(LOG_EXIT_SYS, "modify resolve file of service: ", dres.sa.s + dres.name) ;
+                if (!resolve_modify_field_by(ddw, table, deps.len ? deps.s : ""))
+                    log_dieusys(LOG_EXIT_SYS, "modify dependencies of service: ", dres.sa.s + dres.name) ;
             }
+
+            dres.has_dependencies = (ddep.ndepends || ddep.nrequiredby || ddep.noptsdeps ||
+                                     ddep.ncontents || ddep.nprovide || ddep.nconflict) ? 1 : 0 ;
 
             if (!resolve_write(wres, info->base.s, dres.sa.s + dres.name))
                 log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", dres.sa.s + dres.name) ;
 
+            if (dres.has_dependencies && !resolve_write(ddw, info->base.s, dres.sa.s + dres.name))
+                log_dieusys(LOG_EXIT_SYS, "write dependencies addon of service: ", dres.sa.s + dres.name) ;
         }
+        free(ddw) ;
+        strbuf_free(&ddep.sa) ;
         resolve_free(wres) ;
     }
 }
@@ -280,13 +326,13 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     if (res->islog)
         return ;
 
-    if (res->dependencies.nprovide)
+    if (res->has_dependencies)
         remove_provide(res, info) ;
 
     if (res->has_logger)
         remove_logger(res, info) ;
 
-    if (res->dependencies.ndepends)
+    if (res->has_dependencies)
         clean_depends(res, info, propagate) ;
 
     char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
@@ -459,14 +505,14 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
 
         remove_service(&c->res, info, propagate) ;
 
-        if (c->res.dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
+        if (c->dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
 
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-            _alloc_sbl_(stk, strlen(c->res.sa.s + c->res.dependencies.contents) + 1) ;
+            _alloc_sbl_(stk, strlen(c->dependencies.sa.s + c->dependencies.contents) + 1) ;
 
-            if (!sbl_clean_string(&stk, c->res.sa.s + c->res.dependencies.contents))
+            if (!sbl_clean_string(&stk, c->dependencies.sa.s + c->dependencies.contents))
                 log_dieu(LOG_EXIT_SYS, "convert string") ;
 
             FOREACH_SBL(&stk, pos) {

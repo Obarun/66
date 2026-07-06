@@ -40,6 +40,7 @@ static int core_set_has(char const *base, char const *name, uint8_t type)
         case DATA_SERVICE_IO: has = &core.has_io ; break ;
         case DATA_SERVICE_LOGGER: has = &core.has_logger ; break ;
         case DATA_SERVICE_EXECUTE: has = &core.has_execute ; break ;
+        case DATA_SERVICE_DEPENDENCIES: has = &core.has_dependencies ; break ;
 
         default: break ;
     }
@@ -63,7 +64,7 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
     size_t namelen = strlen(name) ;
 
     char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
-    char aname[namelen + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ; // longest addon suffix
+    char aname[namelen + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ; // longest addon suffix
 
     auto_strings(aname, name) ;
 
@@ -107,6 +108,14 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
         auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
+
+        if (!core_set_has(base, name, wres->type))
+            return (errno = EINVAL, 0) ;
+
+    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
+
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        auto_strings(aname, name, SS_ADDON_DEPENDENCIES_SUFFIX) ;
 
         if (!core_set_has(base, name, wres->type))
             return (errno = EINVAL, 0) ;

@@ -22,7 +22,7 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 
-int parse_contents(resolve_service_t *res, resolve_service_addon_execute_t *ex, char const *str)
+int parse_contents(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, char const *str)
 {
     log_flow() ;
 
@@ -65,23 +65,23 @@ int parse_contents(resolve_service_t *res, resolve_service_addon_execute_t *ex, 
         switch (id) {
 
             case E_PARSER_SECTION_MAIN:
-                if (!parse_section_main(res, ex, tmp))
+                if (!parse_section_main(res, ex, dep, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break ;
             case E_PARSER_SECTION_START:
-                if (!parse_section_start(res, ex, tmp))
+                if (!parse_section_start(res, ex, dep, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break ;
             case E_PARSER_SECTION_STOP:
-                if (!parse_section_stop(res, ex, tmp))
+                if (!parse_section_stop(res, ex, dep, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break ;
             case E_PARSER_SECTION_REGEX:
-                if (!parse_section_regex(res, ex, tmp))
+                if (!parse_section_regex(res, ex, dep, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break;
             case E_PARSER_SECTION_EXECUTE:
-                if (!parse_section_execute(res, ex, tmp))
+                if (!parse_section_execute(res, ex, dep, tmp))
                     log_warnu_return(LOG_EXIT_ZERO,"parse section: ", secname, " of service: ", res->sa.s + res->name) ;
                 break;
 

@@ -124,69 +124,6 @@ static void modify_path(resolve_service_t *res, char const *data, uint32_t field
     free(wres) ;
 }
 
-static void modify_deps(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_DEPS_DEPENDS:
-            res->dependencies.depends = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_REQUIREDBY:
-            res->dependencies.requiredby = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_OPTSDEPS:
-            res->dependencies.optsdeps = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_CONTENTS:
-            res->dependencies.contents = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_PROVIDE:
-            res->dependencies.provide = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_CONFLICT:
-            res->dependencies.conflict = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
-            res->dependencies.ndepends = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NREQUIREDBY:
-            res->dependencies.nrequiredby = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NOPTSDEPS:
-            res->dependencies.noptsdeps = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NCONTENTS:
-            res->dependencies.ncontents = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NPROVIDE:
-            res->dependencies.nprovide = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NCONFLICT:
-            res->dependencies.nconflict = resolve_add_uint32(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
-
 static void modify_live(resolve_service_t *res, char const *data, uint32_t field)
 {
     log_flow() ;
@@ -299,10 +236,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_PATH:
             modify_path(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_DEPS:
-            modify_deps(res, data, table.id) ;
             break ;
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:

@@ -80,25 +80,12 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "has_io", &res->has_io) ||
         !resolve_get_key(c, "has_logger", &res->has_logger) ||
         !resolve_get_key(c, "has_execute", &res->has_execute) ||
+        !resolve_get_key(c, "has_dependencies", &res->has_dependencies) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
         !resolve_get_key(c, "frontend", &res->path.frontend) ||
         !resolve_get_key(c, "src_servicedir", &res->path.servicedir) ||
-
-    /* dependencies */
-        !resolve_get_key(c, "depends", &res->dependencies.depends) ||
-        !resolve_get_key(c, "requiredby", &res->dependencies.requiredby) ||
-        !resolve_get_key(c, "optsdeps", &res->dependencies.optsdeps) ||
-        !resolve_get_key(c, "contents", &res->dependencies.contents) ||
-        !resolve_get_key(c, "provide", &res->dependencies.provide) ||
-        !resolve_get_key(c, "conflict", &res->dependencies.conflict) ||
-        !resolve_get_key(c, "ndepends", &res->dependencies.ndepends) ||
-        !resolve_get_key(c, "nrequiredby", &res->dependencies.nrequiredby) ||
-        !resolve_get_key(c, "noptsdeps", &res->dependencies.noptsdeps) ||
-        !resolve_get_key(c, "ncontents", &res->dependencies.ncontents) ||
-        !resolve_get_key(c, "nprovide", &res->dependencies.nprovide) ||
-        !resolve_get_key(c, "nconflict", &res->dependencies.nconflict) ||
 
     /* live */
         !resolve_get_key(c, "livedir", &res->live.livedir) ||
@@ -247,6 +234,31 @@ int service_resolve_read_addon_execute_cdb(ocdb *c, resolve_service_addon_execut
         !resolve_get_key(c, "capsambient", &ex->capsambient) ||
         !resolve_get_key(c, "ncapsbound", &ex->ncapsbound) ||
         !resolve_get_key(c, "ncapsambient", &ex->ncapsambient))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_dependencies_cdb(ocdb *c, resolve_service_addon_dependencies_t *dep)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&dep->sa, c) <= 0 || !dep->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &dep->rversion) ||
+        !resolve_get_key(c, "depends", &dep->depends) ||
+        !resolve_get_key(c, "requiredby", &dep->requiredby) ||
+        !resolve_get_key(c, "optsdeps", &dep->optsdeps) ||
+        !resolve_get_key(c, "contents", &dep->contents) ||
+        !resolve_get_key(c, "provide", &dep->provide) ||
+        !resolve_get_key(c, "conflict", &dep->conflict) ||
+        !resolve_get_key(c, "ndepends", &dep->ndepends) ||
+        !resolve_get_key(c, "nrequiredby", &dep->nrequiredby) ||
+        !resolve_get_key(c, "noptsdeps", &dep->noptsdeps) ||
+        !resolve_get_key(c, "ncontents", &dep->ncontents) ||
+        !resolve_get_key(c, "nprovide", &dep->nprovide) ||
+        !resolve_get_key(c, "nconflict", &dep->nconflict))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

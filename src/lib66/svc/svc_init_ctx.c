@@ -76,6 +76,15 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
         }
         svc.execute = &hash->execute ;
 
+        /* the dependencies addon carries the module contents read by svc_compute_ns. */
+        if (hash->res.has_dependencies) {
+            resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &hash->dependencies) ;
+            if (resolve_read(wdep, hash->res.sa.s + hash->res.path.home, hash->res.sa.s + hash->res.name) <= 0)
+                log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
+            free(wdep) ;
+        }
+        svc.dependencies = &hash->dependencies ;
+
         if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) || FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {
 
             svc.ndepends = !requiredby ? v->ndepends : v->nrequiredby ;

@@ -104,23 +104,34 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
 
         n++ ;
 
-        if (res.dependencies.ndepends) {
+        /** the dependencies live in an autonomous addon; load it into the hash
+         * node so the edges can be walked (gated on the core has_dependencies). */
+        struct resolve_hash_s *added = resolve_hash_search(&g->hres, name) ;
+        resolve_service_addon_dependencies_t *dep = &added->dependencies ;
+        if (res.has_dependencies) {
+            resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+            if (resolve_read(wdep, info->base.s, name) <= 0)
+                log_dieu(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
+            free(wdep) ;
+        }
 
-            size_t len = strlen(res.sa.s + res.dependencies.depends) ;
+        if (dep->ndepends) {
+
+            size_t len = strlen(dep->sa.s + dep->depends) ;
             _alloc_sbl_(stk, len + 1) ;
 
-            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.depends))
+            if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
         }
 
-        if (res.dependencies.nrequiredby) {
+        if (dep->nrequiredby) {
 
-            size_t len = strlen(res.sa.s + res.dependencies.requiredby) ;
+            size_t len = strlen(dep->sa.s + dep->requiredby) ;
             _alloc_sbl_(stk, len + 1) ;
 
-            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.requiredby))
+            if (!sbl_clean_string(&stk, dep->sa.s + dep->requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
@@ -136,12 +147,12 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
          *
          * At the end of any process, the ssexec_signal will deal properly
          * with the current state and the desire state of the service. */
-        if (res.type == E_PARSER_TYPE_MODULE && res.dependencies.ncontents) {
+        if (res.type == E_PARSER_TYPE_MODULE && dep->ncontents) {
 
-            size_t len = strlen(res.sa.s + res.dependencies.contents) ;
+            size_t len = strlen(dep->sa.s + dep->contents) ;
             _alloc_sbl_(stk, len + 1) ;
 
-            if (!sbl_clean_string(&stk, res.sa.s + res.dependencies.contents))
+            if (!sbl_clean_string(&stk, dep->sa.s + dep->contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;

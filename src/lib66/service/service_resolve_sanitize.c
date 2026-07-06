@@ -50,14 +50,6 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->path.frontend = res->path.frontend ? resolve_add_string(wres, stk + res->path.frontend) : 0 ;
     res->path.servicedir = res->path.servicedir ? resolve_add_string(wres, stk + res->path.servicedir) : 0 ;
 
-    // dependencies
-    res->dependencies.depends = res->dependencies.depends ? resolve_add_string(wres, stk + res->dependencies.depends) : 0 ;
-    res->dependencies.requiredby = res->dependencies.requiredby ? resolve_add_string(wres, stk + res->dependencies.requiredby) : 0 ;
-    res->dependencies.optsdeps = res->dependencies.optsdeps ? resolve_add_string(wres, stk + res->dependencies.optsdeps) : 0 ;
-    res->dependencies.contents = res->dependencies.contents ? resolve_add_string(wres, stk + res->dependencies.contents) : 0 ;
-    res->dependencies.provide = res->dependencies.provide ? resolve_add_string(wres, stk + res->dependencies.provide) : 0 ;
-    res->dependencies.conflict = res->dependencies.conflict ? resolve_add_string(wres, stk + res->dependencies.conflict) : 0 ;
-
     // live
     res->live.livedir = res->live.livedir ? resolve_add_string(wres, stk + res->live.livedir) : 0 ;
     res->live.status = res->live.status ? resolve_add_string(wres, stk + res->live.status) : 0 ;

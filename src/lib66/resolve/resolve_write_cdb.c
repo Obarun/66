@@ -91,6 +91,11 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
 
         if (!service_resolve_write_addon_execute_cdb(&c, ((resolve_service_addon_execute_t *)wres->obj)))
             goto err ;
+
+    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
+
+        if (!service_resolve_write_addon_dependencies_cdb(&c, ((resolve_service_addon_dependencies_t *)wres->obj)))
+            goto err ;
     }
 
     if (!ocdb_make_finish(&c) || fsync(fd) < 0) {

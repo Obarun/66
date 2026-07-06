@@ -59,25 +59,12 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "has_io", res->has_io) ||
         !resolve_add_cdb_uint(c, "has_logger", res->has_logger) ||
         !resolve_add_cdb_uint(c, "has_execute", res->has_execute) ||
+        !resolve_add_cdb_uint(c, "has_dependencies", res->has_dependencies) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
         !resolve_add_cdb_uint(c, "frontend", res->path.frontend) ||
         !resolve_add_cdb_uint(c, "src_servicedir", res->path.servicedir) ||
-
-        // dependencies
-        !resolve_add_cdb_uint(c, "depends", res->dependencies.depends) ||
-        !resolve_add_cdb_uint(c, "requiredby", res->dependencies.requiredby) ||
-        !resolve_add_cdb_uint(c, "optsdeps", res->dependencies.optsdeps) ||
-        !resolve_add_cdb_uint(c, "contents", res->dependencies.contents) ||
-        !resolve_add_cdb_uint(c, "provide", res->dependencies.provide) ||
-        !resolve_add_cdb_uint(c, "conflict", res->dependencies.conflict) ||
-        !resolve_add_cdb_uint(c, "ndepends", res->dependencies.ndepends) ||
-        !resolve_add_cdb_uint(c, "nrequiredby", res->dependencies.nrequiredby) ||
-        !resolve_add_cdb_uint(c, "noptsdeps", res->dependencies.noptsdeps) ||
-        !resolve_add_cdb_uint(c, "ncontents", res->dependencies.ncontents) ||
-        !resolve_add_cdb_uint(c, "nprovide", res->dependencies.nprovide) ||
-        !resolve_add_cdb_uint(c, "nconflict", res->dependencies.nconflict) ||
 
         //live
         !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||
@@ -244,6 +231,35 @@ int service_resolve_write_addon_execute_cdb(ocdbmaker *c, resolve_service_addon_
         !resolve_add_cdb_uint(c, "capsambient", ex->capsambient) ||
         !resolve_add_cdb_uint(c, "ncapsbound", ex->ncapsbound) ||
         !resolve_add_cdb_uint(c, "ncapsambient", ex->ncapsambient))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_dependencies_cdb(ocdbmaker *c, resolve_service_addon_dependencies_t *dep)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+    dep->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, dep->sa.s, dep->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", dep->rversion) ||
+        !resolve_add_cdb_uint(c, "depends", dep->depends) ||
+        !resolve_add_cdb_uint(c, "requiredby", dep->requiredby) ||
+        !resolve_add_cdb_uint(c, "optsdeps", dep->optsdeps) ||
+        !resolve_add_cdb_uint(c, "contents", dep->contents) ||
+        !resolve_add_cdb_uint(c, "provide", dep->provide) ||
+        !resolve_add_cdb_uint(c, "conflict", dep->conflict) ||
+        !resolve_add_cdb_uint(c, "ndepends", dep->ndepends) ||
+        !resolve_add_cdb_uint(c, "nrequiredby", dep->nrequiredby) ||
+        !resolve_add_cdb_uint(c, "noptsdeps", dep->noptsdeps) ||
+        !resolve_add_cdb_uint(c, "ncontents", dep->ncontents) ||
+        !resolve_add_cdb_uint(c, "nprovide", dep->nprovide) ||
+        !resolve_add_cdb_uint(c, "nconflict", dep->nconflict))
             return 0 ;
 
     return 1 ;

@@ -33,13 +33,14 @@
 #include <66/enum_parser.h>
 #include <66/utils.h>
 
-int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf *store, resolve_enum_table_t table)
+int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
     int r = 0, e = 0 ;
     size_t pos = 0 ;
     _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
     uint32_t kid = table.u.parser.id ;
 
     switch(kid) {
@@ -301,7 +302,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.depends = parse_compute_list(wres, store, &res->dependencies.ndepends, 0) ;
+                dep->depends = parse_compute_list(depwres, store, &dep->ndepends, 0) ;
 
             break ;
 
@@ -311,7 +312,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.requiredby = parse_compute_list(wres, store, &res->dependencies.nrequiredby, 0) ;
+                dep->requiredby = parse_compute_list(depwres, store, &dep->nrequiredby, 0) ;
 
             break ;
 
@@ -321,7 +322,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.optsdeps = parse_compute_list(wres, store, &res->dependencies.noptsdeps, 1) ;
+                dep->optsdeps = parse_compute_list(depwres, store, &dep->noptsdeps, 1) ;
 
             break ;
 
@@ -331,7 +332,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.contents = parse_compute_list(wres, store, &res->dependencies.ncontents, 0) ;
+                dep->contents = parse_compute_list(depwres, store, &dep->ncontents, 0) ;
 
             break ;
 
@@ -357,7 +358,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.provide = parse_compute_list(wres, store, &res->dependencies.nprovide, 0) ;
+                dep->provide = parse_compute_list(depwres, store, &dep->nprovide, 0) ;
 
             break ;
 
@@ -367,7 +368,7 @@ int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex
                 parse_error_return(0, 8, table) ;
 
             if (store->len)
-                res->dependencies.conflict = parse_compute_list(wres, store, &res->dependencies.nconflict, 0) ;
+                dep->conflict = parse_compute_list(depwres, store, &dep->nconflict, 0) ;
 
             break ;
 

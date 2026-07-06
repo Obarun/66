@@ -19,7 +19,7 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 
-int parse_store_g(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf *store, resolve_enum_table_t table)
+int parse_store_g(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -29,7 +29,7 @@ int parse_store_g(resolve_service_t *res, resolve_service_addon_execute_t *ex, s
 
         case E_PARSER_SECTION_MAIN:
 
-            if (!parse_store_main(res, ex, store, table))
+            if (!parse_store_main(res, ex, dep, store, table))
                 log_warnu_return(LOG_EXIT_ZERO, "store value of section: ", enum_str_parser_section[E_PARSER_SECTION_MAIN]);
 
             break ;

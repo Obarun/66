@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 
-static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint8_t requiredby, hash_t *hres, uint8_t force, uint8_t conf, ssexec_t *info)
+static void parse_module_dependencies(strbuf *list, resolve_service_t *res, resolve_service_addon_dependencies_t *dep, uint8_t requiredby, hash_t *hres, uint8_t force, uint8_t conf, ssexec_t *info)
 {
     log_flow() ;
 
@@ -41,9 +41,9 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint
     uint8_t opt_tree = info->opt_tree ;
     _alloc_sbl_(stk, list->len + 1) ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    uint32_t *field = !requiredby ? &res->dependencies.depends : &res->dependencies.requiredby ;
-    uint32_t *nfield = !requiredby ? &res->dependencies.ndepends : &res->dependencies.nrequiredby ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    uint32_t *field = !requiredby ? &dep->depends : &dep->requiredby ;
+    uint32_t *nfield = !requiredby ? &dep->ndepends : &dep->nrequiredby ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
     uint8_t exlen = 3 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1 } ;
 
@@ -80,9 +80,9 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, uint
 
     if (*nfield) {
 
-        size_t len = strlen(res->sa.s + *field) ;
+        size_t len = strlen(dep->sa.s + *field) ;
         char tmp[len + stk.len + 2] ;
-        auto_strings(tmp, res->sa.s + *field, " ", stk.s) ;
+        auto_strings(tmp, dep->sa.s + *field, " ", stk.s) ;
         (*field) = resolve_add_string(wres, tmp) ;
 
     } else {
@@ -128,7 +128,7 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_env
     regex_configure(res, e, info, dir, name) ;
 }
 
-void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e)
+void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e, resolve_service_addon_dependencies_t *dep)
 {
     log_flow() ;
 
@@ -173,12 +173,12 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
         auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
         get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&sa, res, 0, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, dep, 0, hres, force, conf, info) ;
 
         auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
         get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&sa, res, 1, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, dep, 1, hres, force, conf, info) ;
     }
 
     auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED) ;
@@ -243,7 +243,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
 
     /** append the module name at each inner depends/requiredby dependencies service name
      * and define contents field.*/
-    parse_rename_interdependences(res, name, hres, info) ;
+    parse_rename_interdependences(res, dep, name, hres, info) ;
 
     /** Remove the module name from requiredby field
      * of the dependencies if the service disappears with the
@@ -262,7 +262,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
      * As long as the user asked for the force option, we can retrieve
      * and read the old resolve file (meaning the current in use) to
      * compare it with the new one.*/
-    parse_db_migrate(res, info) ;
+    parse_db_migrate(res, dep, info) ;
 
     /** do not die here, just warn the user */
     tmpdir[tmplen] = 0 ;

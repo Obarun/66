@@ -43,6 +43,7 @@ struct svc_ctx_s
     pid_t pid ; // Process ID when running
     resolve_service_t *res ; // Service resolution data
     resolve_service_addon_execute_t *execute ; // execute addon (down/timeout/notify)
+    resolve_service_addon_dependencies_t *dependencies ; // dependencies addon (module contents)
 
     // Watchers
     sse_watcher_t child ; // Child process watcher
@@ -75,6 +76,7 @@ typedef struct svc_ctx_s svc_ctx_t ;
     .pid = -1, \
     .res = NULL, \
     .execute = NULL, \
+    .dependencies = NULL, \
     .child = {0}, \
     .timeout = {0}, \
     .native = false, \

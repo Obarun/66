@@ -48,23 +48,24 @@ static info_field_t const fields[] = {
     { "has_limit",       INFO_FIELD_U32, offsetof(resolve_service_t, has_limit) },
     { "has_logger",      INFO_FIELD_U32, offsetof(resolve_service_t, has_logger) },
     { "has_execute",     INFO_FIELD_U32, offsetof(resolve_service_t, has_execute) },
+    { "has_dependencies",INFO_FIELD_U32, offsetof(resolve_service_t, has_dependencies) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
     { "src_servicedir",  INFO_FIELD_STR, offsetof(resolve_service_t, path.servicedir) },
 
-    { "depends",         INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.depends) },
-    { "requiredby",      INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.requiredby) },
-    { "optsdeps",        INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.optsdeps) },
-    { "contents",        INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.contents) },
-    { "provide",         INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.provide) },
-    { "conflict",        INFO_FIELD_STR, offsetof(resolve_service_t, dependencies.conflict) },
-    { "ndepends",        INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.ndepends) },
-    { "nrequiredby",     INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.nrequiredby) },
-    { "noptsdeps",       INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.noptsdeps) },
-    { "ncontents",       INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.ncontents) },
-    { "nprovide",        INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.nprovide) },
-    { "nconflict",       INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.nconflict) },
+    { "depends",         INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, depends),     DATA_SERVICE_DEPENDENCIES },
+    { "requiredby",      INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, requiredby),  DATA_SERVICE_DEPENDENCIES },
+    { "optsdeps",        INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, optsdeps),    DATA_SERVICE_DEPENDENCIES },
+    { "contents",        INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, contents),    DATA_SERVICE_DEPENDENCIES },
+    { "provide",         INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, provide),     DATA_SERVICE_DEPENDENCIES },
+    { "conflict",        INFO_FIELD_STR, offsetof(resolve_service_addon_dependencies_t, conflict),    DATA_SERVICE_DEPENDENCIES },
+    { "ndepends",        INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, ndepends),    DATA_SERVICE_DEPENDENCIES },
+    { "nrequiredby",     INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, nrequiredby), DATA_SERVICE_DEPENDENCIES },
+    { "noptsdeps",       INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, noptsdeps),   DATA_SERVICE_DEPENDENCIES },
+    { "ncontents",       INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, ncontents),   DATA_SERVICE_DEPENDENCIES },
+    { "nprovide",        INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, nprovide),    DATA_SERVICE_DEPENDENCIES },
+    { "nconflict",       INFO_FIELD_U32, offsetof(resolve_service_addon_dependencies_t, nconflict),   DATA_SERVICE_DEPENDENCIES },
 
     { "run",             INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.run),         DATA_SERVICE_EXECUTE },
     { "run_user",        INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.run_user),    DATA_SERVICE_EXECUTE },
@@ -243,7 +244,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    info_addon_t addons[DATA_SERVICE_EXECUTE + 1] = {{0,0}} ;
+    resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    info_addon_t addons[DATA_SERVICE_DEPENDENCIES + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -275,13 +277,20 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_EXECUTE].blob = execute.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_EXECUTE + 1) ;
+    resolve_wrapper_t_ref wdependencies = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dependencies) ;
+    if (res.has_dependencies && resolve_read(wdependencies, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_DEPENDENCIES].base = &dependencies ;
+        addons[DATA_SERVICE_DEPENDENCIES].blob = dependencies.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_DEPENDENCIES + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
     resolve_free(wio) ;
     resolve_free(wlogger) ;
     resolve_free(wexecute) ;
+    resolve_free(wdependencies) ;
     resolve_free(wres) ;
 
     return 0 ;

@@ -61,55 +61,55 @@ static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *pr
     result[strlen(result) - 1] = 0 ;
 }
 
-static void parse_prefix_name(resolve_service_t *res, hash_t *hres, char const *prefix)
+static void parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
     size_t mlen = strlen(prefix) ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
 
-    if (res->dependencies.ndepends) {
+    if (dep->ndepends) {
 
-        size_t depslen = strlen(res->sa.s + res->dependencies.depends) ;
+        size_t depslen = strlen(dep->sa.s + dep->depends) ;
         _alloc_sbl_(stk, depslen + 1) ;
 
-        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
+        if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.ndepends ;
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->ndepends ;
         char n[len] ;
 
         memset(n, 0, len * sizeof(char)); ;
 
         parse_prefix(n, &stk, hres, prefix) ;
 
-        res->dependencies.depends = resolve_add_string(wres, n) ;
+        dep->depends = resolve_add_string(wres, n) ;
 
     }
 
-    if (res->dependencies.nrequiredby) {
+    if (dep->nrequiredby) {
 
-        size_t depslen = strlen(res->sa.s + res->dependencies.requiredby) ;
+        size_t depslen = strlen(dep->sa.s + dep->requiredby) ;
         _alloc_sbl_(stk, depslen + 1) ;
 
-        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
+        if (!sbl_clean_string(&stk, dep->sa.s + dep->requiredby))
             log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * res->dependencies.nrequiredby ;
+        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->nrequiredby ;
         char n[len] ;
 
         memset(n, 0, len * sizeof(char)) ;
 
         parse_prefix(n, &stk, hres, prefix) ;
 
-        res->dependencies.requiredby = resolve_add_string(wres, n) ;
+        dep->requiredby = resolve_add_string(wres, n) ;
 
     }
 
     free(wres) ;
 }
 
-void parse_rename_interdependences(resolve_service_t *res, char const *prefix, hash_t *hres, ssexec_t *info)
+void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, char const *prefix, hash_t *hres, ssexec_t *info)
 {
     log_flow() ;
 
@@ -121,8 +121,8 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
 
         if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
 
-            if (c->res.dependencies.ndepends || c->res.dependencies.nrequiredby)
-                parse_prefix_name(&c->res, hres, prefix) ;
+            if (c->dependencies.ndepends || c->dependencies.nrequiredby)
+                parse_prefix_name(&c->dependencies, hres, prefix) ;
 
             if (c->res.has_logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
 
@@ -150,7 +150,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
                 if (!parse_validator_init(&validator, fe.s))
                     log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", fname) ;
 
-                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, &c->execute, info) ;
+                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, &c->execute, &c->dependencies, info) ;
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!sbl_add(&stk, logname))
@@ -165,9 +165,10 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
         }
     }
 
-    wres = resolve_set_struct(DATA_SERVICE, res) ;
+    (void)res ;
+    wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
 
-    res->dependencies.contents = parse_compute_list(wres, &stk, &res->dependencies.ncontents, 0) ;
+    dep->contents = parse_compute_list(wres, &stk, &dep->ncontents, 0) ;
 
     free(wres) ;
 }

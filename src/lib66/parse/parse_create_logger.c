@@ -155,7 +155,7 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *log, res
     free(wres) ;
 }
 
-static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, ssexec_t *info)
+static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
 {
     log_flow() ;
 
@@ -197,8 +197,13 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     log->path.home = resolve_add_string(wres, str + res->path.home) ;
     log->path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
     log->path.servicedir = compute_src_servicedir(wres, info) ;
-    log->dependencies.requiredby = resolve_add_string(wres, str + res->name) ;
-    log->dependencies.nrequiredby = 1 ;
+    {
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, logdep) ;
+        logdep->requiredby = resolve_add_string(depwres, str + res->name) ;
+        logdep->nrequiredby = 1 ;
+        free(depwres) ;
+    }
+    log->has_dependencies = 1 ;
     logexec->run.build = lg->execute.run.build ? resolve_add_string(exwres, lg->sa.s + lg->execute.run.build) : 0 ;
     logexec->run.runas = resolve_add_string(exwres, lg->sa.s + lg->execute.run.runas) ;
     logexec->timeout.start = lg->execute.timeout.start ;
@@ -247,7 +252,7 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
 
 }
 
-void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, ssexec_t *info)
+void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_dependencies_t *parentdep, ssexec_t *info)
 {
     log_flow() ;
 
@@ -258,32 +263,40 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
     resolve_service_addon_io_t logio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_execute_t logexec = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    resolve_service_addon_dependencies_t logdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     {
         resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, &logexec) ;
         resolve_init(exwres) ;
         free(exwres) ;
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &logdep) ;
+        resolve_init(depwres) ;
+        free(depwres) ;
     }
 
     hash = resolve_hash_search(hres, logname) ;
     if (hash == NULL && res->type == E_PARSER_TYPE_CLASSIC) {
         /** the logger is not a service with oneshot type */
 
-        if (res->dependencies.ndepends) {
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, parentdep) ;
 
-            char buf[strlen(res->sa.s + res->dependencies.depends) + 1 + strlen(logname) + 1] ;
-            auto_strings(buf, res->sa.s + res->dependencies.depends, " ", logname) ;
+        if (parentdep->ndepends) {
 
-            res->dependencies.depends = resolve_add_string(wres, buf) ;
+            char buf[strlen(parentdep->sa.s + parentdep->depends) + 1 + strlen(logname) + 1] ;
+            auto_strings(buf, parentdep->sa.s + parentdep->depends, " ", logname) ;
+
+            parentdep->depends = resolve_add_string(depwres, buf) ;
 
         } else {
 
-            res->dependencies.depends = resolve_add_string(wres, logname) ;
+            parentdep->depends = resolve_add_string(depwres, logname) ;
         }
 
-        res->dependencies.ndepends++ ;
+        parentdep->ndepends++ ;
 
-        compute_logger(v, res, &lres, io, &logio, lg, parentexec, &logexec, info) ;
+        free(depwres) ;
+
+        compute_logger(v, res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) ;
 
         /** keep the derived run scripts on the parent's logger addon (dump/reference) */
         {
@@ -302,6 +315,7 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
 
         hash = resolve_hash_search(hres, logname) ;
         hash->io = logio ;
+        hash->dependencies = logdep ;
         hash->execute = logexec ;
     }
 

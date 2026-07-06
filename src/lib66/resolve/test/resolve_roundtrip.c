@@ -56,8 +56,6 @@ static void test_roundtrip(char const *dir)
     res.user = resolve_add_string(wres, "root") ;
     res.treename = resolve_add_string(wres, "global") ;
     res.ownerstr = resolve_add_string(wres, "0") ;
-    res.dependencies.depends = resolve_add_string(wres, "dep1 dep2") ;
-    res.dependencies.ndepends = 2 ;
     res.type = E_PARSER_TYPE_CLASSIC ;
     res.enabled = 1 ;
 
@@ -79,8 +77,6 @@ static void test_roundtrip(char const *dir)
     ASSERT_STR_EQ(back.sa.s + back.version, "1.2.3", "version") ;
     ASSERT_STR_EQ(back.sa.s + back.user, "root", "user") ;
     ASSERT_STR_EQ(back.sa.s + back.treename, "global", "treename") ;
-    ASSERT_STR_EQ(back.sa.s + back.dependencies.depends, "dep1 dep2", "depends") ;
-    ASSERT_EQ(back.dependencies.ndepends, 2, "ndepends") ;
     ASSERT_EQ(back.type, E_PARSER_TYPE_CLASSIC, "type") ;
     ASSERT_EQ(back.enabled, 1, "enabled") ;
 

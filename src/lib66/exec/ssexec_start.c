@@ -37,13 +37,13 @@ static void ensure_no_conflict(service_graph_t *graph, int argc, char const *con
         if (hash == NULL)
             log_die(LOG_EXIT_USER, "service: ", argv[i], " not available -- please make a bug report") ;
 
-        if (hash->res.dependencies.nconflict) {
+        if (hash->dependencies.nconflict) {
 
-            _alloc_sbl_(stk, strlen(hash->res.sa.s + hash->res.dependencies.conflict)) ;
+            _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
             size_t pos = 0 ;
             int r ;
 
-            if (!sbl_clean_string(&stk, hash->res.sa.s + hash->res.dependencies.conflict))
+            if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.conflict))
                 log_dieu(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_SBL(&stk, pos) {

@@ -71,6 +71,7 @@ void resolve_hash_free(hash_t *hash)
 		strbuf_free(&c->io.sa) ;
 		strbuf_free(&c->logger.sa) ;
 		strbuf_free(&c->execute.sa) ;
+		strbuf_free(&c->dependencies.sa) ;
 		free(c) ;
 	}
 

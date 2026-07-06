@@ -25,12 +25,14 @@
 #include <66/ssexec.h>
 #include <66/constants.h>
 
-static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssexec_t *info)
+static void service_db_tree(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, ssexec_t *info)
 {
     log_flow() ;
+    (void)old ;
+    (void)new ;
 
-    char *ocontents = old->sa.s + old->dependencies.contents ;
-    char *ncontents = new->sa.s + new->dependencies.contents ;
+    char *ocontents = olddep->sa.s + olddep->contents ;
+    char *ncontents = newdep->sa.s + newdep->contents ;
 
     size_t pos = 0, olen = strlen(ocontents) ;
     _alloc_sbl_(sremove, olen + 1) ;
@@ -41,7 +43,7 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
         if (!sbl_clean_string(&sold, ocontents))
             log_dieusys(LOG_EXIT_SYS, "convert string") ;
 
-        if (new->dependencies.ncontents) {
+        if (newdep->ncontents) {
 
             size_t nlen = strlen(ncontents) ;
             _alloc_sbl_(snew, nlen + 1) ;
@@ -87,12 +89,13 @@ static void service_db_tree(resolve_service_t *old, resolve_service_t *new, ssex
     }
 }
 
-void parse_db_migrate(resolve_service_t *res, ssexec_t *info)
+void parse_db_migrate(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, ssexec_t *info)
 {
     log_flow() ;
 
     int r ;
     resolve_service_t ores = RESOLVE_SERVICE_ZERO ;
+    resolve_service_addon_dependencies_t oresdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
     resolve_wrapper_t_ref owres = resolve_set_struct(DATA_SERVICE, &ores) ;
 
     /** Try to open the old resolve file.
@@ -106,14 +109,23 @@ void parse_db_migrate(resolve_service_t *res, ssexec_t *info)
 
     } else if (r) {
 
+        /** the old module's dependencies live in its own addon on disk */
+        if (ores.has_dependencies) {
+            resolve_wrapper_t_ref odw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &oresdep) ;
+            if (resolve_read(odw, info->base.s, ores.sa.s + ores.name) <= 0)
+                log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", ores.sa.s + ores.name) ;
+            free(odw) ;
+        }
+
         /* depends */
-        service_db_migrate(&ores, res, info->base.s, 0) ;
+        service_db_migrate(&ores, &oresdep, res, dep, info->base.s, 0) ;
 
         /* requiredby */
-        service_db_migrate(&ores, res, info->base.s, 1) ;
+        service_db_migrate(&ores, &oresdep, res, dep, info->base.s, 1) ;
 
         /* contents of the previous tree */
-        service_db_tree(&ores, res, info) ;
+        service_db_tree(&ores, &oresdep, res, dep, info) ;
     }
+    strbuf_free(&oresdep.sa) ;
     resolve_free(owres) ;
 }

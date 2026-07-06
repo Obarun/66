@@ -31,7 +31,7 @@
 
 static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
 static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
-static int graph_build_module(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
+static int graph_build_module(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag) ;
 
 static bool issupervised(resolve_service_t *res)
 {
@@ -167,21 +167,21 @@ static int graph_action_add(service_graph_t *g, resolve_service_t *res, uint32_t
     return 1 ;
 }
 
-static int graph_action_depends(service_graph_t *g, resolve_service_t *res, uint32_t flag)
+static int graph_action_depends(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag)
 {
     log_flow() ;
 
     size_t pos = 0 ;
     struct resolve_hash_s *h = NULL ;
 
-    if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) && res->dependencies.ndepends) {
+    if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) && c->dependencies.ndepends) {
 
-        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.depends) + 1) ;
+        _alloc_sbl_(stk, strlen(c->dependencies.sa.s + c->dependencies.depends) + 1) ;
 
-        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.depends))
+        if (!sbl_clean_string(&stk, c->dependencies.sa.s + c->dependencies.depends))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
-        if (!graph_add_depends(g, res->sa.s + res->name, &stk, flag, false)) {
+        if (!graph_add_depends(g, c->res.sa.s + c->res.name, &stk, flag, false)) {
             if (errno == EINVAL)
                 return 0 ;
 
@@ -207,21 +207,21 @@ static int graph_action_depends(service_graph_t *g, resolve_service_t *res, uint
     return 1 ;
 }
 
-static int graph_action_requiredby(service_graph_t *g, resolve_service_t *res, uint32_t flag)
+static int graph_action_requiredby(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag)
 {
     log_flow() ;
 
     size_t pos = 0 ;
     struct resolve_hash_s *h = NULL ;
 
-    if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY) && res->dependencies.nrequiredby) {
+    if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY) && c->dependencies.nrequiredby) {
 
-        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.requiredby) + 1) ;
+        _alloc_sbl_(stk, strlen(c->dependencies.sa.s + c->dependencies.requiredby) + 1) ;
 
-        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.requiredby))
+        if (!sbl_clean_string(&stk, c->dependencies.sa.s + c->dependencies.requiredby))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
-        if (!graph_add_depends(g, res->sa.s + res->name, &stk, flag, true)) {
+        if (!graph_add_depends(g, c->res.sa.s + c->res.name, &stk, flag, true)) {
             if (errno == EINVAL)
                 return 0 ;
 
@@ -281,17 +281,17 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
     return 1 ;
 }
 
-static int graph_build_module(service_graph_t *g, resolve_service_t *res, uint32_t flag)
+static int graph_build_module(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag)
 {
     log_flow() ;
 
     size_t pos = 0 ;
     struct resolve_hash_s *h = NULL ;
-    if (res->type == E_PARSER_TYPE_MODULE && res->dependencies.ncontents) {
+    if (c->res.type == E_PARSER_TYPE_MODULE && c->dependencies.ncontents) {
 
-        _alloc_sbl_(stk, strlen(res->sa.s + res->dependencies.contents)) ;
+        _alloc_sbl_(stk, strlen(c->dependencies.sa.s + c->dependencies.contents)) ;
 
-        if (!sbl_clean_string(&stk, res->sa.s + res->dependencies.contents))
+        if (!sbl_clean_string(&stk, c->dependencies.sa.s + c->dependencies.contents))
             log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
 
         FOREACH_SBL(&stk, pos) {
@@ -332,13 +332,13 @@ static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t fla
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS)) {
         log_trace("compute dependencies of service: ", name) ;
-        if (!graph_action_depends(g, res, flag))
+        if (!graph_action_depends(g, h, flag))
             log_warnu_return(LOG_EXIT_ZERO, "include dependencies of service: ", name, " in graph selection") ;
     }
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {
         log_trace("compute requiredby dependencies of service: ", name) ;
-        if (!graph_action_requiredby(g, res, flag))
+        if (!graph_action_requiredby(g, h, flag))
             log_warnu_return(LOG_EXIT_ZERO, "include requiredby of service: ", name, " in graph selection") ;
     }
 
@@ -348,7 +348,7 @@ static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t fla
             log_warnu_return(LOG_EXIT_ZERO, "include logger of service: ", name, " in graph selection") ;
     }
 
-    if (!graph_build_module(g, &h->res, flag))
+    if (!graph_build_module(g, h, flag))
         return 0 ;
 
     return 1 ;

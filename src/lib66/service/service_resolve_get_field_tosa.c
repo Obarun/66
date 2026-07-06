@@ -140,81 +140,6 @@ static int get_path(strbuf *sa, resolve_service_t *res, resolve_service_enum_pat
     return e ;
 }
 
-static int get_deps(strbuf *sa, resolve_service_t *res, resolve_service_enum_deps_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_DEPS_DEPENDS:
-            str = res->sa.s + res->dependencies.depends ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_REQUIREDBY:
-            str = res->sa.s + res->dependencies.requiredby ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_OPTSDEPS:
-            str = res->sa.s + res->dependencies.optsdeps ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_CONTENTS:
-            str = res->sa.s + res->dependencies.contents ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_PROVIDE:
-            str = res->sa.s + res->dependencies.provide ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_CONFLICT:
-            str = res->sa.s + res->dependencies.conflict ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
-            fmt[u32_fmt(fmt,res->dependencies.ndepends)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NREQUIREDBY:
-            fmt[u32_fmt(fmt,res->dependencies.nrequiredby)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NOPTSDEPS:
-            fmt[u32_fmt(fmt,res->dependencies.noptsdeps)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NCONTENTS:
-            fmt[u32_fmt(fmt,res->dependencies.ncontents)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NPROVIDE:
-            fmt[u32_fmt(fmt,res->dependencies.nprovide)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_DEPS_NCONFLICT:
-            fmt[u32_fmt(fmt,res->dependencies.nconflict)] = 0 ;
-            str = fmt ;
-            break ;
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
 static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_live_t table)
 {
     log_flow() ;
@@ -339,9 +264,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_PATH:
             return get_path(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_DEPS:
-            return get_deps(sa, res, table.id) ;
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             return get_live(sa, res, table.id) ;

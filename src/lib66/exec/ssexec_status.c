@@ -64,6 +64,7 @@ static void info_display_type(char const *field, resolve_service_t *res) ;
 static void info_display_description(char const *field, resolve_service_t *res) ;
 static void info_display_inns(char const *field, resolve_service_t *res) ;
 static uint8_t status_execute_load(resolve_service_addon_execute_t *ex, resolve_service_t *res) ;
+static uint8_t status_dependencies_load(resolve_service_addon_dependencies_t *dep, resolve_service_t *res) ;
 static void info_display_notify(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeath(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeathtime(char const *field, resolve_service_t *res) ;
@@ -426,11 +427,17 @@ static void info_display_requiredby(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!res->dependencies.nrequiredby)
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    if (!status_dependencies_load(&dep, res) || !dep.nrequiredby) {
+        strbuf_free(&dep.sa) ;
         goto empty ;
+    }
 
-    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.requiredby))
+    if (!sbl_clean_string(&sa, dep.sa.s + dep.requiredby)) {
+        strbuf_free(&dep.sa) ;
         log_dieu(LOG_EXIT_SYS, "clean string") ;
+    }
+    strbuf_free(&dep.sa) ;
 
     if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
@@ -498,11 +505,17 @@ static void info_display_deps(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!res->dependencies.ndepends)
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    if (!status_dependencies_load(&dep, res) || !dep.ndepends) {
+        strbuf_free(&dep.sa) ;
         goto empty ;
+    }
 
-    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.depends))
+    if (!sbl_clean_string(&sa, dep.sa.s + dep.depends)) {
+        strbuf_free(&dep.sa) ;
         log_dieu(LOG_EXIT_SYS, "clean string") ;
+    }
+    strbuf_free(&dep.sa) ;
 
     if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
@@ -570,13 +583,18 @@ static void info_display_optsdeps(char const *field, resolve_service_t *res)
     if (NOFIELD) info_display_field_name(field) ;
     else field = 0 ;
 
-    if (!res->dependencies.noptsdeps) {
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    if (!status_dependencies_load(&dep, res) || !dep.noptsdeps) {
+        strbuf_free(&dep.sa) ;
         info_display_empty() ;
         return ;
     }
 
-    if (!sbl_clean_string(&salist,res->sa.s + res->dependencies.optsdeps))
+    if (!sbl_clean_string(&salist, dep.sa.s + dep.optsdeps)) {
+        strbuf_free(&dep.sa) ;
         log_dieu(LOG_EXIT_SYS,"build optionnal dependencies list") ;
+    }
+    strbuf_free(&dep.sa) ;
 
     if (REVERSE)
         if (!sbl_reverse(&salist))
@@ -600,13 +618,21 @@ static void info_display_contents(char const *field, resolve_service_t *res)
     if (NOFIELD) padding = info_display_field_name(field) ;
     else { field = 0 ; padding = 0 ; }
 
-    if (!res->dependencies.ncontents)
+    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+    uint32_t ncontents = 0 ;
+    if (!status_dependencies_load(&dep, res) || !dep.ncontents) {
+        strbuf_free(&dep.sa) ;
         goto empty ;
+    }
+    ncontents = dep.ncontents ;
 
-    if (!sbl_clean_string(&sa, res->sa.s + res->dependencies.contents))
+    if (!sbl_clean_string(&sa, dep.sa.s + dep.contents)) {
+        strbuf_free(&dep.sa) ;
         log_dieu(LOG_EXIT_SYS, "clean string") ;
+    }
+    strbuf_free(&dep.sa) ;
 
-    if (!service_graph_new(&graph, res->dependencies.ncontents))
+    if (!service_graph_new(&graph, ncontents))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
@@ -920,6 +946,20 @@ static uint8_t status_execute_load(resolve_service_addon_execute_t *ex, resolve_
         return 0 ;
 
     resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
+    free(w) ;
+
+    return ok ;
+}
+
+/** Load the dependencies addon of @res from its CDB (gated on has_dependencies).
+ * Returns 1 on success with @dep filled (free dep->sa afterwards), 0 otherwise. */
+static uint8_t status_dependencies_load(resolve_service_addon_dependencies_t *dep, resolve_service_t *res)
+{
+    if (!res->has_dependencies)
+        return 0 ;
+
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
     uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
     free(w) ;
 
