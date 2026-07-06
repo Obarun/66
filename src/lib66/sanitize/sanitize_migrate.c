@@ -112,9 +112,9 @@ void migrate_create_snap(ssexec_t *info, const char *version)
  * This function fix it, but its should only valuable for version
  * under 0.8.2.0 which fix the bug.
  */
-void migrate_ensure_log_owner(resolve_service_t *res)
+void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io)
 {
-    if (res->logger.want && !res->owner && res->io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
+    if (res->logger.want && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
         _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char const *exclude[1] = { 0 } ;
@@ -128,7 +128,7 @@ void migrate_ensure_log_owner(resolve_service_t *res)
 
         /** derive dest after resolve_add_string above: it appends to res->sa and
          * may relocate it, which would dangle a pointer taken earlier. */
-        char *dest = res->sa.s + res->io.fdout.destination ;
+        char *dest = io->sa.s + io->fdout.destination ;
 
         if (access(dest, F_OK) < 0) {
             log_warnusys("find logger directory: '", dest, "' -- ignoring it") ;

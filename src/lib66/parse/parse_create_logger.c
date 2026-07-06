@@ -63,7 +63,7 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
     return resolve_add_string(wres, dstlog) ;
 }
 
-static void compute_log_script(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log)
+static void compute_log_script(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io)
 {
 
     log_flow() ;
@@ -139,7 +139,7 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
             if (timestamp[0])
                 auto_strings(run + FAKELEN, timestamp, " ") ;
 
-            auto_strings(run + FAKELEN, "s", pmax, " ", res->sa.s + res->io.fdout.destination, "\n") ;
+            auto_strings(run + FAKELEN, "s", pmax, " ", io->sa.s + io->fdout.destination, "\n") ;
 
             log->execute.run.run_user = resolve_add_string(wres, run) ;
 
@@ -155,7 +155,7 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *res, res
     free(wres) ;
 }
 
-static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, ssexec_t *info)
+static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, ssexec_t *info)
 {
     log_flow() ;
 
@@ -222,27 +222,35 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     log->logger.want = 0 ;
     log->logger.execute.run.runas = resolve_add_string(wres, str + res->logger.execute.run.runas) ;
 
-    if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
+    {
+        resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, logio) ;
+        resolve_init(iowres) ;
 
-        log->io.fdin.type = log->io.fdout.type = log->io.fderr.type = E_PARSER_IO_TYPE_PARENT ;
+        if (!strcmp(res->sa.s + res->logger.execute.run.build, "custom")) {
 
-    } else {
+            logio->fdin.type = logio->fdout.type = logio->fderr.type = E_PARSER_IO_TYPE_PARENT ;
 
-        log->io.fdin.type = log->io.fdout.type = E_PARSER_IO_TYPE_66LOG ;
-        log->io.fdin.destination = resolve_add_string(wres, res->sa.s + res->live.fdholderdir) ;
-        log->io.fdout.destination = log->io.fderr.destination = resolve_add_string(wres, res->sa.s + res->io.fdout.destination) ;
-        log->io.fderr.type = E_PARSER_IO_TYPE_INHERIT ;
+        } else {
+
+            logio->fdin.type = logio->fdout.type = E_PARSER_IO_TYPE_66LOG ;
+            logio->fdin.destination = resolve_add_string(iowres, res->sa.s + res->live.fdholderdir) ;
+            logio->fdout.destination = logio->fderr.destination = resolve_add_string(iowres, io->sa.s + io->fdout.destination) ;
+            logio->fderr.type = E_PARSER_IO_TYPE_INHERIT ;
+        }
+
+        free(iowres) ;
     }
+    log->has_io = 1 ;
 
     // oneshot do not use fdholder daemon
     if (res->type == E_PARSER_TYPE_CLASSIC)
-        compute_log_script(v, res, log) ;
+        compute_log_script(v, res, log, io) ;
 
     free(wres) ;
 
 }
 
-void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, ssexec_t *info)
+void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, ssexec_t *info)
 {
     log_flow() ;
 
@@ -251,6 +259,7 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
 
     struct resolve_hash_s *hash ;
     resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
+    resolve_service_addon_io_t logio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     hash = resolve_hash_search(hres, logname) ;
@@ -271,7 +280,7 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
 
         res->dependencies.ndepends++ ;
 
-        compute_logger(v, res, &lres, info) ;
+        compute_logger(v, res, &lres, io, &logio, info) ;
 
         /** sanitize_init/execute_uidgid use this field */
         res->logger.execute.run.run = resolve_add_string(wres, lres.sa.s + lres.execute.run.run) ;
@@ -283,6 +292,9 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
         log_trace("add service: ", logname, " to the service selection") ;
         if (!resolve_hash_add(hres, logname, lres))
             log_dieu(LOG_EXIT_SYS, "append service selection with: ", logname) ;
+
+        hash = resolve_hash_search(hres, logname) ;
+        hash->io = logio ;
     }
 
     free(wres) ;

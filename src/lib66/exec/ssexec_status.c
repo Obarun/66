@@ -878,21 +878,38 @@ static void info_display_logname(char const *field,resolve_service_t *res)
     info_display_empty() ;
 }
 
+/** Load the io addon of @res from its CDB (gated on has_io). Returns 1 on
+ * success with @io filled (free io->sa afterwards), 0 otherwise. */
+static uint8_t status_io_load(resolve_service_addon_io_t *io, resolve_service_t *res)
+{
+    if (!res->has_io)
+        return 0 ;
+
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, io) ;
+    uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
+    free(w) ;
+
+    return ok ;
+}
+
 static void info_display_stdin(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != E_PARSER_TYPE_MODULE && res->io.fdin.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && status_io_load(&io, res) && io.fdin.destination) {
 
-        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdin.type), ":", res->sa.s + res->io.fdin.destination))
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, io.fdin.type), ":", io.sa.s + io.fdin.destination))
             log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
+        strbuf_free(&io.sa) ;
         return ;
     }
 
+    strbuf_free(&io.sa) ;
     info_display_empty() ;
 }
 
@@ -901,16 +918,19 @@ static void info_display_stdout(char const *field, resolve_service_t *res)
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != E_PARSER_TYPE_MODULE && res->io.fdout.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && status_io_load(&io, res) && io.fdout.destination) {
 
-        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fdout.type), ":", res->sa.s + res->io.fdout.destination))
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, io.fdout.type), ":", io.sa.s + io.fdout.destination))
             log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
+        strbuf_free(&io.sa) ;
         return ;
     }
 
+    strbuf_free(&io.sa) ;
     info_display_empty() ;
 }
 
@@ -919,16 +939,19 @@ static void info_display_stderr(char const *field, resolve_service_t *res)
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     if (NOFIELD) info_display_field_name(field) ;
-    if (res->type != E_PARSER_TYPE_MODULE && res->io.fderr.destination) {
+    if (res->type != E_PARSER_TYPE_MODULE && status_io_load(&io, res) && io.fderr.destination) {
 
-        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, res->io.fderr.type), ":", res->sa.s + res->io.fderr.destination))
+        if (!auto_strbuf(&sa, enum_to_key(enum_list_parser_io_type, io.fderr.type), ":", io.sa.s + io.fderr.destination))
             log_die_nomem("strbuf") ;
 
         info_display_string(sa.s) ;
+        strbuf_free(&io.sa) ;
         return ;
     }
 
+    strbuf_free(&io.sa) ;
     info_display_empty() ;
 }
 
@@ -936,22 +959,26 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 {
     log_flow() ;
 
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type != E_PARSER_TYPE_MODULE) {
 
-        if (res->logger.want || (res->type == E_PARSER_TYPE_ONESHOT && res->io.fdout.destination)) {
+        status_io_load(&io, res) ;
+
+        if (res->logger.want || (res->type == E_PARSER_TYPE_ONESHOT && io.fdout.destination)) {
 
             if (nlog) {
 
                 _cleanup_strbuf_ strbuf log = STRBUF_ZERO ;
 
-                if (res->io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
+                if (io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
 
                     /** the file current may not exist if the service was never started*/
-                    size_t dstlen = strlen(res->sa.s + res->io.fdout.destination) ;
+                    size_t dstlen = strlen(io.sa.s + io.fdout.destination) ;
                     char scan[dstlen + 9] ;
-                    memcpy(scan,res->sa.s + res->io.fdout.destination,dstlen) ;
+                    memcpy(scan,io.sa.s + io.fdout.destination,dstlen) ;
                     memcpy(scan + dstlen,"/current",8) ;
                     scan[dstlen + 8] = 0 ;
                     int r = scan_mode(scan,S_IFREG) ;
@@ -962,8 +989,8 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
                     } else {
 
-                        char fcur[strlen(res->sa.s + res->io.fdout.destination) + 9] ;
-                        auto_strings(fcur, res->sa.s + res->io.fdout.destination, "/current") ;
+                        char fcur[strlen(io.sa.s + io.fdout.destination) + 9] ;
+                        auto_strings(fcur, io.sa.s + io.fdout.destination, "/current") ;
                         if (scan_mode(fcur, S_IFREG) == 1 && !strbuf_read_file(&log, fcur)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
                         /* we don't need to freed strbuf
                         * file_readputsa do it if the file is empty*/
@@ -978,9 +1005,9 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
                         }
                     }
 
-                } else if (res->io.fdout.type == E_PARSER_IO_TYPE_FILE) {
+                } else if (io.fdout.type == E_PARSER_IO_TYPE_FILE) {
 
-                    if (!strbuf_read_file(&log,res->sa.s + res->io.fdout.destination)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
+                    if (!strbuf_read_file(&log,io.sa.s + io.fdout.destination)) log_dieusys(LOG_EXIT_SYS,"read log file of: ",res->sa.s + res->name) ;
                     /* we don't need to freed strbuf
                     * file_readputsa do it if the file is empty*/
                     if (!log.len) goto empty ;
@@ -997,8 +1024,10 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
         } else goto empty ;
     } else goto empty ;
 
+    strbuf_free(&io.sa) ;
     return ;
     empty:
+        strbuf_free(&io.sa) ;
         info_display_empty() ;
         return ;
     err:

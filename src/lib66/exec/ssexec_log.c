@@ -124,9 +124,13 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
             continue ;
         }
 
-        char const *dest = res.sa.s + res.io.fdout.destination ;
+        resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+        resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+        uint8_t io_ok = res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0 ;
 
-        if (!res.islog && res.io.fdout.type == E_PARSER_IO_TYPE_66LOG && scan_mode(dest, S_IFDIR) == 1) {
+        char const *dest = io_ok ? io.sa.s + io.fdout.destination ;
+
+        if (io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_66LOG && scan_mode(dest, S_IFDIR) == 1) {
 
             src[n] = (log_source_t)LOG_SOURCE_ZERO ;
             if (!log_source_logdir(&src[n], name, dest))
@@ -134,7 +138,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
 
             n++ ;
 
-        } else if (!res.islog && res.io.fdout.type == E_PARSER_IO_TYPE_FILE && scan_mode(dest, S_IFREG) == 1) {
+        } else if (io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_FILE && scan_mode(dest, S_IFREG) == 1) {
 
             src[n] = (log_source_t)LOG_SOURCE_ZERO ;
             if (!log_source_file(&src[n], name, dest))
@@ -143,6 +147,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
             n++ ;
         }
 
+        resolve_free(wio) ;
         resolve_free(wres) ;
     }
 
@@ -201,20 +206,28 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
 
     *src = (log_source_t)LOG_SOURCE_ZERO ;
 
-    char const *dest = res.sa.s + res.io.fdout.destination ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
+        resolve_free(wio) ;
+        log_die(LOG_EXIT_USER, "service has no readable log: ", name) ;
+    }
 
-    if (res.io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
+    char const *dest = io.sa.s + io.fdout.destination ;
+
+    if (io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
         if (!log_source_logdir(&src[0], name, dest))
             log_dieusys(LOG_EXIT_SYS, "read log directory of: ", name) ;
 
-    } else if (res.io.fdout.type == E_PARSER_IO_TYPE_FILE) {
+    } else if (io.fdout.type == E_PARSER_IO_TYPE_FILE) {
 
         if (!log_source_file(&src[0], name, dest))
             log_dieusys(LOG_EXIT_SYS, "read log file of: ", name) ;
 
     } else log_die(LOG_EXIT_USER, "service has no readable log: ", name) ;
 
+    resolve_free(wio) ;
     resolve_free(wres) ;
 
     *nsrc = 1 ;
@@ -241,14 +254,23 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
     if (!r)
         log_die(LOG_EXIT_USER, "unknown service: ", target) ;
 
-    if (res.io.fdout.type != E_PARSER_IO_TYPE_66LOG && res.io.fdout.type != E_PARSER_IO_TYPE_FILE)
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
+        resolve_free(wio) ;
+        log_die(LOG_EXIT_USER, "service has no readable log: ", target) ;
+    }
+
+    if (io.fdout.type != E_PARSER_IO_TYPE_66LOG && io.fdout.type != E_PARSER_IO_TYPE_FILE)
         log_die(LOG_EXIT_USER, "service has no readable log: ", target) ;
 
-    uint8_t is_logdir = res.io.fdout.type == E_PARSER_IO_TYPE_66LOG ? 1 : 0 ;
 
-    char dest[strlen(res.sa.s + res.io.fdout.destination) + 1] ;
-    auto_strings(dest, res.sa.s + res.io.fdout.destination) ;
+    uint8_t is_logdir = io.fdout.type == E_PARSER_IO_TYPE_66LOG ? 1 : 0 ;
 
+    char dest[strlen(io.sa.s + io.fdout.destination) + 1] ;
+    auto_strings(dest, io.sa.s + io.fdout.destination) ;
+
+    resolve_free(wio) ;
     resolve_free(wres) ;
 
     return log_follow(target, dest, is_logdir, 0, re) ;

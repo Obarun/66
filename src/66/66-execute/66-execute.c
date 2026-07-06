@@ -297,18 +297,18 @@ static void io_open_syslog(int fd)
     errno = e ;
 }
 
-static void io_setup_stdin(resolve_service_t *res)
+static void io_setup_stdin(resolve_service_t *res, resolve_service_addon_io_t *io)
 {
     log_flow() ;
 
-    switch(res->io.fdin.type) {
+    switch(io->fdin.type) {
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal_ncontrol(0, res->sa.s + res->io.fdin.destination, O_RDWR | O_NOCTTY) ;
+            io_open_terminal_ncontrol(0, io->sa.s + io->fdin.destination, O_RDWR | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(0, res->sa.s +  res->io.fdin.destination, O_RDONLY | O_NOCTTY, 0) ;
+            io_open_destination(0, res->sa.s +  io->fdin.destination, O_RDONLY | O_NOCTTY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_CLOSE:
@@ -334,11 +334,11 @@ static void io_setup_stdin(resolve_service_t *res)
     }
 }
 
-static void io_setup_stdout(resolve_service_t *res)
+static void io_setup_stdout(resolve_service_t *res, resolve_service_addon_io_t *io)
 {
     log_flow() ;
 
-    switch(res->io.fdout.type) {
+    switch(io->fdout.type) {
 
         case E_PARSER_IO_TYPE_CONSOLE:
             io_open_active_console(1) ;
@@ -352,24 +352,24 @@ static void io_setup_stdout(resolve_service_t *res)
 
             } else if (res->type == E_PARSER_TYPE_ONESHOT) {
 
-                char stk[strlen(res->sa.s + res->io.fdout.destination) + SS_CURRENT_LEN + 2] ;
-                auto_strings(stk, res->sa.s + res->io.fdout.destination, "/", SS_CURRENT) ;
-                stk[strlen(res->sa.s + res->io.fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
+                char stk[strlen(io->sa.s + io->fdout.destination) + SS_CURRENT_LEN + 2] ;
+                auto_strings(stk, io->sa.s + io->fdout.destination, "/", SS_CURRENT) ;
+                stk[strlen(io->sa.s + io->fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
 
                 io_open_file(res, 1, stk) ;
             }
             break ;
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal(1, res->sa.s + res->io.fdout.destination, O_WRONLY | O_NOCTTY) ;
+            io_open_terminal(1, io->sa.s + io->fdout.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(1, res->sa.s + res->io.fdout.destination, O_WRONLY, 0) ;
+            io_open_destination(1, io->sa.s + io->fdout.destination, O_WRONLY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_FILE:
-            io_open_file(res, 1, res->sa.s + res->io.fdout.destination) ;
+            io_open_file(res, 1, io->sa.s + io->fdout.destination) ;
             break ;
 
         case E_PARSER_IO_TYPE_SYSLOG:
@@ -394,26 +394,26 @@ static void io_setup_stdout(resolve_service_t *res)
     }
 }
 
-static void io_setup_stderr(resolve_service_t *res)
+static void io_setup_stderr(resolve_service_t *res, resolve_service_addon_io_t *io)
 {
     log_flow() ;
 
-    switch(res->io.fderr.type) {
+    switch(io->fderr.type) {
 
         case E_PARSER_IO_TYPE_CONSOLE:
             io_open_active_console(2) ;
             break ;
 
         case E_PARSER_IO_TYPE_TTY:
-            io_open_terminal(2, res->sa.s + res->io.fderr.destination, O_WRONLY | O_NOCTTY) ;
+            io_open_terminal(2, io->sa.s + io->fderr.destination, O_WRONLY | O_NOCTTY) ;
             break ;
 
         case E_PARSER_IO_TYPE_NULL:
-            io_open_destination(2, res->sa.s + res->io.fdout.destination, O_WRONLY, 0) ;
+            io_open_destination(2, io->sa.s + io->fdout.destination, O_WRONLY, 0) ;
             break ;
 
         case E_PARSER_IO_TYPE_FILE:
-            io_open_file(res, 2, res->sa.s + res->io.fderr.destination) ;
+            io_open_file(res, 2, io->sa.s + io->fderr.destination) ;
             break ;
 
         case E_PARSER_IO_TYPE_SYSLOG:
@@ -539,9 +539,16 @@ static void execute_io(resolve_service_t *res)
 {
     log_flow() ;
 
-    io_setup_stdin(res) ;
-    io_setup_stdout(res) ;
-    io_setup_stderr(res) ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    if (!res->has_io || resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "read io addon of: ", res->sa.s + res->name) ;
+
+    io_setup_stdin(res, &io) ;
+    io_setup_stdout(res, &io) ;
+    io_setup_stderr(res, &io) ;
+
+    resolve_free(w) ;
 }
 
 static void execute_uidgid(resolve_service_t *res)

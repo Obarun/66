@@ -363,15 +363,28 @@ static void migrate_frontend_file_0721(const char *file, ssexec_t *info)
     }
 
     {
-        resolve_enum_table_t table = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
-        table.u.parser.id = E_PARSER_SECTION_LOGGER_DESTINATION ;
+        /* Destination is no longer a parser key (removed after being deprecated
+         * since 0.8.0.0): extract its value from the raw frontend text and
+         * convert the 0.7.2.1 field to StdOut=66log:<path>. */
+        char *p = strstr(frontend.s, "Destination") ;
+        char *eq = p ? strchr(p, '=') : 0 ;
+        char *nl = p ? strchr(p, '\n') : 0 ;
 
-        _alloc_sbl_(store, frontend.len + 1) ;
-        int r = parse_get_value_of_key(&store, frontend.s, table) ;
-        if (r) {
-            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=66log:", store.s) ;
-            char stdout[store.len + sizeof("StdOut=66log:") + sizeof("\n\n[Start]")] ;
-            auto_strings(stdout, "StdOut=66log:", store.s, "\n\n[Start]") ;
+        if (eq && (!nl || eq < nl)) {
+
+            eq++ ;
+            while (*eq == ' ' || *eq == '\t') eq++ ;
+            size_t vlen = 0 ;
+            while (eq[vlen] && eq[vlen] != '\n' && eq[vlen] != '\r') vlen++ ;
+            while (vlen && (eq[vlen - 1] == ' ' || eq[vlen - 1] == '\t')) vlen-- ;
+
+            char value[vlen + 1] ;
+            memcpy(value, eq, vlen) ;
+            value[vlen] = 0 ;
+
+            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=66log:", value) ;
+            char stdout[vlen + sizeof("StdOut=66log:") + sizeof("\n\n[Start]")] ;
+            auto_strings(stdout, "StdOut=66log:", value, "\n\n[Start]") ;
             if (!sbl_replace(&frontend, "\n[Start]", stdout))
                 log_die(LOG_EXIT_ZERO, "replace deprecated field Destination with: ", stdout) ;
 

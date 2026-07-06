@@ -68,6 +68,7 @@ void resolve_hash_free(hash_t *hash)
 		strbuf_free(&c->res.sa) ;
 		strbuf_free(&c->limit.sa) ;
 		strbuf_free(&c->environ.sa) ;
+		strbuf_free(&c->io.sa) ;
 		free(c) ;
 	}
 

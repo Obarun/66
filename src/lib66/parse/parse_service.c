@@ -368,6 +368,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                 free(wenv) ;
             }
 
+            if (c->res.has_io) {
+                char const *ioname = c->res.sa.s + c->res.name ;
+                char aname[strlen(ioname) + SS_ADDON_IO_SUFFIX_LEN + 1] ;
+                auto_strings(aname, ioname, SS_ADDON_IO_SUFFIX) ;
+                resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &c->io) ;
+                if (!resolve_write_at(wio, sa.s, aname)) {
+                    free(wio) ;
+                    log_dieusys(LOG_EXIT_SYS, "write io addon of: ", ioname) ;
+                }
+                free(wio) ;
+            }
+
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
             /** do not die here, just warn the user */

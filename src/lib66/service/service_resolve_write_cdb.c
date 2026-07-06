@@ -59,6 +59,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "islog", res->islog) ||
         !resolve_add_cdb_uint(c, "has_limit", res->has_limit) ||
         !resolve_add_cdb_uint(c, "has_environ", res->has_environ) ||
+        !resolve_add_cdb_uint(c, "has_io", res->has_io) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -135,15 +136,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "infiles", res->regex.infiles) ||
         !resolve_add_cdb_uint(c, "ndirectories", res->regex.ndirectories) ||
         !resolve_add_cdb_uint(c, "nfiles", res->regex.nfiles) ||
-        !resolve_add_cdb_uint(c, "ninfiles", res->regex.ninfiles) ||
-
-        // IO
-        !resolve_add_cdb_uint(c, "stdintype", res->io.fdin.type) ||
-        !resolve_add_cdb_uint(c, "stdindest", res->io.fdin.destination) ||
-        !resolve_add_cdb_uint(c, "stdouttype", res->io.fdout.type) ||
-        !resolve_add_cdb_uint(c, "stdoutdest", res->io.fdout.destination) ||
-        !resolve_add_cdb_uint(c, "stderrtype", res->io.fderr.type) ||
-        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination))
+        !resolve_add_cdb_uint(c, "ninfiles", res->regex.ninfiles))
             return 0 ;
 
     return 1 ;
@@ -198,6 +191,29 @@ int service_resolve_write_addon_environ_cdb(ocdbmaker *c, resolve_service_addon_
         !resolve_add_cdb_uint(c, "env_overwrite", e->env_overwrite) ||
         !resolve_add_cdb_uint(c, "importfile", e->importfile) ||
         !resolve_add_cdb_uint(c, "nimportfile", e->nimportfile))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_io_cdb(ocdbmaker *c, resolve_service_addon_io_t *io)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_IO, io) ;
+    io->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, io->sa.s, io->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", io->rversion) ||
+        !resolve_add_cdb_uint(c, "stdintype", io->fdin.type) ||
+        !resolve_add_cdb_uint(c, "stdindest", io->fdin.destination) ||
+        !resolve_add_cdb_uint(c, "stdouttype", io->fdout.type) ||
+        !resolve_add_cdb_uint(c, "stdoutdest", io->fdout.destination) ||
+        !resolve_add_cdb_uint(c, "stderrtype", io->fderr.type) ||
+        !resolve_add_cdb_uint(c, "stderrdest", io->fderr.destination))
             return 0 ;
 
     return 1 ;

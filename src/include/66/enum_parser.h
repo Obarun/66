@@ -121,7 +121,6 @@ typedef enum resolve_parser_enum_section_startstop_e resolve_parser_enum_section
     macro(BUILD,         "Build",           E_PARSER_EXPECT_LINE), \
     macro(RUNAS,         "RunAs",           E_PARSER_EXPECT_LINE), \
     macro(EXEC,          "Execute",         E_PARSER_EXPECT_BRACKET), \
-    macro(DESTINATION,   "Destination",     E_PARSER_EXPECT_SLASH), \
     macro(BACKUP,        "Backup",          E_PARSER_EXPECT_UINT), \
     macro(MAXSIZE,       "MaxSize",         E_PARSER_EXPECT_UINT), \
     macro(TIMESTAMP,     "Timestamp",       E_PARSER_EXPECT_LINE), \

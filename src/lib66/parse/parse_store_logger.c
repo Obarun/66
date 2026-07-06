@@ -82,16 +82,6 @@ int parse_store_logger(resolve_service_t *res, strbuf *store, resolve_enum_table
 
             break ;
 
-        case E_PARSER_SECTION_LOGGER_DESTINATION:
-
-            if (store->s[0] != '/')
-                parse_error_return(0, 4, table) ;
-
-            log_1_warn("Destination field is deprecated -- convert it automatically to StdOut=66log:", store->s) ;
-
-            res->io.fdout.destination = resolve_add_string(wres, store->s) ;
-
-           break ;
 
         case E_PARSER_SECTION_LOGGER_BACKUP:
 

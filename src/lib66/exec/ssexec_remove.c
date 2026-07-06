@@ -225,7 +225,12 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
     if (res->type == E_PARSER_TYPE_ONESHOT) {
 
-        auto_remove(res->sa.s + res->io.fdout.destination) ;
+        resolve_service_addon_io_t rio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+        resolve_wrapper_t_ref riow = resolve_set_struct(DATA_SERVICE_IO, &rio) ;
+        if (res->has_io && resolve_read(riow, res->sa.s + res->path.home, res->sa.s + res->name) > 0)
+            auto_remove(rio.sa.s + rio.fdout.destination) ;
+        resolve_free(riow) ;
+
         log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
         resolve_free(lwres) ;
         return ;
@@ -245,7 +250,13 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
     auto_remove(lres.sa.s + lres.path.servicedir) ;
 
-    auto_remove(lres.sa.s + lres.io.fdout.destination) ;
+    {
+        resolve_service_addon_io_t lio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+        resolve_wrapper_t_ref liow = resolve_set_struct(DATA_SERVICE_IO, &lio) ;
+        if (lres.has_io && resolve_read(liow, lres.sa.s + lres.path.home, lres.sa.s + lres.name) > 0)
+            auto_remove(lio.sa.s + lio.fdout.destination) ;
+        resolve_free(liow) ;
+    }
 
     tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
 

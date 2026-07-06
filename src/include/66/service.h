@@ -189,12 +189,16 @@ struct resolve_service_addon_io_type_s {
 typedef struct resolve_service_addon_io_s resolve_service_addon_io_t, *resolve_service_addon_io_t_ref ;
 struct resolve_service_addon_io_s
 {
+    strbuf sa ;
+    uint32_t rversion ;
+
     resolve_service_addon_io_type_t fdin ; // default close
     resolve_service_addon_io_type_t fdout ; // default 66-log
     resolve_service_addon_io_type_t fderr ; // default inherit
 } ;
 
 #define RESOLVE_SERVICE_ADDON_IO_ZERO { \
+    STRBUF_ZERO, 0, \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
     { E_PARSER_IO_TYPE_NOTSET, 0 } \
@@ -254,6 +258,7 @@ struct resolve_service_s
     // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists
     uint32_t has_limit ;
     uint32_t has_environ ;
+    uint32_t has_io ;
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
@@ -261,19 +266,17 @@ struct resolve_service_s
     resolve_service_addon_live_t live ;
     resolve_service_addon_logger_t logger ;
     resolve_service_addon_regex_t regex ;
-    resolve_service_addon_io_t io ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,5,30000,0,0,0,0,0,0,0,0,0,0, \
-                               0,0, \
+                               0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
                                RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LOGGER_ZERO, \
-                               RESOLVE_SERVICE_ADDON_REGEX_ZERO, \
-                               RESOLVE_SERVICE_ADDON_IO_ZERO }
+                               RESOLVE_SERVICE_ADDON_REGEX_ZERO }
 
 
 extern const resolve_service_t service_resolve_zero ;
@@ -284,11 +287,12 @@ struct resolve_hash_s {
 	resolve_service_t res ;
 	resolve_service_addon_limit_t limit ;
 	resolve_service_addon_environ_t environ ;
+	resolve_service_addon_io_t io ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -314,6 +318,11 @@ extern int service_resolve_read_addon_environ_cdb(ocdb *c, resolve_service_addon
 extern void service_resolve_sanitize_addon_environ(resolve_service_addon_environ_t *e) ;
 extern void service_resolve_modify_environ_field(resolve_service_addon_environ_t *e, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_environ_field(strbuf *sa, resolve_service_addon_environ_t *e, resolve_service_enum_table_t table) ;
+extern int service_resolve_write_addon_io_cdb(ocdbmaker *c, resolve_service_addon_io_t *io) ;
+extern int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t *io) ;
+extern void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io) ;
+extern void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_io_field(strbuf *sa, resolve_service_addon_io_t *io, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;

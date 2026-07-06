@@ -319,14 +319,28 @@ int parse_frontend(char const *sv,
 
     parse_compute_resolve(&res, info) ;
 
-    if ((res.logger.want && res.io.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
+    resolve_service_addon_io_t ioaddon = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    {
+        uint8_t has_io = 0 ;
+        if (!parse_io(&st, &res, &ioaddon, &has_io, info)) {
+            parse_store_free(&st) ;
+            log_die(LOG_EXIT_SYS, "parse io of service: ", svname) ;
+        }
+        res.has_io = has_io ;
+        /* logger "effective": keep want only if the resolved io is 66log-bound.
+         * The io machine no longer mutates logger.want -- the orchestrator does. */
+        if (res.logger.want && ioaddon.fdin.type != E_PARSER_IO_TYPE_66LOG && ioaddon.fdout.type != E_PARSER_IO_TYPE_66LOG)
+            res.logger.want = 0 ;
+    }
+
+    if ((res.logger.want && ioaddon.fdin.type == E_PARSER_IO_TYPE_66LOG) &&
         (!res.inns && res.type != E_PARSER_TYPE_MODULE)) {
 
         parse_validator_t validator ;
         if (!parse_validator_init(&validator, sa.s))
             log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", svname) ;
 
-        parse_create_logger(&validator, hres, &res, info) ;
+        parse_create_logger(&validator, hres, &res, &ioaddon, info) ;
     }
 
     resolve_service_addon_limit_t limitaddon = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
@@ -358,6 +372,11 @@ int parse_frontend(char const *sv,
         if (res.has_environ) {
             hash = resolve_hash_search(hres, name) ;
             hash->environ = environaddon ;
+        }
+
+        if (res.has_io) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->io = ioaddon ;
         }
     }
 

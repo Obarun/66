@@ -77,6 +77,8 @@
 #define SS_ADDON_LIMIT_SUFFIX_LEN (sizeof SS_ADDON_LIMIT_SUFFIX - 1)
 #define SS_ADDON_ENVIRON_SUFFIX ".environ"
 #define SS_ADDON_ENVIRON_SUFFIX_LEN (sizeof SS_ADDON_ENVIRON_SUFFIX - 1)
+#define SS_ADDON_IO_SUFFIX ".io"
+#define SS_ADDON_IO_SUFFIX_LEN (sizeof SS_ADDON_IO_SUFFIX - 1)
 
 #define SS_FDHOLDER "fdholder"
 #define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)

@@ -127,12 +127,12 @@ static info_field_t const fields[] = {
     { "nfiles",          INFO_FIELD_U32, offsetof(resolve_service_t, regex.nfiles) },
     { "ninfiles",        INFO_FIELD_U32, offsetof(resolve_service_t, regex.ninfiles) },
 
-    { "stdintype",       INFO_FIELD_U32, offsetof(resolve_service_t, io.fdin.type) },
-    { "stdindest",       INFO_FIELD_STR, offsetof(resolve_service_t, io.fdin.destination) },
-    { "stdouttype",      INFO_FIELD_U32, offsetof(resolve_service_t, io.fdout.type) },
-    { "stdoutdest",      INFO_FIELD_STR, offsetof(resolve_service_t, io.fdout.destination) },
-    { "stderrtype",      INFO_FIELD_U32, offsetof(resolve_service_t, io.fderr.type) },
-    { "stderrdest",      INFO_FIELD_STR, offsetof(resolve_service_t, io.fderr.destination) },
+    { "stdintype",       INFO_FIELD_U32, offsetof(resolve_service_addon_io_t, fdin.type),         DATA_SERVICE_IO },
+    { "stdindest",       INFO_FIELD_STR, offsetof(resolve_service_addon_io_t, fdin.destination),  DATA_SERVICE_IO },
+    { "stdouttype",      INFO_FIELD_U32, offsetof(resolve_service_addon_io_t, fdout.type),        DATA_SERVICE_IO },
+    { "stdoutdest",      INFO_FIELD_STR, offsetof(resolve_service_addon_io_t, fdout.destination), DATA_SERVICE_IO },
+    { "stderrtype",      INFO_FIELD_U32, offsetof(resolve_service_addon_io_t, fderr.type),        DATA_SERVICE_IO },
+    { "stderrdest",      INFO_FIELD_STR, offsetof(resolve_service_addon_io_t, fderr.destination), DATA_SERVICE_IO },
 
     { "limitas",         INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitas),        DATA_SERVICE_LIMIT },
     { "limitcore",       INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitcore),      DATA_SERVICE_LIMIT },
@@ -240,7 +240,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     /* addons a field may live in, indexed by addon id; loaded on demand */
     resolve_service_addon_limit_t limit = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    info_addon_t addons[DATA_SERVICE_ENVIRON + 1] = {{0,0}} ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    info_addon_t addons[DATA_SERVICE_IO + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -254,10 +255,17 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_ENVIRON].blob = environ.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_ENVIRON + 1) ;
+    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    if (res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_IO].base = &io ;
+        addons[DATA_SERVICE_IO].blob = io.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_IO + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
+    resolve_free(wio) ;
     resolve_free(wres) ;
 
     return 0 ;

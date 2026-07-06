@@ -80,6 +80,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "islog", &res->islog) ||
         !resolve_get_key(c, "has_limit", &res->has_limit) ||
         !resolve_get_key(c, "has_environ", &res->has_environ) ||
+        !resolve_get_key(c, "has_io", &res->has_io) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -156,15 +157,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "infiles", &res->regex.infiles) ||
         !resolve_get_key(c, "ndirectories", &res->regex.ndirectories) ||
         !resolve_get_key(c, "nfiles", &res->regex.nfiles) ||
-        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles) ||
-
-    /* io */
-        !resolve_get_key(c, "stdintype", &res->io.fdin.type) ||
-        !resolve_get_key(c, "stdindest", &res->io.fdin.destination) ||
-        !resolve_get_key(c, "stdouttype", &res->io.fdout.type) ||
-        !resolve_get_key(c, "stdoutdest", &res->io.fdout.destination) ||
-        !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
-        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
+        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles)) {
             return (errno = EINVAL, 0)  ;
     }
 
@@ -213,6 +206,25 @@ int service_resolve_read_addon_environ_cdb(ocdb *c, resolve_service_addon_enviro
         !resolve_get_key(c, "env_overwrite", &e->env_overwrite) ||
         !resolve_get_key(c, "importfile", &e->importfile) ||
         !resolve_get_key(c, "nimportfile", &e->nimportfile))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t *io)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&io->sa, c) <= 0 || !io->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &io->rversion) ||
+        !resolve_get_key(c, "stdintype", &io->fdin.type) ||
+        !resolve_get_key(c, "stdindest", &io->fdin.destination) ||
+        !resolve_get_key(c, "stdouttype", &io->fdout.type) ||
+        !resolve_get_key(c, "stdoutdest", &io->fdout.destination) ||
+        !resolve_get_key(c, "stderrtype", &io->fderr.type) ||
+        !resolve_get_key(c, "stderrdest", &io->fderr.destination))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

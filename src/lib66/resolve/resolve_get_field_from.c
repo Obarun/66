@@ -43,6 +43,12 @@ int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_
 
         return service_resolve_get_environ_field(sa, e, table.u.service) ;
 
+    } else if (wres->type == DATA_SERVICE_IO) {
+
+        resolve_service_addon_io_t *io = (resolve_service_addon_io_t *)wres->obj ;
+
+        return service_resolve_get_io_field(sa, io, table.u.service) ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

@@ -58,6 +58,16 @@ int resolve_modify_field_by(resolve_wrapper_t_ref wres, resolve_enum_table_t tab
 
         return 1 ;
 
+    } else if (wres->type == DATA_SERVICE_IO) {
+
+        resolve_service_addon_io_t *io = (resolve_service_addon_io_t *)wres->obj ;
+
+        log_trace("store io field ", list->name[table.u.service.id], " with value: ", by) ;
+
+        service_resolve_modify_io_field(io, table.u.service, by) ;
+
+        return 1 ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

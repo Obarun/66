@@ -522,53 +522,6 @@ static int get_regex(strbuf *sa, resolve_service_t *res, resolve_service_enum_re
     return e ;
 }
 
-static int get_io(strbuf *sa, resolve_service_t *res, resolve_service_enum_limit_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_IO_STDIN:
-            fmt[u32_fmt(fmt,res->io.fdin.type)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDINDEST:
-            str = res->sa.s + res->io.fdin.destination ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDOUT:
-            fmt[u32_fmt(fmt,res->io.fdout.type)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDOUTDEST:
-            str = res->sa.s + res->io.fdout.destination ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDERR:
-            fmt[u32_fmt(fmt,res->io.fderr.type)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDERRDEST:
-            str = res->sa.s + res->io.fderr.destination ;
-            break ;
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
 
 int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table)
 {
@@ -596,9 +549,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:
             return get_regex(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_IO:
-            return get_io(sa, res, table.id) ;
 
         default:
             return 0 ;

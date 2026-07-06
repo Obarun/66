@@ -162,7 +162,7 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
     return 1 ;
 }
 
-void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_t_0811 *old)
+void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_t_0811 *old)
 {
     log_flow() ;
 
@@ -267,12 +267,19 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon
     new->regex.ninfiles = old->regex.ninfiles ;
 
     // io
-    new->io.fdin.type = old->io.fdin.type ;
-    new->io.fdin.destination = old->io.fdin.destination ? resolve_add_string(wres, old->sa.s + old->io.fdin.destination) : 0 ;
-    new->io.fdout.type = old->io.fdout.type ;
-    new->io.fdout.destination = old->io.fdout.destination ? resolve_add_string(wres, old->sa.s + old->io.fdout.destination) : 0 ;
-    new->io.fderr.type = old->io.fderr.type ;
-    new->io.fderr.destination = old->io.fderr.destination ? resolve_add_string(wres, old->sa.s + old->io.fderr.destination) : 0 ;
+    // io -> autonomous addon (always present)
+    new->has_io = 1 ;
+    {
+        resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, io) ;
+        resolve_init(iowres) ;
+        io->fdin.type = old->io.fdin.type ;
+        io->fdin.destination = old->io.fdin.destination ? resolve_add_string(iowres, old->sa.s + old->io.fdin.destination) : 0 ;
+        io->fdout.type = old->io.fdout.type ;
+        io->fdout.destination = old->io.fdout.destination ? resolve_add_string(iowres, old->sa.s + old->io.fdout.destination) : 0 ;
+        io->fderr.type = old->io.fderr.type ;
+        io->fderr.destination = old->io.fderr.destination ? resolve_add_string(iowres, old->sa.s + old->io.fderr.destination) : 0 ;
+        free(iowres) ;
+    }
 
     free(wres) ;
 }
@@ -292,9 +299,10 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of service: ", name) ;
 
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    service_resolve_sanitize_0811(&new, &environ, &res) ;
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    service_resolve_sanitize_0811(&new, &environ, &io, &res) ;
 
-    migrate_ensure_log_owner(&new) ;
+    migrate_ensure_log_owner(&new, &io) ;
 
     if (!resolve_write(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
@@ -306,6 +314,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write environ addon of service: ", name) ;
         }
         resolve_free(we) ;
+    }
+
+    if (new.has_io) {
+        resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+        if (!resolve_write(wio, info->base.s, name)) {
+            resolve_free(wio) ;
+            log_dieusys(LOG_EXIT_SYS, "write io addon of service: ", name) ;
+        }
+        resolve_free(wio) ;
     }
 
     resolve_free(wres) ;

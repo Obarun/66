@@ -92,8 +92,6 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
         log_warn("key Version at section [Main] was not set -- define it to: ", SS_VERSION) ;
     }
 
-    parse_io_resolve(res, info) ;
-
     switch (res->type) {
 
         case E_PARSER_TYPE_CLASSIC:

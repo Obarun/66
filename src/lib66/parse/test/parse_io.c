@@ -13,9 +13,9 @@
  */
 
 /* Locks the StdIn/StdOut/StdErr type resolution of parse_io_resolve() case by
- * case, so a rewrite can be proven behaviour-preserving. Expected values were
- * traced from the current machine, INCLUDING its :183 bug (case null_null_null,
- * out stays NULL); that one case flips when the bug is fixed. */
+ * case (now operating on the io addon). The machine no longer mutates
+ * logger.want -- the last column is the "logger effective" the orchestrator
+ * derives from the resolved io. The == -> = fix flips null_null_null. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -43,23 +43,38 @@ static ssexec_t info = SSEXEC_ZERO ;
 #define CL E_PARSER_IO_TYPE_CLOSE
 #define NS E_PARSER_IO_TYPE_NOTSET
 
+/* xwant is now the "logger effective" the orchestrator computes from the
+ * resolved io -- the machine itself no longer mutates logger.want. */
 static void io_case(char const *name, int want, int islog, int i, int o, int e,
                     int xi, int xo, int xe, int xwant)
 {
     printf("Running io_case %s...\n", name) ;
 
+    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    resolve_init(w) ;
+
     res.logger.want = want ;
     res.islog = islog ;
-    res.io.fdin.type = i ;  res.io.fdin.destination = 0 ;
-    res.io.fdout.type = o ; res.io.fdout.destination = 0 ;
-    res.io.fderr.type = e ; res.io.fderr.destination = 0 ;
+    io.fdin.type = i ;
+    io.fdout.type = o ;
+    io.fderr.type = e ;
 
-    parse_io_resolve(&res, &info) ;
+    parse_io_resolve(&res, &io, w, &info) ;
 
-    assert(res.io.fdin.type == (uint32_t)xi) ;
-    assert(res.io.fdout.type == (uint32_t)xo) ;
-    assert(res.io.fderr.type == (uint32_t)xe) ;
-    assert(res.logger.want == (uint32_t)xwant) ;
+    assert(io.fdin.type == (uint32_t)xi) ;
+    assert(io.fdout.type == (uint32_t)xo) ;
+    assert(io.fderr.type == (uint32_t)xe) ;
+
+    /* the machine leaves logger.want untouched */
+    assert(res.logger.want == (uint32_t)want) ;
+
+    /* logger effective (as parse_frontend derives it from the resolved io) */
+    int eff = res.logger.want && (io.fdin.type == LG || io.fdout.type == LG) ;
+    assert(eff == xwant) ;
+
+    free(w) ;
+    strbuf_free(&io.sa) ;
 }
 
 int main(void)
@@ -94,9 +109,9 @@ int main(void)
     io_case("out_syslog",      1, 0, NS, SY, NS,  PA, SY, SY, 0) ;
     io_case("all_file",        1, 0, FI, FI, FI,  FI, FI, IN, 0) ;
 
-    /* :183 bug -- current behaviour: out stays NULL, err collapses to INHERIT.
-     * When the bug is fixed this becomes NU / IN / NU. */
-    io_case("null_null_null",  1, 0, NU, NU, NU,  NU, NU, IN, 0) ;
+    /* the == -> = fix: out=NULL & in=NULL now collapses out to INHERIT (was the
+     * old no-op that left out=NULL). */
+    io_case("null_null_null",  1, 0, NU, NU, NU,  NU, IN, NU, 0) ;
 
     free(wres) ;
 

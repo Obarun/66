@@ -390,7 +390,6 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_LOGGER_BUILD == (m)++);
     assert(E_PARSER_SECTION_LOGGER_RUNAS == (m)++);
     assert(E_PARSER_SECTION_LOGGER_EXEC == (m)++);
-    assert(E_PARSER_SECTION_LOGGER_DESTINATION == (m)++);
     assert(E_PARSER_SECTION_LOGGER_BACKUP == (m)++);
     assert(E_PARSER_SECTION_LOGGER_MAXSIZE == (m)++);
     assert(E_PARSER_SECTION_LOGGER_TIMESTAMP == (m)++);
@@ -775,7 +774,7 @@ void test_parser_lists(void) {
         assert(enum_list_parser_section_logger[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_logger[i].name, enum_str_parser_section_logger[i]) == 0);
         int expected_values[] = {
-            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_SLASH,
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_UINT,
             E_PARSER_EXPECT_UINT
         };

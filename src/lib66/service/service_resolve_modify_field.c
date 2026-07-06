@@ -451,44 +451,6 @@ static void modify_regex(resolve_service_t *res, char const *data, uint32_t fiel
     free(wres) ;
 }
 
-static void modify_io(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_IO_STDIN:
-            res->io.fdin.type = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDINDEST:
-            res->io.fdin.destination = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDOUT:
-            res->io.fdout.type = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDOUTDEST:
-            res->io.fdout.destination = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDERR:
-            res->io.fderr.type = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_IO_STDERRDEST:
-            res->io.fderr.destination = resolve_add_uint32(data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
 
 
 void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data)
@@ -523,10 +485,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_REGEX:
             modify_regex(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_IO:
-            modify_io(res, data, table.id) ;
             break ;
 
         default:
