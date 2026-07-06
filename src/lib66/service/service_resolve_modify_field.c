@@ -50,18 +50,6 @@ static void modify_config(resolve_service_t *res, char const *data, uint32_t fie
             res->type = resolve_add_uint32(data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_CONFIG_NOTIFY:
-            res->notify = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CONFIG_MAXDEATH:
-            res->maxdeath = resolve_add_uint32(data) ; ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME:
-            res->maxdeathtime = resolve_add_uint32(data) ;
-            break ;
-
         case E_RESOLVE_SERVICE_CONFIG_EARLIER:
             res->earlier = resolve_add_uint32(data) ; ;
             break ;
@@ -199,101 +187,6 @@ static void modify_deps(resolve_service_t *res, char const *data, uint32_t field
     free(wres) ;
 }
 
-static void modify_execute(resolve_service_t *res, char const *data, uint32_t field)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-
-    switch (field) {
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN:
-            res->execute.run.run = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_USER:
-            res->execute.run.run_user = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD:
-            res->execute.run.build = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS:
-            res->execute.run.runas = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH:
-            res->execute.finish.run = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_USER:
-            res->execute.finish.run_user = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD:
-            res->execute.finish.build = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS:
-            res->execute.finish.runas = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART:
-            res->execute.timeout.start = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP:
-            res->execute.timeout.stop = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_DOWN:
-            res->execute.down = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL:
-            res->execute.downsignal = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES:
-            res->execute.blockprivileges = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_UMASK:
-            res->execute.umask = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK:
-            res->execute.want_umask = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_NICE:
-            res->execute.nice = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_WANT_NICE:
-            res->execute.want_nice = resolve_add_uint32(data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
-            res->execute.chdir = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND:
-            res->execute.capsbound = resolve_add_string(wres, data) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT:
-            res->execute.capsambient = resolve_add_string(wres, data) ;
-            break ;
-
-        default:
-            break ;
-    }
-
-    free(wres) ;
-}
-
 static void modify_live(resolve_service_t *res, char const *data, uint32_t field)
 {
     log_flow() ;
@@ -410,10 +303,6 @@ void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_t
 
         case E_RESOLVE_SERVICE_CATEGORY_DEPS:
             modify_deps(res, data, table.id) ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_EXECUTE:
-            modify_execute(res, data, table.id) ;
             break ;
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:

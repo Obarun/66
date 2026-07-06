@@ -18,12 +18,12 @@
 #include <stdint.h>
 #include <66/service.h>
 
-extern void write_services(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
-extern void write_classic(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
-extern void write_oneshot(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
-extern void write_logger(resolve_service_t *res, char const *dst, uint8_t force) ;
+extern void write_services(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
+extern void write_classic(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
+extern void write_oneshot(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
+extern void write_logger(resolve_service_t *res, resolve_service_addon_execute_t *ex, char const *dst, uint8_t force) ;
 
-extern int write_common(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
+extern int write_common(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force) ;
 extern int write_execute_scripts(char const *file, char const *contents, char const *dst, char const *runas) ;
 extern int write_uint(char const *dst, char const *name, uint32_t ui) ;
 extern int write_environ(char const *name, char const *contents, char const *dst) ;

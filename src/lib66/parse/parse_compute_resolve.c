@@ -126,7 +126,7 @@ uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char c
 
 }
 
-void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
+void parse_compute_resolve(resolve_service_t *res, resolve_service_addon_execute_t *ex, ssexec_t *info)
 {
     log_flow() ;
 
@@ -167,7 +167,7 @@ void parse_compute_resolve(resolve_service_t *res, ssexec_t *info)
     /* oneshotd */
     res->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
 
-    parse_compute_scripts(res) ;
+    parse_compute_scripts(res, ex) ;
 
     free(wres) ;
 }

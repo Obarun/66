@@ -44,9 +44,6 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "description", res->description) ||
         !resolve_add_cdb_uint(c, "version", res->version) ||
         !resolve_add_cdb_uint(c, "type", res->type) ||
-        !resolve_add_cdb_uint(c, "notify", res->notify) ||
-        !resolve_add_cdb_uint(c, "maxdeath", res->maxdeath) ||
-        !resolve_add_cdb_uint(c, "maxdeathtime", res->maxdeathtime) ||
         !resolve_add_cdb_uint(c, "earlier", res->earlier) ||
         !resolve_add_cdb_uint(c, "copyfrom", res->copyfrom) ||
         !resolve_add_cdb_uint(c, "intree", res->intree) ||
@@ -61,6 +58,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "has_environ", res->has_environ) ||
         !resolve_add_cdb_uint(c, "has_io", res->has_io) ||
         !resolve_add_cdb_uint(c, "has_logger", res->has_logger) ||
+        !resolve_add_cdb_uint(c, "has_execute", res->has_execute) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -80,30 +78,6 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "ncontents", res->dependencies.ncontents) ||
         !resolve_add_cdb_uint(c, "nprovide", res->dependencies.nprovide) ||
         !resolve_add_cdb_uint(c, "nconflict", res->dependencies.nconflict) ||
-
-        // execute
-        !resolve_add_cdb_uint(c, "run", res->execute.run.run) ||
-        !resolve_add_cdb_uint(c, "run_user", res->execute.run.run_user) ||
-        !resolve_add_cdb_uint(c, "run_build", res->execute.run.build) ||
-        !resolve_add_cdb_uint(c, "run_runas", res->execute.run.runas) ||
-        !resolve_add_cdb_uint(c, "finish", res->execute.finish.run) ||
-        !resolve_add_cdb_uint(c, "finish_user", res->execute.finish.run_user) ||
-        !resolve_add_cdb_uint(c, "finish_build", res->execute.finish.build) ||
-        !resolve_add_cdb_uint(c, "finish_runas", res->execute.finish.runas) ||
-        !resolve_add_cdb_uint(c, "timeoutstart", res->execute.timeout.start) ||
-        !resolve_add_cdb_uint(c, "timeoutstop", res->execute.timeout.stop) ||
-        !resolve_add_cdb_uint(c, "down", res->execute.down) ||
-        !resolve_add_cdb_uint(c, "downsignal", res->execute.downsignal) ||
-        !resolve_add_cdb_uint(c, "blockprivileges", res->execute.blockprivileges) ||
-        !resolve_add_cdb_uint(c, "umask", res->execute.umask) ||
-        !resolve_add_cdb_uint(c, "want_umask", res->execute.want_umask) ||
-        !resolve_add_cdb_uint(c, "nice", res->execute.nice) ||
-        !resolve_add_cdb_uint(c, "want_nice", res->execute.want_nice) ||
-        !resolve_add_cdb_uint(c, "chdir", res->execute.chdir) ||
-        !resolve_add_cdb_uint(c, "capsbound", res->execute.capsbound) ||
-        !resolve_add_cdb_uint(c, "capsambient", res->execute.capsambient) ||
-        !resolve_add_cdb_uint(c, "ncapsbound", res->execute.ncapsbound) ||
-        !resolve_add_cdb_uint(c, "ncapsambient", res->execute.ncapsambient) ||
 
         //live
         !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||
@@ -228,6 +202,48 @@ int service_resolve_write_addon_logger_cdb(ocdbmaker *c, resolve_service_addon_l
         !resolve_add_cdb_uint(c, "logrun_runas", lg->execute.run.runas) ||
         !resolve_add_cdb_uint(c, "logtimeoutstart", lg->execute.timeout.start) ||
         !resolve_add_cdb_uint(c, "logtimeoutstop", lg->execute.timeout.stop))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_execute_cdb(ocdbmaker *c, resolve_service_addon_execute_t *ex)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    ex->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, ex->sa.s, ex->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", ex->rversion) ||
+        !resolve_add_cdb_uint(c, "notify", ex->notify) ||
+        !resolve_add_cdb_uint(c, "maxdeath", ex->maxdeath) ||
+        !resolve_add_cdb_uint(c, "maxdeathtime", ex->maxdeathtime) ||
+        !resolve_add_cdb_uint(c, "run", ex->run.run) ||
+        !resolve_add_cdb_uint(c, "run_user", ex->run.run_user) ||
+        !resolve_add_cdb_uint(c, "run_build", ex->run.build) ||
+        !resolve_add_cdb_uint(c, "run_runas", ex->run.runas) ||
+        !resolve_add_cdb_uint(c, "finish", ex->finish.run) ||
+        !resolve_add_cdb_uint(c, "finish_user", ex->finish.run_user) ||
+        !resolve_add_cdb_uint(c, "finish_build", ex->finish.build) ||
+        !resolve_add_cdb_uint(c, "finish_runas", ex->finish.runas) ||
+        !resolve_add_cdb_uint(c, "timeoutstart", ex->timeout.start) ||
+        !resolve_add_cdb_uint(c, "timeoutstop", ex->timeout.stop) ||
+        !resolve_add_cdb_uint(c, "down", ex->down) ||
+        !resolve_add_cdb_uint(c, "downsignal", ex->downsignal) ||
+        !resolve_add_cdb_uint(c, "blockprivileges", ex->blockprivileges) ||
+        !resolve_add_cdb_uint(c, "umask", ex->umask) ||
+        !resolve_add_cdb_uint(c, "want_umask", ex->want_umask) ||
+        !resolve_add_cdb_uint(c, "nice", ex->nice) ||
+        !resolve_add_cdb_uint(c, "want_nice", ex->want_nice) ||
+        !resolve_add_cdb_uint(c, "chdir", ex->chdir) ||
+        !resolve_add_cdb_uint(c, "capsbound", ex->capsbound) ||
+        !resolve_add_cdb_uint(c, "capsambient", ex->capsambient) ||
+        !resolve_add_cdb_uint(c, "ncapsbound", ex->ncapsbound) ||
+        !resolve_add_cdb_uint(c, "ncapsambient", ex->ncapsambient))
             return 0 ;
 
     return 1 ;

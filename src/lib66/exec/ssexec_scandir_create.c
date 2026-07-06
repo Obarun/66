@@ -138,12 +138,16 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     log_flow() ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
     resolve_init(wres) ;
+    resolve_init(wex) ;
 
     res.name = resolve_add_string(wres, name) ;
     res.type = E_PARSER_TYPE_CLASSIC ;
-    res.notify = notify ;
+    res.has_execute = 1 ;
+    ex.notify = notify ;
 
     /* resolve_write_cdb only copies the cdb into <dir>/.resolve/ -- it does not
      * create that directory, so make it first. */
@@ -155,7 +159,15 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     if (!resolve_write_at(wres, dir, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve of: ", name) ;
 
+    {
+        char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+        auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
+        if (!resolve_write_at(wex, dir, aname))
+            log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
+    }
+
     resolve_free(wres) ;
+    resolve_free(wex) ;
 }
 
 inline static void auto_fifo(char const *str)

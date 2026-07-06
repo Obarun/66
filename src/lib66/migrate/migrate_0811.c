@@ -162,7 +162,7 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
     return 1 ;
 }
 
-void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_t_0811 *old)
+void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_t_0811 *old)
 {
     log_flow() ;
 
@@ -175,8 +175,6 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon
     new->description = old->description ? resolve_add_string(wres, old->sa.s + old->description) : 0 ;
     new->version = old->version ? resolve_add_string(wres, old->sa.s + old->version) : 0 ;
     new->type = old->type ;
-    new->notify = old->notify ;
-    new->maxdeath = old->maxdeath ;
     new->earlier = old->earlier ;
     new->copyfrom = old->copyfrom ? resolve_add_string(wres, old->sa.s + old->copyfrom) : 0 ;
     new->intree = old->intree ? resolve_add_string(wres, old->sa.s + old->intree) : 0 ;
@@ -205,19 +203,27 @@ void service_resolve_sanitize_0811(resolve_service_t *new, resolve_service_addon
     new->dependencies.ncontents = old->dependencies.ncontents ;
     new->dependencies.nprovide = old->dependencies.nprovide ;
 
-    // execute
-    new->execute.run.run = old->execute.run.run ? resolve_add_string(wres, old->sa.s + old->execute.run.run) : 0 ;
-    new->execute.run.run_user = old->execute.run.run_user ? resolve_add_string(wres, old->sa.s + old->execute.run.run_user) : 0 ;
-    new->execute.run.build = old->execute.run.build ? resolve_add_string(wres, old->sa.s + old->execute.run.build) : 0 ;
-    new->execute.run.runas = old->execute.run.runas ? resolve_add_string(wres, old->sa.s + old->execute.run.runas) : 0 ;
-    new->execute.finish.run = old->execute.finish.run ? resolve_add_string(wres, old->sa.s + old->execute.finish.run) : 0 ;
-    new->execute.finish.run_user = old->execute.finish.run_user ? resolve_add_string(wres, old->sa.s + old->execute.finish.run_user) : 0 ;
-    new->execute.finish.build = old->execute.finish.build ? resolve_add_string(wres, old->sa.s + old->execute.finish.build) : 0 ;
-    new->execute.finish.runas = old->execute.finish.runas ? resolve_add_string(wres, old->sa.s + old->execute.finish.runas) : 0 ;
-    new->execute.timeout.start = old->execute.timeout.start ;
-    new->execute.timeout.stop = old->execute.timeout.stop ;
-    new->execute.down = old->execute.down ;
-    new->execute.downsignal = old->execute.downsignal ;
+    // execute -> autonomous addon (notify/maxdeath/maxdeathtime relocated here)
+    new->has_execute = 1 ;
+    {
+        resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+        resolve_init(exwres) ;
+        ex->notify = old->notify ;
+        ex->maxdeath = old->maxdeath ;
+        ex->run.run = old->execute.run.run ? resolve_add_string(exwres, old->sa.s + old->execute.run.run) : 0 ;
+        ex->run.run_user = old->execute.run.run_user ? resolve_add_string(exwres, old->sa.s + old->execute.run.run_user) : 0 ;
+        ex->run.build = old->execute.run.build ? resolve_add_string(exwres, old->sa.s + old->execute.run.build) : 0 ;
+        ex->run.runas = old->execute.run.runas ? resolve_add_string(exwres, old->sa.s + old->execute.run.runas) : 0 ;
+        ex->finish.run = old->execute.finish.run ? resolve_add_string(exwres, old->sa.s + old->execute.finish.run) : 0 ;
+        ex->finish.run_user = old->execute.finish.run_user ? resolve_add_string(exwres, old->sa.s + old->execute.finish.run_user) : 0 ;
+        ex->finish.build = old->execute.finish.build ? resolve_add_string(exwres, old->sa.s + old->execute.finish.build) : 0 ;
+        ex->finish.runas = old->execute.finish.runas ? resolve_add_string(exwres, old->sa.s + old->execute.finish.runas) : 0 ;
+        ex->timeout.start = old->execute.timeout.start ;
+        ex->timeout.stop = old->execute.timeout.stop ;
+        ex->down = old->execute.down ;
+        ex->downsignal = old->execute.downsignal ;
+        free(exwres) ;
+    }
 
     // live
     new->live.livedir = old->live.livedir ? resolve_add_string(wres, old->sa.s + old->live.livedir) : 0 ;
@@ -306,7 +312,8 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
-    service_resolve_sanitize_0811(&new, &environ, &io, &logger, &res) ;
+    resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    service_resolve_sanitize_0811(&new, &environ, &io, &logger, &execute, &res) ;
 
     migrate_ensure_log_owner(&new, &io, &logger) ;
 
@@ -338,6 +345,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write logger addon of service: ", name) ;
         }
         resolve_free(wlg) ;
+    }
+
+    if (new.has_execute) {
+        resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &execute) ;
+        if (!resolve_write(wex, info->base.s, name)) {
+            resolve_free(wex) ;
+            log_dieusys(LOG_EXIT_SYS, "write execute addon of service: ", name) ;
+        }
+        resolve_free(wex) ;
     }
 
     resolve_free(wres) ;

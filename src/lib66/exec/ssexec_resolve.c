@@ -35,9 +35,6 @@ static info_field_t const fields[] = {
     { "description",     INFO_FIELD_STR, offsetof(resolve_service_t, description) },
     { "version",         INFO_FIELD_STR, offsetof(resolve_service_t, version) },
     { "type",            INFO_FIELD_U32, offsetof(resolve_service_t, type) },
-    { "notify",          INFO_FIELD_U32, offsetof(resolve_service_t, notify) },
-    { "maxdeath",        INFO_FIELD_U32, offsetof(resolve_service_t, maxdeath) },
-    { "maxdeathtime",    INFO_FIELD_U32, offsetof(resolve_service_t, maxdeathtime) },
     { "earlier",         INFO_FIELD_U32, offsetof(resolve_service_t, earlier) },
     { "copyfrom",        INFO_FIELD_STR, offsetof(resolve_service_t, copyfrom) },
     { "intree",          INFO_FIELD_STR, offsetof(resolve_service_t, intree) },
@@ -50,6 +47,7 @@ static info_field_t const fields[] = {
     { "islog",           INFO_FIELD_U32, offsetof(resolve_service_t, islog) },
     { "has_limit",       INFO_FIELD_U32, offsetof(resolve_service_t, has_limit) },
     { "has_logger",      INFO_FIELD_U32, offsetof(resolve_service_t, has_logger) },
+    { "has_execute",     INFO_FIELD_U32, offsetof(resolve_service_t, has_execute) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
@@ -68,28 +66,31 @@ static info_field_t const fields[] = {
     { "nprovide",        INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.nprovide) },
     { "nconflict",       INFO_FIELD_U32, offsetof(resolve_service_t, dependencies.nconflict) },
 
-    { "run",             INFO_FIELD_STR, offsetof(resolve_service_t, execute.run.run) },
-    { "run_user",        INFO_FIELD_STR, offsetof(resolve_service_t, execute.run.run_user) },
-    { "run_build",       INFO_FIELD_STR, offsetof(resolve_service_t, execute.run.build) },
-    { "run_runas",       INFO_FIELD_STR, offsetof(resolve_service_t, execute.run.runas) },
-    { "finish",          INFO_FIELD_STR, offsetof(resolve_service_t, execute.finish.run) },
-    { "finish_user",     INFO_FIELD_STR, offsetof(resolve_service_t, execute.finish.run_user) },
-    { "finish_build",    INFO_FIELD_STR, offsetof(resolve_service_t, execute.finish.build) },
-    { "finish_runas",    INFO_FIELD_STR, offsetof(resolve_service_t, execute.finish.runas) },
-    { "timeoutstart",    INFO_FIELD_U32, offsetof(resolve_service_t, execute.timeout.start) },
-    { "timeoutstop",     INFO_FIELD_U32, offsetof(resolve_service_t, execute.timeout.stop) },
-    { "down",            INFO_FIELD_U32, offsetof(resolve_service_t, execute.down) },
-    { "downsignal",      INFO_FIELD_U32, offsetof(resolve_service_t, execute.downsignal) },
-    { "blockprivileges", INFO_FIELD_U32, offsetof(resolve_service_t, execute.blockprivileges) },
-    { "umask",           INFO_FIELD_U32, offsetof(resolve_service_t, execute.umask) },
-    { "want_umask",      INFO_FIELD_U32, offsetof(resolve_service_t, execute.want_umask) },
-    { "nice",            INFO_FIELD_U32, offsetof(resolve_service_t, execute.nice) },
-    { "want_nice",       INFO_FIELD_U32, offsetof(resolve_service_t, execute.want_nice) },
-    { "chdir",           INFO_FIELD_STR, offsetof(resolve_service_t, execute.chdir) },
-    { "capsbound",       INFO_FIELD_STR, offsetof(resolve_service_t, execute.capsbound) },
-    { "capsambient",     INFO_FIELD_STR, offsetof(resolve_service_t, execute.capsambient) },
-    { "ncapsbound",      INFO_FIELD_U32, offsetof(resolve_service_t, execute.ncapsbound) },
-    { "ncapsambient",    INFO_FIELD_U32, offsetof(resolve_service_t, execute.ncapsambient) },
+    { "run",             INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.run),         DATA_SERVICE_EXECUTE },
+    { "run_user",        INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.run_user),    DATA_SERVICE_EXECUTE },
+    { "run_build",       INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.build),       DATA_SERVICE_EXECUTE },
+    { "run_runas",       INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, run.runas),       DATA_SERVICE_EXECUTE },
+    { "finish",          INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, finish.run),      DATA_SERVICE_EXECUTE },
+    { "finish_user",     INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, finish.run_user), DATA_SERVICE_EXECUTE },
+    { "finish_build",    INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, finish.build),    DATA_SERVICE_EXECUTE },
+    { "finish_runas",    INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, finish.runas),    DATA_SERVICE_EXECUTE },
+    { "timeoutstart",    INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, timeout.start),   DATA_SERVICE_EXECUTE },
+    { "timeoutstop",     INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, timeout.stop),    DATA_SERVICE_EXECUTE },
+    { "down",            INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, down),            DATA_SERVICE_EXECUTE },
+    { "downsignal",      INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, downsignal),      DATA_SERVICE_EXECUTE },
+    { "blockprivileges", INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, blockprivileges),DATA_SERVICE_EXECUTE },
+    { "umask",           INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, umask),           DATA_SERVICE_EXECUTE },
+    { "want_umask",      INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, want_umask),      DATA_SERVICE_EXECUTE },
+    { "nice",            INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, nice),            DATA_SERVICE_EXECUTE },
+    { "want_nice",       INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, want_nice),       DATA_SERVICE_EXECUTE },
+    { "chdir",           INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, chdir),           DATA_SERVICE_EXECUTE },
+    { "capsbound",       INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, capsbound),       DATA_SERVICE_EXECUTE },
+    { "capsambient",     INFO_FIELD_STR, offsetof(resolve_service_addon_execute_t, capsambient),     DATA_SERVICE_EXECUTE },
+    { "ncapsbound",      INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, ncapsbound),      DATA_SERVICE_EXECUTE },
+    { "ncapsambient",    INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, ncapsambient),    DATA_SERVICE_EXECUTE },
+    { "notify",          INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, notify),          DATA_SERVICE_EXECUTE },
+    { "maxdeath",        INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, maxdeath),        DATA_SERVICE_EXECUTE },
+    { "maxdeathtime",    INFO_FIELD_U32, offsetof(resolve_service_addon_execute_t, maxdeathtime),    DATA_SERVICE_EXECUTE },
 
     { "livedir",         INFO_FIELD_STR, offsetof(resolve_service_t, live.livedir) },
     { "status",          INFO_FIELD_STR, offsetof(resolve_service_t, live.status) },
@@ -241,7 +242,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
-    info_addon_t addons[DATA_SERVICE_LOGGER + 1] = {{0,0}} ;
+    resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    info_addon_t addons[DATA_SERVICE_EXECUTE + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -267,12 +269,19 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_LOGGER].blob = logger.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_LOGGER + 1) ;
+    resolve_wrapper_t_ref wexecute = resolve_set_struct(DATA_SERVICE_EXECUTE, &execute) ;
+    if (res.has_execute && resolve_read(wexecute, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_EXECUTE].base = &execute ;
+        addons[DATA_SERVICE_EXECUTE].blob = execute.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_EXECUTE + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
     resolve_free(wio) ;
     resolve_free(wlogger) ;
+    resolve_free(wexecute) ;
     resolve_free(wres) ;
 
     return 0 ;

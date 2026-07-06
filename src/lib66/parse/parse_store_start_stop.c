@@ -25,7 +25,7 @@
 #include <66/service.h>
 #include <66/enum_parser.h>
 
-int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
+int parse_store_start_stop(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -33,7 +33,7 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
         return 1 ;
 
     int e = 0 ;
-    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
     uint32_t kid = table.u.parser.id ;
     uint32_t sid = table.u.parser.sid ;
 
@@ -52,18 +52,18 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
                     goto err ;
 
                 if (sid == E_PARSER_SECTION_START)
-                    res->execute.run.runas = resolve_add_string(wres, tmp) ;
+                    ex->run.runas = resolve_add_string(wres, tmp) ;
                 else if (sid == E_PARSER_SECTION_STOP)
-                    res->execute.finish.runas = resolve_add_string(wres, tmp) ;
+                    ex->finish.runas = resolve_add_string(wres, tmp) ;
             }
             break ;
 
         case E_PARSER_SECTION_STARTSTOP_EXEC:
 
             if (sid == E_PARSER_SECTION_START)
-                res->execute.run.run_user = resolve_add_string(wres, store->s) ;
+                ex->run.run_user = resolve_add_string(wres, store->s) ;
             else if (sid == E_PARSER_SECTION_STOP)
-                res->execute.finish.run_user = resolve_add_string(wres, store->s) ;
+                ex->finish.run_user = resolve_add_string(wres, store->s) ;
             break ;
 
         case E_PARSER_SECTION_STARTSTOP_TIMESTART:
@@ -71,7 +71,7 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
             if (sid != E_PARSER_SECTION_START)
                 log_warn_return(LOG_EXIT_ZERO, "key TimeoutStart is only valid at section [Start]") ;
 
-            if (!u32_scan_strict(store->s, &res->execute.timeout.start))
+            if (!u32_scan_strict(store->s, &ex->timeout.start))
                 parse_error_return(0, 3, table) ;
 
             break ;
@@ -81,7 +81,7 @@ int parse_store_start_stop(resolve_service_t *res, strbuf *store, resolve_enum_t
             if (sid != E_PARSER_SECTION_STOP)
                 log_warn_return(LOG_EXIT_ZERO, "key TimeoutStop is only valid at section [Stop]") ;
 
-            if (!u32_scan_strict(store->s, &res->execute.timeout.stop))
+            if (!u32_scan_strict(store->s, &ex->timeout.stop))
                 parse_error_return(0, 3, table) ;
 
             break ;

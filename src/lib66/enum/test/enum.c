@@ -532,9 +532,6 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_CONFIG_DESCRIPTION == (m)++);
     assert(E_RESOLVE_SERVICE_CONFIG_VERSION == (m)++);
     assert(E_RESOLVE_SERVICE_CONFIG_TYPE == (m)++);
-    assert(E_RESOLVE_SERVICE_CONFIG_NOTIFY == (m)++);
-    assert(E_RESOLVE_SERVICE_CONFIG_MAXDEATH == (m)++);
-    assert(E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME == (m)++);
     assert(E_RESOLVE_SERVICE_CONFIG_EARLIER == (m)++);
     assert(E_RESOLVE_SERVICE_CONFIG_COPYFROM == (m)++);
     assert(E_RESOLVE_SERVICE_CONFIG_INTREE == (m)++);
@@ -592,6 +589,9 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_EXECUTE_CHDIR == (m)++);
     assert(E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND == (m)++);
     assert(E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_NOTIFY == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_MAXDEATH == (m)++);
+    assert(E_RESOLVE_SERVICE_EXECUTE_MAXDEATHTIME == (m)++);
     assert(E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -879,7 +879,7 @@ void test_service_lists(void) {
     // enum_list_service_config
     assert(count_key_description_entries(enum_list_service_config) == E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
     assert(count_string_array_entries(enum_str_service_config) == E_RESOLVE_SERVICE_CONFIG_ENDOFKEY);
-    for (size_t i = 0; i < 17; i++) {
+    for (size_t i = 0; i < E_RESOLVE_SERVICE_CONFIG_ENDOFKEY; i++) {
         assert(enum_list_service_config[i].id == (int)i);
         assert(strcmp(*enum_list_service_config[i].name, enum_str_service_config[i]) == 0);
         assert(enum_list_service_config[i].expected == 0); // No expected field defined
@@ -906,7 +906,7 @@ void test_service_lists(void) {
     // enum_list_service_execute
     assert(count_key_description_entries(enum_list_service_execute) == E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
     assert(count_string_array_entries(enum_str_service_execute) == E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
-    for (size_t i = 0; i < 12; i++) {
+    for (size_t i = 0; i < E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY; i++) {
         assert(enum_list_service_execute[i].id == (int)i);
         assert(strcmp(*enum_list_service_execute[i].name, enum_str_service_execute[i]) == 0);
         assert(enum_list_service_execute[i].expected == 0);

@@ -32,14 +32,14 @@
 
 /** Destination -> /var/lib/66/system/service/svc/<name> */
 
-void write_logger(resolve_service_t *res, char const *destination, uint8_t force)
+void write_logger(resolve_service_t *res, resolve_service_addon_execute_t *ex, char const *destination, uint8_t force)
 {
     log_flow() ;
 
     uid_t log_uid ;
     gid_t log_gid ;
 
-    char *logrunner = res->execute.run.runas ? res->sa.s + res->execute.run.runas : SS_LOGGER_RUNNER ;
+    char *logrunner = ex->run.runas ? ex->sa.s + ex->run.runas : SS_LOGGER_RUNNER ;
 
     if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
         parse_cleanup(res, destination, force) ;
@@ -52,7 +52,7 @@ void write_logger(resolve_service_t *res, char const *destination, uint8_t force
 
     /** run script */
     log_trace("write file: ", destination, "/run") ;
-    if (!file_write_at(destination, "run", res->sa.s + res->execute.run.run, strlen(res->sa.s + res->execute.run.run))) {
+    if (!file_write_at(destination, "run", ex->sa.s + ex->run.run, strlen(ex->sa.s + ex->run.run))) {
         parse_cleanup(res, destination, force) ;
         log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
     }

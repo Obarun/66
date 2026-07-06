@@ -65,9 +65,6 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "description", &res->description) ||
         !resolve_get_key(c, "version", &res->version) ||
         !resolve_get_key(c, "type", &res->type) ||
-        !resolve_get_key(c, "notify", &res->notify) ||
-        !resolve_get_key(c, "maxdeath", &res->maxdeath) ||
-        !resolve_get_key(c, "maxdeathtime", &res->maxdeathtime) ||
         !resolve_get_key(c, "earlier", &res->earlier) ||
         !resolve_get_key(c, "copyfrom", &res->copyfrom) ||
         !resolve_get_key(c, "intree", &res->intree) ||
@@ -82,6 +79,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "has_environ", &res->has_environ) ||
         !resolve_get_key(c, "has_io", &res->has_io) ||
         !resolve_get_key(c, "has_logger", &res->has_logger) ||
+        !resolve_get_key(c, "has_execute", &res->has_execute) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -101,30 +99,6 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "ncontents", &res->dependencies.ncontents) ||
         !resolve_get_key(c, "nprovide", &res->dependencies.nprovide) ||
         !resolve_get_key(c, "nconflict", &res->dependencies.nconflict) ||
-
-    /* execute */
-        !resolve_get_key(c, "run", &res->execute.run.run) ||
-        !resolve_get_key(c, "run_user", &res->execute.run.run_user) ||
-        !resolve_get_key(c, "run_build", &res->execute.run.build) ||
-        !resolve_get_key(c, "run_runas", &res->execute.run.runas) ||
-        !resolve_get_key(c, "finish", &res->execute.finish.run) ||
-        !resolve_get_key(c, "finish_user", &res->execute.finish.run_user) ||
-        !resolve_get_key(c, "finish_build", &res->execute.finish.build) ||
-        !resolve_get_key(c, "finish_runas", &res->execute.finish.runas) ||
-        !resolve_get_key(c, "timeoutstart", &res->execute.timeout.start) ||
-        !resolve_get_key(c, "timeoutstop", &res->execute.timeout.stop) ||
-        !resolve_get_key(c, "down", &res->execute.down) ||
-        !resolve_get_key(c, "downsignal", &res->execute.downsignal) ||
-        !resolve_get_key(c, "blockprivileges", &res->execute.blockprivileges) ||
-        !resolve_get_key(c, "umask", &res->execute.umask) ||
-        !resolve_get_key(c, "want_umask", &res->execute.want_umask) ||
-        !resolve_get_key(c, "nice", &res->execute.nice) ||
-        !resolve_get_key(c, "want_nice", &res->execute.want_nice) ||
-        !resolve_get_key(c, "chdir", &res->execute.chdir) ||
-        !resolve_get_key(c, "capsbound", &res->execute.capsbound) ||
-        !resolve_get_key(c, "capsambient", &res->execute.capsambient) ||
-        !resolve_get_key(c, "ncapsbound", &res->execute.ncapsbound) ||
-        !resolve_get_key(c, "ncapsambient", &res->execute.ncapsambient) ||
 
     /* live */
         !resolve_get_key(c, "livedir", &res->live.livedir) ||
@@ -235,6 +209,44 @@ int service_resolve_read_addon_logger_cdb(ocdb *c, resolve_service_addon_logger_
         !resolve_get_key(c, "logrun_runas", &lg->execute.run.runas) ||
         !resolve_get_key(c, "logtimeoutstart", &lg->execute.timeout.start) ||
         !resolve_get_key(c, "logtimeoutstop", &lg->execute.timeout.stop))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_execute_cdb(ocdb *c, resolve_service_addon_execute_t *ex)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&ex->sa, c) <= 0 || !ex->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &ex->rversion) ||
+        !resolve_get_key(c, "notify", &ex->notify) ||
+        !resolve_get_key(c, "maxdeath", &ex->maxdeath) ||
+        !resolve_get_key(c, "maxdeathtime", &ex->maxdeathtime) ||
+        !resolve_get_key(c, "run", &ex->run.run) ||
+        !resolve_get_key(c, "run_user", &ex->run.run_user) ||
+        !resolve_get_key(c, "run_build", &ex->run.build) ||
+        !resolve_get_key(c, "run_runas", &ex->run.runas) ||
+        !resolve_get_key(c, "finish", &ex->finish.run) ||
+        !resolve_get_key(c, "finish_user", &ex->finish.run_user) ||
+        !resolve_get_key(c, "finish_build", &ex->finish.build) ||
+        !resolve_get_key(c, "finish_runas", &ex->finish.runas) ||
+        !resolve_get_key(c, "timeoutstart", &ex->timeout.start) ||
+        !resolve_get_key(c, "timeoutstop", &ex->timeout.stop) ||
+        !resolve_get_key(c, "down", &ex->down) ||
+        !resolve_get_key(c, "downsignal", &ex->downsignal) ||
+        !resolve_get_key(c, "blockprivileges", &ex->blockprivileges) ||
+        !resolve_get_key(c, "umask", &ex->umask) ||
+        !resolve_get_key(c, "want_umask", &ex->want_umask) ||
+        !resolve_get_key(c, "nice", &ex->nice) ||
+        !resolve_get_key(c, "want_nice", &ex->want_nice) ||
+        !resolve_get_key(c, "chdir", &ex->chdir) ||
+        !resolve_get_key(c, "capsbound", &ex->capsbound) ||
+        !resolve_get_key(c, "capsambient", &ex->capsambient) ||
+        !resolve_get_key(c, "ncapsbound", &ex->ncapsbound) ||
+        !resolve_get_key(c, "ncapsambient", &ex->ncapsambient))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

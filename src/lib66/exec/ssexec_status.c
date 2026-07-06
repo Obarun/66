@@ -63,6 +63,7 @@ static void info_display_status(char const *field, resolve_service_t *res) ;
 static void info_display_type(char const *field, resolve_service_t *res) ;
 static void info_display_description(char const *field, resolve_service_t *res) ;
 static void info_display_inns(char const *field, resolve_service_t *res) ;
+static uint8_t status_execute_load(resolve_service_addon_execute_t *ex, resolve_service_t *res) ;
 static void info_display_notify(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeath(char const *field, resolve_service_t *res) ;
 static void info_display_maxdeathtime(char const *field, resolve_service_t *res) ;
@@ -354,24 +355,39 @@ static void info_display_notify(char const *field,resolve_service_t *res)
 {
     log_flow() ;
 
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    uint8_t ok = status_execute_load(&ex, res) ;
+
     if (NOFIELD) info_display_field_name(field) ;
-    info_display_int(res->notify) ;
+    info_display_int(ok ? ex.notify : 0) ;
+
+    strbuf_free(&ex.sa) ;
 }
 
 static void info_display_maxdeath(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    uint8_t ok = status_execute_load(&ex, res) ;
+
     if (NOFIELD) info_display_field_name(field) ;
-    info_display_int(res->maxdeath) ;
+    info_display_int(ok ? ex.maxdeath : 0) ;
+
+    strbuf_free(&ex.sa) ;
 }
 
 static void info_display_maxdeathtime(char const *field, resolve_service_t *res)
 {
     log_flow() ;
 
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    uint8_t ok = status_execute_load(&ex, res) ;
+
     if (NOFIELD) info_display_field_name(field) ;
-    info_display_int(res->maxdeathtime) ;
+    info_display_int(ok ? ex.maxdeathtime : 0) ;
+
+    strbuf_free(&ex.sa) ;
 }
 
 static void info_display_earlier(char const *field,resolve_service_t *res)
@@ -658,10 +674,12 @@ static void info_display_start(char const *field,resolve_service_t *res)
         if (!ostream_fmt(ostream_1,"\n%*s",(int)padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    if (res->execute.run.run_user)
-        info_display_nline(field, res->sa.s + res->execute.run.run_user) ;
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    if (status_execute_load(&ex, res) && ex.run.run_user)
+        info_display_nline(field, ex.sa.s + ex.run.run_user) ;
     else
         info_display_empty() ;
+    strbuf_free(&ex.sa) ;
 }
 
 static void info_display_stop(char const *field,resolve_service_t *res)
@@ -676,10 +694,12 @@ static void info_display_stop(char const *field,resolve_service_t *res)
         if (!ostream_fmt(ostream_1,"\n%*s",(int)padding,""))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    if (res->execute.finish.run_user)
-        info_display_nline(field,res->sa.s + res->execute.finish.run_user) ;
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    if (status_execute_load(&ex, res) && ex.finish.run_user)
+        info_display_nline(field, ex.sa.s + ex.finish.run_user) ;
     else
         info_display_empty() ;
+    strbuf_free(&ex.sa) ;
 }
 
 static uint8_t status_environ_load(resolve_service_addon_environ_t *e, resolve_service_t *res)
@@ -888,6 +908,18 @@ static uint8_t status_io_load(resolve_service_addon_io_t *io, resolve_service_t 
         return 0 ;
 
     resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, io) ;
+    uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
+    free(w) ;
+
+    return ok ;
+}
+
+static uint8_t status_execute_load(resolve_service_addon_execute_t *ex, resolve_service_t *res)
+{
+    if (!res->has_execute)
+        return 0 ;
+
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
     uint8_t ok = resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
     free(w) ;
 

@@ -47,11 +47,12 @@ static int get_shebang(strbuf *stk, char const *line)
     return 1 ;
 }
 
-int parse_mandatory(resolve_service_t *res, resolve_service_addon_logger_t *lg, ssexec_t *info)
+int parse_mandatory(resolve_service_t *res, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, ssexec_t *info)
 {
     log_flow() ;
 
     _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
 
     if (!res->description) {
 
@@ -97,33 +98,33 @@ int parse_mandatory(resolve_service_t *res, resolve_service_addon_logger_t *lg, 
         case E_PARSER_TYPE_CLASSIC:
         case E_PARSER_TYPE_ONESHOT:
 
-            if (!res->execute.run.run_user)
+            if (!ex->run.run_user)
                 log_warn_return(LOG_EXIT_ZERO,"key Execute at section [Start] must be set") ;
 
             {
-                size_t len = strlen(res->sa.s + res->execute.run.run_user) ;
+                size_t len = strlen(ex->sa.s + ex->run.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                int r = get_shebang(&stk, res->sa.s + res->execute.run.run_user) ;
+                int r = get_shebang(&stk, ex->sa.s + ex->run.run_user) ;
                 if (r < 0)
                     return 0 ;
                 if (r) {
-                    res->execute.run.run_user = resolve_add_string(wres, stk.s) ;
-                    res->execute.run.build = resolve_add_string(wres, "custom") ;
+                    ex->run.run_user = resolve_add_string(exwres, stk.s) ;
+                    ex->run.build = resolve_add_string(exwres, "custom") ;
                 }
             }
 
-            if (res->execute.finish.run_user) {
+            if (ex->finish.run_user) {
 
-                size_t len = strlen(res->sa.s + res->execute.finish.run_user) ;
+                size_t len = strlen(ex->sa.s + ex->finish.run_user) ;
                 _alloc_sbl_(stk, len) ;
 
-                int r = get_shebang(&stk, res->sa.s + res->execute.finish.run_user) ;
+                int r = get_shebang(&stk, ex->sa.s + ex->finish.run_user) ;
                 if (r < 0)
                     return 0 ;
                 if (r) {
-                    res->execute.finish.run_user = resolve_add_string(wres, stk.s) ;
-                    res->execute.finish.build = resolve_add_string(wres, "custom") ;
+                    ex->finish.run_user = resolve_add_string(exwres, stk.s) ;
+                    ex->finish.build = resolve_add_string(exwres, "custom") ;
                 }
             }
 

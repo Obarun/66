@@ -61,15 +61,15 @@ static opt_cmd_t const cmd = {
     .nopts = OPT_COUNT(opts),
 } ;
 
-static void setup_uidgid(uid_t *uid, gid_t *gid, resolve_service_t *res, uint32_t element)
+static void setup_uidgid(uid_t *uid, gid_t *gid, resolve_service_t *res, resolve_service_addon_execute_t *ex, uint32_t element)
 {
     log_flow() ;
 
     if (!element) {
         (*uid) = res->owner ;
     } else {
-        if (!youruid(uid, res->sa.s + element))
-            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", res->sa.s + element) ;
+        if (!youruid(uid, ex->sa.s + element))
+            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", ex->sa.s + element) ;
     }
 
     if (!yourgid(gid, (*uid)))
@@ -495,16 +495,16 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         log_dieusys(LOG_EXIT_SYS, "create environment") ;
 }
 
-static void execute_script(const char *runuser, resolve_service_t *res, subst_t *info)
+static void execute_script(const char *runuser, resolve_service_t *res, resolve_service_addon_execute_t *ex, subst_t *info)
 {
     log_flow() ;
 
     int r = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uid_t owner = getuid() ;
-    uint32_t want = (action == EXECUTE_START) ? res->execute.run.build : res->execute.finish.build ;
-    short build = !strcmp(res->sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
-    char *script = res->sa.s + (action == EXECUTE_START ? res->execute.run.run_user : res->execute.finish.run_user) ;
+    uint32_t want = (action == EXECUTE_START) ? ex->run.build : ex->finish.build ;
+    short build = !strcmp(ex->sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
+    char *script = ex->sa.s + (action == EXECUTE_START ? ex->run.run_user : ex->finish.run_user) ;
     size_t scriptlen = strlen(script) ;
 
     if (!build) {
@@ -521,7 +521,7 @@ static void execute_script(const char *runuser, resolve_service_t *res, subst_t 
 
     } else {
 
-        char *s = res->sa.s + ((action == EXECUTE_START) ? res->execute.run.run_user : res->execute.finish.run_user) ;
+        char *s = ex->sa.s + ((action == EXECUTE_START) ? ex->run.run_user : ex->finish.run_user) ;
         if (!auto_strbuf(&sa, s))
             log_die_nomem("strbuf") ;
     }
@@ -538,7 +538,7 @@ static void execute_script(const char *runuser, resolve_service_t *res, subst_t 
         uid_t uid ;
         gid_t gid ;
 
-        setup_uidgid(&uid, &gid, res, ((action == EXECUTE_START) ? res->execute.run.runas : res->execute.finish.runas)) ;
+        setup_uidgid(&uid, &gid, res, ex, ((action == EXECUTE_START) ? ex->run.runas : ex->finish.runas)) ;
 
         if (uid)
             if (chown(runuser, uid, gid) < 0)
@@ -562,9 +562,10 @@ static void execute_io(resolve_service_t *res)
     resolve_free(w) ;
 }
 
-static void execute_uidgid(resolve_service_t *res)
+static void execute_uidgid(resolve_service_t *res, resolve_service_addon_execute_t *ex)
 {
     log_flow() ;
+    (void)res ;
 
     /*only root can control that*/
     if (geteuid())
@@ -573,8 +574,8 @@ static void execute_uidgid(resolve_service_t *res)
     uid_t uid = - 1 ;
     gid_t gid = - 1 ;
 
-    uint32_t want = (action == EXECUTE_START) ? res->execute.run.runas : res->execute.finish.runas ;
-    char *as = res->sa.s + want ;
+    uint32_t want = (action == EXECUTE_START) ? ex->run.runas : ex->finish.runas ;
+    char *as = ex->sa.s + want ;
 
     if (want) {
 
@@ -694,30 +695,30 @@ static void execute_limit(resolve_service_t *res)
 
 }
 
-static void execute_privileges(resolve_service_t *res)
+static void execute_privileges(resolve_service_addon_execute_t *ex)
 {
     log_flow() ;
 
-    if (res->execute.blockprivileges)
+    if (ex->blockprivileges)
         if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
             log_dieusys(LOG_EXIT_SYS, "set NO_NEW_PRIVILEGES") ;
 }
 
-static void execute_umask(resolve_service_t *res)
+static void execute_umask(resolve_service_addon_execute_t *ex)
 {
     log_flow() ;
 
-    if (res->execute.want_umask)
-        umask((mode_t)res->execute.umask) ;
+    if (ex->want_umask)
+        umask((mode_t)ex->umask) ;
 }
 
-static void execute_nice(resolve_service_t *res)
+static void execute_nice(resolve_service_addon_execute_t *ex)
 {
     log_flow();
 
-    if (res->execute.want_nice) {
+    if (ex->want_nice) {
 
-        int64_t p = 20 - (int64_t)(res->execute.nice) ;
+        int64_t p = 20 - (int64_t)(ex->nice) ;
 
         errno = 0 ; // see: https://pubs.opengroup.org/onlinepubs/9699919799/
         if (setpriority(PRIO_PROCESS, 0, (int)p) < 0) {
@@ -729,13 +730,13 @@ static void execute_nice(resolve_service_t *res)
     }
 }
 
-static void execute_chdir(resolve_service_t *res)
+static void execute_chdir(resolve_service_addon_execute_t *ex)
 {
     log_flow() ;
 
-    if (res->execute.chdir) {
+    if (ex->chdir) {
 
-        if (chdir(res->sa.s + res->execute.chdir) < 0)
+        if (chdir(ex->sa.s + ex->chdir) < 0)
             log_dieusys(LOG_EXIT_ZERO, "chdir") ;
 
     }
@@ -799,6 +800,15 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!resolve_read(wres, base, service))
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
 
+    /** the execute addon: run/finish scripts, runas, timeouts, privileges, caps */
+    resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    {
+        resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+        if (res.has_execute && resolve_read(wex, res.sa.s + res.path.home, res.sa.s + res.name) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read execute addon of: ", service) ;
+        free(wex) ;
+    }
+
     run = (action == EXECUTE_START) ? "/run" : "/finish" ;
     char brun[strlen(res.sa.s + res.live.servicedir) + strlen(run) + 1] ;
     auto_strings(brun, res.sa.s + res.live.servicedir, run) ;
@@ -823,21 +833,21 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_environment(nenvp, envp, &eram, &info, &res) ;
 
-    execute_script(brunuser, &res, &info) ;
+    execute_script(brunuser, &res, &ex, &info) ;
 
     execute_limit(&res) ;
 
-    execute_nice(&res) ;
+    execute_nice(&ex) ;
 
-    execute_privileges(&res) ;
+    execute_privileges(&ex) ;
 
-    execute_caps(&res) ;
+    execute_caps(&res, &ex) ;
 
-    execute_uidgid(&res) ;
+    execute_uidgid(&res, &ex) ;
 
-    execute_umask(&res) ;
+    execute_umask(&ex) ;
 
-    execute_chdir(&res) ;
+    execute_chdir(&ex) ;
 
     exec_path_merge_die(newargv[0], newargv, nenvp, info.modifs.s, info.modifs.len) ;
 

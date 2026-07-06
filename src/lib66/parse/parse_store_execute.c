@@ -27,11 +27,11 @@
 #include <66/enum_parser.h>
 #include <66/caps.h>
 
-int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
+int parse_store_execute(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
-    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
     uint32_t kid = table.u.parser.id ;
 
     switch(kid) {
@@ -57,7 +57,7 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
 
             parse_error_type(res->type, enum_list_parser_section_execute, kid) ;
             if (store->s[0] == 'T' || store->s[0] == 't' || store->s[0] == '1')
-                res->execute.blockprivileges = 1 ;
+                ex->blockprivileges = 1 ;
 
             break ;
 
@@ -73,8 +73,8 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
                 if (mode > 0777)
                     parse_error_return(0, 0, table) ;
 
-                res->execute.umask = mode ;
-                res->execute.want_umask = 1 ;
+                ex->umask = mode ;
+                ex->want_umask = 1 ;
             }
             break ;
 
@@ -89,8 +89,8 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
                 if (n < -20 || n > 19)
                     parse_error_return(0, 0, table) ;
 
-                res->execute.nice = (uint32_t)(20 - n) ;
-                res->execute.want_nice = 1 ;
+                ex->nice = (uint32_t)(20 - n) ;
+                ex->want_nice = 1 ;
             }
 
             break ;
@@ -102,7 +102,7 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
             if (store->s[0] != '/')
                 parse_error_return(0, 4, table) ;
 
-            res->execute.chdir = resolve_add_string(wres, store->s) ;
+            ex->chdir = resolve_add_string(wres, store->s) ;
 
             break ;
 
@@ -115,9 +115,9 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
 
             if (store->len && !res->owner) {
                 _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
-                parse_store_caps(&stk, store, &res->execute.ncapsbound) ;
+                parse_store_caps(&stk, store, &ex->ncapsbound) ;
                 if (stk.len)
-                    res->execute.capsbound = resolve_add_string(wres, stk.s) ;
+                    ex->capsbound = resolve_add_string(wres, stk.s) ;
             }
 
             break ;
@@ -131,9 +131,9 @@ int parse_store_execute(resolve_service_t *res, strbuf *store, resolve_enum_tabl
 
             if (store->len) {
                 _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
-                parse_store_caps(&stk, store, &res->execute.ncapsambient) ;
+                parse_store_caps(&stk, store, &ex->ncapsambient) ;
                 if (stk.len)
-                    res->execute.capsambient = resolve_add_string(wres, stk.s) ;
+                    ex->capsambient = resolve_add_string(wres, stk.s) ;
             }
 
             break ;

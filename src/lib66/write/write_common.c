@@ -36,12 +36,12 @@
 #include <66/enum_parser.h>
 #include <66/parse.h>
 
-int write_common(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
+int write_common(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
 {
     log_flow() ;
 
     /** down file */
-    if (res->execute.down) {
+    if (ex->down) {
         log_trace("create file: ", dst, "/down") ;
         if (!file_create_empty(dst, "down", 0644))
             log_warnusys_return(LOG_EXIT_ZERO, "create down file") ;
@@ -158,14 +158,14 @@ int write_common(resolve_service_t *res, resolve_service_addon_environ_t *e, cha
     }
 
     /** run file */
-    if (!write_execute_scripts("run", res->sa.s + res->execute.run.run, dst, 0)) {
+    if (!write_execute_scripts("run", ex->sa.s + ex->run.run, dst, 0)) {
         parse_cleanup(res, dst, force) ;
         log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
     }
 
     /** finish file */
-    if (res->execute.finish.run) {
-        if (!write_execute_scripts("finish", res->sa.s + res->execute.finish.run, dst, 0)) {
+    if (ex->finish.run) {
+        if (!write_execute_scripts("finish", ex->sa.s + ex->finish.run, dst, 0)) {
             parse_cleanup(res, dst, force) ;
             log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
         }

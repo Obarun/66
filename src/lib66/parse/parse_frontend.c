@@ -158,6 +158,15 @@ int parse_frontend(char const *sv,
         log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
     }
 
+    /** the execute addon: run/finish scripts, timeouts, caps and the supervision
+     * scalars (notify/maxdeath/maxdeathtime). Present on every service. */
+    resolve_service_addon_execute_t execaddon = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    {
+        resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, &execaddon) ;
+        resolve_init(exwres) ;
+        free(exwres) ;
+    }
+
     {
 
         table.u.parser.id = E_PARSER_SECTION_MAIN_TYPE ;
@@ -165,7 +174,7 @@ int parse_frontend(char const *sv,
         if (!parse_get_value_of_key(&store, sa.s, table))
             log_dieu(LOG_EXIT_SYS, "get field ", enum_to_key(table.u.parser.list, table.u.parser.id), " of service: ", svname) ;
 
-        if (!parse_store_main(&res, &store, table))
+        if (!parse_store_main(&res, &execaddon, &store, table))
             log_dieu(LOG_EXIT_SYS, "store field type of service: ", svname) ;
     }
 
@@ -178,7 +187,7 @@ int parse_frontend(char const *sv,
          * This field is not mandatory, do not crash if it not found */
         if (parse_get_value_of_key(&store, sa.s, table)) {
 
-            if (!parse_store_main(&res, &store, table))
+            if (!parse_store_main(&res, &execaddon, &store, table))
                 log_dieu(LOG_EXIT_SYS, "store field intree of service: ", svname) ;
 
             info->treename.len = 0 ;
@@ -280,10 +289,10 @@ int parse_frontend(char const *sv,
         res.has_logger = has_logger ;
     }
 
-    if (!parse_contents(&res, sa.s))
+    if (!parse_contents(&res, &execaddon, sa.s))
         log_dieu(LOG_EXIT_SYS, "parse file of service: ", svname) ;
 
-    if (!parse_mandatory(&res, &loggeraddon, info))
+    if (!parse_mandatory(&res, &loggeraddon, &execaddon, info))
         log_die(LOG_EXIT_SYS, "some mandatory field is missing for service: ", svname) ;
 
     /** try to create the tree if not exist yet with
@@ -324,7 +333,8 @@ int parse_frontend(char const *sv,
     if (res.type == E_PARSER_TYPE_MODULE)
         parse_module(&res, hres, info, force, conf, &environaddon) ;
 
-    parse_compute_resolve(&res, info) ;
+    parse_compute_resolve(&res, &execaddon, info) ;
+    res.has_execute = 1 ;
 
     resolve_service_addon_io_t ioaddon = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     {
@@ -347,7 +357,7 @@ int parse_frontend(char const *sv,
         if (!parse_validator_init(&validator, sa.s))
             log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", svname) ;
 
-        parse_create_logger(&validator, hres, &res, &ioaddon, &loggeraddon, info) ;
+        parse_create_logger(&validator, hres, &res, &ioaddon, &loggeraddon, &execaddon, info) ;
     }
 
     resolve_service_addon_limit_t limitaddon = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
@@ -389,6 +399,11 @@ int parse_frontend(char const *sv,
         if (res.has_logger) {
             hash = resolve_hash_search(hres, name) ;
             hash->logger = loggeraddon ;
+        }
+
+        if (res.has_execute) {
+            hash = resolve_hash_search(hres, name) ;
+            hash->execute = execaddon ;
         }
     }
 

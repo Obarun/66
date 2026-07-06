@@ -338,7 +338,7 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
             if (!mkdtemp(sa.s))
                 log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-            write_services(&c->res, &c->environ, sa.s, rforce) ;
+            write_services(&c->res, &c->execute, &c->environ, sa.s, rforce) ;
 
             parse_write_state(&c->res, sa.s, rforce) ;
 
@@ -390,6 +390,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                     log_dieusys(LOG_EXIT_SYS, "write logger addon of: ", lgname) ;
                 }
                 free(wlg) ;
+            }
+
+            if (c->res.has_execute) {
+                char const *exname = c->res.sa.s + c->res.name ;
+                char aname[strlen(exname) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+                auto_strings(aname, exname, SS_ADDON_EXECUTE_SUFFIX) ;
+                resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &c->execute) ;
+                if (!resolve_write_at(wex, sa.s, aname)) {
+                    free(wex) ;
+                    log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", exname) ;
+                }
+                free(wex) ;
             }
 
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;

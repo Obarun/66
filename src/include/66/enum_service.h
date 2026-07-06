@@ -30,9 +30,6 @@
     macro(DESCRIPTION,  "description"), \
     macro(VERSION,      "version"), \
     macro(TYPE,         "type"), \
-    macro(NOTIFY,       "notify"), \
-    macro(MAXDEATH,     "maxdeath"), \
-    macro(MAXDEATHTIME, "maxdeathtime"), \
     macro(EARLIER,      "earlier"), \
     macro(COPYFROM,     "copyfrom"), \
     macro(INTREE,       "intree"), \
@@ -122,7 +119,10 @@ typedef enum resolve_service_enum_deps_e resolve_service_enum_deps_t ;
     macro(WANT_NICE,        "want_nice"), \
     macro(CHDIR,            "chdir"), \
     macro(CAPS_BOUND,       "capsbound"), \
-    macro(CAPS_AMBIENT,     "capsambient")
+    macro(CAPS_AMBIENT,     "capsambient"), \
+    macro(NOTIFY,           "notify"), \
+    macro(MAXDEATH,         "maxdeath"), \
+    macro(MAXDEATHTIME,     "maxdeathtime")
 
 enum resolve_service_enum_execute_e
 {

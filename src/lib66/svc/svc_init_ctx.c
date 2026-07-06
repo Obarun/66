@@ -66,6 +66,16 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
 
         svc.res = &hash->res ;
 
+        /* the execute addon carries down/timeout/notify read by svc_launch;
+         * load it into the hash's own slot (freed with the hash). */
+        if (hash->res.has_execute) {
+            resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &hash->execute) ;
+            if (resolve_read(wex, hash->res.sa.s + hash->res.path.home, hash->res.sa.s + hash->res.name) <= 0)
+                log_dieusys(LOG_EXIT_SYS, "read execute addon of: ", name) ;
+            free(wex) ;
+        }
+        svc.execute = &hash->execute ;
+
         if (FLAGS_ISSET(flag, GRAPH_WANT_DEPENDS) || FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {
 
             svc.ndepends = !requiredby ? v->ndepends : v->nrequiredby ;

@@ -59,7 +59,9 @@ static void get_frontend_list(strbuf *sa, const char *name, const char *frontend
 
     table.u.parser.id = requiredby ? E_PARSER_SECTION_MAIN_REQUIREDBY :  E_PARSER_SECTION_MAIN_DEPENDS ;
 
-    if (!parse_store_main(&dres, &stk, table))
+    /** only a core dependency field is parsed here; the execute addon is unused */
+    resolve_service_addon_execute_t dex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    if (!parse_store_main(&dres, &dex, &stk, table))
         log_dieu(LOG_EXIT_SYS, "get field depends of service: ", basename) ;
 
     sa->len = 0 ;

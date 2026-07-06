@@ -32,7 +32,7 @@
 #endif
 
 extern void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps) ;
-extern void execute_caps(resolve_service_t *res) ;
+extern void execute_caps(resolve_service_t *res, resolve_service_addon_execute_t *ex) ;
 
 /** Complete list of Linux capabilities (up to CAP_LAST_CAP = CAP_PERFMON, kernel 6.11)
  * #define CAP_CHOWN            0   // Allow changing file ownership

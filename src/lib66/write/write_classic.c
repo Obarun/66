@@ -22,12 +22,12 @@
 
 /* dst e.g. /var/lib/66/system/service/svc/<name> */
 
-void write_classic(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
+void write_classic(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
 {
     log_flow() ;
 
     /**notification,timeout, ... */
-    if (!write_common(res, e, dst, force)) {
+    if (!write_common(res, ex, e, dst, force)) {
         parse_cleanup(res, dst, force) ;
         log_dieu(LOG_EXIT_SYS, "write common file of: ", res->sa.s + res->name) ;
     }

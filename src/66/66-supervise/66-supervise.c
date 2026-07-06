@@ -42,14 +42,14 @@
  * dependency-free at boot (no global lookup), and the scandir-internal services
  * (oneshotd, fdholder, scandir-log, 66-shutdownd) carry a hand-built minimal
  * resolve in their own dir without ever appearing in the system graph. Config is
- * pulled from the struct:
- *   notification-fd -> res.notify
- *   timeout-kill    -> res.execute.timeout.start
- *   timeout-finish  -> res.execute.timeout.stop
- *   max-death-tally -> res.maxdeath
- *   down-signal     -> res.execute.downsignal
+ * pulled from the execute addon (loaded next to the core resolve):
+ *   notification-fd -> ex.notify
+ *   timeout-kill    -> ex.timeout.start
+ *   timeout-finish  -> ex.timeout.stop
+ *   max-death-tally -> ex.maxdeath
+ *   down-signal     -> ex.downsignal
  * Only the `down` file stays a file: it is runtime state (66 start/stop toggle it
- * via adddown/deldown), seeded from res.execute.down by the writer at parse time.
+ * via adddown/deldown), seeded from ex.down by the writer at parse time.
  * The lock-fd feature is dropped (66 never produced it). flag-newpidns is
  * deferred (posix_spawn cannot CLONE_NEWPID; needs a fork/unshare path).
  *
@@ -180,6 +180,7 @@ static char lock_file[SS_SUPERVISEDIR_LEN + 1 + SS_LOCK_LEN + 1] ;
 /** the service resolve, loaded once at startup: the source of all config that was
  * historically read from per-service files (notify, timeouts, maxdeath, downsignal). */
 static resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+static resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
 
 // SSE loop and its watchers
 static sse_epoll_t g_epoll = SSE_EPOLL_ZERO ;
@@ -279,7 +280,7 @@ static void project_status(service_status_t *st)
     case UP :
     case LASTUP :
       if (!status.flagwantup) st->state = STATUS_STATE_STOPPING ;
-      else if (res.notify && !status.flagready) st->state = STATUS_STATE_STARTING ;
+      else if (ex.notify && !status.flagready) st->state = STATUS_STATE_STARTING ;
       else st->state = STATUS_STATE_UP ;
       break ;
     case DOWN :
@@ -320,7 +321,7 @@ static int read_file(char const *file, char *buf, size_t n)
 
 static inline int read_downsig(void)
 {
-  return res.execute.downsignal ? (int)res.execute.downsignal : SIGTERM ;
+  return ex.downsignal ? (int)ex.downsignal : SIGTERM ;
 }
 
 static inline int read_reloadsig(void)
@@ -513,10 +514,10 @@ static int within_window(struct timespec const *start, struct timespec const *no
  * zero MaxDeath disables the budget (infinite restart). */
 static void record_death(void)
 {
-  if (!res.maxdeath) return ;
+  if (!ex.maxdeath) return ;
   struct timespec now ;
   clock_now_mono(&now) ;
-  if (status.ndeaths && within_window(&status.window_start, &now, res.maxdeathtime))
+  if (status.ndeaths && within_window(&status.window_start, &now, ex.maxdeathtime))
     status.ndeaths++ ;
   else { status.window_start = now ; status.ndeaths = 1 ; }
 }
@@ -557,7 +558,7 @@ static void trystart(void)
   spawn_fa_t fa[2] ;
   char const *cargv[4] ;
   int notifyp[2] = { -1, -1 } ;
-  unsigned int notif = res.notify ; // notification-fd, from the resolve (0 = none)
+  unsigned int notif = ex.notify ; // notification-fd, from the resolve (0 = none)
   uint16_t spawnflags = SPAWN_FLAG_SETSID ;
   uint8_t m = 0 ;
 
@@ -662,7 +663,7 @@ static void downtimeout(void)
 {
   if (!status.flagwantup) { settimeout_infinite() ; return ; }
   // budget checked here: counter up to date (death already recorded), 1s throttle elapsed
-  if (res.maxdeath && status.ndeaths >= res.maxdeath) enter_failed() ;
+  if (ex.maxdeath && status.ndeaths >= ex.maxdeath) enter_failed() ;
   else trystart() ;
 }
 
@@ -726,7 +727,7 @@ static int uplastup_z(void)
     log_dieusys(111, "watch finish child via pidfd") ;
   child_active = 1 ;
   {
-    unsigned int timeout = res.execute.timeout.stop ? res.execute.timeout.stop : 5000 ;
+    unsigned int timeout = ex.timeout.stop ? ex.timeout.stop : 5000 ;
     if (timeout) settimeout_ms(timeout) ;
     else settimeout_infinite() ;
   }
@@ -764,7 +765,7 @@ static void uptimeout(void)
 
 static void up_d(void)
 {
-  unsigned int timeout = res.execute.timeout.start ;   // timeout-kill (0 = infinite)
+  unsigned int timeout = ex.timeout.start ;   // timeout-kill (0 = infinite)
   if (status.flagwantup) latched_who = current_who ; // a real 1->0 owns the transition
   status.flagwantup = 0 ;
   killr() ;
@@ -1010,6 +1011,15 @@ int main(int argc, char const *const *argv)
 
   if (!resolve_read_at(wres, ".", servicename)) {
     log_dieusys(111, "read resolve file of: ", servicename) ;
+  }
+
+  /** supervision scalars (notify/maxdeath/maxdeathtime) and timeouts/downsignal
+   * live in the execute addon; load it locally from ./.resolve. */
+  {
+    resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+    if (res.has_execute && !resolve_read_at(wex, ".", servicename))
+      log_dieusys(111, "read execute addon of: ", servicename) ;
+    free(wex) ;
   }
 
   {

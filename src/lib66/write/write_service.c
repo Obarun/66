@@ -31,7 +31,7 @@
  * @Return 1 on success
  * @Return 2 if the service is ignored
  * */
-void write_services(resolve_service_t *res, resolve_service_addon_environ_t *e, char const *workdir, uint8_t force)
+void write_services(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *workdir, uint8_t force)
 {
     log_flow() ;
 
@@ -50,12 +50,12 @@ void write_services(resolve_service_t *res, resolve_service_addon_environ_t *e, 
 
         case E_PARSER_TYPE_CLASSIC:
         case E_PARSER_TYPE_ONESHOT:
-            write_common(res, e, workdir, force) ;
+            write_common(res, ex, e, workdir, force) ;
             break ;
 
         case 10:
 
-            write_logger(res, workdir, force) ;
+            write_logger(res, ex, workdir, force) ;
             break ;
 
         default:

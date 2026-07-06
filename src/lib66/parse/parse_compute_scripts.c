@@ -29,12 +29,12 @@
 /**
  * @!runorfinish -> finish, @runorfinish -> run
  * */
-static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
+static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish)
 {
     log_flow() ;
 
-    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    resolve_service_addon_scripts_t *script = runorfinish ? &ex->run : &ex->finish ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
     char *env = "importas -D2 VERBOSITY VERBOSITY\n" ;
     char *exec = SS_EXTLIBEXECPREFIX "66-execute -v${VERBOSITY}" ;
@@ -55,17 +55,17 @@ static void compute_wrapper_scripts(resolve_service_t *res, uint8_t runorfinish)
 /**
  * @!runorfinish -> finish.user, @runofinish -> run.user
  * */
-static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfinish)
+static void compute_wrapper_scripts_user(resolve_service_addon_execute_t *ex, uint8_t runorfinish)
 {
 
     log_flow() ;
 
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P" ;
     size_t fakelen = 0, shebanglen = strlen(shebang) ;
-    resolve_service_addon_scripts_t *script = runorfinish ? &res->execute.run : &res->execute.finish ;
-    size_t scriptlen = strlen(res->sa.s + script->run_user) ;
-    int build = !strcmp(res->sa.s + script->build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    resolve_service_addon_scripts_t *script = runorfinish ? &ex->run : &ex->finish ;
+    size_t scriptlen = strlen(ex->sa.s + script->run_user) ;
+    int build = !strcmp(ex->sa.s + script->build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
 
     char run[shebanglen + 1 + scriptlen + 1 + 1] ;
 
@@ -75,23 +75,23 @@ static void compute_wrapper_scripts_user(resolve_service_t *res, uint8_t runorfi
     }
 
     if (script->run_user)
-        auto_strings(run + fakelen, res->sa.s + script->run_user, "\n") ;
+        auto_strings(run + fakelen, ex->sa.s + script->run_user, "\n") ;
 
     script->run_user = resolve_add_string(wres, run) ;
 
     free(wres) ;
 }
 
-void parse_compute_scripts(resolve_service_t *res)
+void parse_compute_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex)
 {
     if (res->type != E_PARSER_TYPE_MODULE) {
 
-        compute_wrapper_scripts(res, 1) ; // run
-        compute_wrapper_scripts_user(res, 1) ; // run.user
+        compute_wrapper_scripts(res, ex, 1) ; // run
+        compute_wrapper_scripts_user(ex, 1) ; // run.user
 
-        if (res->execute.finish.run_user) {
-            compute_wrapper_scripts(res, 0) ; // finish
-            compute_wrapper_scripts_user(res, 0) ; // finish.user
+        if (ex->finish.run_user) {
+            compute_wrapper_scripts(res, ex, 0) ; // finish
+            compute_wrapper_scripts_user(ex, 0) ; // finish.user
         }
     }
 }

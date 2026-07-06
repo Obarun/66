@@ -150,7 +150,7 @@ void parse_rename_interdependences(resolve_service_t *res, char const *prefix, h
                 if (!parse_validator_init(&validator, fe.s))
                     log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", fname) ;
 
-                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, info) ;
+                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, &c->execute, info) ;
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!sbl_add(&stk, logname))

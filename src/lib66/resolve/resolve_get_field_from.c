@@ -55,6 +55,12 @@ int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_
 
         return service_resolve_get_logger_field(sa, lg, table.u.service) ;
 
+    } else if (wres->type == DATA_SERVICE_EXECUTE) {
+
+        resolve_service_addon_execute_t *ex = (resolve_service_addon_execute_t *)wres->obj ;
+
+        return service_resolve_get_execute_field(sa, ex, table.u.service) ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

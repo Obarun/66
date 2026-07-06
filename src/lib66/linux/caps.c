@@ -231,7 +231,7 @@ static void execute_caps_bound(bitset32_t *caps)
 }
 
 // Configure ambient capabilities
-static void execute_caps_ambient(resolve_service_t *res)
+static void execute_caps_ambient(resolve_service_t *res, resolve_service_addon_execute_t *ex)
 {
     bitset32_t capsbound = bitset32_init(CAPS_MYLAST_CAP) ;
     bitset32_t capsambient = bitset32_init(CAPS_MYLAST_CAP) ;
@@ -239,12 +239,12 @@ static void execute_caps_ambient(resolve_service_t *res)
     bitset32_t *pbset = 0 ;
     uint32_t pos = 0 ;
 
-    if (res->execute.capsbound)
-        string_to_bitset(&capsbound, res->sa.s + res->execute.capsbound) ;
+    if (ex->capsbound)
+        string_to_bitset(&capsbound, ex->sa.s + ex->capsbound) ;
 
-    string_to_bitset(&capsambient, res->sa.s + res->execute.capsambient) ;
+    string_to_bitset(&capsambient, ex->sa.s + ex->capsambient) ;
 
-    if (!res->owner && res->execute.capsbound) {
+    if (!res->owner && ex->capsbound) {
 
         pbset = &capsbound ;
 
@@ -275,21 +275,21 @@ static void execute_caps_ambient(resolve_service_t *res)
     }
 }
 
-void execute_caps(resolve_service_t *res)
+void execute_caps(resolve_service_t *res, resolve_service_addon_execute_t *ex)
 {
     /** execute_caps_ambient() applies the bounding set itself before raising
      * the ambient capabilities, so it must be the only path that touches the
      * bounding set when both are configured -- otherwise execute_caps_bound()
      * runs twice and the second call dies: the first one already dropped
      * CAP_SETPCAP, which the second one requires. */
-    if (res->execute.capsambient) {
+    if (ex->capsambient) {
 
-        execute_caps_ambient(res) ;
+        execute_caps_ambient(res, ex) ;
 
-    } else if (res->execute.capsbound && !res->owner) {
+    } else if (ex->capsbound && !res->owner) {
 
         bitset32_t c = bitset32_init(CAPS_MYLAST_CAP) ;
-        string_to_bitset(&c, res->sa.s + res->execute.capsbound) ;
+        string_to_bitset(&c, ex->sa.s + ex->capsbound) ;
         execute_caps_bound(&c) ;
     }
 }

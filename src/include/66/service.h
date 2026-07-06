@@ -81,9 +81,18 @@ struct resolve_service_addon_scripts_s
 typedef struct resolve_service_addon_execute_s resolve_service_addon_execute_t, *resolve_service_addon_execute_t_ref ;
 struct resolve_service_addon_execute_s
 {
+    /** sa/rversion are used only when this struct is an autonomous addon; the
+     * copy embedded in the logger addon keeps its strings in the logger's own
+     * sa, so its sa/rversion/notify/maxdeath/maxdeathtime stay unused. */
+    strbuf sa ;
+    uint32_t rversion ;
+
     resolve_service_addon_scripts_t run ;
     resolve_service_addon_scripts_t finish ;
     resolve_service_addon_timeout_t timeout ;
+    uint32_t notify ; // integer, notification-fd
+    uint32_t maxdeath ; // integer, max death tally
+    uint32_t maxdeathtime ; // integer, crash-window length in milliseconds
     uint32_t down ; // integer
     uint32_t downsignal ; // integer
     uint32_t blockprivileges ; // integer
@@ -99,9 +108,11 @@ struct resolve_service_addon_execute_s
 } ;
 
 #define RESOLVE_SERVICE_ADDON_EXECUTE_ZERO { \
+    STRBUF_ZERO, 0, \
     RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO, \
     RESOLVE_SERVICE_ADDON_SCRIPTS_ZERO, \
     RESOLVE_SERVICE_ADDON_TIMEOUT_ZERO, \
+    0, 5, 30000, \
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 \
 }
 
@@ -242,9 +253,6 @@ struct resolve_service_s
     uint32_t description ; // string
     uint32_t version ;// string
     uint32_t type ; // integer
-    uint32_t notify ; // integer
-    uint32_t maxdeath ; // integer
-    uint32_t maxdeathtime ; // integer, crash-window length in milliseconds
     uint32_t earlier ; // integer
     uint32_t copyfrom ; // string
     uint32_t intree ; // string
@@ -258,24 +266,24 @@ struct resolve_service_s
 
     // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists.
     // has_logger doubles as the old logger.want: >0 ⇔ the service has a logger companion.
+    // notify/maxdeath/maxdeathtime moved into the execute addon.
     uint32_t has_limit ;
     uint32_t has_environ ;
     uint32_t has_io ;
     uint32_t has_logger ;
+    uint32_t has_execute ;
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_dependencies_t dependencies ;
-    resolve_service_addon_execute_t execute ;
     resolve_service_addon_live_t live ;
     resolve_service_addon_regex_t regex ;
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
-                               0,0,0,0,0,5,30000,0,0,0,0,0,0,0,0,0,0, \
-                               0,0,0,0, \
+                               0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
+                               0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, \
-                               RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO, \
                                RESOLVE_SERVICE_ADDON_REGEX_ZERO }
 
@@ -290,11 +298,12 @@ struct resolve_hash_s {
 	resolve_service_addon_environ_t environ ;
 	resolve_service_addon_io_t io ;
 	resolve_service_addon_logger_t logger ;
+	resolve_service_addon_execute_t execute ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -330,6 +339,11 @@ extern int service_resolve_read_addon_logger_cdb(ocdb *c, resolve_service_addon_
 extern void service_resolve_sanitize_addon_logger(resolve_service_addon_logger_t *lg) ;
 extern void service_resolve_modify_logger_field(resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_logger_field(strbuf *sa, resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table) ;
+extern int service_resolve_write_addon_execute_cdb(ocdbmaker *c, resolve_service_addon_execute_t *ex) ;
+extern int service_resolve_read_addon_execute_cdb(ocdb *c, resolve_service_addon_execute_t *ex) ;
+extern void service_resolve_sanitize_addon_execute(resolve_service_addon_execute_t *ex) ;
+extern void service_resolve_modify_execute_field(resolve_service_addon_execute_t *ex, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_execute_field(strbuf *sa, resolve_service_addon_execute_t *ex, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_t *new, char const *base, uint8_t requiredby) ;

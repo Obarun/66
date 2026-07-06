@@ -33,7 +33,7 @@
 #include <66/enum_parser.h>
 #include <66/utils.h>
 
-int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t table)
+int parse_store_main(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf *store, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -79,27 +79,27 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
             parse_error_type(res->type, enum_list_parser_section_main, kid) ;
 
-            if (!u32_scan_strict(store->s, &res->notify))
+            if (!u32_scan_strict(store->s, &ex->notify))
                 parse_error_return(0, 3, table) ;
 
-            if (res->notify < 3)
+            if (ex->notify < 3)
                 parse_error_return(0, 0, table) ;
 
             break ;
 
         case E_PARSER_SECTION_MAIN_DEATH:
 
-            if (!u32_scan_strict(store->s, &res->maxdeath))
+            if (!u32_scan_strict(store->s, &ex->maxdeath))
                 parse_error_return(0, 3, table) ;
 
-            if (res->maxdeath > 16)
+            if (ex->maxdeath > 16)
                 parse_error_return(0, 0, table) ;
 
             break ;
 
         case E_PARSER_SECTION_MAIN_DEATHTIME:
 
-            if (!u32_scan_strict(store->s, &res->maxdeathtime))
+            if (!u32_scan_strict(store->s, &ex->maxdeathtime))
                 parse_error_return(0, 3, table) ;
 
             break ;
@@ -121,7 +121,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
                         parse_error_return(0, 0, table) ;
 
                     if (r == E_PARSER_FLAGS_DOWN)
-                        res->execute.down = 1 ;/**0 means not enabled*/
+                        ex->down = 1 ;/**0 means not enabled*/
 
                     if (r == E_PARSER_FLAGS_EARLIER)
                         res->earlier = 1 ;/**0 means not enabled*/
@@ -138,7 +138,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
             if (!sig_parse(store->s, &t))
                 parse_error_return(0, 3, table) ;
 
-            res->execute.downsignal = (uint32_t)t ;
+            ex->downsignal = (uint32_t)t ;
 
             break ;
 
@@ -148,7 +148,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
             log_1_warn("key TimeoutStart at section [Main] is deprecated -- declare it at section [Start] instead") ;
 
-            if (!u32_scan_strict(store->s, &res->execute.timeout.start))
+            if (!u32_scan_strict(store->s, &ex->timeout.start))
                 parse_error_return(0, 3, table) ;
 
             break ;
@@ -159,7 +159,7 @@ int parse_store_main(resolve_service_t *res, strbuf *store, resolve_enum_table_t
 
             log_1_warn("key TimeoutStop at section [Main] is deprecated -- declare it at section [Stop] instead") ;
 
-            if (!u32_scan_strict(store->s, &res->execute.timeout.stop))
+            if (!u32_scan_strict(store->s, &ex->timeout.stop))
                 parse_error_return(0, 3, table) ;
 
             break ;

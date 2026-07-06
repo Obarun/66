@@ -53,21 +53,6 @@ static int get_config(strbuf *sa, resolve_service_t *res, resolve_service_enum_c
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_CONFIG_NOTIFY:
-            fmt[u32_fmt(fmt,res->notify)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CONFIG_MAXDEATH:
-            fmt[u32_fmt(fmt,res->maxdeath)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_CONFIG_MAXDEATHTIME:
-            fmt[u32_fmt(fmt,res->maxdeathtime)] = 0 ;
-            str = fmt ;
-            break ;
-
         case E_RESOLVE_SERVICE_CONFIG_EARLIER:
             fmt[u32_fmt(fmt,res->earlier)] = 0 ;
             str = fmt ;
@@ -230,116 +215,6 @@ static int get_deps(strbuf *sa, resolve_service_t *res, resolve_service_enum_dep
     return e ;
 }
 
-static int get_exec(strbuf *sa, resolve_service_t *res, resolve_service_enum_execute_t table)
-{
-    log_flow() ;
-
-    char fmt[U32_FMT] ;
-    char const *str = 0 ;
-    int e = 0 ;
-
-    switch(table) {
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN:
-            str = res->sa.s + res->execute.run.run ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_USER:
-            str = res->sa.s + res->execute.run.run_user ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD:
-            str = res->sa.s + res->execute.run.build ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS:
-            str = res->sa.s + res->execute.run.runas ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH:
-            str = res->sa.s + res->execute.finish.run ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_USER:
-            str = res->sa.s + res->execute.finish.run_user ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD:
-            str = res->sa.s + res->execute.finish.build ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS:
-            str = res->sa.s + res->execute.finish.runas ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART:
-            fmt[u32_fmt(fmt,res->execute.timeout.start)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTOP:
-            fmt[u32_fmt(fmt,res->execute.timeout.stop)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_DOWN:
-            fmt[u32_fmt(fmt,res->execute.down)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_DOWNSIGNAL:
-            fmt[u32_fmt(fmt,res->execute.downsignal)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_BLOCK_PRIVILEGES:
-            fmt[u32_fmt(fmt,res->execute.blockprivileges)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_UMASK:
-            fmt[u32_fmt(fmt,res->execute.umask)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_WANT_UMASK:
-            fmt[u32_fmt(fmt,res->execute.want_umask)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_NICE:
-            fmt[u32_fmt(fmt,res->execute.nice)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_WANT_NICE:
-            fmt[u32_fmt(fmt,res->execute.want_nice)] = 0 ;
-            str = fmt ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
-            str = res->sa.s + res->execute.chdir ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND:
-            str = res->sa.s + res->execute.capsbound ;
-            break ;
-
-        case E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT:
-            str = res->sa.s + res->execute.capsambient ;
-            break ;
-
-        default:
-            return e ;
-    }
-
-    if (!auto_strbuf(sa,str))
-        return e ;
-
-    e = 1 ;
-    return e ;
-}
-
 static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_live_t table)
 {
     log_flow() ;
@@ -467,9 +342,6 @@ int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_s
 
         case E_RESOLVE_SERVICE_CATEGORY_DEPS:
             return get_deps(sa, res, table.id) ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_EXECUTE:
-            return get_exec(sa, res, table.id) ;
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             return get_live(sa, res, table.id) ;

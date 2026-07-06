@@ -203,7 +203,7 @@ static void announce(uint32_t id, bool success)
 
     if (success) {
 
-        if (!svc->res->execute.down && svc->res->type == E_PARSER_TYPE_CLASSIC) {
+        if (!svc->execute->down && svc->res->type == E_PARSER_TYPE_CLASSIC) {
 
             if (!pmanager->operation) {
 
@@ -347,7 +347,7 @@ static int launch_classic(uint32_t id)
             default :  wanted = EVENT_UP ; break ;
         }
 
-        if (!svc->res->notify) {
+        if (!svc->execute->notify) {
             if (wanted == EVENT_READY) wanted = EVENT_UP ;
             else if (wanted == EVENT_DOWN_READY) wanted = EVENT_DOWN ;
             else if (wanted == EVENT_RESTART_READY) wanted = EVENT_RESTART ;
@@ -369,7 +369,7 @@ static int launch_classic(uint32_t id)
             return 1 ;
         }
 
-        uint64_t timeout = !pmanager->operation ? svc->res->execute.timeout.start : svc->res->execute.timeout.stop ;
+        uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
         if (timeout) {
             if (!sse_start_timer(&pmanager->loop, &svc->timeout, wait_timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1)) {
                 log_warnusys("start timeout watcher for service: ", svc->res->sa.s + svc->res->name) ;
@@ -444,7 +444,7 @@ static int launch_service(uint32_t id)
     }
 
     // Setup timeout watcher if any
-    uint64_t timeout = !pmanager->operation ? svc->res->execute.timeout.start : svc->res->execute.timeout.stop ;
+    uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
     if (timeout) {
         if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1))
             log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for service: ",  svc->res->sa.s + svc->res->name) ;

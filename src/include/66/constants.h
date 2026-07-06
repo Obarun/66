@@ -81,6 +81,8 @@
 #define SS_ADDON_IO_SUFFIX_LEN (sizeof SS_ADDON_IO_SUFFIX - 1)
 #define SS_ADDON_LOGGER_SUFFIX ".logger"
 #define SS_ADDON_LOGGER_SUFFIX_LEN (sizeof SS_ADDON_LOGGER_SUFFIX - 1)
+#define SS_ADDON_EXECUTE_SUFFIX ".execute"
+#define SS_ADDON_EXECUTE_SUFFIX_LEN (sizeof SS_ADDON_EXECUTE_SUFFIX - 1)
 
 #define SS_FDHOLDER "fdholder"
 #define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)
