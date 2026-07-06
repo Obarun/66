@@ -72,7 +72,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
         if (!info->owner) {
 
             res->user = resolve_add_string(wres, "root") ;
-            log_warn("key User at section [Main] was not set -- define it to: root") ;
+            log_info("key User at section [Main] was not set -- define it to: root") ;
 
         } else {
 
@@ -82,7 +82,7 @@ int parse_mandatory(resolve_service_t *res, ssexec_t *info)
                     log_warnu_return(LOG_EXIT_ZERO,"get user name") ;
             }
             res->user = resolve_add_string(wres, pw->pw_name) ;
-            log_warn("key User at section [Main] was not set -- define it to: ", pw->pw_name) ;
+            log_info("key User at section [Main] was not set -- define it to: ", pw->pw_name) ;
         }
     }
 
