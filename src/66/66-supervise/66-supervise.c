@@ -1017,8 +1017,12 @@ int main(int argc, char const *const *argv)
    * live in the execute addon; load it locally from ./.resolve. */
   {
     resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-    if (res.has_execute && !resolve_read_at(wex, ".", servicename))
-      log_dieusys(111, "read execute addon of: ", servicename) ;
+    if (res.has_execute) {
+      char exname[strlen(servicename) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+      auto_strings(exname, servicename, SS_ADDON_EXECUTE_SUFFIX) ;
+      if (!resolve_read_at(wex, ".", exname))
+        log_dieusys(111, "read execute addon of: ", servicename) ;
+    }
     free(wex) ;
   }
 
