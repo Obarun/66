@@ -12,14 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-/* Store reader for the execute addon: it reads the supervision scalars of [Main]
- * (notify/maxdeath/maxdeathtime/signal/flags-down + the deprecated [Main]
- * timeouts), the [Execute] keys (blockprivileges/umask/nice/chdir/caps) and the
- * [Start]/[Stop] keys (runas/exec/timeouts) off the two-pass store, then applies
- * the shebang fixup (ex parse_mandatory) and builds the wrapper scripts (ex
- * parse_compute_scripts). It also owns the rest of the [Execute] section by
- * driving parse_limit for the 15 rlimit keys (their own limit addon). */
-
 #include <stdint.h>
 #include <stdlib.h> // free
 #include <string.h>
@@ -37,7 +29,6 @@
 #include <66/enum_parser.h>
 #include <66/caps.h>
 
-/* copy a stored value of section @sid into a stack strbuf and trim its (...) list */
 static int store_list_sid(strbuf *stk, parse_store_t *st, uint32_t sid, uint32_t kid)
 {
     size_t len = 0 ;
@@ -49,8 +40,6 @@ static int store_list_sid(strbuf *stk, parse_store_t *st, uint32_t sid, uint32_t
     return parse_list(stk) ;
 }
 
-/* detect a leading #! shebang on @line ; returns 1 and copies it into @stk, 0 if
- * none, -1 on error */
 static int get_shebang(strbuf *stk, char const *line)
 {
     size_t len = strlen(line) ;
@@ -68,8 +57,6 @@ static int get_shebang(strbuf *stk, char const *line)
     return 1 ;
 }
 
-/* apply the shebang fixup to a run/finish user script: a leading #! turns the
- * value into a custom-built script */
 static int execute_shebang(resolve_service_addon_execute_t *ex, resolve_wrapper_t_ref wres, resolve_service_addon_scripts_t *script)
 {
     if (!script->run_user)

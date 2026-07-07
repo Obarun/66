@@ -10,13 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * The PUMP: owns one readable fd attached to the oblibs SSE loop, reads it as the
- * bytes arrive, and hands each raw chunk to a handler. It is the stable core of
- * the event engine: transport-agnostic (the fd may come from a fifo, a socket, an
- * fdholder hand-off) and format-agnostic (it never interprets the bytes). A source
- * closing surfaces as a len==0 handler call. The fifo-specific plumbing lives in
- * the source (event_fifo.c), never here.
  */
 
 #include <errno.h>

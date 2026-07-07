@@ -10,13 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * The CONSUMER of the event pump for 66 service transitions: it gives the raw
- * bytes meaning. A small state machine that tracks the (up, ready) pair from the
- * 66 transition bytes and decides when a wanted service state has been reached
- * (or has permanently failed). Replaces the duplicated logic that lived inline
- * in event_wait (exact byte) and in svc_launch (rich wait): one interpreter,
- * shared by every waiter.
  */
 
 #include <stddef.h>

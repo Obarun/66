@@ -12,13 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-/* Store reader for the dependencies addon: reads the six relation lists of
- * [Main] (depends/requiredby/optsdeps/contents/provide/conflict) off the two-pass
- * store and folds the optional dependencies into depends. The dep addon is
- * already resolve_init'd by the caller, so this only appends to it. The
- * has_dependencies manifest flag is computed by the caller once the module
- * expansion and the derived logger have added their own relations. */
-
 #include <stdint.h>
 #include <stdlib.h> // free
 #include <string.h>

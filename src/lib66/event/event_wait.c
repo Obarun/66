@@ -10,13 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * wait_and over a set of service event fifo sources. The caller subscribes
- * (event_wait_init), triggers the
- * events (reloads the scandir), then blocks on event_wait_run. A consumer of the
- * pump: each source carries a per-source cookie as its `data`, so the handler
- * needs no shared index table — the cookie holds the back-pointer and the
- * "already matched" flag.
  */
 
 #include <errno.h>

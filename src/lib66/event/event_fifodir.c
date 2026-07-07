@@ -10,10 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * Creating and cleaning a service event fifodir, in plain libc. The directory
- * is owned by the producer (66-supervise) at runtime; 66 only pre-creates it and
- * sweeps stale subscriber fifos.
  */
 
 #include <errno.h>

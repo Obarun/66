@@ -10,13 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * The FIFO SOURCE: drops our own subscriber fifo into a service event fifodir
- * (ftrig1 naming so 66-supervise's fanout writes to it) and pumps it through an
- * event_reader. We create the fifo under a hidden "." name, open both ends, then
- * rename it into place — so the producer never sees a visible fifo without a
- * reader. We hold the write end open so reads never see EOF. Only the fd
- * acquisition lives here; the read loop is the transport-agnostic pump.
  */
 
 #include <errno.h>

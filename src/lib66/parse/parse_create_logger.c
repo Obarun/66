@@ -275,7 +275,6 @@ void parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
 
     hash = resolve_hash_search(hres, logname) ;
     if (hash == NULL && res->type == E_PARSER_TYPE_CLASSIC) {
-        /** the logger is not a service with oneshot type */
 
         resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, parentdep) ;
 

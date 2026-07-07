@@ -10,10 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * Synchronous request/response client built on top of the asynchronous SSE
- * stream machinery: a RUN request is queued with the caller's 0/1/2 attached,
- * the event loop flushes and reads the reply, and a guard timer bounds the wait.
  */
 
 #include <errno.h>

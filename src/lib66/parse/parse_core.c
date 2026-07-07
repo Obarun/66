@@ -12,17 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-/* Builds the whole core of a service resolve: every field the core owns is set
- * here so nothing is left to guess after parse_core returns. It sets the type,
- * the identity (name/inns/owner/ownerstr/home), the source frontend path, the
- * target tree (InTree + set_treeinfo + treename), the [Main] config keys read
- * off the two-pass store (description/version/copyfrom/flags/user), the
- * mandatory-field defaults (ex parse_mandatory) and the derived paths
- * (path.servicedir + the live.* runtime paths, ex parse_compute_resolve).
- *
- * The execute scalars (notify/maxdeath/...), the dependency relations and the io
- * keys of [Main] belong to their own readers. */
-
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h> // free
