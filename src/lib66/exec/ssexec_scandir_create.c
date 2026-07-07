@@ -162,6 +162,7 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     {
         char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
         auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
+        log_trace("write resolve of: ", aname, " at: ", dir) ;
         if (!resolve_write_at(wex, dir, aname))
             log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
     }
