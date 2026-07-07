@@ -57,7 +57,6 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->live.scandir = res->live.scandir ? resolve_add_string(wres, stk + res->live.scandir) : 0 ;
     res->live.statedir = res->live.statedir ? resolve_add_string(wres, stk + res->live.statedir) : 0 ;
     res->live.eventdir = res->live.eventdir ? resolve_add_string(wres, stk + res->live.eventdir) : 0 ;
-    res->live.notifdir = res->live.notifdir ? resolve_add_string(wres, stk + res->live.notifdir) : 0 ;
     res->live.supervisedir = res->live.supervisedir ? resolve_add_string(wres, stk + res->live.supervisedir) : 0 ;
     res->live.fdholderdir = res->live.fdholderdir ? resolve_add_string(wres, stk + res->live.fdholderdir) : 0 ;
     res->live.oneshotddir = res->live.oneshotddir ? resolve_add_string(wres, stk + res->live.oneshotddir) : 0 ;

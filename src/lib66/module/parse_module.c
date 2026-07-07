@@ -29,7 +29,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 
-static void parse_module_dependencies(strbuf *list, resolve_service_t *res, resolve_service_addon_dependencies_t *dep, uint8_t requiredby, hash_t *hres, uint8_t force, uint8_t conf, ssexec_t *info)
+static void parse_module_dependencies(strbuf *list, resolve_service_t *res, resolve_service_addon_dependencies_t *dep, uint8_t requiredby, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
@@ -38,7 +38,7 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, reso
 
     char *name = res->sa.s + res->name ;
     size_t pos = 0 ;
-    uint8_t opt_tree = info->opt_tree ;
+    uint8_t opt_tree = ctx->info->opt_tree ;
     _alloc_sbl_(stk, list->len + 1) ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint32_t *field = !requiredby ? &dep->depends : &dep->requiredby ;
@@ -47,7 +47,7 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, reso
     uint8_t exlen = 3 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1 } ;
 
-    info->opt_tree = 0 ;
+    ctx->info->opt_tree = 0 ;
 
     FOREACH_SBL(list, pos) {
 
@@ -61,7 +61,7 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, reso
         if (!strcmp(name, fname))
             log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
 
-        if (!service_frontend_path(&sa, fname, info->owner, 0, exclude, exlen))
+        if (!service_frontend_path(&sa, fname, ctx->info->owner, 0, exclude, exlen))
             log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
 
         if (!sbl_add(&stk, fname))
@@ -69,11 +69,17 @@ static void parse_module_dependencies(strbuf *list, resolve_service_t *res, reso
 
         (*nfield)++ ;
 
-        parse_frontend(sa.s, hres, info, force, conf, 0, fname, 0, 0, res) ;
+        parse_build_ctx_t dctx = *ctx ;
+        dctx.forced_directory = 0 ;
+        dctx.main = fname ;
+        dctx.inns = 0 ;
+        dctx.intree = 0 ;
+        dctx.moduleres = res ;
+        parse_frontend(sa.s, dctx) ;
 
     }
 
-    info->opt_tree = opt_tree ;
+    ctx->info->opt_tree = opt_tree ;
 
     if (!sbl_rebuild_with_delim(&stk, ' '))
         log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
@@ -128,10 +134,15 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_reg
     regex_configure(res, rx, e, info, dir, name) ;
 }
 
-void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t force, uint8_t conf, resolve_service_addon_environ_t *e, resolve_service_addon_dependencies_t *dep, resolve_service_addon_regex_t *rx)
+void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
+    ssexec_t *info = ctx->info ;
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_environ_t *e = &c->environ ;
+    resolve_service_addon_dependencies_t *dep = &c->dependencies ;
+    resolve_service_addon_regex_t *rx = &c->regex ;
     size_t pos = 0, tmplen = 0, namelen = strlen(res->sa.s + res->name) ;
     uint8_t opt_tree = info->opt_tree ;
     char name[namelen + 1] ;
@@ -173,12 +184,12 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
         auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
         get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&sa, res, dep, 0, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, dep, 0, ctx) ;
 
         auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
         get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&sa, res, dep, 1, hres, force, conf, info) ;
+        parse_module_dependencies(&sa, res, dep, 1, ctx) ;
     }
 
     auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED) ;
@@ -234,7 +245,13 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
             if (!auto_strbuf(&info->treename, res->sa.s + res->treename))
                 log_die_nomem("strbuf") ;
 
-            parse_frontend(sa.s, hres, info, force, conf, tmpdir, fname, name, res->intree ? res->sa.s + res->intree : 0, res) ;
+            parse_build_ctx_t dctx = *ctx ;
+            dctx.forced_directory = tmpdir ;
+            dctx.main = fname ;
+            dctx.inns = name ;
+            dctx.intree = res->intree ? res->sa.s + res->intree : 0 ;
+            dctx.moduleres = res ;
+            parse_frontend(sa.s, dctx) ;
 
             info->opt_tree = opt_tree ;
         }
@@ -243,7 +260,7 @@ void parse_module(resolve_service_t *res, hash_t *hres, ssexec_t *info, uint8_t 
 
     /** append the module name at each inner depends/requiredby dependencies service name
      * and define contents field.*/
-    parse_rename_interdependences(res, dep, name, hres, info) ;
+    parse_rename_interdependences(res, dep, name, ctx->hres, info) ;
 
     /** Remove the module name from requiredby field
      * of the dependencies if the service disappears with the

@@ -915,7 +915,7 @@ static void info_display_logname(char const *field,resolve_service_t *res)
 
     if (NOFIELD) info_display_field_name(field) ;
     if (res->type == E_PARSER_TYPE_CLASSIC) {
-        if (res->has_logger) {
+        if (res->logger) {
             char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
             auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
             info_display_string(logname) ;
@@ -1040,7 +1040,7 @@ static void info_display_logfile(char const *field,resolve_service_t *res)
 
         status_io_load(&io, res) ;
 
-        if (res->has_logger || (res->type == E_PARSER_TYPE_ONESHOT && io.fdout.destination)) {
+        if (res->logger || (res->type == E_PARSER_TYPE_ONESHOT && io.fdout.destination)) {
 
             if (nlog) {
 

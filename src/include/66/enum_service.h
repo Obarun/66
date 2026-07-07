@@ -144,7 +144,6 @@ typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
     macro(SCANDIR,          "scandirdir"), \
     macro(STATEDIR,         "statedir"), \
     macro(EVENTDIR,         "eventdir"), \
-    macro(NOTIFDIR,         "notifdir"), \
     macro(SUPERVISEDIR,     "supervisedir"), \
     macro(FDHOLDERDIR,      "fdholderdir"), \
     macro(ONESHOTDDIR,      "oneshotddir")

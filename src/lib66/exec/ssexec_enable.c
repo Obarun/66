@@ -127,7 +127,7 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
 
             service_switch_tree(&hash->res, info->treename.s, info) ;
 
-            if (hash->res.has_logger && hash->res.type == E_PARSER_TYPE_CLASSIC) {
+            if (hash->res.logger && hash->res.type == E_PARSER_TYPE_CLASSIC) {
 
                 char logname[strlen(hash->res.sa.s + hash->res.name) + SS_LOG_SUFFIX_LEN + 1] ;
                 auto_strings(logname, hash->res.sa.s + hash->res.name, SS_LOG_SUFFIX) ;

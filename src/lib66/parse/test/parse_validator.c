@@ -15,43 +15,16 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <66/parse.h>
 #include <66/enum_parser.h>
 
-static resolve_enum_table_t key_main(uint32_t id)
+/* parse_validator_init splits the frontend into sections: present[sid] flags an
+ * existing section, off[sid]/len[sid] delimit its body. */
+static void sections_present_and_absent(void)
 {
-    resolve_enum_table_t t = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
-    t.u.parser.id = id ;
-    return t ;
-}
-
-static resolve_enum_table_t key_start(uint32_t id)
-{
-    resolve_enum_table_t t = E_TABLE_PARSER_SECTION_START_ZERO ;
-    t.u.parser.id = id ;
-    return t ;
-}
-
-static resolve_enum_table_t key_stop(uint32_t id)
-{
-    resolve_enum_table_t t = E_TABLE_PARSER_SECTION_STOP_ZERO ;
-    t.u.parser.id = id ;
-    return t ;
-}
-
-static resolve_enum_table_t key_logger(uint32_t id)
-{
-    resolve_enum_table_t t = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
-    t.u.parser.id = id ;
-    return t ;
-}
-
-/* A key present in the frontend reads as touched, an absent one as default,
- * each looked up only in the section it belongs to. */
-static void present_and_absent(void)
-{
-    printf("Running test present_and_absent...\n") ;
+    printf("Running test sections_present_and_absent...\n") ;
 
     static char const fe[] =
         "[Main]\n"
@@ -60,85 +33,36 @@ static void present_and_absent(void)
         "\n"
         "[Start]\n"
         "Execute = ( /bin/true )\n"
-        "TimeoutStart = 2000\n"
-        "\n"
-        "[Stop]\n"
-        "Execute = ( /bin/stop )\n"
         "\n"
         "[Logger]\n"
-        "Backup = 3\n"
-        "Timestamp = iso\n" ;
+        "Backup = 3\n" ;
 
     parse_validator_t v ;
     assert(parse_validator_init(&v, fe) == 1) ;
 
-    /* [Main] */
-    assert(parse_checker(&v, key_main(E_PARSER_SECTION_MAIN_TYPE)) == 1) ;
-    assert(parse_checker(&v, key_main(E_PARSER_SECTION_MAIN_DESCRIPTION)) == 1) ;
-    assert(parse_checker(&v, key_main(E_PARSER_SECTION_MAIN_VERSION)) == 0) ;
+    /* present sections */
+    assert(v.present[E_PARSER_SECTION_MAIN]) ;
+    assert(v.present[E_PARSER_SECTION_START]) ;
+    assert(v.present[E_PARSER_SECTION_LOGGER]) ;
 
-    /* [Start] */
-    assert(parse_checker(&v, key_start(E_PARSER_SECTION_STARTSTOP_EXEC)) == 1) ;
-    assert(parse_checker(&v, key_start(E_PARSER_SECTION_STARTSTOP_TIMESTART)) == 1) ;
+    /* absent sections read as not present */
+    assert(!v.present[E_PARSER_SECTION_STOP]) ;
+    assert(!v.present[E_PARSER_SECTION_ENVIRONMENT]) ;
+    assert(!v.present[E_PARSER_SECTION_REGEX]) ;
 
-    /* [Stop]: Execute set, TimeoutStop not */
-    assert(parse_checker(&v, key_stop(E_PARSER_SECTION_STARTSTOP_EXEC)) == 1) ;
-    assert(parse_checker(&v, key_stop(E_PARSER_SECTION_STARTSTOP_TIMESTOP)) == 0) ;
-
-    /* [Logger] */
-    assert(parse_checker(&v, key_logger(E_PARSER_SECTION_LOGGER_TIMESTAMP)) == 1) ;
-    assert(parse_checker(&v, key_logger(E_PARSER_SECTION_LOGGER_BACKUP)) == 1) ;
-    assert(parse_checker(&v, key_logger(E_PARSER_SECTION_LOGGER_MAXSIZE)) == 0) ;
-}
-
-/* The whole point of the section scope: TimeoutStart lives in [Start]. A
- * whole-file scan would wrongly report it present when asked for [Stop]. */
-static void section_scoping(void)
-{
-    printf("Running test section_scoping...\n") ;
-
-    static char const fe[] =
-        "[Main]\n"
-        "Type = classic\n"
-        "\n"
-        "[Start]\n"
-        "Execute = ( /bin/true )\n"
-        "TimeoutStart = 2000\n"
-        "\n"
-        "[Stop]\n"
-        "Execute = ( /bin/stop )\n" ;
-
-    parse_validator_t v ;
-    assert(parse_validator_init(&v, fe) == 1) ;
-
-    assert(parse_checker(&v, key_start(E_PARSER_SECTION_STARTSTOP_TIMESTART)) == 1) ;
-    assert(parse_checker(&v, key_stop(E_PARSER_SECTION_STARTSTOP_TIMESTART)) == 0) ;
-}
-
-/* A key of an entirely absent section reads as default. */
-static void missing_section(void)
-{
-    printf("Running test missing_section...\n") ;
-
-    static char const fe[] =
-        "[Main]\n"
-        "Type = classic\n"
-        "\n"
-        "[Start]\n"
-        "Execute = ( /bin/true )\n" ;
-
-    parse_validator_t v ;
-    assert(parse_validator_init(&v, fe) == 1) ;
-
-    assert(parse_checker(&v, key_logger(E_PARSER_SECTION_LOGGER_TIMESTAMP)) == 0) ;
-    assert(parse_checker(&v, key_stop(E_PARSER_SECTION_STARTSTOP_EXEC)) == 0) ;
+    /* off/len delimit the [Main] body: it covers both [Main] keys but stops
+     * before the next section header. */
+    char main_body[v.len[E_PARSER_SECTION_MAIN] + 1] ;
+    memcpy(main_body, v.frontend + v.off[E_PARSER_SECTION_MAIN], v.len[E_PARSER_SECTION_MAIN]) ;
+    main_body[v.len[E_PARSER_SECTION_MAIN]] = 0 ;
+    assert(strstr(main_body, "Type = classic")) ;
+    assert(strstr(main_body, "Description")) ;
+    assert(!strstr(main_body, "[Start]")) ;
 }
 
 int main(void)
 {
-    present_and_absent() ;
-    section_scoping() ;
-    missing_section() ;
+    sections_present_and_absent() ;
 
     printf("All tests passed successfully.\n") ;
 

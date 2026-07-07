@@ -18,6 +18,8 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/string.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
@@ -26,16 +28,65 @@
 #include <66/constants.h>
 #include <66/config.h>
 
-int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addon_logger_t *lg, uint8_t *has_logger)
+static int get_shebang(strbuf *stk, char const *line)
+{
+    size_t len = strlen(line) ;
+    uint32_t i = 0 ;
+
+    while (line[i] == ' ' || line[i] == '\t' || line[i] == '\r' || line[i] == '\n')
+        i++ ;
+
+    if (i >= len || line[i] != '#' || line[i + 1] != '!')
+        return 0 ;
+
+    if (!sbl_addb(stk, line + i, len - i))
+        log_warnsys_return(LOG_EXIT_LESSONE, "stack add") ;
+
+    return 1 ;
+}
+
+int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
+    parse_store_t *st = ctx->st ;
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_logger_t *lg = &c->logger ;
+
     if (res->type == E_PARSER_TYPE_MODULE) {
-        *has_logger = 0 ;
+        res->logger = 0 ;
         return 1 ;
     }
 
-    *has_logger = 1 ;
+    res->logger = 1 ;
+
+    if (parse_store_present(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_OPTIONS)) {
+
+        resolve_enum_table_t t = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
+        t.u.parser.id = E_PARSER_SECTION_MAIN_OPTIONS ;
+        size_t len = 0 ;
+        char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_OPTIONS, &len) ;
+
+        _alloc_sbl_(stk, len + 1) ;
+
+        if (!strbuf_copyb(&stk, v, len))
+            log_die_nomem("stack") ;
+
+        if (!parse_list(&stk))
+            parse_error_return(0, 8, t) ;
+
+        size_t pos = 0 ;
+        FOREACH_SBL(&stk, pos) {
+
+            uint8_t reverse = stk.s[pos] == '!' ? 1 : 0 ;
+            int r = key_to_enum(enum_list_parser_opts, stk.s + pos + reverse) ;
+            if (r == -1)
+                parse_error_return(0, 0, t) ;
+
+            if (reverse && r == E_PARSER_OPTS_LOGGER)
+                res->logger = 0 ;
+        }
+    }
 
     _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
     resolve_init(wres) ;
@@ -60,8 +111,10 @@ int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addo
                 {
                     char tmp[strlen(v) + 1] ;
                     auto_strings(tmp, v) ;
+
                     if (!parse_clean_runas(tmp, t))
                         return 0 ;
+
                     lg->execute.run.runas = resolve_add_string(wres, tmp) ;
                 }
                 break ;
@@ -86,8 +139,10 @@ int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addo
                 break ;
 
             case E_PARSER_SECTION_LOGGER_MAXSIZE :
+
                 if (!u32_scan_strict(v, &lg->maxsize))
                     parse_error_return(0, 3, t) ;
+
                 if (lg->maxsize < 4096 || lg->maxsize > 268435455)
                     parse_error_return(0, 0, t) ;
                 break ;
@@ -97,6 +152,7 @@ int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addo
                     int r = key_to_enum(enum_list_parser_time, v) ;
                     if (r == -1)
                         parse_error_return(0, 0, t) ;
+
                     lg->timestamp = (uint32_t)r ;
                 }
                 break ;
@@ -109,6 +165,20 @@ int parse_logger(parse_store_t *st, resolve_service_t *res, resolve_service_addo
     // default runner when the user did not set Runas
     if (!lg->execute.run.runas)
         lg->execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
+
+    if (lg->execute.run.run_user) {
+
+        size_t len = strlen(lg->sa.s + lg->execute.run.run_user) ;
+        _alloc_sbl_(stk, len) ;
+
+        int r = get_shebang(&stk, lg->sa.s + lg->execute.run.run_user) ;
+        if (r < 0)
+            return 0 ;
+        if (r) {
+            lg->execute.run.run_user = resolve_add_string(wres, stk.s) ;
+            lg->execute.run.build = resolve_add_string(wres, "custom") ;
+        }
+    }
 
     return 1 ;
 }

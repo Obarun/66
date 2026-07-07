@@ -26,7 +26,6 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 #include <66/constants.h>
-#include <66/utils.h>
 
 static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *prefix)
 {
@@ -124,7 +123,7 @@ void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon
             if (c->dependencies.ndepends || c->dependencies.nrequiredby)
                 parse_prefix_name(&c->dependencies, hres, prefix) ;
 
-            if (c->res.has_logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
+            if (c->res.logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
 
                 size_t namelen = strlen(c->res.sa.s + c->res.name) ;
                 char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
@@ -133,24 +132,7 @@ void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon
                 // in c->logger, untouched by the rename above.
                 auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
 
-                /** the validator answers "was the key set?" from the frontend;
-                 * this post-parse path has only the resolve, so re-read the
-                 * service's frontend (still on disk, just parsed) to build it. */
-                char *fpath = c->res.sa.s + c->res.path.frontend ;
-                char fdir[strlen(fpath) + 1], fname[strlen(fpath) + 1] ;
-                _cleanup_strbuf_ strbuf fe = STRBUF_ZERO ;
-                parse_validator_t validator ;
-
-                if (!ob_dirname(fdir, fpath) || !ob_basename(fname, fpath))
-                    log_dieu(LOG_EXIT_SYS, "split frontend path: ", fpath) ;
-
-                if (read_svfile(&fe, fname, fdir) <= 0)
-                    log_dieu(LOG_EXIT_SYS, "read frontend service at: ", fpath) ;
-
-                if (!parse_validator_init(&validator, fe.s))
-                    log_dieu(LOG_EXIT_SYS, "init parser validator of service: ", fname) ;
-
-                parse_create_logger(&validator, hres, &c->res, &c->io, &c->logger, &c->execute, &c->dependencies, info) ;
+                parse_create_logger(hres, c, info) ;
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!sbl_add(&stk, logname))

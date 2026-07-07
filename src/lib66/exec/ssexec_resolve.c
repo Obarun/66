@@ -45,10 +45,13 @@ static info_field_t const fields[] = {
     { "inns",            INFO_FIELD_STR, offsetof(resolve_service_t, inns) },
     { "enabled",         INFO_FIELD_U32, offsetof(resolve_service_t, enabled) },
     { "islog",           INFO_FIELD_U32, offsetof(resolve_service_t, islog) },
+    { "logger",          INFO_FIELD_U32, offsetof(resolve_service_t, logger) },
     { "has_limit",       INFO_FIELD_U32, offsetof(resolve_service_t, has_limit) },
-    { "has_logger",      INFO_FIELD_U32, offsetof(resolve_service_t, has_logger) },
+    { "has_environ",     INFO_FIELD_U32, offsetof(resolve_service_t, has_environ) },
+    { "has_io",          INFO_FIELD_U32, offsetof(resolve_service_t, has_io) },
     { "has_execute",     INFO_FIELD_U32, offsetof(resolve_service_t, has_execute) },
     { "has_dependencies",INFO_FIELD_U32, offsetof(resolve_service_t, has_dependencies) },
+    { "has_regex",       INFO_FIELD_U32, offsetof(resolve_service_t, has_regex) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
@@ -99,20 +102,9 @@ static info_field_t const fields[] = {
     { "scandir",         INFO_FIELD_STR, offsetof(resolve_service_t, live.scandir) },
     { "statedir",        INFO_FIELD_STR, offsetof(resolve_service_t, live.statedir) },
     { "eventdir",        INFO_FIELD_STR, offsetof(resolve_service_t, live.eventdir) },
-    { "notifdir",        INFO_FIELD_STR, offsetof(resolve_service_t, live.notifdir) },
     { "supervisedir",    INFO_FIELD_STR, offsetof(resolve_service_t, live.supervisedir) },
     { "fdholderdir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.fdholderdir) },
     { "oneshotddir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.oneshotddir) },
-
-    { "logbackup",       INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, backup),                DATA_SERVICE_LOGGER },
-    { "logmaxsize",      INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, maxsize),               DATA_SERVICE_LOGGER },
-    { "logtimestamp",    INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, timestamp),             DATA_SERVICE_LOGGER },
-    { "logrun",          INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.run),       DATA_SERVICE_LOGGER },
-    { "logrun_user",     INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.run_user),  DATA_SERVICE_LOGGER },
-    { "logrun_build",    INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.build),     DATA_SERVICE_LOGGER },
-    { "logrun_runas",    INFO_FIELD_STR, offsetof(resolve_service_addon_logger_t, execute.run.runas),     DATA_SERVICE_LOGGER },
-    { "logtimeoutstart", INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, execute.timeout.start), DATA_SERVICE_LOGGER },
-    { "logtimeoutstop",  INFO_FIELD_U32, offsetof(resolve_service_addon_logger_t, execute.timeout.stop),  DATA_SERVICE_LOGGER },
 
     { "env",             INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, env),           DATA_SERVICE_ENVIRON },
     { "envdir",          INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, envdir),        DATA_SERVICE_ENVIRON },
@@ -242,7 +234,6 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_limit_t limit = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
     resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
     resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
@@ -264,12 +255,6 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     if (res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_IO].base = &io ;
         addons[DATA_SERVICE_IO].blob = io.sa.s ;
-    }
-
-    resolve_wrapper_t_ref wlogger = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
-    if (res.has_logger && resolve_read(wlogger, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
-        addons[DATA_SERVICE_LOGGER].base = &logger ;
-        addons[DATA_SERVICE_LOGGER].blob = logger.sa.s ;
     }
 
     resolve_wrapper_t_ref wexecute = resolve_set_struct(DATA_SERVICE_EXECUTE, &execute) ;
@@ -295,7 +280,6 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
     resolve_free(wio) ;
-    resolve_free(wlogger) ;
     resolve_free(wexecute) ;
     resolve_free(wdependencies) ;
     resolve_free(wregex) ;

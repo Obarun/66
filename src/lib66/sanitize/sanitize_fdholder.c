@@ -54,7 +54,7 @@ int sanitize_fdholder(resolve_service_t *res, fdholder_client_t *c, ss_state_t *
     (void)sta ;
     (void)init ;
 
-    if (res->has_logger && res->type == E_PARSER_TYPE_CLASSIC) {
+    if (res->logger && res->type == E_PARSER_TYPE_CLASSIC) {
 
         if (FLAGS_ISSET(flag, STATE_FLAGS_FALSE)) {
 

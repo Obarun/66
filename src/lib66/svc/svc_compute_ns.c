@@ -35,6 +35,12 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
     uint8_t requiredby = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t nservice = 0, flag = GRAPH_SKIP_EARLIER ;
+
+    if (!svc->dependencies->ncontents) {
+        log_warn("empty ns: ", svc->res->sa.s + svc->res->name) ;
+        return 0 ;
+    }
+
     _alloc_sbl_(stk, strlen(svc->dependencies->sa.s + svc->dependencies->contents) + 1) ;
 
     if (mgr->propagate) {
@@ -45,15 +51,8 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
         } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
     }
 
-    if (svc->dependencies->ncontents) {
-
-        if (!sbl_clean_string(&stk, svc->dependencies->sa.s + svc->dependencies->contents))
-            log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-    } else {
-        log_warn("empty ns: ", svc->res->sa.s + svc->res->name) ;
-        return 0 ;
-    }
+    if (!sbl_clean_string(&stk, svc->dependencies->sa.s + svc->dependencies->contents))
+        log_dieu(LOG_EXIT_SYS, "clean string") ;
 
     if (!service_graph_new(&graph, svc->dependencies->ncontents))
         log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;

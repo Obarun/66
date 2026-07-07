@@ -123,11 +123,14 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
     resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
     resolve_wrapper_t_ref dw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
     if (!res->has_dependencies || resolve_read(dw, info->base.s, res->sa.s + res->name) <= 0) {
-        free(dw) ;
-        strbuf_free(&dep.sa) ;
+        resolve_free(dw) ;
         return ;
     }
-    free(dw) ;
+
+    if (!dep.nprovide) {
+        resolve_free(dw) ;
+        return ;
+    }
 
     _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
     _alloc_sbl_(stk, strlen(dep.sa.s + dep.provide)) ;
@@ -137,7 +140,7 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
     if (!sbl_clean_string(&stk, dep.sa.s + dep.provide))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    strbuf_free(&dep.sa) ;
+    resolve_free(dw) ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -180,10 +183,9 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
     resolve_wrapper_t_ref rdw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &rdep) ;
     if (resolve_read(rdw, info->base.s, res->sa.s + res->name) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", res->sa.s + res->name) ;
-    free(rdw) ;
 
     if (!rdep.ndepends) {
-        strbuf_free(&rdep.sa) ;
+        resolve_free(rdw) ;
         return ;
     }
 
@@ -195,7 +197,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
     if (!sbl_clean_string(&stk, rdep.sa.s + rdep.depends))
         log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-    strbuf_free(&rdep.sa) ;
+    resolve_free(rdw) ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -275,11 +277,11 @@ static void remove_logger(resolve_service_t *res, ssexec_t *info)
 
         resolve_service_addon_io_t rio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
         resolve_wrapper_t_ref riow = resolve_set_struct(DATA_SERVICE_IO, &rio) ;
-        if (res->has_io && resolve_read(riow, res->sa.s + res->path.home, res->sa.s + res->name) > 0)
+        if (res->has_io && resolve_read(riow, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && rio.fdout.type == E_PARSER_IO_TYPE_66LOG) {
             auto_remove(rio.sa.s + rio.fdout.destination) ;
+            log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
+        }
         resolve_free(riow) ;
-
-        log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
         resolve_free(lwres) ;
         return ;
 
@@ -329,7 +331,7 @@ static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propa
     if (res->has_dependencies)
         remove_provide(res, info) ;
 
-    if (res->has_logger)
+    if (res->logger || res->type == E_PARSER_TYPE_ONESHOT)
         remove_logger(res, info) ;
 
     if (res->has_dependencies)

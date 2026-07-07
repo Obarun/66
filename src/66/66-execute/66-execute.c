@@ -76,7 +76,7 @@ static void setup_uidgid(uid_t *uid, gid_t *gid, resolve_service_t *res, resolve
         log_dieusys(LOG_EXIT_SYS, "get gid") ;
 }
 
-static void execute_setup_destination(resolve_service_t *res, const char *dest)
+static void execute_setup_destination(resolve_service_t *res, resolve_service_addon_io_t *io, const char *dest)
 {
     log_flow() ;
 
@@ -85,13 +85,12 @@ static void execute_setup_destination(resolve_service_t *res, const char *dest)
     uid_t uid = res->owner ;
     gid_t gid ;
 
-    resolve_service_addon_logger_t lg = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
-    resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &lg) ;
-    if (res->has_logger && resolve_read(wlg, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && lg.execute.run.runas) {
-        if (!youruid(&uid, lg.sa.s + lg.execute.run.runas))
-            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", lg.sa.s + lg.execute.run.runas) ;
+    /* a 66log destination directory is owned by the logger runas, kept on the io
+     * addon (classic and oneshot); otherwise it stays owned by the service owner. */
+    if (io->runas) {
+        if (!youruid(&uid, io->sa.s + io->runas))
+            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", io->sa.s + io->runas) ;
     }
-    resolve_free(wlg) ;
 
     if (!yourgid(&gid, uid))
         log_dieusys(LOG_EXIT_SYS, "get gid") ;
@@ -137,7 +136,7 @@ static void io_fdholder_retrieve(resolve_service_t *res, int fd, const char *nam
             log_dieusys(LOG_EXIT_SYS, "uncloexec_fd fd") ;
 }
 
-static void io_open_file(resolve_service_t *res,  int fd, char const *destination)
+static void io_open_file(resolve_service_t *res, resolve_service_addon_io_t *io, int fd, char const *destination)
 {
     log_flow() ;
 
@@ -150,7 +149,7 @@ static void io_open_file(resolve_service_t *res,  int fd, char const *destinatio
     if (!ob_dirname(dir, destination))
         log_dieusys(LOG_EXIT_SYS, "get dirname of: ", destination) ;
 
-    execute_setup_destination(res, dir) ;
+    execute_setup_destination(res, io, dir) ;
 
     fdest = io_open_mode(destination, flags, 0666) ;
 
@@ -367,7 +366,7 @@ static void io_setup_stdout(resolve_service_t *res, resolve_service_addon_io_t *
                 auto_strings(stk, io->sa.s + io->fdout.destination, "/", SS_CURRENT) ;
                 stk[strlen(io->sa.s + io->fdout.destination) + 1 + SS_CURRENT_LEN] = 0 ;
 
-                io_open_file(res, 1, stk) ;
+                io_open_file(res, io, 1, stk) ;
             }
             break ;
 
@@ -380,7 +379,7 @@ static void io_setup_stdout(resolve_service_t *res, resolve_service_addon_io_t *
             break ;
 
         case E_PARSER_IO_TYPE_FILE:
-            io_open_file(res, 1, io->sa.s + io->fdout.destination) ;
+            io_open_file(res, io, 1, io->sa.s + io->fdout.destination) ;
             break ;
 
         case E_PARSER_IO_TYPE_SYSLOG:
@@ -424,7 +423,7 @@ static void io_setup_stderr(resolve_service_t *res, resolve_service_addon_io_t *
             break ;
 
         case E_PARSER_IO_TYPE_FILE:
-            io_open_file(res, 2, io->sa.s + io->fderr.destination) ;
+            io_open_file(res, io, 2, io->sa.s + io->fderr.destination) ;
             break ;
 
         case E_PARSER_IO_TYPE_SYSLOG:

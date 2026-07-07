@@ -115,7 +115,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
-        if (res->has_logger && !action && res->type == E_PARSER_TYPE_CLASSIC && !res->inns) {
+        if (res->logger && !action && res->type == E_PARSER_TYPE_CLASSIC && !res->inns) {
 
             char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
             auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;

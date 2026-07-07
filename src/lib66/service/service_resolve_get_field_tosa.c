@@ -173,10 +173,6 @@ static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_liv
             str = res->sa.s + res->live.eventdir ;
             break ;
 
-        case E_RESOLVE_SERVICE_LIVE_NOTIFDIR:
-            str = res->sa.s + res->live.notifdir ;
-            break ;
-
         case E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR:
             str = res->sa.s + res->live.supervisedir ;
             break ;

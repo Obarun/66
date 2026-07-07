@@ -311,7 +311,15 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
     if (!ob_basename(main, sv))
         log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
 
-    r = parse_frontend(sv, hres, info, force, conf, 0, main, 0, 0, 0) ;
+    parse_build_ctx_t ctx = {
+        .hres = hres,
+        .info = info,
+        .main = main,
+        .force = force,
+        .conf = conf,
+    } ;
+
+    r = parse_frontend(sv, ctx) ;
     if (r == 2)
         /** already parsed */
         return ;
@@ -380,18 +388,6 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                 free(wio) ;
             }
 
-            if (c->res.has_logger) {
-                char const *lgname = c->res.sa.s + c->res.name ;
-                char aname[strlen(lgname) + SS_ADDON_LOGGER_SUFFIX_LEN + 1] ;
-                auto_strings(aname, lgname, SS_ADDON_LOGGER_SUFFIX) ;
-                resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &c->logger) ;
-                if (!resolve_write_at(wlg, sa.s, aname)) {
-                    free(wlg) ;
-                    log_dieusys(LOG_EXIT_SYS, "write logger addon of: ", lgname) ;
-                }
-                free(wlg) ;
-            }
-
             if (c->res.has_execute) {
                 char const *exname = c->res.sa.s + c->res.name ;
                 char aname[strlen(exname) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
@@ -402,6 +398,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                     log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", exname) ;
                 }
                 free(wex) ;
+            }
+
+            if (c->res.has_dependencies) {
+                char const *dname = c->res.sa.s + c->res.name ;
+                char aname[strlen(dname) + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ;
+                auto_strings(aname, dname, SS_ADDON_DEPENDENCIES_SUFFIX) ;
+                resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
+                if (!resolve_write_at(wdep, sa.s, aname)) {
+                    free(wdep) ;
+                    log_dieusys(LOG_EXIT_SYS, "write dependencies addon of: ", dname) ;
+                }
+                free(wdep) ;
             }
 
             if (c->res.has_regex) {

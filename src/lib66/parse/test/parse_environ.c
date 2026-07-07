@@ -57,34 +57,33 @@ static void with_environment(void)
     parse_store_t st ;
     assert(parse_store_build(&st, fe.s) == 1) ;
 
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
+    struct resolve_hash_s c = {0} ;
+    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &c.res) ;
     resolve_init(w) ;
-    res.name = resolve_add_string(w, "testsvc") ;
-    res.owner = 0 ; // admin -> envdir under SS_SERVICE_ADMCONFDIR
+    c.res.name = resolve_add_string(w, "testsvc") ;
+    c.res.owner = 0 ; // admin -> envdir under SS_SERVICE_ADMCONFDIR
 
-    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    uint8_t has_environ = 0 ;
-    assert(parse_environ(&st, &res, &e, 1, &has_environ) == 1) ;
+    parse_build_ctx_t ctx = { .st = &st, .conf = 1 } ;
+    assert(parse_environ(&c, &ctx) == 1) ;
 
-    assert(has_environ == 1) ;
-    assert(e.env_overwrite == 1) ;                        // the conf flag
+    assert(c.res.has_environ == 1) ;
+    assert(c.environ.env_overwrite == 1) ;                // the conf flag
 
     /* the env block, ImportFile stripped out */
-    assert(strstr(e.sa.s + e.env, "FOO=bar") != 0) ;
-    assert(strstr(e.sa.s + e.env, "BAZ=qux") != 0) ;
-    assert(strstr(e.sa.s + e.env, "ImportFile") == 0) ;
+    assert(strstr(c.environ.sa.s + c.environ.env, "FOO=bar") != 0) ;
+    assert(strstr(c.environ.sa.s + c.environ.env, "BAZ=qux") != 0) ;
+    assert(strstr(c.environ.sa.s + c.environ.env, "ImportFile") == 0) ;
 
     /* envdir computed from the core: SS_SERVICE_ADMCONFDIR + name */
     char expected[256] ;
     auto_strings(expected, SS_SERVICE_ADMCONFDIR, "testsvc") ;
-    assert(!strcmp(e.sa.s + e.envdir, expected)) ;
+    assert(!strcmp(c.environ.sa.s + c.environ.envdir, expected)) ;
 
     /* the import file, split out and counted */
-    assert(e.nimportfile == 1) ;
-    assert(!strcmp(e.sa.s + e.importfile, imp)) ;
+    assert(c.environ.nimportfile == 1) ;
+    assert(!strcmp(c.environ.sa.s + c.environ.importfile, imp)) ;
 
-    strbuf_free(&e.sa) ;
+    strbuf_free(&c.environ.sa) ;
     resolve_free(w) ;
     parse_store_free(&st) ;
     unlink(imp) ;
@@ -105,20 +104,20 @@ static void without_environment(void)
     parse_store_t st ;
     assert(parse_store_build(&st, fe) == 1) ;
 
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
+    struct resolve_hash_s c = {0} ;
+    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &c.res) ;
     resolve_init(w) ;
-    res.name = resolve_add_string(w, "testsvc") ;
+    c.res.name = resolve_add_string(w, "testsvc") ;
 
-    resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    uint8_t has_environ = 1 ; // seed non-zero to prove parse_environ clears it
-    assert(parse_environ(&st, &res, &e, 0, &has_environ) == 1) ;
+    c.res.has_environ = 1 ; // seed non-zero to prove parse_environ clears it
+    parse_build_ctx_t ctx = { .st = &st, .conf = 0 } ;
+    assert(parse_environ(&c, &ctx) == 1) ;
 
-    assert(has_environ == 0) ;
-    assert(e.env == 0) ;
-    assert(e.envdir == 0) ;
+    assert(c.res.has_environ == 0) ;
+    assert(c.environ.env == 0) ;
+    assert(c.environ.envdir == 0) ;
 
-    strbuf_free(&e.sa) ;
+    strbuf_free(&c.environ.sa) ;
     resolve_free(w) ;
     parse_store_free(&st) ;
 }

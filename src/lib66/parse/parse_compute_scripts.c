@@ -82,16 +82,19 @@ static void compute_wrapper_scripts_user(resolve_service_addon_execute_t *ex, ui
     free(wres) ;
 }
 
+void parse_compute_script(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish)
+{
+    compute_wrapper_scripts(res, ex, runorfinish) ;
+    compute_wrapper_scripts_user(ex, runorfinish) ;
+}
+
 void parse_compute_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex)
 {
     if (res->type != E_PARSER_TYPE_MODULE) {
 
-        compute_wrapper_scripts(res, ex, 1) ; // run
-        compute_wrapper_scripts_user(ex, 1) ; // run.user
+        parse_compute_script(res, ex, 1) ; // run
 
-        if (ex->finish.run_user) {
-            compute_wrapper_scripts(res, ex, 0) ; // finish
-            compute_wrapper_scripts_user(ex, 0) ; // finish.user
-        }
+        if (ex->finish.run_user)
+            parse_compute_script(res, ex, 0) ; // finish
     }
 }

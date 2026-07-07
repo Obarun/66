@@ -66,13 +66,6 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 
         auto_strings(lname + strlen(lname), SS_ADDON_IO_SUFFIX) ;
 
-    } else if (wres->type == DATA_SERVICE_LOGGER) {
-
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_LOGGER_SUFFIX) ;
-
     } else if (wres->type == DATA_SERVICE_EXECUTE) {
 
         if (!resolve_path(path, lname, base, name))

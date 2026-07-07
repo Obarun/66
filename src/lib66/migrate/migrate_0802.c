@@ -110,15 +110,13 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     new->live.scandir = old->live.scandir ? resolve_add_string(wres, old->sa.s + old->live.scandir) : 0 ;
     new->live.statedir = old->live.statedir ? resolve_add_string(wres, old->sa.s + old->live.statedir) : 0 ;
     new->live.eventdir = old->live.eventdir ? resolve_add_string(wres, old->sa.s + old->live.eventdir) : 0 ;
-    new->live.notifdir = old->live.notifdir ? resolve_add_string(wres, old->sa.s + old->live.notifdir) : 0 ;
     new->live.supervisedir = old->live.supervisedir ? resolve_add_string(wres, old->sa.s + old->live.supervisedir) : 0 ;
     new->live.fdholderdir = old->live.fdholderdir ? resolve_add_string(wres, old->sa.s + old->live.fdholderdir) : 0 ;
     new->live.oneshotddir = old->live.oneshotddir ? resolve_add_string(wres, old->sa.s + old->live.oneshotddir) : 0 ;
 
-    // logger -> autonomous addon (routed out of the core). The name is no longer
-    // stored (always <service>-log) and want becomes the has_logger manifest flag.
-    new->has_logger = old->logger.want ? 1 : 0 ;
-    if (new->has_logger) {
+    // logger
+    new->logger = old->logger.want ? 1 : 0 ;
+    if (new->logger) {
         resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
         resolve_init(lgwres) ;
         lg->backup = old->logger.backup ;
@@ -326,6 +324,15 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
     service_resolve_sanitize_0802(&new, &environ, &io, &logger, &execute, &dependencies, &regex, &res) ;
 
+    if (new.type != E_PARSER_TYPE_CLASSIC)
+        new.logger = 0 ;
+
+    if (res.logger.want && res.logger.execute.run.runas && io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
+        resolve_wrapper_t_ref iow = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+        io.runas = resolve_add_string(iow, res.sa.s + res.logger.execute.run.runas) ;
+        free(iow) ;
+    }
+
     migrate_ensure_log_owner(&new, &io, &logger) ;
 
     if (!resolve_write(wres, info->base.s, name))
@@ -347,15 +354,6 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
             log_dieusys(LOG_EXIT_SYS, "write io addon of service: ", name) ;
         }
         resolve_free(wio) ;
-    }
-
-    if (new.has_logger) {
-        resolve_wrapper_t_ref wlg = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
-        if (!resolve_write(wlg, info->base.s, name)) {
-            resolve_free(wlg) ;
-            log_dieusys(LOG_EXIT_SYS, "write logger addon of service: ", name) ;
-        }
-        resolve_free(wlg) ;
     }
 
     if (new.has_dependencies) {
@@ -384,6 +382,10 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
         }
         resolve_free(wex) ;
     }
+
+    /* the logger addon is transient (only feeds migrate_ensure_log_owner, never
+     * written to disk), so nothing else frees its arena -- do it here. */
+    strbuf_free(&logger.sa) ;
 
     resolve_free(wres) ;
 }

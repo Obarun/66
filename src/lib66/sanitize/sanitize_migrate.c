@@ -114,7 +114,7 @@ void migrate_create_snap(ssexec_t *info, const char *version)
  */
 void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
 {
-    if (res->has_logger && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
+    if (res->logger && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
         _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
         char const *exclude[1] = { 0 } ;

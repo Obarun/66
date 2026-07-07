@@ -13,12 +13,9 @@
  */
 
 #include <string.h>
-#include <stdint.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sbl.h>
-#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
@@ -61,25 +58,4 @@ int parse_validator_init(parse_validator_t *v, char const *frontend)
     }
 
     return 1 ;
-}
-
-int parse_checker(parse_validator_t *v, resolve_enum_table_t key)
-{
-    log_flow() ;
-
-    uint32_t sid = key.u.parser.sid ;
-
-    if (sid >= E_PARSER_SECTION_ENDOFKEY || !v->present[sid])
-        return 0 ;
-
-    size_t l = v->len[sid] ;
-    char tmp[l + 2] ;
-    _alloc_sbl_(store, l + 1) ;
-
-    memcpy(tmp, v->frontend + v->off[sid], l) ;
-
-    tmp[l] = '\n' ;
-    tmp[l + 1] = 0 ;
-
-    return parse_get_value_of_key(&store, tmp, key) ;
 }

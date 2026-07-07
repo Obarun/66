@@ -128,13 +128,12 @@ struct resolve_service_addon_live_s
     uint32_t scandir ; // string, /run/66/state/uid/service_name/scandir/service_name -> /var/lib/66/system/service/svc/service_name -> /run/66/scandir/uid
     uint32_t statedir ; // string, /run/66/state/uid/service_name/state -> /var/lib/66/system/service/svc/service_name/state
     uint32_t eventdir ; // string, /run/66/state/uid/service_name/event -> /var/lib/66/system/service/svc/service_name/event
-    uint32_t notifdir ; // string, /run/66/state/uid/service_name/notif -> /var/lib/66/system/service/svc/service_name/notif
     uint32_t supervisedir ; // string, /run/66/state/uid/service_name/supervise -> /var/lib/66/system/service/svc/service_name/supervise
     uint32_t fdholderdir ; // string, /run/66/state/uid/service_name/scandir/fdholder
     uint32_t oneshotddir ; // string, /run/66/state/uid/service_name/scandir/oneshotd
 } ;
 
-#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_logger_s resolve_service_addon_logger_t, *resolve_service_addon_logger_t_ref ;
 struct resolve_service_addon_logger_s
@@ -213,13 +212,15 @@ struct resolve_service_addon_io_s
     resolve_service_addon_io_type_t fdin ; // default close
     resolve_service_addon_io_type_t fdout ; // default 66-log
     resolve_service_addon_io_type_t fderr ; // default inherit
+    uint32_t runas ; // string, owner of a 66log destination directory (ex logger runas)
 } ;
 
 #define RESOLVE_SERVICE_ADDON_IO_ZERO { \
     STRBUF_ZERO, 0, \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
     { E_PARSER_IO_TYPE_NOTSET, 0 }, \
-    { E_PARSER_IO_TYPE_NOTSET, 0 } \
+    { E_PARSER_IO_TYPE_NOTSET, 0 }, \
+    0 \
 }
 
 typedef struct resolve_service_addon_limit_s resolve_service_addon_limit_t, *resolve_service_addon_limit_t_ref;
@@ -269,14 +270,13 @@ struct resolve_service_s
     uint32_t inns ; // string, name of the namespace(module) which depend on
     uint32_t enabled ; // integer, 0 not enabled
     uint32_t islog ; // integer, 0 not a logger service
+    uint32_t logger ; // integer, >0 ⇔ the service has a logger companion
 
     // manifest: >0 ⇒ the .resolve/<name>.<addon> CDB exists.
-    // has_logger doubles as the old logger.want: >0 ⇔ the service has a logger companion.
     // notify/maxdeath/maxdeathtime moved into the execute addon.
     uint32_t has_limit ;
     uint32_t has_environ ;
     uint32_t has_io ;
-    uint32_t has_logger ;
     uint32_t has_execute ;
     uint32_t has_dependencies ;
     uint32_t has_regex ;
@@ -286,8 +286,8 @@ struct resolve_service_s
 } ;
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
-                               0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
-                               0,0,0,0,0,0,0, \
+                               0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
+                               0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO }
 
@@ -340,11 +340,6 @@ extern int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t
 extern void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io) ;
 extern void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_io_field(strbuf *sa, resolve_service_addon_io_t *io, resolve_service_enum_table_t table) ;
-extern int service_resolve_write_addon_logger_cdb(ocdbmaker *c, resolve_service_addon_logger_t *lg) ;
-extern int service_resolve_read_addon_logger_cdb(ocdb *c, resolve_service_addon_logger_t *lg) ;
-extern void service_resolve_sanitize_addon_logger(resolve_service_addon_logger_t *lg) ;
-extern void service_resolve_modify_logger_field(resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table, char const *data) ;
-extern int service_resolve_get_logger_field(strbuf *sa, resolve_service_addon_logger_t *lg, resolve_service_enum_table_t table) ;
 extern int service_resolve_write_addon_execute_cdb(ocdbmaker *c, resolve_service_addon_execute_t *ex) ;
 extern int service_resolve_read_addon_execute_cdb(ocdb *c, resolve_service_addon_execute_t *ex) ;
 extern void service_resolve_sanitize_addon_execute(resolve_service_addon_execute_t *ex) ;

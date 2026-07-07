@@ -89,16 +89,21 @@ static int env_import_field(resolve_service_addon_environ_t *e, resolve_wrapper_
     return 1 ;
 }
 
-int parse_environ(parse_store_t *st, resolve_service_t *res, resolve_service_addon_environ_t *e, uint8_t conf, uint8_t *has_environ)
+int parse_environ(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
-    *has_environ = 0 ;
+    parse_store_t *st = ctx->st ;
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_environ_t *e = &c->environ ;
+    uint8_t conf = ctx->conf ;
+
+    res->has_environ = 0 ;
 
     if (!parse_store_present(st, E_PARSER_SECTION_ENVIRONMENT, E_PARSER_SECTION_ENVIRON_ENVAL))
         return 1 ;
 
-    *has_environ = 1 ;
+    res->has_environ = 1 ;
 
     size_t len = 0 ;
     char const *raw = parse_store_get(st, E_PARSER_SECTION_ENVIRONMENT, E_PARSER_SECTION_ENVIRON_ENVAL, &len) ;

@@ -602,7 +602,6 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_LIVE_SCANDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_STATEDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_EVENTDIR == (m)++);
-    assert(E_RESOLVE_SERVICE_LIVE_NOTIFDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_FDHOLDERDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_ONESHOTDDIR == (m)++);
@@ -915,7 +914,7 @@ void test_service_lists(void) {
     // enum_list_service_live
     assert(count_key_description_entries(enum_list_service_live) == E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
     assert(count_string_array_entries(enum_str_service_live) == E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
-    for (size_t i = 0; i < 10; i++) {
+    for (size_t i = 0; i < E_RESOLVE_SERVICE_LIVE_ENDOFKEY; i++) {
         assert(enum_list_service_live[i].id == (int)i);
         assert(strcmp(*enum_list_service_live[i].name, enum_str_service_live[i]) == 0);
         assert(enum_list_service_live[i].expected == 0);

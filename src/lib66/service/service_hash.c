@@ -23,6 +23,7 @@
 
 #include <66/service.h>
 #include <66/resolve.h>
+#include <66/enum_parser.h>
 
 int resolve_hash_add(hash_t *hash, char const *name, resolve_service_t res)
 {
@@ -34,7 +35,14 @@ int resolve_hash_add(hash_t *hash, char const *name, resolve_service_t res)
 		return 0 ;
 
 	memset(s, 0, sizeof(*s)) ;
-	s->visit = 0 ;
+
+	s->limit = (resolve_service_addon_limit_t)RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
+	s->environ = (resolve_service_addon_environ_t)RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
+	s->io = (resolve_service_addon_io_t)RESOLVE_SERVICE_ADDON_IO_ZERO ;
+	s->logger = (resolve_service_addon_logger_t)RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
+	s->execute = (resolve_service_addon_execute_t)RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+	s->dependencies = (resolve_service_addon_dependencies_t)RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+	s->regex = (resolve_service_addon_regex_t)RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
 	auto_strings(s->name, name) ;
 	s->res = res ;
 

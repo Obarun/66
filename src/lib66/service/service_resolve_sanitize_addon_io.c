@@ -40,6 +40,7 @@ void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io)
     io->fdin.destination = io->fdin.destination ? resolve_add_string(wres, stk + io->fdin.destination) : 0 ;
     io->fdout.destination = io->fdout.destination ? resolve_add_string(wres, stk + io->fdout.destination) : 0 ;
     io->fderr.destination = io->fderr.destination ? resolve_add_string(wres, stk + io->fderr.destination) : 0 ;
+    io->runas = io->runas ? resolve_add_string(wres, stk + io->runas) : 0 ;
 
     free(wres) ;
 }

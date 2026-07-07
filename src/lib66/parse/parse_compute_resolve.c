@@ -155,9 +155,6 @@ void parse_compute_resolve(resolve_service_t *res, resolve_service_addon_execute
     /* event */
     res->live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
 
-    /* notif */
-    res->live.notifdir = compute_state_dir(wres, info, "notif") ;
-
     /* supervise */
     res->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
 

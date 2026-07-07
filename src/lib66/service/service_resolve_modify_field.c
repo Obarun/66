@@ -156,10 +156,6 @@ static void modify_live(resolve_service_t *res, char const *data, uint32_t field
             res->live.eventdir = resolve_add_string(wres, data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_LIVE_NOTIFDIR:
-            res->live.notifdir = resolve_add_string(wres, data) ;
-            break ;
-
         case E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR:
             res->live.supervisedir = resolve_add_string(wres, data) ;
             break ;

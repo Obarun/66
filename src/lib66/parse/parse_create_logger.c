@@ -63,7 +63,7 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
     return resolve_add_string(wres, dstlog) ;
 }
 
-static void compute_log_script(parse_validator_t *v, resolve_service_t *log, resolve_service_addon_execute_t *logexec, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
+static void compute_log_script(resolve_service_t *log, resolve_service_addon_execute_t *logexec, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
 {
 
     log_flow() ;
@@ -83,13 +83,8 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *log, res
     logexec->run.runas = resolve_add_string(wres, logrunner) ;
 
     // timestamp
-    resolve_enum_table_t ttable = E_TABLE_PARSER_SECTION_LOGGER_ZERO ;
-    ttable.u.parser.id = E_PARSER_SECTION_LOGGER_TIMESTAMP ;
-
-    if (parse_checker(v, ttable))
-        timestamp = lg->timestamp == E_PARSER_TIME_NONE ? "" : lg->timestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
-    else
-        timestamp = itimestamp == E_PARSER_TIME_NONE ? "" : itimestamp == E_PARSER_TIME_ISO ? "T" : "t" ;
+    uint32_t ts = lg->timestamp == E_PARSER_TIME_ENDOFKEY ? (uint32_t)itimestamp : lg->timestamp ;
+    timestamp = ts == E_PARSER_TIME_NONE ? "" : ts == E_PARSER_TIME_ISO ? "T" : "t" ;
 
     /** backup */
     if (lg->backup) {
@@ -155,11 +150,11 @@ static void compute_log_script(parse_validator_t *v, resolve_service_t *log, res
     free(wres) ;
 }
 
-static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
+static void compute_logger(resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
 {
     log_flow() ;
 
-    if (!res->has_logger)
+    if (!res->logger)
         return ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
@@ -217,7 +212,6 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
     log->live.scandir = compute_scan_dir(wres, info) ;
     log->live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
     log->live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
-    log->live.notifdir = compute_state_dir(wres, info, "notif") ;
     log->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
     log->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
     log->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
@@ -245,17 +239,22 @@ static void compute_logger(parse_validator_t *v, resolve_service_t *res, resolve
 
     // oneshot do not use fdholder daemon
     if (res->type == E_PARSER_TYPE_CLASSIC)
-        compute_log_script(v, log, logexec, io, lg) ;
+        compute_log_script(log, logexec, io, lg) ;
 
     free(exwres) ;
     free(wres) ;
 
 }
 
-void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_dependencies_t *parentdep, ssexec_t *info)
+void parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
 {
     log_flow() ;
 
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_io_t *io = &c->io ;
+    resolve_service_addon_logger_t *lg = &c->logger ;
+    resolve_service_addon_execute_t *parentexec = &c->execute ;
+    resolve_service_addon_dependencies_t *parentdep = &c->dependencies ;
     char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
     auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
 
@@ -296,7 +295,7 @@ void parse_create_logger(parse_validator_t *v, hash_t *hres, resolve_service_t *
 
         free(depwres) ;
 
-        compute_logger(v, res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) ;
+        compute_logger(res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) ;
 
         /** keep the derived run scripts on the parent's logger addon (dump/reference) */
         {

@@ -251,7 +251,7 @@ static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint3
 {
     log_flow() ;
 
-    if (res->type == E_PARSER_TYPE_CLASSIC && res->has_logger && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
+    if (res->type == E_PARSER_TYPE_CLASSIC && res->logger && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
         char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
         auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;

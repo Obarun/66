@@ -48,7 +48,7 @@ void sanitize_graph(ssexec_t *info)
     nservice = service_graph_build_system(&graph, info, flag) ;
 
     if (!nservice && errno == EINVAL)
-        log_dieusys(LOG_EXIT_SYS, "build system graph -- please make a bug report") ;
+        log_die(LOG_EXIT_USER, "unable to sort the system graph -- a Depends/RequiredBy cycle (or an invalid dependency) was detected; re-run with -v2 to see the offending relation") ;
 
     HASH_FOREACH(&graph.hres, c, tmp) {
 

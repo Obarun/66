@@ -220,7 +220,7 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
     resolve_service_addon_io_type_t_ref out = &io->fdout ;
     resolve_service_addon_io_type_t_ref err = &io->fderr ;
 
-    if (!res->has_logger) {
+    if (!res->logger) {
 
         if (!res->islog) {
 
@@ -371,10 +371,14 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
     }
 }
 
-int parse_io(parse_store_t *st, resolve_service_t *res, resolve_service_addon_io_t *io, uint8_t *has_io, ssexec_t *info)
+int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
+    parse_store_t *st = ctx->st ;
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_io_t *io = &c->io ;
+    ssexec_t *info = ctx->info ;
     resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, io) ;
     resolve_init(w) ; // offset 0 = "" convention
 
@@ -402,9 +406,15 @@ int parse_io(parse_store_t *st, resolve_service_t *res, resolve_service_addon_io
 
     parse_io_resolve(res, io, w, info) ;
 
+    /* a 66log destination directory must be owned by the logger runas: keep it on
+     * the io addon so 66-execute can chown the directory (classic and oneshot),
+     * without reading a separate logger addon. */
+    if (io->fdout.type == E_PARSER_IO_TYPE_66LOG && c->logger.execute.run.runas)
+        io->runas = resolve_add_string(w, c->logger.sa.s + c->logger.execute.run.runas) ;
+
     free(w) ;
 
-    *has_io = 1 ;
+    res->has_io = 1 ;
 
     return 1 ;
 }

@@ -57,13 +57,21 @@ static void get_frontend_list(strbuf *sa, const char *name, const char *frontend
     }
 
 
-    table.u.parser.id = requiredby ? E_PARSER_SECTION_MAIN_REQUIREDBY :  E_PARSER_SECTION_MAIN_DEPENDS ;
-
-    /** parse a single dependency field into a throwaway execute + dependencies addon */
-    resolve_service_addon_execute_t dex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
+    /** turn the extracted field value into a throwaway dependencies list */
     resolve_service_addon_dependencies_t ddep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    if (!parse_store_main(&dres, &dex, &ddep, &stk, table))
+    resolve_wrapper_t_ref ddepwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &ddep) ;
+
+    uint32_t *field = requiredby ? &ddep.requiredby : &ddep.depends ;
+    uint32_t *nfield = requiredby ? &ddep.nrequiredby : &ddep.ndepends ;
+
+    if (!parse_list(&stk)) {
+        free(ddepwres) ;
         log_dieu(LOG_EXIT_SYS, "get field depends of service: ", basename) ;
+    }
+    if (stk.len)
+        *field = parse_compute_list(ddepwres, &stk, nfield, 0) ;
+
+    free(ddepwres) ;
 
     sa->len = 0 ;
     if ((requiredby ? ddep.nrequiredby : ddep.ndepends))
@@ -88,7 +96,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependenci
         _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ; _cleanup_strbuf_ strbuf dfront = STRBUF_ZERO ;
         size_t pos = 0, olen = strlen(olddep->sa.s + *ofield) ;
         _alloc_sbl_(sold, olen + 1) ;
-        size_t clen = strlen(newdep->sa.s + *nfield) ;
+        size_t clen = *nfield ? strlen(newdep->sa.s + *nfield) : 0 ; // *nfield may be 0 with an unloaded addon (sa.s NULL)
         _alloc_sbl_(snew, clen + 1) ;
         resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &dres) ;
