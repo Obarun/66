@@ -155,33 +155,6 @@ enum resolve_service_enum_live_e
 } ;
 typedef enum resolve_service_enum_live_e resolve_service_enum_live_t ;
 
-// logger
-
-#define ENUM_SERVICE_LOGGER(id, str) E_RESOLVE_SERVICE_LOGGER_##id
-#define STR_SERVICE_LOGGER(id, str) [E_RESOLVE_SERVICE_LOGGER_##id] = str
-#define KEY_SERVICE_LOGGER(idy, str) { .name = &enum_str_service_logger[E_RESOLVE_SERVICE_LOGGER_##idy], .id = E_RESOLVE_SERVICE_LOGGER_##idy }
-
-#define LOGGER_TEMPLATE(macro) \
-    macro(LOGNAME,          "logname"), \
-    macro(LOGDESTINATION,   "logdestination"), \
-    macro(LOGBACKUP,        "logbackup"), \
-    macro(LOGMAXSIZE,       "logmaxsize"), \
-    macro(LOGTIMESTAMP,     "logtimestamp"), \
-    macro(LOGWANT,          "logwant"), \
-    macro(LOGRUN,           "logrun"), \
-    macro(LOGRUN_USER,      "logrun_user"), \
-    macro(LOGRUN_BUILD,     "logrun_build"), \
-    macro(LOGRUN_RUNAS,     "logrun_runas"), \
-    macro(LOGTIMEOUTSTART,  "logtimeoutstart"), \
-    macro(LOGTIMEOUTSTOP,   "logtimeoutstop")
-
-enum resolve_service_enum_logger_e
-{
-    LOGGER_TEMPLATE(ENUM_SERVICE_LOGGER),
-    E_RESOLVE_SERVICE_LOGGER_ENDOFKEY
-} ;
-typedef enum resolve_service_enum_logger_e resolve_service_enum_logger_t ;
-
 #define ENUM_SERVICE_ENVIRON(id, str) E_RESOLVE_SERVICE_ENVIRON_##id
 #define STR_SERVICE_ENVIRON(id, str) [E_RESOLVE_SERVICE_ENVIRON_##id] = str
 #define KEY_SERVICE_ENVIRON(idy, str) { .name = &enum_str_service_environ[E_RESOLVE_SERVICE_ENVIRON_##idy], .id = E_RESOLVE_SERVICE_ENVIRON_##idy }
@@ -283,7 +256,6 @@ typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
     macro(DEPS), \
     macro(EXECUTE), \
     macro(LIVE), \
-    macro(LOGGER), \
     macro(ENVIRON), \
     macro(REGEX), \
     macro(IO) , \
@@ -334,12 +306,6 @@ struct resolve_service_enum_table_s
     .u.service.list = enum_list_service_live \
 }
 
-#define E_TABLE_SERVICE_LOGGER_ZERO { \
-    .category = E_RESOLVE_CATEGORY_SERVICE, \
-    .u.service.category = E_RESOLVE_SERVICE_CATEGORY_LOGGER, \
-    .u.service.list = enum_list_service_logger \
-}
-
 #define E_TABLE_SERVICE_ENVIRON_ZERO { \
     .category = E_RESOLVE_CATEGORY_SERVICE, \
     .u.service.category = E_RESOLVE_SERVICE_CATEGORY_ENVIRON, \
@@ -369,7 +335,6 @@ extern const char *enum_str_service_path[] ;
 extern const char *enum_str_service_deps[] ;
 extern const char *enum_str_service_execute[] ;
 extern const char *enum_str_service_live[] ;
-extern const char *enum_str_service_logger[] ;
 extern const char *enum_str_service_environ[] ;
 extern const char *enum_str_service_regex[] ;
 extern const char *enum_str_service_io[] ;
@@ -379,7 +344,6 @@ extern key_description_t const enum_list_service_path[] ;
 extern key_description_t const enum_list_service_deps[] ;
 extern key_description_t const enum_list_service_execute[] ;
 extern key_description_t const enum_list_service_live[] ;
-extern key_description_t const enum_list_service_logger[] ;
 extern key_description_t const enum_list_service_environ[] ;
 extern key_description_t const enum_list_service_regex[] ;
 extern key_description_t const enum_list_service_io[] ;

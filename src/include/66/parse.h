@@ -43,7 +43,6 @@ struct parse_validator_s
     size_t off[E_PARSER_SECTION_ENDOFKEY] ;      // per-section content offset
     size_t len[E_PARSER_SECTION_ENDOFKEY] ;      // per-section content length
     uint8_t present[E_PARSER_SECTION_ENDOFKEY] ; // 1 if the section exists
-    uint32_t computed ;                          // micro-table (parse_compute)
 } ;
 
 #define SS_PARSE_STORE_NKEY 32 // must be >= every SECTION_<X>_ENDOFKEY (largest is [Main])
@@ -133,7 +132,6 @@ extern void parse_copy_to_source(char const *dst, char const *src, resolve_servi
 extern void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 
 /** resolve */
-extern void parse_compute_resolve(resolve_service_t *res, resolve_service_addon_execute_t *ex, ssexec_t *info) ;
 extern uint32_t compute_src_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_live_servicedir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_status(resolve_wrapper_t_ref wres, ssexec_t *info) ;
@@ -141,7 +139,6 @@ extern uint32_t compute_scan_dir(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern uint32_t compute_state_dir(resolve_wrapper_t_ref wres, ssexec_t *info, char const *folder) ;
 extern uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char const *name) ;
 extern uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination) ;
-extern void parse_compute_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex) ;
 extern void parse_compute_script(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish) ;
 
 #endif

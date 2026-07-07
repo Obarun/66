@@ -95,7 +95,6 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_service_deps) == E_RESOLVE_SERVICE_DEPS_ENDOFKEY);
     assert(get_endofkey(enum_list_service_execute) == E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
     assert(get_endofkey(enum_list_service_live) == E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
-    assert(get_endofkey(enum_list_service_logger) == E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
     assert(get_endofkey(enum_list_service_environ) == E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
     assert(get_endofkey(enum_list_service_regex) == E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     assert(get_endofkey(enum_list_service_io) == E_RESOLVE_SERVICE_IO_ENDOFKEY);
@@ -137,7 +136,6 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_service_deps, "service_deps", enum_str_service_deps, E_RESOLVE_SERVICE_DEPS_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_execute, "service_execute", enum_str_service_execute, E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_live, "service_live", enum_str_service_live, E_RESOLVE_SERVICE_LIVE_ENDOFKEY);
-    test_enum_to_key_list(enum_list_service_logger, "service_logger", enum_str_service_logger, E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_environ, "service_environ", enum_str_service_environ, E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_regex, "service_regex", enum_str_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_io, "service_io", enum_str_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY);
@@ -175,7 +173,6 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_service_deps, "service_deps", enum_str_service_deps);
     test_key_to_enum_list(enum_list_service_execute, "service_execute", enum_str_service_execute);
     test_key_to_enum_list(enum_list_service_live, "service_live", enum_str_service_live);
-    test_key_to_enum_list(enum_list_service_logger, "service_logger", enum_str_service_logger);
     test_key_to_enum_list(enum_list_service_environ, "service_environ", enum_str_service_environ);
     test_key_to_enum_list(enum_list_service_regex, "service_regex", enum_str_service_regex);
     test_key_to_enum_list(enum_list_service_io, "service_io", enum_str_service_io);
@@ -206,8 +203,6 @@ void test_enum_get_list(void) {
     assert(enum_get_list(table) == enum_list_service_config);
     table.u.service.category = E_RESOLVE_SERVICE_CATEGORY_IO;
     assert(enum_get_list(table) == enum_list_service_io);
-    table.u.service.category = E_RESOLVE_SERVICE_CATEGORY_LOGGER;
-    assert(enum_get_list(table) == enum_list_service_logger);
 
     // Test TREE category
     table.category = E_RESOLVE_CATEGORY_TREE;
@@ -287,8 +282,6 @@ void test_enum_get_list_service(void) {
     assert(enum_get_list_service(table) == enum_list_service_execute);
     table.category = E_RESOLVE_SERVICE_CATEGORY_LIVE;
     assert(enum_get_list_service(table) == enum_list_service_live);
-    table.category = E_RESOLVE_SERVICE_CATEGORY_LOGGER;
-    assert(enum_get_list_service(table) == enum_list_service_logger);
     table.category = E_RESOLVE_SERVICE_CATEGORY_ENVIRON;
     assert(enum_get_list_service(table) == enum_list_service_environ);
     table.category = E_RESOLVE_SERVICE_CATEGORY_REGEX;
@@ -608,22 +601,6 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_LIVE_ENDOFKEY == (m)++);
 
     m = 0 ;
-    // resolve_service_enum_logger_t
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGNAME == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGDESTINATION == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGBACKUP == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGMAXSIZE == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMESTAMP == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGWANT == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_USER == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_BUILD == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGRUN_RUNAS == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTART == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_LOGTIMEOUTSTOP == (m)++);
-    assert(E_RESOLVE_SERVICE_LOGGER_ENDOFKEY == (m)++);
-
-    m = 0 ;
     // resolve_service_enum_environ_t
     assert(E_RESOLVE_SERVICE_ENVIRON_ENV == (m)++);
     assert(E_RESOLVE_SERVICE_ENVIRON_ENVDIR == (m)++);
@@ -660,7 +637,6 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_CATEGORY_DEPS == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_EXECUTE == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_LIVE == (m)++);
-    assert(E_RESOLVE_SERVICE_CATEGORY_LOGGER == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_ENVIRON == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_REGEX == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_IO == (m)++);
@@ -918,15 +894,6 @@ void test_service_lists(void) {
         assert(enum_list_service_live[i].id == (int)i);
         assert(strcmp(*enum_list_service_live[i].name, enum_str_service_live[i]) == 0);
         assert(enum_list_service_live[i].expected == 0);
-    }
-
-    // enum_list_service_logger
-    assert(count_key_description_entries(enum_list_service_logger) == E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
-    assert(count_string_array_entries(enum_str_service_logger) == E_RESOLVE_SERVICE_LOGGER_ENDOFKEY);
-    for (size_t i = 0; i < 12; i++) {
-        assert(enum_list_service_logger[i].id == (int)i);
-        assert(strcmp(*enum_list_service_logger[i].name, enum_str_service_logger[i]) == 0);
-        assert(enum_list_service_logger[i].expected == 0);
     }
 
     // enum_list_service_environ

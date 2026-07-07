@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdint.h>
 
 #include <oblibs/log.h>
@@ -124,47 +123,4 @@ uint32_t compute_pipe_service(resolve_wrapper_t_ref wres, ssexec_t *info, char c
 
     return resolve_add_string(wres, tmp) ;
 
-}
-
-void parse_compute_resolve(resolve_service_t *res, resolve_service_addon_execute_t *ex, ssexec_t *info)
-{
-    log_flow() ;
-
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    char name[strlen(res->sa.s + res->name) + 1] ;
-
-    auto_strings(name, res->sa.s + res->name) ;
-
-    res->path.servicedir = compute_src_servicedir(wres, info) ;
-
-    /* live */
-    res->live.livedir = resolve_add_string(wres, info->live.s) ;
-
-    /* status */
-    res->live.status = compute_status(wres, info) ;
-
-    /* servicedir */
-    res->live.servicedir = compute_live_servicedir(wres, info) ;
-
-    /* scandir */
-    res->live.scandir = compute_scan_dir(wres, info) ;
-
-    /* state */
-    res->live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
-
-    /* event */
-    res->live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
-
-    /* supervise */
-    res->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
-
-    /* fdholder */
-    res->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
-
-    /* oneshotd */
-    res->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
-
-    parse_compute_scripts(res, ex) ;
-
-    free(wres) ;
 }

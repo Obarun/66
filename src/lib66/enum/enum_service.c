@@ -67,16 +67,6 @@ key_description_t const enum_list_service_live[] = {
     { .name = 0 }
 } ;
 
-const char *enum_str_service_logger[] = {
-    LOGGER_TEMPLATE(STR_SERVICE_LOGGER),
-    0
-} ;
-
-key_description_t const enum_list_service_logger[] = {
-    LOGGER_TEMPLATE(KEY_SERVICE_LOGGER),
-    { .name = 0 }
-} ;
-
 const char *enum_str_service_environ[] = {
     ENVIRON_TEMPLATE(STR_SERVICE_ENVIRON),
     0
@@ -135,9 +125,6 @@ key_description_t const *enum_get_list_service(resolve_service_enum_table_t tabl
 
         case E_RESOLVE_SERVICE_CATEGORY_LIVE:
             return enum_list_service_live ;
-
-        case E_RESOLVE_SERVICE_CATEGORY_LOGGER:
-            return enum_list_service_logger ;
 
         case E_RESOLVE_SERVICE_CATEGORY_ENVIRON:
             return enum_list_service_environ ;

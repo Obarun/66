@@ -46,7 +46,6 @@
     X(enum_list_service_deps, E_RESOLVE_SERVICE_DEPS_ENDOFKEY) \
     X(enum_list_service_execute, E_RESOLVE_SERVICE_EXECUTE_ENDOFKEY) \
     X(enum_list_service_live, E_RESOLVE_SERVICE_LIVE_ENDOFKEY) \
-    X(enum_list_service_logger, E_RESOLVE_SERVICE_LOGGER_ENDOFKEY) \
     X(enum_list_service_environ, E_RESOLVE_SERVICE_ENVIRON_ENDOFKEY) \
     X(enum_list_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY) \
     X(enum_list_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY) \
