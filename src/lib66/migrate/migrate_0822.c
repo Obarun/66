@@ -554,15 +554,19 @@ static void migrate_scandir_resolve(const char *rdir, const char *dir, const cha
     if (r <= 0) {
         /* r == 0: no resolve here (service absent from this scandir) -- skip.
          * r < 0: present but unreadable -- fatal. */
-        free(wres) ;
-        free(wex) ;
+        resolve_free(wres) ;
+        resolve_free(wex) ;
         if (r < 0)
-            log_warnusys(LOG_EXIT_SYS, "open resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+            log_warnusys("open resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
         return ;
     }
 
-    if (!service_resolve_read_cdb_0821(&c, &old))
-        log_warnusys(LOG_EXIT_SYS, "read resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+    if (!service_resolve_read_cdb_0821(&c, &old)) {
+        log_warnusys("read resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+        resolve_free(wres) ;
+        resolve_free(wex) ;
+        return ;
+    }
 
     resolve_init(wres) ;
     resolve_init(wex) ;
@@ -572,14 +576,21 @@ static void migrate_scandir_resolve(const char *rdir, const char *dir, const cha
     new.has_execute = 1 ;
     ex.notify = old.notify ;
 
-    if (!resolve_write_at(wres, dir, name))
-        log_warnusys(LOG_EXIT_SYS, "write resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+    if (!resolve_write_at(wres, dir, name)) {
+        log_warnusys("write resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+        resolve_free(wres) ;
+        resolve_free(wex) ;
+        return ;
+    }
 
-    {
-        char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
-        auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
-        if (!resolve_write_at(wex, dir, aname))
-            log_warnusys(LOG_EXIT_SYS, "write execute addon of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+
+    char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+    auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
+    if (!resolve_write_at(wex, dir, aname)) {
+        log_warnusys("write execute addon of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+        resolve_free(wres) ;
+        resolve_free(wex) ;
+        return ;
     }
 
     strbuf_free(&old.sa) ;
