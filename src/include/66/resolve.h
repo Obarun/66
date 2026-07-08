@@ -35,6 +35,7 @@
 #define DATA_SERVICE_EXECUTE 7 // autonomous addon of a service resolve
 #define DATA_SERVICE_DEPENDENCIES 8 // autonomous addon of a service resolve
 #define DATA_SERVICE_REGEX 9 // autonomous addon of a service resolve
+#define DATA_SERVICE_EVENT 10 // autonomous addon of a service resolve
 
 typedef struct resolve_wrapper_s resolve_wrapper_t, *resolve_wrapper_t_ref ;
 struct resolve_wrapper_s
@@ -55,7 +56,8 @@ struct resolve_wrapper_s
     else if (wres->type == DATA_SERVICE_LOGGER) sbwres = (&((resolve_service_addon_logger_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_SERVICE_EXECUTE) sbwres = (&((resolve_service_addon_execute_t *)wres->obj)->sa) ; \
     else if (wres->type == DATA_SERVICE_DEPENDENCIES) sbwres = (&((resolve_service_addon_dependencies_t *)wres->obj)->sa) ; \
-    else if (wres->type == DATA_SERVICE_REGEX) sbwres = (&((resolve_service_addon_regex_t *)wres->obj)->sa) ;
+    else if (wres->type == DATA_SERVICE_REGEX) sbwres = (&((resolve_service_addon_regex_t *)wres->obj)->sa) ; \
+    else if (wres->type == DATA_SERVICE_EVENT) sbwres = (&((resolve_service_addon_event_t *)wres->obj)->sa) ;
 #endif
 
 /**

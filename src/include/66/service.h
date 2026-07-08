@@ -249,6 +249,29 @@ struct resolve_service_addon_limit_s
 
 #define RESOLVE_SERVICE_ADDON_LIMIT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
+typedef struct resolve_service_addon_event_s resolve_service_addon_event_t, *resolve_service_addon_event_t_ref ;
+struct resolve_service_addon_event_s
+{
+    strbuf sa ;
+    uint32_t rversion ;
+
+    uint32_t type ; // integer, event_source_t
+    uint32_t from ; // string, space-separated list of explicit From sources
+    uint32_t nfrom ; // integer
+    uint32_t fromfield ; // integer, bitmask of event_fromfield_t
+    uint32_t on ; // string, space-separated list of On tokens
+    uint32_t non ; // integer
+    uint32_t combine ; // integer, event_combine_t (0=any 1=all)
+    uint32_t docmd ; // integer, event_do_t
+    uint32_t emit ; // string, emitted name
+    uint32_t watch ; // string, watched path
+    uint32_t expression ; // string, cron expression
+    uint32_t timezone ; // string, IANA name
+    uint32_t interval ; // integer, milliseconds
+} ;
+
+#define RESOLVE_SERVICE_ADDON_EVENT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0 }
+
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s
 {
@@ -280,6 +303,7 @@ struct resolve_service_s
     uint32_t has_execute ;
     uint32_t has_dependencies ;
     uint32_t has_regex ;
+    uint32_t has_event ;
 
     resolve_service_addon_path_t path ;
     resolve_service_addon_live_t live ;
@@ -287,7 +311,7 @@ struct resolve_service_s
 
 #define RESOLVE_SERVICE_ZERO { STRBUF_ZERO, 0, \
                                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
-                               0,0,0,0,0,0, \
+                               0,0,0,0,0,0,0, \
                                RESOLVE_SERVICE_ADDON_PATH_ZERO, \
                                RESOLVE_SERVICE_ADDON_LIVE_ZERO }
 
@@ -305,11 +329,12 @@ struct resolve_hash_s {
 	resolve_service_addon_execute_t execute ;
 	resolve_service_addon_dependencies_t dependencies ;
 	resolve_service_addon_regex_t regex ;
+	resolve_service_addon_event_t event ;
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, RESOLVE_SERVICE_ADDON_REGEX_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, RESOLVE_SERVICE_ADDON_REGEX_ZERO, RESOLVE_SERVICE_ADDON_EVENT_ZERO, HASH_NODE_ZERO }
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
@@ -355,6 +380,9 @@ extern int service_resolve_read_addon_regex_cdb(ocdb *c, resolve_service_addon_r
 extern void service_resolve_sanitize_addon_regex(resolve_service_addon_regex_t *rx) ;
 extern void service_resolve_modify_regex_field(resolve_service_addon_regex_t *rx, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_regex_field(strbuf *sa, resolve_service_addon_regex_t *rx, resolve_service_enum_table_t table) ;
+extern int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_event_t *ev) ;
+extern int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t *ev) ;
+extern void service_resolve_sanitize_addon_event(resolve_service_addon_event_t *ev) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby) ;

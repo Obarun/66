@@ -82,6 +82,7 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key(c, "has_execute", &res->has_execute) ||
         !resolve_get_key(c, "has_dependencies", &res->has_dependencies) ||
         !resolve_get_key(c, "has_regex", &res->has_regex) ||
+        !resolve_get_key(c, "has_event", &res->has_event) ||
 
     /* path configuration */
         !resolve_get_key(c, "home", &res->path.home) ||
@@ -249,6 +250,32 @@ int service_resolve_read_addon_regex_cdb(ocdb *c, resolve_service_addon_regex_t 
         !resolve_get_key(c, "ndirectories", &rx->ndirectories) ||
         !resolve_get_key(c, "nfiles", &rx->nfiles) ||
         !resolve_get_key(c, "ninfiles", &rx->ninfiles))
+            return (errno = EINVAL, 0) ;
+
+    return 1 ;
+}
+
+int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t *ev)
+{
+    log_flow() ;
+
+    if (resolve_get_sa(&ev->sa, c) <= 0 || !ev->sa.len)
+        return (errno = EINVAL, 0) ;
+
+    if (!resolve_get_key(c, "rversion", &ev->rversion) ||
+        !resolve_get_key(c, "eventtype", &ev->type) ||
+        !resolve_get_key(c, "eventfrom", &ev->from) ||
+        !resolve_get_key(c, "neventfrom", &ev->nfrom) ||
+        !resolve_get_key(c, "eventfromfield", &ev->fromfield) ||
+        !resolve_get_key(c, "eventon", &ev->on) ||
+        !resolve_get_key(c, "neventon", &ev->non) ||
+        !resolve_get_key(c, "eventcombine", &ev->combine) ||
+        !resolve_get_key(c, "eventdo", &ev->docmd) ||
+        !resolve_get_key(c, "eventemit", &ev->emit) ||
+        !resolve_get_key(c, "eventwatch", &ev->watch) ||
+        !resolve_get_key(c, "eventexpression", &ev->expression) ||
+        !resolve_get_key(c, "eventtimezone", &ev->timezone) ||
+        !resolve_get_key(c, "eventinterval", &ev->interval))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

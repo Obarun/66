@@ -61,6 +61,7 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "has_execute", res->has_execute) ||
         !resolve_add_cdb_uint(c, "has_dependencies", res->has_dependencies) ||
         !resolve_add_cdb_uint(c, "has_regex", res->has_regex) ||
+        !resolve_add_cdb_uint(c, "has_event", res->has_event) ||
 
         // path
         !resolve_add_cdb_uint(c, "home", res->path.home) ||
@@ -250,6 +251,36 @@ int service_resolve_write_addon_regex_cdb(ocdbmaker *c, resolve_service_addon_re
         !resolve_add_cdb_uint(c, "ndirectories", rx->ndirectories) ||
         !resolve_add_cdb_uint(c, "nfiles", rx->nfiles) ||
         !resolve_add_cdb_uint(c, "ninfiles", rx->ninfiles))
+            return 0 ;
+
+    return 1 ;
+}
+
+int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_event_t *ev)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+    ev->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+
+    if (!ocdb_make_add(c, "sa", 2, ev->sa.s, ev->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", ev->rversion) ||
+        !resolve_add_cdb_uint(c, "eventtype", ev->type) ||
+        !resolve_add_cdb_uint(c, "eventfrom", ev->from) ||
+        !resolve_add_cdb_uint(c, "neventfrom", ev->nfrom) ||
+        !resolve_add_cdb_uint(c, "eventfromfield", ev->fromfield) ||
+        !resolve_add_cdb_uint(c, "eventon", ev->on) ||
+        !resolve_add_cdb_uint(c, "neventon", ev->non) ||
+        !resolve_add_cdb_uint(c, "eventcombine", ev->combine) ||
+        !resolve_add_cdb_uint(c, "eventdo", ev->docmd) ||
+        !resolve_add_cdb_uint(c, "eventemit", ev->emit) ||
+        !resolve_add_cdb_uint(c, "eventwatch", ev->watch) ||
+        !resolve_add_cdb_uint(c, "eventexpression", ev->expression) ||
+        !resolve_add_cdb_uint(c, "eventtimezone", ev->timezone) ||
+        !resolve_add_cdb_uint(c, "eventinterval", ev->interval))
             return 0 ;
 
     return 1 ;

@@ -43,6 +43,7 @@ int resolve_hash_add(hash_t *hash, char const *name, resolve_service_t res)
 	s->execute = (resolve_service_addon_execute_t)RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
 	s->dependencies = (resolve_service_addon_dependencies_t)RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
 	s->regex = (resolve_service_addon_regex_t)RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
+	s->event = (resolve_service_addon_event_t)RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
 	auto_strings(s->name, name) ;
 	s->res = res ;
 
@@ -81,6 +82,7 @@ void resolve_hash_free(hash_t *hash)
 		strbuf_free(&c->execute.sa) ;
 		strbuf_free(&c->dependencies.sa) ;
 		strbuf_free(&c->regex.sa) ;
+		strbuf_free(&c->event.sa) ;
 		free(c) ;
 	}
 
