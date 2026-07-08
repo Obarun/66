@@ -99,6 +99,16 @@ key_description_t const enum_list_parser_section_execute[] = {
     { .name = 0 }
 } ;
 
+const char *enum_str_parser_section_event[] = {
+    SECTION_EVENT_TEMPLATE(STR_SECTION_EVENT),
+    0
+} ;
+
+key_description_t const enum_list_parser_section_event[] = {
+    SECTION_EVENT_TEMPLATE(KEY_SECTION_EVENT),
+    { .name = 0 }
+} ;
+
 const char *enum_str_parser_io_type[] = {
     IO_TYPE_TEMPLATE(STR_IO_TYPE),
     0
@@ -210,6 +220,9 @@ key_description_t const *enum_get_list_parser(resolve_parser_enum_table_t table)
 
         case E_PARSER_CATEGORY_SECTION_EXECUTE:
             return enum_list_parser_section_execute ;
+
+        case E_PARSER_CATEGORY_SECTION_EVENT:
+            return enum_list_parser_section_event ;
 
         case E_PARSER_CATEGORY_SECTION:
             return enum_list_parser_section ;

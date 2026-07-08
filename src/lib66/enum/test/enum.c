@@ -79,6 +79,7 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_parser_section_environ) == E_PARSER_SECTION_ENVIRON_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_section_regex) == E_PARSER_SECTION_REGEX_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_section_execute) == E_PARSER_SECTION_EXECUTE_ENDOFKEY);
+    assert(get_endofkey(enum_list_parser_section_event) == E_PARSER_SECTION_EVENT_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_type) == E_PARSER_TYPE_ENDOFKEY);
     assert(get_endofkey(enum_list_parser_opts) == E_PARSER_OPTS_ENDOFKEY);
@@ -120,6 +121,7 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_parser_section_environ, "parser_section_environ", enum_str_parser_section_environ, E_PARSER_SECTION_ENVIRON_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_section_regex, "parser_section_regex", enum_str_parser_section_regex, E_PARSER_SECTION_REGEX_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_section_execute, "parser_section_execute", enum_str_parser_section_execute, E_PARSER_SECTION_EXECUTE_ENDOFKEY);
+    test_enum_to_key_list(enum_list_parser_section_event, "parser_section_event", enum_str_parser_section_event, E_PARSER_SECTION_EVENT_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_io_type, "parser_io_type", enum_str_parser_io_type, E_PARSER_IO_TYPE_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_type, "parser_type", enum_str_parser_type, E_PARSER_TYPE_ENDOFKEY);
     test_enum_to_key_list(enum_list_parser_opts, "parser_opts", enum_str_parser_opts, E_PARSER_OPTS_ENDOFKEY);
@@ -157,6 +159,7 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_parser_section_environ, "parser_section_environ", enum_str_parser_section_environ);
     test_key_to_enum_list(enum_list_parser_section_regex, "parser_section_regex", enum_str_parser_section_regex);
     test_key_to_enum_list(enum_list_parser_section_execute, "parser_section_execute", enum_str_parser_section_execute);
+    test_key_to_enum_list(enum_list_parser_section_event, "parser_section_event", enum_str_parser_section_event);
     test_key_to_enum_list(enum_list_parser_io_type, "parser_io_type", enum_str_parser_io_type);
     test_key_to_enum_list(enum_list_parser_type, "parser_type", enum_str_parser_type);
     test_key_to_enum_list(enum_list_parser_opts, "parser_opts", enum_str_parser_opts);
@@ -236,6 +239,8 @@ void test_enum_get_list_parser(void) {
     assert(enum_get_list_parser(table) == enum_list_parser_section_regex);
     table.category = E_PARSER_CATEGORY_SECTION_EXECUTE;
     assert(enum_get_list_parser(table) == enum_list_parser_section_execute);
+    table.category = E_PARSER_CATEGORY_SECTION_EVENT;
+    assert(enum_get_list_parser(table) == enum_list_parser_section_event);
     table.category = E_PARSER_CATEGORY_SECTION;
     assert(enum_get_list_parser(table) == enum_list_parser_section);
     table.category = E_PARSER_CATEGORY_IO_TYPE;
@@ -340,6 +345,7 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_ENVIRONMENT == (m)++);
     assert(E_PARSER_SECTION_REGEX == (m)++);
     assert(E_PARSER_SECTION_EXECUTE == (m)++);
+    assert(E_PARSER_SECTION_EVENT == (m)++);
     assert(E_PARSER_SECTION_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -367,6 +373,12 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_MAIN_STDERR == (m)++);
     assert(E_PARSER_SECTION_MAIN_PROVIDE == (m)++);
     assert(E_PARSER_SECTION_MAIN_CONFLICT == (m)++);
+    assert(E_PARSER_SECTION_MAIN_EVENTTYPE == (m)++);
+    assert(E_PARSER_SECTION_MAIN_WATCH == (m)++);
+    assert(E_PARSER_SECTION_MAIN_ON == (m)++);
+    assert(E_PARSER_SECTION_MAIN_EXPRESSION == (m)++);
+    assert(E_PARSER_SECTION_MAIN_TIMEZONE == (m)++);
+    assert(E_PARSER_SECTION_MAIN_EVERY == (m)++);
     assert(E_PARSER_SECTION_MAIN_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -429,6 +441,17 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_EXECUTE_CAPS_AMBIENT == (m)++);
 
     m = 0 ;
+    // resolve_parser_enum_section_event_t
+    assert(E_PARSER_SECTION_EVENT_EVENTTYPE == (m)++);
+    assert(E_PARSER_SECTION_EVENT_FROM == (m)++);
+    assert(E_PARSER_SECTION_EVENT_FROMFIELD == (m)++);
+    assert(E_PARSER_SECTION_EVENT_ON == (m)++);
+    assert(E_PARSER_SECTION_EVENT_ONALL == (m)++);
+    assert(E_PARSER_SECTION_EVENT_DO == (m)++);
+    assert(E_PARSER_SECTION_EVENT_EMIT == (m)++);
+    assert(E_PARSER_SECTION_EVENT_ENDOFKEY == (m)++);
+
+    m = 0 ;
     // resolve_parser_enum_io_type_t
     assert(E_PARSER_IO_TYPE_TTY == (m)++);
     assert(E_PARSER_IO_TYPE_FILE == (m)++);
@@ -447,6 +470,7 @@ void test_parser_enums(void) {
     assert(E_PARSER_TYPE_CLASSIC == (m)++);
     assert(E_PARSER_TYPE_ONESHOT == (m)++);
     assert(E_PARSER_TYPE_MODULE == (m)++);
+    assert(E_PARSER_TYPE_EVENT == (m)++);
     assert(E_PARSER_TYPE_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -511,6 +535,7 @@ void test_parser_enums(void) {
     assert(E_PARSER_CATEGORY_EXPECTED == (m)++);
     assert(E_PARSER_CATEGORY_MANDATORY == (m)++);
     assert(E_PARSER_CATEGORY_CAPS == (m)++);
+    assert(E_PARSER_CATEGORY_SECTION_EVENT == (m)++);
     assert(E_PARSER_CATEGORY_ENDOFKEY == (m)++);
 }
 
@@ -727,7 +752,9 @@ void test_parser_lists(void) {
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT,
             E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT,
             E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE,
-            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET,
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_QUOTE,
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE
         };
         assert(enum_list_parser_section_main[i].expected == expected_values[i]);
     }
@@ -776,6 +803,19 @@ void test_parser_lists(void) {
         assert(enum_list_parser_section_regex[i].expected == expected_values[i]);
     }
 
+    // enum_list_parser_section_event
+    assert(count_key_description_entries(enum_list_parser_section_event) == E_PARSER_SECTION_EVENT_ENDOFKEY);
+    assert(count_string_array_entries(enum_str_parser_section_event) == E_PARSER_SECTION_EVENT_ENDOFKEY);
+    for (size_t i = 0; i < E_PARSER_SECTION_EVENT_ENDOFKEY; i++) {
+        assert(enum_list_parser_section_event[i].id == (int)i);
+        assert(strcmp(*enum_list_parser_section_event[i].name, enum_str_parser_section_event[i]) == 0);
+        int expected_values[] = {
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET,
+            E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE
+        };
+        assert(enum_list_parser_section_event[i].expected == expected_values[i]);
+    }
+
     // enum_list_parser_io_type
     assert(count_key_description_entries(enum_list_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
     assert(count_string_array_entries(enum_str_parser_io_type) == E_PARSER_IO_TYPE_ENDOFKEY);
@@ -788,7 +828,7 @@ void test_parser_lists(void) {
     // enum_list_parser_type
     assert(count_key_description_entries(enum_list_parser_type) == E_PARSER_TYPE_ENDOFKEY);
     assert(count_string_array_entries(enum_str_parser_type) == E_PARSER_TYPE_ENDOFKEY);
-    for (size_t i = 0; i < 3; i++) {
+    for (size_t i = 0; i < E_PARSER_TYPE_ENDOFKEY; i++) {
         assert(enum_list_parser_type[i].id == (int)i);
         assert(strcmp(*enum_list_parser_type[i].name, enum_str_parser_type[i]) == 0);
         assert(enum_list_parser_type[i].expected == E_PARSER_EXPECT_LINE);

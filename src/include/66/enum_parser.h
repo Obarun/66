@@ -50,7 +50,8 @@ typedef enum resolve_parser_enum_expected_e resolve_parser_enum_expected_t ;
     macro(LOGGER,       "Logger"), \
     macro(ENVIRONMENT,  "Environment"), \
     macro(REGEX,        "Regex"), \
-    macro(EXECUTE,      "Execute")
+    macro(EXECUTE,      "Execute"), \
+    macro(EVENT,        "Event")
 
 enum resolve_parser_enum_section_e
 {
@@ -86,7 +87,13 @@ typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
     macro(STDOUT,           "StdOut",           E_PARSER_EXPECT_LINE), \
     macro(STDERR,           "StdErr",           E_PARSER_EXPECT_LINE), \
     macro(PROVIDE,          "Provide",          E_PARSER_EXPECT_BRACKET), \
-    macro(CONFLICT,         "Conflict",         E_PARSER_EXPECT_BRACKET)
+    macro(CONFLICT,         "Conflict",         E_PARSER_EXPECT_BRACKET), \
+    macro(EVENTTYPE,        "EventType",        E_PARSER_EXPECT_LINE), \
+    macro(WATCH,            "Watch",            E_PARSER_EXPECT_LINE), \
+    macro(ON,               "On",               E_PARSER_EXPECT_BRACKET), \
+    macro(EXPRESSION,       "Expression",       E_PARSER_EXPECT_QUOTE), \
+    macro(TIMEZONE,         "Timezone",         E_PARSER_EXPECT_LINE), \
+    macro(EVERY,            "Every",            E_PARSER_EXPECT_LINE)
 
 enum resolve_parser_enum_section_main_e
 {
@@ -201,6 +208,26 @@ enum resolve_parser_enum_section_execute_e
 } ;
 typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_execute_t ;
 
+#define ENUM_SECTION_EVENT(id, str, exp) E_PARSER_SECTION_EVENT_##id
+#define STR_SECTION_EVENT(id, str, exp) [E_PARSER_SECTION_EVENT_##id] = str
+#define KEY_SECTION_EVENT(idy, str, exp) { .name = &enum_str_parser_section_event[E_PARSER_SECTION_EVENT_##idy], .id = E_PARSER_SECTION_EVENT_##idy, .expected = exp }
+
+#define SECTION_EVENT_TEMPLATE(macro) \
+    macro(EVENTTYPE,    "EventType",    E_PARSER_EXPECT_LINE), \
+    macro(FROM,         "From",         E_PARSER_EXPECT_BRACKET), \
+    macro(FROMFIELD,    "FromField",    E_PARSER_EXPECT_LINE), \
+    macro(ON,           "On",           E_PARSER_EXPECT_BRACKET), \
+    macro(ONALL,        "OnAll",        E_PARSER_EXPECT_BRACKET), \
+    macro(DO,           "Do",           E_PARSER_EXPECT_LINE), \
+    macro(EMIT,         "Emit",         E_PARSER_EXPECT_LINE)
+
+enum resolve_parser_enum_section_event_e
+{
+    SECTION_EVENT_TEMPLATE(ENUM_SECTION_EVENT),
+    E_PARSER_SECTION_EVENT_ENDOFKEY
+} ;
+typedef enum resolve_parser_enum_section_event_e resolve_parser_enum_section_event_t ;
+
 #define ENUM_IO_TYPE(id, str, exp) E_PARSER_IO_TYPE_##id
 #define STR_IO_TYPE(id, str, exp) [E_PARSER_IO_TYPE_##id] = str
 #define KEY_IO_TYPE(idy, str, exp) { .name = &enum_str_parser_io_type[E_PARSER_IO_TYPE_##idy], .id = E_PARSER_IO_TYPE_##idy, .expected = exp }
@@ -231,7 +258,8 @@ typedef enum resolve_parser_enum_io_type_e resolve_parser_enum_io_type_t ;
 #define TYPE_TEMPLATE(macro) \
     macro(CLASSIC, "classic", E_PARSER_EXPECT_LINE), \
     macro(ONESHOT, "oneshot", E_PARSER_EXPECT_LINE), \
-    macro(MODULE,  "module",  E_PARSER_EXPECT_LINE)
+    macro(MODULE,  "module",  E_PARSER_EXPECT_LINE), \
+    macro(EVENT,   "event",   E_PARSER_EXPECT_LINE)
 
 enum resolve_parser_enum_type_e
 {
@@ -427,7 +455,8 @@ typedef enum resolve_parser_enum_caps_e resolve_parser_enum_caps_t ;
     macro(SEED), \
     macro(EXPECTED), \
     macro(MANDATORY), \
-    macro(CAPS)
+    macro(CAPS), \
+    macro(SECTION_EVENT)
 
 enum resolve_parser_enum_category_e
 {
@@ -491,6 +520,13 @@ struct resolve_parser_enum_table_s {
     .u.parser.category = E_PARSER_CATEGORY_SECTION_EXECUTE, \
     .u.parser.list = enum_list_parser_section_execute, \
     .u.parser.sid = E_PARSER_SECTION_EXECUTE \
+}
+
+#define E_TABLE_PARSER_SECTION_EVENT_ZERO { \
+    .category = E_RESOLVE_CATEGORY_PARSER, \
+    .u.parser.category = E_PARSER_CATEGORY_SECTION_EVENT, \
+    .u.parser.list = enum_list_parser_section_event, \
+    .u.parser.sid = E_PARSER_SECTION_EVENT \
 }
 
 #define E_TABLE_PARSER_SECTION { \
@@ -582,6 +618,7 @@ extern char const *enum_str_parser_section_logger[] ;
 extern char const *enum_str_parser_section_environ[] ;
 extern char const *enum_str_parser_section_regex[] ;
 extern char const *enum_str_parser_section_execute[] ;
+extern char const *enum_str_parser_section_event[] ;
 extern char const *enum_str_parser_io_type[] ;
 extern char const *enum_str_parser_type[] ;
 extern char const *enum_str_parser_opts[] ;
@@ -599,6 +636,7 @@ extern key_description_t const enum_list_parser_section_logger[] ;
 extern key_description_t const enum_list_parser_section_environ[] ;
 extern key_description_t const enum_list_parser_section_regex[] ;
 extern key_description_t const enum_list_parser_section_execute[] ;
+extern key_description_t const enum_list_parser_section_event[] ;
 extern key_description_t const enum_list_parser_io_type[] ;
 extern key_description_t const enum_list_parser_type[] ;
 extern key_description_t const enum_list_parser_opts[] ;

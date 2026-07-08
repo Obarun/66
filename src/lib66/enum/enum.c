@@ -32,6 +32,7 @@
     X(enum_list_parser_section_environ, E_PARSER_SECTION_ENVIRON_ENDOFKEY) \
     X(enum_list_parser_section_regex, E_PARSER_SECTION_REGEX_ENDOFKEY) \
     X(enum_list_parser_section_execute, E_PARSER_SECTION_EXECUTE_ENDOFKEY) \
+    X(enum_list_parser_section_event, E_PARSER_SECTION_EVENT_ENDOFKEY) \
     X(enum_list_parser_io_type, E_PARSER_IO_TYPE_ENDOFKEY) \
     X(enum_list_parser_type, E_PARSER_TYPE_ENDOFKEY) \
     X(enum_list_parser_opts, E_PARSER_OPTS_ENDOFKEY) \
