@@ -32,7 +32,8 @@ typedef char parse_store_nkey_is_large_enough[
      E_PARSER_SECTION_LOGGER_ENDOFKEY <= SS_PARSE_STORE_NKEY &&
      E_PARSER_SECTION_ENVIRON_ENDOFKEY <= SS_PARSE_STORE_NKEY &&
      E_PARSER_SECTION_REGEX_ENDOFKEY <= SS_PARSE_STORE_NKEY &&
-     E_PARSER_SECTION_EXECUTE_ENDOFKEY <= SS_PARSE_STORE_NKEY) ? 1 : -1] ;
+     E_PARSER_SECTION_EXECUTE_ENDOFKEY <= SS_PARSE_STORE_NKEY &&
+     E_PARSER_SECTION_EVENT_ENDOFKEY <= SS_PARSE_STORE_NKEY) ? 1 : -1] ;
 
 static resolve_enum_table_t store_table(uint32_t sid)
 {
@@ -56,6 +57,10 @@ static resolve_enum_table_t store_table(uint32_t sid)
         }
         case E_PARSER_SECTION_EXECUTE: {
             resolve_enum_table_t t = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;
+            return t ;
+        }
+        case E_PARSER_SECTION_EVENT: {
+            resolve_enum_table_t t = E_TABLE_PARSER_SECTION_EVENT_ZERO ;
             return t ;
         }
         case E_PARSER_SECTION_MAIN:

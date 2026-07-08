@@ -118,6 +118,7 @@ extern int parse_limit(parse_store_t *st, resolve_service_addon_limit_t *l, uint
 extern int parse_environ(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 extern int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 extern int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
+extern int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 extern int parse_core(resolve_service_t *res, char const *sv, char const *svname, char const *svsrc, size_t svlen, int insta, char const *instaname, parse_build_ctx_t *ctx) ;
 
 extern void parse_build(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;

@@ -70,6 +70,9 @@ static void build_supervised(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
     if (!parse_io(c, ctx))
         log_die(LOG_EXIT_SYS, "parse io of service: ", name) ;
 
+    if (!parse_event(c, ctx))
+        log_die(LOG_EXIT_SYS, "parse event of service: ", name) ;
+
     /* logger "effective": keep it only if the resolved io is 66log-bound. */
     if (c->res.logger && c->io.fdin.type != E_PARSER_IO_TYPE_66LOG && c->io.fdout.type != E_PARSER_IO_TYPE_66LOG)
         c->res.logger = 0 ;
@@ -118,6 +121,9 @@ static void parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 
     if (!parse_regex(c, ctx))
         log_die(LOG_EXIT_SYS, "parse regex of service: ", name) ;
+
+    if (!parse_event(c, ctx))
+        log_die(LOG_EXIT_SYS, "parse event of service: ", name) ;
 
     parse_module(c, ctx) ;
 

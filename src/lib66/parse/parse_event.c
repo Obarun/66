@@ -1,0 +1,199 @@
+/*
+ * parse_event.c
+ *
+ * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
+ *
+ * All rights reserved.
+ *
+ * This file is part of Obarun. It is subject to the license terms in
+ * the LICENSE file found in the top-level directory of this
+ * distribution.
+ * This file may not be copied, modified, propagated, or distributed
+ * except according to the terms contained in the LICENSE file.
+ */
+
+#include <stdint.h>
+#include <stdlib.h> // free
+
+#include <oblibs/log.h>
+#include <oblibs/sbl.h>
+#include <oblibs/strbuf.h>
+
+#include <66/parse.h>
+#include <66/resolve.h>
+#include <66/service.h>
+#include <66/enum_parser.h>
+#include <66/event_rule.h>
+
+#define EVENT_PRESENT(st, k) parse_store_present((st), E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_##k)
+
+static int read_event_list(parse_store_t *st, uint32_t kid, resolve_wrapper_t_ref wres, uint32_t *off, uint32_t *n)
+{
+    log_flow() ;
+
+    size_t len = 0 ;
+    char const *v = parse_store_get(st, E_PARSER_SECTION_EVENT, kid, &len) ;
+
+    _alloc_sbl_(stk, len + 1) ;
+    if (!strbuf_copyb(&stk, v, len))
+        log_die_nomem("strbuf") ;
+
+    if (!parse_list(&stk))
+        return 0 ;
+
+    if (stk.len)
+        *off = parse_compute_list(wres, &stk, n, 0) ;
+
+    return 1 ;
+}
+
+int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
+{
+    log_flow() ;
+
+    parse_store_t *st = ctx->st ;
+    resolve_service_t *res = &c->res ;
+    resolve_service_addon_event_t *ev = &c->event ;
+    char const *name = res->sa.s + res->name ;
+
+    res->has_event = 0 ;
+
+    int any = 0 ;
+    for (uint32_t kid = 0 ; kid < E_PARSER_SECTION_EVENT_ENDOFKEY ; kid++) {
+
+        if (parse_store_present(st, E_PARSER_SECTION_EVENT, kid)) {
+            any = 1 ;
+            break ;
+        }
+    }
+
+    if (!any)
+        return 1 ;
+
+    if (!EVENT_PRESENT(st, EVENTTYPE))
+        log_warnu_return(LOG_EXIT_ZERO, "[Event] section requires the EventType key of service: ", name) ;
+
+    char const *v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE, 0) ;
+    int src = event_src_from_string(v) ;
+    if (src < 0)
+        log_warnu_return(LOG_EXIT_ZERO, "invalid EventType: ", v, " of service: ", name) ;
+
+    int has_from = EVENT_PRESENT(st, FROM) ;
+    int has_ff = EVENT_PRESENT(st, FROMFIELD) ;
+    int has_on = EVENT_PRESENT(st, ON) ;
+    int has_onall = EVENT_PRESENT(st, ONALL) ;
+    int has_do = EVENT_PRESENT(st, DO) ;
+    int has_emit = EVENT_PRESENT(st, EMIT) ;
+
+    if (src == EVENT_SOURCE_USER) {
+
+        if (has_from || has_ff)
+            log_warnu_return(LOG_EXIT_ZERO, "a user reactor is sourceless: From/FromField not allowed of service: ", name) ;
+
+    } else if (!has_from && !has_ff)
+        log_warnu_return(LOG_EXIT_ZERO, "an event reactor requires From or FromField of service: ", name) ;
+
+    /* condition: On / OnAll */
+    switch (src) {
+
+        case EVENT_SOURCE_SERVICE:
+        case EVENT_SOURCE_SIGNAL:
+
+            if (has_on && has_onall)
+                log_warnu_return(LOG_EXIT_ZERO, "On and OnAll are mutually exclusive of service: ", name) ;
+
+            if (!has_on && !has_onall)
+                log_warnu_return(LOG_EXIT_ZERO, "a service/signal reactor requires On or OnAll of service: ", name) ;
+            break ;
+
+        case EVENT_SOURCE_USER:
+
+            if (has_onall)
+                log_warnu_return(LOG_EXIT_ZERO, "OnAll is not allowed for a user reactor of service: ", name) ;
+
+            if (!has_on)
+                log_warnu_return(LOG_EXIT_ZERO, "a user reactor requires On of service: ", name) ;
+            break ;
+
+        case EVENT_SOURCE_INOTIFY:
+        case EVENT_SOURCE_SCHEDULE:
+        case EVENT_SOURCE_TIMER:
+
+            if (has_on || has_onall)
+                log_warnu_return(LOG_EXIT_ZERO, "On/OnAll is not allowed for an inotify/schedule/timer reactor of service: ", name) ;
+            break ;
+
+        default:
+            log_warn_return(LOG_EXIT_ZERO, "unknown event source: ", event_src_to_string(src)) ;
+    }
+
+
+    if (!has_do && !has_emit)
+        log_warnu_return(LOG_EXIT_ZERO, "an event reactor requires Do or Emit of service: ", name) ;
+
+    ev->type = (uint32_t)src ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+    resolve_init(wres) ;
+
+    if (has_from && !read_event_list(st, E_PARSER_SECTION_EVENT_FROM, wres, &ev->from, &ev->nfrom)) {
+        free(wres) ;
+        log_warnu_return(LOG_EXIT_ZERO, "read the From list of service: ", name) ;
+    }
+
+    if (has_ff) {
+
+        v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROMFIELD, 0) ;
+        int bit = event_fromfield_from_string(v) ;
+
+        if (bit < 0) {
+            free(wres) ;
+            log_warnu_return(LOG_EXIT_ZERO, "invalid FromField: ", v, " of service: ", name) ;
+        }
+
+        ev->fromfield = (uint32_t)bit ;
+    }
+
+    if (has_on) {
+
+        ev->combine = EVENT_COMBINE_ANY ;
+
+        if (!read_event_list(st, E_PARSER_SECTION_EVENT_ON, wres, &ev->on, &ev->non)) {
+            free(wres) ;
+            log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
+        }
+
+    } else if (has_onall) {
+
+        ev->combine = EVENT_COMBINE_ALL ;
+
+        if (!read_event_list(st, E_PARSER_SECTION_EVENT_ONALL, wres, &ev->on, &ev->non)) {
+            free(wres) ;
+            log_warnu_return(LOG_EXIT_ZERO, "read the OnAll list of service: ", name) ;
+        }
+    }
+
+    if (has_do) {
+
+        v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_DO, 0) ;
+        int d = event_do_from_string(v) ;
+
+        if (d < 0) {
+            free(wres) ;
+            log_warnu_return(LOG_EXIT_ZERO, "invalid Do action: ", v, " of service: ", name) ;
+        }
+
+        ev->docmd = (uint32_t)d ;
+    }
+
+    if (has_emit) {
+        v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EMIT, 0) ;
+        ev->emit = resolve_add_string(wres, v) ;
+    }
+
+    free(wres) ;
+
+    res->has_event = 1 ;
+
+    return 1 ;
+}

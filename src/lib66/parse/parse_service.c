@@ -424,6 +424,18 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
                 free(wrx) ;
             }
 
+            if (c->res.has_event) {
+                char const *evname = c->res.sa.s + c->res.name ;
+                char aname[strlen(evname) + SS_ADDON_EVENT_SUFFIX_LEN + 1] ;
+                auto_strings(aname, evname, SS_ADDON_EVENT_SUFFIX) ;
+                resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &c->event) ;
+                if (!resolve_write_at(wev, sa.s, aname)) {
+                    free(wev) ;
+                    log_dieusys(LOG_EXIT_SYS, "write event addon of: ", evname) ;
+                }
+                free(wev) ;
+            }
+
             parse_copy_to_source(servicedir, sa.s, &c->res, rforce) ;
 
             /** do not die here, just warn the user */
