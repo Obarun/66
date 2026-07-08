@@ -12,10 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdlib.h>//free
+#include <string.h>//strlen
+#include <stdlib.h>//free,mkstemp
 #include <errno.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <unistd.h>//fsync
 
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -23,6 +24,9 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
+#include <oblibs/io.h>
+#include <oblibs/files.h>
+#include <oblibs/fd.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -33,9 +37,10 @@
 #include <66/utils.h>
 
 #include <66/migrate_0802.h>
+#include <66/migrate_0811.h>
 #include <66/migrate.h>
 
-static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_service_addon_environ_t *e, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *ex, resolve_service_addon_dependencies_t *dep, resolve_service_addon_regex_t *rx, resolve_service_t_0802 *old)
+static void service_resolve_sanitize_0802(resolve_service_t_0811 *new, resolve_service_t_0802 *old)
 {
     log_flow() ;
 
@@ -44,10 +49,12 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     resolve_init(wres) ;
 
     // configuration
-    new->name = resolve_add_string(wres, old->sa.s + old->name) ;
+    new->name = old->name ? resolve_add_string(wres, old->sa.s + old->name) : 0 ;
     new->description = old->description ? resolve_add_string(wres, old->sa.s + old->description) : 0 ;
     new->version = old->version ? resolve_add_string(wres, old->sa.s + old->version) : 0 ;
     new->type = old->type ;
+    new->notify = old->notify ;
+    new->maxdeath = old->maxdeath ;
     new->earlier = old->earlier ;
     new->copyfrom = old->hiercopy ? resolve_add_string(wres, old->sa.s + old->hiercopy) : 0 ;
     new->intree = old->intree ? resolve_add_string(wres, old->sa.s + old->intree) : 0 ;
@@ -64,44 +71,29 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     new->path.frontend = old->path.frontend ? resolve_add_string(wres, old->sa.s + old->path.frontend) : 0 ;
     new->path.servicedir = old->path.servicedir ? resolve_add_string(wres, old->sa.s + old->path.servicedir) : 0 ;
 
-    // dependencies
-    new->has_dependencies = (old->dependencies.ndepends || old->dependencies.nrequiredby ||
-                             old->dependencies.noptsdeps || old->dependencies.ncontents) ? 1 : 0 ;
-    if (new->has_dependencies) {
-        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
-        resolve_init(depwres) ;
-        dep->depends = old->dependencies.depends ? resolve_add_string(depwres, old->sa.s + old->dependencies.depends) : 0 ;
-        dep->requiredby = old->dependencies.requiredby ? resolve_add_string(depwres, old->sa.s + old->dependencies.requiredby) : 0 ;
-        dep->optsdeps = old->dependencies.optsdeps ? resolve_add_string(depwres, old->sa.s + old->dependencies.optsdeps) : 0 ;
-        dep->contents = old->dependencies.contents ? resolve_add_string(depwres, old->sa.s + old->dependencies.contents) : 0 ;
-        dep->ndepends = old->dependencies.ndepends ;
-        dep->nrequiredby = old->dependencies.nrequiredby ;
-        dep->noptsdeps = old->dependencies.noptsdeps ;
-        dep->ncontents = old->dependencies.ncontents ;
-        free(depwres) ;
-    }
+    // dependencies (provide/nprovide are new in 0.8.1.1 -> zero default)
+    new->dependencies.depends = old->dependencies.depends ? resolve_add_string(wres, old->sa.s + old->dependencies.depends) : 0 ;
+    new->dependencies.requiredby = old->dependencies.requiredby ? resolve_add_string(wres, old->sa.s + old->dependencies.requiredby) : 0 ;
+    new->dependencies.optsdeps = old->dependencies.optsdeps ? resolve_add_string(wres, old->sa.s + old->dependencies.optsdeps) : 0 ;
+    new->dependencies.contents = old->dependencies.contents ? resolve_add_string(wres, old->sa.s + old->dependencies.contents) : 0 ;
+    new->dependencies.ndepends = old->dependencies.ndepends ;
+    new->dependencies.nrequiredby = old->dependencies.nrequiredby ;
+    new->dependencies.noptsdeps = old->dependencies.noptsdeps ;
+    new->dependencies.ncontents = old->dependencies.ncontents ;
 
-    // execute -> autonomous addon (notify/maxdeath/maxdeathtime relocated here)
-    new->has_execute = 1 ;
-    {
-        resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
-        resolve_init(exwres) ;
-        ex->notify = old->notify ;
-        ex->maxdeath = old->maxdeath ;
-        ex->run.run = old->execute.run.run ? resolve_add_string(exwres, old->sa.s + old->execute.run.run) : 0 ;
-        ex->run.run_user = old->execute.run.run_user ? resolve_add_string(exwres, old->sa.s + old->execute.run.run_user) : 0 ;
-        ex->run.build = old->execute.run.build ? resolve_add_string(exwres, old->sa.s + old->execute.run.build) : 0 ;
-        ex->run.runas = old->execute.run.runas ? resolve_add_string(exwres, old->sa.s + old->execute.run.runas) : 0 ;
-        ex->finish.run = old->execute.finish.run ? resolve_add_string(exwres, old->sa.s + old->execute.finish.run) : 0 ;
-        ex->finish.run_user = old->execute.finish.run_user ? resolve_add_string(exwres, old->sa.s + old->execute.finish.run_user) : 0 ;
-        ex->finish.build = old->execute.finish.build ? resolve_add_string(exwres, old->sa.s + old->execute.finish.build) : 0 ;
-        ex->finish.runas = old->execute.finish.runas ? resolve_add_string(exwres, old->sa.s + old->execute.finish.runas) : 0 ;
-        ex->timeout.start = old->execute.timeout.start ;
-        ex->timeout.stop = old->execute.timeout.stop ;
-        ex->down = old->execute.down ;
-        ex->downsignal = old->execute.downsignal ;
-        free(exwres) ;
-    }
+    // execute
+    new->execute.run.run = old->execute.run.run ? resolve_add_string(wres, old->sa.s + old->execute.run.run) : 0 ;
+    new->execute.run.run_user = old->execute.run.run_user ? resolve_add_string(wres, old->sa.s + old->execute.run.run_user) : 0 ;
+    new->execute.run.build = old->execute.run.build ? resolve_add_string(wres, old->sa.s + old->execute.run.build) : 0 ;
+    new->execute.run.runas = old->execute.run.runas ? resolve_add_string(wres, old->sa.s + old->execute.run.runas) : 0 ;
+    new->execute.finish.run = old->execute.finish.run ? resolve_add_string(wres, old->sa.s + old->execute.finish.run) : 0 ;
+    new->execute.finish.run_user = old->execute.finish.run_user ? resolve_add_string(wres, old->sa.s + old->execute.finish.run_user) : 0 ;
+    new->execute.finish.build = old->execute.finish.build ? resolve_add_string(wres, old->sa.s + old->execute.finish.build) : 0 ;
+    new->execute.finish.runas = old->execute.finish.runas ? resolve_add_string(wres, old->sa.s + old->execute.finish.runas) : 0 ;
+    new->execute.timeout.start = old->execute.timeout.start ;
+    new->execute.timeout.stop = old->execute.timeout.stop ;
+    new->execute.down = old->execute.down ;
+    new->execute.downsignal = old->execute.downsignal ;
 
     // live
     new->live.livedir = old->live.livedir ? resolve_add_string(wres, old->sa.s + old->live.livedir) : 0 ;
@@ -110,71 +102,45 @@ static void service_resolve_sanitize_0802(resolve_service_t *new, resolve_servic
     new->live.scandir = old->live.scandir ? resolve_add_string(wres, old->sa.s + old->live.scandir) : 0 ;
     new->live.statedir = old->live.statedir ? resolve_add_string(wres, old->sa.s + old->live.statedir) : 0 ;
     new->live.eventdir = old->live.eventdir ? resolve_add_string(wres, old->sa.s + old->live.eventdir) : 0 ;
+    new->live.notifdir = old->live.notifdir ? resolve_add_string(wres, old->sa.s + old->live.notifdir) : 0 ;
     new->live.supervisedir = old->live.supervisedir ? resolve_add_string(wres, old->sa.s + old->live.supervisedir) : 0 ;
     new->live.fdholderdir = old->live.fdholderdir ? resolve_add_string(wres, old->sa.s + old->live.fdholderdir) : 0 ;
     new->live.oneshotddir = old->live.oneshotddir ? resolve_add_string(wres, old->sa.s + old->live.oneshotddir) : 0 ;
 
     // logger
-    new->logger = old->logger.want ? 1 : 0 ;
-    if (new->logger) {
-        resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
-        resolve_init(lgwres) ;
-        lg->backup = old->logger.backup ;
-        lg->maxsize = old->logger.maxsize ;
-        lg->timestamp = old->logger.timestamp ;
-        lg->execute.run.run = old->logger.execute.run.run ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.run) : 0 ;
-        lg->execute.run.run_user = old->logger.execute.run.run_user ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.run_user) : 0 ;
-        lg->execute.run.build = old->logger.execute.run.build ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.build) : 0 ;
-        lg->execute.run.runas = old->logger.execute.run.runas ? resolve_add_string(lgwres, old->sa.s + old->logger.execute.run.runas) : 0 ;
-        lg->execute.timeout.start = old->logger.execute.timeout.start ;
-        lg->execute.timeout.stop = old->logger.execute.timeout.stop ;
-        free(lgwres) ;
-    }
+    new->logger.name = old->logger.name ? resolve_add_string(wres, old->sa.s + old->logger.name) : 0 ;
+    new->logger.backup = old->logger.backup ;
+    new->logger.maxsize = old->logger.maxsize ;
+    new->logger.timestamp = old->logger.timestamp ;
+    new->logger.want = old->logger.want ;
+    new->logger.execute.run.run = old->logger.execute.run.run ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.run) : 0 ;
+    new->logger.execute.run.run_user = old->logger.execute.run.run_user ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.run_user) : 0 ;
+    new->logger.execute.run.build = old->logger.execute.run.build ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.build) : 0 ;
+    new->logger.execute.run.runas = old->logger.execute.run.runas ? resolve_add_string(wres, old->sa.s + old->logger.execute.run.runas) : 0 ;
+    new->logger.execute.timeout.start = old->logger.execute.timeout.start ;
+    new->logger.execute.timeout.stop = old->logger.execute.timeout.stop ;
 
-    // environment -> autonomous addon (routed out of the core; 0802 had no importfile)
-    new->has_environ = old->environ.env ? 1 : 0 ;
-    if (new->has_environ) {
-        resolve_wrapper_t_ref ewres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
-        resolve_init(ewres) ;
-        e->env = old->environ.env ? resolve_add_string(ewres, old->sa.s + old->environ.env) : 0 ;
-        e->envdir = old->environ.envdir ? resolve_add_string(ewres, old->sa.s + old->environ.envdir) : 0 ;
-        e->env_overwrite = old->environ.env_overwrite ;
-        e->importfile = 0 ;
-        e->nimportfile = 0 ;
-        free(ewres) ;
-    }
+    // environ (importfile/nimportfile are new in 0.8.1.1 -> zero default)
+    new->environ.env = old->environ.env ? resolve_add_string(wres, old->sa.s + old->environ.env) : 0 ;
+    new->environ.envdir = old->environ.envdir ? resolve_add_string(wres, old->sa.s + old->environ.envdir) : 0 ;
+    new->environ.env_overwrite = old->environ.env_overwrite ;
 
-    // regex -> autonomous addon (module services only)
-    new->has_regex = (old->regex.configure || old->regex.directories || old->regex.files ||
-                      old->regex.infiles || old->regex.ndirectories || old->regex.nfiles ||
-                      old->regex.ninfiles) ? 1 : 0 ;
-    if (new->has_regex) {
-        resolve_wrapper_t_ref rxwres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
-        resolve_init(rxwres) ;
-        rx->configure = old->regex.configure ? resolve_add_string(rxwres, old->sa.s + old->regex.configure) : 0 ;
-        rx->directories = old->regex.directories ? resolve_add_string(rxwres, old->sa.s + old->regex.directories) : 0 ;
-        rx->files = old->regex.files ? resolve_add_string(rxwres, old->sa.s + old->regex.files) : 0 ;
-        rx->infiles = old->regex.infiles ? resolve_add_string(rxwres, old->sa.s + old->regex.infiles) : 0 ;
-        rx->ndirectories = old->regex.ndirectories ;
-        rx->nfiles = old->regex.nfiles ;
-        rx->ninfiles = old->regex.ninfiles ;
-        free(rxwres) ;
-    }
+    // regex
+    new->regex.configure = old->regex.configure ? resolve_add_string(wres, old->sa.s + old->regex.configure) : 0 ;
+    new->regex.directories = old->regex.directories ? resolve_add_string(wres, old->sa.s + old->regex.directories) : 0 ;
+    new->regex.files = old->regex.files ? resolve_add_string(wres, old->sa.s + old->regex.files) : 0 ;
+    new->regex.infiles = old->regex.infiles ? resolve_add_string(wres, old->sa.s + old->regex.infiles) : 0 ;
+    new->regex.ndirectories = old->regex.ndirectories ;
+    new->regex.nfiles = old->regex.nfiles ;
+    new->regex.ninfiles = old->regex.ninfiles ;
 
-    // IO
-    // io -> autonomous addon (always present)
-    new->has_io = 1 ;
-    {
-        resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, io) ;
-        resolve_init(iowres) ;
-        io->fdin.type = old->io.fdin.type ;
-        io->fdin.destination = old->io.fdin.destination ? resolve_add_string(iowres, old->sa.s + old->io.fdin.destination) : 0 ;
-        io->fdout.type = old->io.fdout.type ;
-        io->fdout.destination = old->io.fdout.destination ? resolve_add_string(iowres, old->sa.s + old->io.fdout.destination) : 0 ;
-        io->fderr.type = old->io.fderr.type ;
-        io->fderr.destination = old->io.fderr.destination ? resolve_add_string(iowres, old->sa.s + old->io.fderr.destination) : 0 ;
-        free(iowres) ;
-    }
+    // io
+    new->io.fdin.type = old->io.fdin.type ;
+    new->io.fdin.destination = old->io.fdin.destination ? resolve_add_string(wres, old->sa.s + old->io.fdin.destination) : 0 ;
+    new->io.fdout.type = old->io.fdout.type ;
+    new->io.fdout.destination = old->io.fdout.destination ? resolve_add_string(wres, old->sa.s + old->io.fdout.destination) : 0 ;
+    new->io.fderr.type = old->io.fderr.type ;
+    new->io.fderr.destination = old->io.fderr.destination ? resolve_add_string(wres, old->sa.s + old->io.fderr.destination) : 0 ;
 
     free(wres) ;
 }
@@ -302,13 +268,182 @@ static int service_resolve_read_cdb_0802(ocdb *c, resolve_service_t_0802 *res)
     return 1 ;
 }
 
+static void add_version_0811(resolve_service_t_0811 *res)
+{
+    log_flow() ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    res->rversion = resolve_add_string(wres, SS_VERSION) ;
+    free(wres) ;
+}
+
+static int service_resolve_write_cdb_0811(ocdbmaker *c, resolve_service_t_0811 *res)
+{
+    log_flow() ;
+
+    add_version_0811(res) ;
+
+    if (!ocdb_make_add(c, "sa", 2, res->sa.s, res->sa.len))
+        return 0 ;
+
+    if (!resolve_add_cdb_uint(c, "rversion", res->rversion) ||
+        !resolve_add_cdb_uint(c, "name", res->name) ||
+        !resolve_add_cdb_uint(c, "description", res->description) ||
+        !resolve_add_cdb_uint(c, "version", res->version) ||
+        !resolve_add_cdb_uint(c, "type", res->type) ||
+        !resolve_add_cdb_uint(c, "notify", res->notify) ||
+        !resolve_add_cdb_uint(c, "maxdeath", res->maxdeath) ||
+        !resolve_add_cdb_uint(c, "earlier", res->earlier) ||
+        !resolve_add_cdb_uint(c, "copyfrom", res->copyfrom) ||
+        !resolve_add_cdb_uint(c, "intree", res->intree) ||
+        !resolve_add_cdb_uint(c, "ownerstr", res->ownerstr) ||
+        !resolve_add_cdb_uint(c, "owner", res->owner) ||
+        !resolve_add_cdb_uint(c, "treename", res->treename) ||
+        !resolve_add_cdb_uint(c, "user", res->user) ||
+        !resolve_add_cdb_uint(c, "inns", res->inns) ||
+        !resolve_add_cdb_uint(c, "enabled", res->enabled) ||
+        !resolve_add_cdb_uint(c, "islog", res->islog) ||
+
+        // path
+        !resolve_add_cdb_uint(c, "home", res->path.home) ||
+        !resolve_add_cdb_uint(c, "frontend", res->path.frontend) ||
+        !resolve_add_cdb_uint(c, "src_servicedir", res->path.servicedir) ||
+
+        // dependencies
+        !resolve_add_cdb_uint(c, "depends", res->dependencies.depends) ||
+        !resolve_add_cdb_uint(c, "requiredby", res->dependencies.requiredby) ||
+        !resolve_add_cdb_uint(c, "optsdeps", res->dependencies.optsdeps) ||
+        !resolve_add_cdb_uint(c, "contents", res->dependencies.contents) ||
+        !resolve_add_cdb_uint(c, "provide", res->dependencies.provide) ||
+        !resolve_add_cdb_uint(c, "ndepends", res->dependencies.ndepends) ||
+        !resolve_add_cdb_uint(c, "nrequiredby", res->dependencies.nrequiredby) ||
+        !resolve_add_cdb_uint(c, "noptsdeps", res->dependencies.noptsdeps) ||
+        !resolve_add_cdb_uint(c, "ncontents", res->dependencies.ncontents) ||
+        !resolve_add_cdb_uint(c, "nprovide", res->dependencies.nprovide) ||
+
+        // execute
+        !resolve_add_cdb_uint(c, "run", res->execute.run.run) ||
+        !resolve_add_cdb_uint(c, "run_user", res->execute.run.run_user) ||
+        !resolve_add_cdb_uint(c, "run_build", res->execute.run.build) ||
+        !resolve_add_cdb_uint(c, "run_runas", res->execute.run.runas) ||
+        !resolve_add_cdb_uint(c, "finish", res->execute.finish.run) ||
+        !resolve_add_cdb_uint(c, "finish_user", res->execute.finish.run_user) ||
+        !resolve_add_cdb_uint(c, "finish_build", res->execute.finish.build) ||
+        !resolve_add_cdb_uint(c, "finish_runas", res->execute.finish.runas) ||
+        !resolve_add_cdb_uint(c, "timeoutstart", res->execute.timeout.start) ||
+        !resolve_add_cdb_uint(c, "timeoutstop", res->execute.timeout.stop) ||
+        !resolve_add_cdb_uint(c, "down", res->execute.down) ||
+        !resolve_add_cdb_uint(c, "downsignal", res->execute.downsignal) ||
+
+        // live
+        !resolve_add_cdb_uint(c, "livedir", res->live.livedir) ||
+        !resolve_add_cdb_uint(c, "status", res->live.status) ||
+        !resolve_add_cdb_uint(c, "live_servicedir", res->live.servicedir) ||
+        !resolve_add_cdb_uint(c, "scandir", res->live.scandir) ||
+        !resolve_add_cdb_uint(c, "statedir", res->live.statedir) ||
+        !resolve_add_cdb_uint(c, "eventdir", res->live.eventdir) ||
+        !resolve_add_cdb_uint(c, "notifdir", res->live.notifdir) ||
+        !resolve_add_cdb_uint(c, "supervisedir", res->live.supervisedir) ||
+        !resolve_add_cdb_uint(c, "fdholderdir", res->live.fdholderdir) ||
+        !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir) ||
+
+        // logger
+        !resolve_add_cdb_uint(c, "logname", res->logger.name) ||
+        !resolve_add_cdb_uint(c, "logbackup", res->logger.backup) ||
+        !resolve_add_cdb_uint(c, "logmaxsize", res->logger.maxsize) ||
+        !resolve_add_cdb_uint(c, "logtimestamp", res->logger.timestamp) ||
+        !resolve_add_cdb_uint(c, "logwant", res->logger.want) ||
+        !resolve_add_cdb_uint(c, "logrun", res->logger.execute.run.run) ||
+        !resolve_add_cdb_uint(c, "logrun_user", res->logger.execute.run.run_user) ||
+        !resolve_add_cdb_uint(c, "logrun_build", res->logger.execute.run.build) ||
+        !resolve_add_cdb_uint(c, "logrun_runas", res->logger.execute.run.runas) ||
+        !resolve_add_cdb_uint(c, "logtimeoutstart", res->logger.execute.timeout.start) ||
+        !resolve_add_cdb_uint(c, "logtimeoutstop", res->logger.execute.timeout.stop) ||
+
+        // environ
+        !resolve_add_cdb_uint(c, "env", res->environ.env) ||
+        !resolve_add_cdb_uint(c, "envdir", res->environ.envdir) ||
+        !resolve_add_cdb_uint(c, "env_overwrite", res->environ.env_overwrite) ||
+        !resolve_add_cdb_uint(c, "importfile", res->environ.importfile) ||
+        !resolve_add_cdb_uint(c, "nimportfile", res->environ.nimportfile) ||
+
+        // regex
+        !resolve_add_cdb_uint(c, "configure", res->regex.configure) ||
+        !resolve_add_cdb_uint(c, "directories", res->regex.directories) ||
+        !resolve_add_cdb_uint(c, "files", res->regex.files) ||
+        !resolve_add_cdb_uint(c, "infiles", res->regex.infiles) ||
+        !resolve_add_cdb_uint(c, "ndirectories", res->regex.ndirectories) ||
+        !resolve_add_cdb_uint(c, "nfiles", res->regex.nfiles) ||
+        !resolve_add_cdb_uint(c, "ninfiles", res->regex.ninfiles) ||
+
+        // io
+        !resolve_add_cdb_uint(c, "stdintype", res->io.fdin.type) ||
+        !resolve_add_cdb_uint(c, "stdindest", res->io.fdin.destination) ||
+        !resolve_add_cdb_uint(c, "stdouttype", res->io.fdout.type) ||
+        !resolve_add_cdb_uint(c, "stdoutdest", res->io.fdout.destination) ||
+        !resolve_add_cdb_uint(c, "stderrtype", res->io.fderr.type) ||
+        !resolve_add_cdb_uint(c, "stderrdest", res->io.fderr.destination))
+            return 0 ;
+
+    return 1 ;
+}
+
+static int write_frozen_0811(resolve_service_t_0811 *res, char const *base, char const *name)
+{
+    log_flow() ;
+
+    int fd ;
+    size_t baselen = strlen(base), namelen = strlen(name) ;
+    ocdbmaker c = OCDBMAKER_ZERO ;
+
+    char file[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + SS_RESOLVE_LEN + 1 + namelen + 1] ;
+    char tfile[5 + namelen + 8] ;
+
+    auto_strings(file, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name, SS_RESOLVE, "/", name) ;
+    auto_strings(tfile, "/tmp/", name, ":", "XXXXXX") ;
+
+    fd = mkstemp(tfile) ;
+    if (fd < 0 || !io_set_block(fd)) {
+        log_warnusys("mkstemp: ", tfile) ;
+        goto err_fd ;
+    }
+
+    if (!ocdb_make_start(&c, fd)) {
+        log_warnusys("cdbmake_start") ;
+        goto err ;
+    }
+
+    if (!service_resolve_write_cdb_0811(&c, res))
+        goto err ;
+
+    if (!ocdb_make_finish(&c) || fsync(fd) < 0) {
+        log_warnusys("write to: ", tfile) ;
+        goto err ;
+    }
+
+    close_fd(fd) ;
+
+    if (!file_copy(tfile, file, 0600)) {
+        log_warnusys("copy: ", tfile, " to ", file) ;
+        goto err_fd ;
+    }
+
+    file_tryunlink(tfile) ;
+
+    return 1 ;
+
+    err:
+        close_fd(fd) ;
+    err_fd:
+        file_tryunlink(tfile) ;
+        return 0 ;
+}
+
 static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 {
     int fd ;
     ocdb c = OCDB_ZERO ;
     resolve_service_t_0802 res = RESOLVE_SERVICE_ZERO_0802 ;
-    resolve_service_t new = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &new) ;
+    resolve_service_t_0811 new = RESOLVE_SERVICE_ZERO_0811 ;
 
     if (resolve_open_cdb(&fd, &c, path, name) <= 0)
         log_dieusys(LOG_EXIT_SYS, "open resolve file of service: ", name) ;
@@ -316,78 +451,12 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     if (!service_resolve_read_cdb_0802(&c, &res))
         log_dieusys(LOG_EXIT_SYS, "read resolve file of service: ", name) ;
 
-    resolve_service_addon_environ_t environ = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_service_addon_logger_t logger = RESOLVE_SERVICE_ADDON_LOGGER_ZERO ;
-    resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    service_resolve_sanitize_0802(&new, &environ, &io, &logger, &execute, &dependencies, &regex, &res) ;
+    service_resolve_sanitize_0802(&new, &res) ;
 
-    if (new.type != E_PARSER_TYPE_CLASSIC)
-        new.logger = 0 ;
-
-    if (res.logger.want && res.logger.execute.run.runas && io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
-        resolve_wrapper_t_ref iow = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-        io.runas = resolve_add_string(iow, res.sa.s + res.logger.execute.run.runas) ;
-        free(iow) ;
-    }
-
-    migrate_ensure_log_owner(&new, &io, &logger) ;
-
-    if (!resolve_write(wres, info->base.s, name))
+    if (!write_frozen_0811(&new, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
 
-    if (new.has_environ) {
-        resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &environ) ;
-        if (!resolve_write(we, info->base.s, name)) {
-            resolve_free(we) ;
-            log_dieusys(LOG_EXIT_SYS, "write environ addon of service: ", name) ;
-        }
-        resolve_free(we) ;
-    }
-
-    if (new.has_io) {
-        resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-        if (!resolve_write(wio, info->base.s, name)) {
-            resolve_free(wio) ;
-            log_dieusys(LOG_EXIT_SYS, "write io addon of service: ", name) ;
-        }
-        resolve_free(wio) ;
-    }
-
-    if (new.has_dependencies) {
-        resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dependencies) ;
-        if (!resolve_write(wdep, info->base.s, name)) {
-            resolve_free(wdep) ;
-            log_dieusys(LOG_EXIT_SYS, "write dependencies addon of service: ", name) ;
-        }
-        resolve_free(wdep) ;
-    }
-
-    if (new.has_regex) {
-        resolve_wrapper_t_ref wrx = resolve_set_struct(DATA_SERVICE_REGEX, &regex) ;
-        if (!resolve_write(wrx, info->base.s, name)) {
-            resolve_free(wrx) ;
-            log_dieusys(LOG_EXIT_SYS, "write regex addon of service: ", name) ;
-        }
-        resolve_free(wrx) ;
-    }
-
-    if (new.has_execute) {
-        resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &execute) ;
-        if (!resolve_write(wex, info->base.s, name)) {
-            resolve_free(wex) ;
-            log_dieusys(LOG_EXIT_SYS, "write execute addon of service: ", name) ;
-        }
-        resolve_free(wex) ;
-    }
-
-    /* the logger addon is transient (only feeds migrate_ensure_log_owner, never
-     * written to disk), so nothing else frees its arena -- do it here. */
-    strbuf_free(&logger.sa) ;
-
-    resolve_free(wres) ;
+    strbuf_free(&new.sa) ;
 }
 
 static void migrate_service_0802(void)

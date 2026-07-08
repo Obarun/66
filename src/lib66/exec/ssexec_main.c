@@ -12,14 +12,18 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <66/constants.h>
 #include <string.h>
-#include <unistd.h> // getuid, isatty
+#include <unistd.h> // getuid, isatty, access
+
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/fd.h>
 #include <oblibs/opt.h>
+#include <oblibs/files.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/utils.h>
@@ -274,6 +278,27 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
 
         if (!cmd_skips_sanitize(cmd))
             sanitize_system(info) ;
+
+        if (strcmp(cmd, "snapshot")) {
+
+            // migration process
+            char dst[info->base.len + SS_SYSTEM_LEN + 9 + 1] ;
+            auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
+            int r = access(dst, F_OK) ;
+            if (r < 0)
+                log_dieusys(LOG_EXIT_SYS, "access system version file: ", dst) ;
+
+            ssize_t len = file_get_size(dst) ;
+            _alloc_strbuf_(file, len + 1) ;
+            if (!strbuf_read_file(&file, dst))
+                log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
+
+            if (sanitize_migrate(info, file.s)) {
+                log_trace("write system version file with version: ", SS_VERSION) ;
+                if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
+                    log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+            }
+        }
 
         set_info(info) ;
     }

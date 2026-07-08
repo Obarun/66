@@ -57,7 +57,6 @@ void sanitize_system(ssexec_t *info)
     log_flow() ;
 
     int r ;
-    short first = 0 ;
     size_t baselen = info->base.len ;
     uid_t log_uid ;
     gid_t log_gid ;
@@ -136,7 +135,6 @@ void sanitize_system(ssexec_t *info)
     auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN, SS_MASTER) ;
 
     if (!scan_mode(dst, S_IFREG)) {
-        first = 1 ;
         if (!tree_resolve_master_create(info->base.s, info->owner))
             log_dieu(LOG_EXIT_SYS, "write Master resolve file of trees") ;
     }
@@ -165,30 +163,6 @@ void sanitize_system(ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "create tree: ", SS_DEFAULT_TREENAME) ;
 
         PROG = prog ;
-    }
-
-    auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
-    r = access(dst, F_OK) ;
-    if (r < 0) {
-        if (!first)
-            sanitize_migrate(info, "0.7.2.1", 0) ;
-
-        log_trace("write system version file with version: ", SS_VERSION) ;
-        if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-            log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
-
-    } else {
-
-        ssize_t len = file_get_size(dst) ;
-        _alloc_strbuf_(file, len + 1) ;
-        if (!strbuf_read_file(&file, dst))
-            log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
-
-        if (sanitize_migrate(info, file.s, 1)) {
-            log_trace("write system version file with version: ", SS_VERSION) ;
-            if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-                log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
-        }
     }
 
 }
