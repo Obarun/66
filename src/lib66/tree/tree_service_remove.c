@@ -38,7 +38,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
         _alloc_sbl_(stk, clen + 1) ;
 
         if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
-            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
 
         if (!sbl_remove(&stk, service))
             log_dieu(LOG_EXIT_SYS, "remove service: ", service, " from selection") ;
@@ -46,7 +46,7 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
         if (stk.len) {
 
             if (!sbl_rebuild_with_delim(&stk, ' '))
-                log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
+                log_dieu(LOG_EXIT_SYS, "convert sbl to string") ;
 
             str = stk.s ;
 

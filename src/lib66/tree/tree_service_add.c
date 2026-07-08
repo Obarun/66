@@ -50,7 +50,7 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     if (tres.ncontents) {
 
         if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
-            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
 
         if (sbl_search(&stk, service) < 0) {
             if (!sbl_add(&stk, service))
@@ -60,14 +60,14 @@ void tree_service_add(char const *treename, char const *service, ssexec_t *info)
     } else {
 
         if (!sbl_add(&stk, service))
-            log_dieu(LOG_EXIT_SYS, "add string to stack") ;
+            log_dieu(LOG_EXIT_SYS, "add string to sbl") ;
 
     }
 
     tres.ncontents = sbl_count(&stk) ;
 
     if (!sbl_rebuild_with_delim(&stk, ' '))
-        log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
+        log_dieu(LOG_EXIT_SYS, "convert sbl to string") ;
 
     table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
 

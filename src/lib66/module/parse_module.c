@@ -210,7 +210,7 @@ void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         _alloc_sbl_(stk, len + 1) ;
 
         if (!strbuf_copyb(&stk, sa.s, sa.len))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
 
         FOREACH_SBL(&stk, pos) {
 

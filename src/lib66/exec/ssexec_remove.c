@@ -239,7 +239,7 @@ static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propag
             } else {
 
                 if (!sbl_rebuild_with_delim(&deps, ' '))
-                    log_dieu(LOG_EXIT_SYS, "convert stack to string") ;
+                    log_dieu(LOG_EXIT_SYS, "convert strbuf to string") ;
 
                 table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
 

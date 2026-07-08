@@ -60,7 +60,7 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
         _alloc_sbl_(stk, len + 1) ;
         if (!strbuf_copyb(&stk, v, len))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
 
         if (!parse_list(&stk)) { free(wres) ; parse_error_return(0, 8, table) ; }
 

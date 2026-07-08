@@ -43,7 +43,7 @@ static int store_list(strbuf *stk, parse_store_t *st, uint32_t kid)
     char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, kid, &len) ;
 
     if (!strbuf_copyb(stk, v, len))
-        log_die_nomem("stack") ;
+        log_die_nomem("strbuf") ;
 
     return parse_list(stk) ;
 }

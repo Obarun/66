@@ -169,7 +169,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
 
         if (pres->enabled && !pres->inns)
             if (!sbl_add(&toenable, pres->sa.s + pres->name))
-                log_die_nomem("stack") ;
+                log_die_nomem("strbuf") ;
 
         if (!state_write_remote(&sta, status))
             log_dieusys(LOG_EXIT_SYS, "write status file of: ", name) ;

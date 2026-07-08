@@ -73,7 +73,7 @@ static void parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t 
         _alloc_sbl_(stk, depslen + 1) ;
 
         if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
-            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->ndepends ;
         char n[len] ;
@@ -92,7 +92,7 @@ static void parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t 
         _alloc_sbl_(stk, depslen + 1) ;
 
         if (!sbl_clean_string(&stk, dep->sa.s + dep->requiredby))
-            log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+            log_dieusys(LOG_EXIT_SYS, "convert string to strbuf") ;
 
         size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->nrequiredby ;
         char n[len] ;
@@ -136,14 +136,14 @@ void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon
 
                 if (c->res.type == E_PARSER_TYPE_CLASSIC) {
                     if (!sbl_add(&stk, logname))
-                        log_die_nomem("stack overflow") ;
+                        log_die_nomem("strbuf") ;
                 }
 
             }
 
             if (sbl_search(&stk, c->res.sa.s + c->res.name) < 0 )
                 if (!sbl_add(&stk, c->res.sa.s + c->res.name))
-                    log_die_nomem("stack overflow") ;
+                    log_die_nomem("strbuf") ;
         }
     }
 

@@ -67,7 +67,7 @@ void sanitize_graph(ssexec_t *info)
         if (v->ndepends) {
 
             if (!graph_get_stkedge(&stk, &graph.g, v, false))
-                log_die_nomem("stack") ;
+                log_die_nomem("strbuf") ;
 
             c->dependencies.ndepends = 0 ;
             c->dependencies.depends = 0 ;
@@ -81,7 +81,7 @@ void sanitize_graph(ssexec_t *info)
         if (v->nrequiredby) {
 
             if (!graph_get_stkedge(&stk, &graph.g, v, true))
-                log_die_nomem("stack") ;
+                log_die_nomem("strbuf") ;
 
             c->dependencies.nrequiredby = 0 ;
             c->dependencies.requiredby = 0 ;

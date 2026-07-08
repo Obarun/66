@@ -461,7 +461,7 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         _alloc_strbuf_(path, strlen(e.sa.s + e.envdir) + SS_SYM_VERSION_LEN + 1) ;
 
         if (!auto_strbuf(&path, e.sa.s + e.envdir, SS_SYM_VERSION))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
 
         if (!environ_merge_dir(eram, path.s))
             log_dieusys(LOG_EXIT_SYS, "merge environment directory: ", path.s) ;

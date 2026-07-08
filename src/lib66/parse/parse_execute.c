@@ -35,7 +35,7 @@ static int store_list_sid(strbuf *stk, parse_store_t *st, uint32_t sid, uint32_t
     char const *v = parse_store_get(st, sid, kid, &len) ;
 
     if (!strbuf_copyb(stk, v, len))
-        log_die_nomem("stack") ;
+        log_die_nomem("strbuf") ;
 
     return parse_list(stk) ;
 }

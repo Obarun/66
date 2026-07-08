@@ -186,10 +186,10 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
 
     if (delim > 0) {
         if (!sbl_addb(&stk, line + delim + 1, len - delim + 1))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
     } else {
         if (!sbl_addb(&stk, line, len))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
     }
 
     switch(table.u.parser.id) {

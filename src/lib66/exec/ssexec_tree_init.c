@@ -66,7 +66,7 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
         if (c->res.enabled) {
 
             if (!sbl_add(sa, c->name))
-                log_die_nomem("stack") ;
+                log_die_nomem("strbuf") ;
 
         } else
             log_trace("ignoring not enabled service: ", c->name) ;

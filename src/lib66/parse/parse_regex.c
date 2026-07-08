@@ -74,7 +74,7 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
                     _alloc_sbl_(stk, len + 1) ;
                     if (!strbuf_copyb(&stk, v, len))
-                        log_die_nomem("stack") ;
+                        log_die_nomem("strbuf") ;
                     if (!parse_list(&stk)) { free(wres) ; parse_error_return(0, 8, table) ; }
                     if (stk.len)
                         *field = parse_compute_list(wres, &stk, nfield, 0) ;

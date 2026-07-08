@@ -143,7 +143,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependenci
                     _alloc_sbl_(stk, len + 1) ;
 
                     if (!sbl_clean_string(&stk, ddep.sa.s + *dfield))
-                        log_dieusys(LOG_EXIT_SYS, "convert string to stack") ;
+                        log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
 
                     /** remove the module name to the depends field of the old service dependency*/
                     if (!sbl_remove(&stk, new->sa.s + new->name))
@@ -154,7 +154,7 @@ void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependenci
                     if (*dnfield) {
 
                         if (!sbl_rebuild_with_delim(&stk, ' '))
-                            log_dieusys(LOG_EXIT_SYS, "convert stack to string") ;
+                            log_dieusys(LOG_EXIT_SYS, "convert sbl to string") ;
 
                         (*dfield) = resolve_add_string(ddepwres, stk.s) ;
 

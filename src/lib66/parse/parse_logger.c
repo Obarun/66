@@ -40,7 +40,7 @@ static int get_shebang(strbuf *stk, char const *line)
         return 0 ;
 
     if (!sbl_addb(stk, line + i, len - i))
-        log_warnsys_return(LOG_EXIT_LESSONE, "stack add") ;
+        log_warnsys_return(LOG_EXIT_LESSONE, "sbl add") ;
 
     return 1 ;
 }
@@ -70,7 +70,7 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         _alloc_sbl_(stk, len + 1) ;
 
         if (!strbuf_copyb(&stk, v, len))
-            log_die_nomem("stack") ;
+            log_die_nomem("strbuf") ;
 
         if (!parse_list(&stk))
             parse_error_return(0, 8, t) ;
