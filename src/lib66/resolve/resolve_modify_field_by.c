@@ -98,6 +98,16 @@ int resolve_modify_field_by(resolve_wrapper_t_ref wres, resolve_enum_table_t tab
 
         return 1 ;
 
+    } else if (wres->type == DATA_SERVICE_EVENT) {
+
+        resolve_service_addon_event_t *ev = (resolve_service_addon_event_t *)wres->obj ;
+
+        log_trace("store event field ", list->name[table.u.service.id], " with value: ", by) ;
+
+        service_resolve_modify_event_field(ev, table.u.service, by) ;
+
+        return 1 ;
+
     } else if (wres->type == DATA_TREE) {
 
         resolve_tree_t_ref res = (resolve_tree_t *)wres->obj  ;

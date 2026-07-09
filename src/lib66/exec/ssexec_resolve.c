@@ -52,6 +52,7 @@ static info_field_t const fields[] = {
     { "has_execute",     INFO_FIELD_U32, offsetof(resolve_service_t, has_execute) },
     { "has_dependencies",INFO_FIELD_U32, offsetof(resolve_service_t, has_dependencies) },
     { "has_regex",       INFO_FIELD_U32, offsetof(resolve_service_t, has_regex) },
+    { "has_event",       INFO_FIELD_U32, offsetof(resolve_service_t, has_event) },
 
     { "home",            INFO_FIELD_STR, offsetof(resolve_service_t, path.home) },
     { "frontend",        INFO_FIELD_STR, offsetof(resolve_service_t, path.frontend) },
@@ -142,6 +143,20 @@ static info_field_t const fields[] = {
     { "limitrttime",     INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitrttime),    DATA_SERVICE_LIMIT },
     { "limitsigpending", INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitsigpending),DATA_SERVICE_LIMIT },
     { "limitstack",      INFO_FIELD_U64, offsetof(resolve_service_addon_limit_t, limitstack),     DATA_SERVICE_LIMIT },
+
+    { "eventtype",       INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, type),       DATA_SERVICE_EVENT },
+    { "eventfrom",       INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, from),       DATA_SERVICE_EVENT },
+    { "neventfrom",      INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, nfrom),      DATA_SERVICE_EVENT },
+    { "eventfromfield",  INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, fromfield),  DATA_SERVICE_EVENT },
+    { "eventon",         INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, on),         DATA_SERVICE_EVENT },
+    { "neventon",        INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, non),        DATA_SERVICE_EVENT },
+    { "eventcombine",    INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, combine),    DATA_SERVICE_EVENT },
+    { "eventdo",         INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, docmd),      DATA_SERVICE_EVENT },
+    { "eventemit",       INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, emit),       DATA_SERVICE_EVENT },
+    { "eventwatch",      INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, watch),      DATA_SERVICE_EVENT },
+    { "eventexpression", INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, expression), DATA_SERVICE_EVENT },
+    { "eventtimezone",   INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, timezone),   DATA_SERVICE_EVENT },
+    { "eventinterval",   INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, interval),   DATA_SERVICE_EVENT },
 
     { "rversion",        INFO_FIELD_STR, offsetof(resolve_service_t, rversion) },
 } ;
@@ -237,7 +252,8 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_execute_t execute = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_service_addon_dependencies_t dependencies = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
     resolve_service_addon_regex_t regex = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    info_addon_t addons[DATA_SERVICE_REGEX + 1] = {{0,0}} ;
+    resolve_service_addon_event_t event = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    info_addon_t addons[DATA_SERVICE_EVENT + 1] = {{0,0}} ;
 
     resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
     if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
@@ -275,7 +291,13 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         addons[DATA_SERVICE_REGEX].blob = regex.sa.s ;
     }
 
-    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_REGEX + 1) ;
+    resolve_wrapper_t_ref wevent = resolve_set_struct(DATA_SERVICE_EVENT, &event) ;
+    if (res.has_event && resolve_read(wevent, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+        addons[DATA_SERVICE_EVENT].base = &event ;
+        addons[DATA_SERVICE_EVENT].blob = event.sa.s ;
+    }
+
+    info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_EVENT + 1) ;
 
     resolve_free(wlimit) ;
     resolve_free(wenviron) ;
@@ -283,6 +305,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_free(wexecute) ;
     resolve_free(wdependencies) ;
     resolve_free(wregex) ;
+    resolve_free(wevent) ;
     resolve_free(wres) ;
 
     return 0 ;

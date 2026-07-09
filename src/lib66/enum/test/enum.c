@@ -100,6 +100,7 @@ void test_get_endofkey(void) {
     assert(get_endofkey(enum_list_service_regex) == E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     assert(get_endofkey(enum_list_service_io) == E_RESOLVE_SERVICE_IO_ENDOFKEY);
     assert(get_endofkey(enum_list_service_limit) == E_RESOLVE_SERVICE_LIMIT_ENDOFKEY);
+    assert(get_endofkey(enum_list_service_event) == E_RESOLVE_SERVICE_EVENT_ENDOFKEY);
 
     // Tree lists
     assert(get_endofkey(enum_list_tree) == E_RESOLVE_TREE_ENDOFKEY);
@@ -142,6 +143,7 @@ void test_enum_to_key(void) {
     test_enum_to_key_list(enum_list_service_regex, "service_regex", enum_str_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_io, "service_io", enum_str_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY);
     test_enum_to_key_list(enum_list_service_limit, "service_limit", enum_str_service_limit, E_RESOLVE_SERVICE_LIMIT_ENDOFKEY);
+    test_enum_to_key_list(enum_list_service_event, "service_event", enum_str_service_event, E_RESOLVE_SERVICE_EVENT_ENDOFKEY);
 
     // Tree lists
     test_enum_to_key_list(enum_list_tree, "tree", enum_str_tree, E_RESOLVE_TREE_ENDOFKEY);
@@ -180,6 +182,7 @@ void test_key_to_enum(void) {
     test_key_to_enum_list(enum_list_service_regex, "service_regex", enum_str_service_regex);
     test_key_to_enum_list(enum_list_service_io, "service_io", enum_str_service_io);
     test_key_to_enum_list(enum_list_service_limit, "service_limit", enum_str_service_limit);
+    test_key_to_enum_list(enum_list_service_event, "service_event", enum_str_service_event);
 
     // Tree lists
     test_key_to_enum_list(enum_list_tree, "tree", enum_str_tree);
@@ -297,6 +300,8 @@ void test_enum_get_list_service(void) {
     assert(enum_get_list_service(table) == enum_list_service_io);
     table.category = E_RESOLVE_SERVICE_CATEGORY_LIMIT;
     assert(enum_get_list_service(table) == enum_list_service_limit);
+    table.category = E_RESOLVE_SERVICE_CATEGORY_EVENT;
+    assert(enum_get_list_service(table) == enum_list_service_event);
 
     // Edge case: Invalid category
     errno = 0;
@@ -666,6 +671,7 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_CATEGORY_REGEX == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_IO == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_LIMIT == (m)++);
+    assert(E_RESOLVE_SERVICE_CATEGORY_EVENT == (m)++);
     assert(E_RESOLVE_SERVICE_CATEGORY_ENDOFKEY == (m)++);
 }
 

@@ -383,6 +383,8 @@ extern int service_resolve_get_regex_field(strbuf *sa, resolve_service_addon_reg
 extern int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_event_t *ev) ;
 extern int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t *ev) ;
 extern void service_resolve_sanitize_addon_event(resolve_service_addon_event_t *ev) ;
+extern void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resolve_service_enum_table_t table, char const *data) ;
+extern int service_resolve_get_event_field(strbuf *sa, resolve_service_addon_event_t *ev, resolve_service_enum_table_t table) ;
 extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby) ;

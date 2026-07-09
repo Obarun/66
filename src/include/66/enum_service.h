@@ -247,6 +247,34 @@ enum resolve_service_enum_limit_e
 } ;
 typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
 
+// event
+
+#define ENUM_SERVICE_EVENT(id, str) E_RESOLVE_SERVICE_EVENT_##id
+#define STR_SERVICE_EVENT(id, str) [E_RESOLVE_SERVICE_EVENT_##id] = str
+#define KEY_SERVICE_EVENT(idy, str) { .name = &enum_str_service_event[E_RESOLVE_SERVICE_EVENT_##idy], .id = E_RESOLVE_SERVICE_EVENT_##idy }
+
+#define EVENT_TEMPLATE(macro) \
+    macro(TYPE,        "eventtype"), \
+    macro(FROM,        "eventfrom"), \
+    macro(NFROM,       "neventfrom"), \
+    macro(FROMFIELD,   "eventfromfield"), \
+    macro(ON,          "eventon"), \
+    macro(NON,         "neventon"), \
+    macro(COMBINE,     "eventcombine"), \
+    macro(DO,          "eventdo"), \
+    macro(EMIT,        "eventemit"), \
+    macro(WATCH,       "eventwatch"), \
+    macro(EXPRESSION,  "eventexpression"), \
+    macro(TIMEZONE,    "eventtimezone"), \
+    macro(INTERVAL,    "eventinterval")
+
+enum resolve_service_enum_event_e
+{
+    EVENT_TEMPLATE(ENUM_SERVICE_EVENT),
+    E_RESOLVE_SERVICE_EVENT_ENDOFKEY
+} ;
+typedef enum resolve_service_enum_event_e resolve_service_enum_event_t ;
+
 // Category
 #define CATEGORY_SERVICE(id) E_RESOLVE_SERVICE_CATEGORY_##id
 
@@ -259,7 +287,8 @@ typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
     macro(ENVIRON), \
     macro(REGEX), \
     macro(IO) , \
-    macro(LIMIT)
+    macro(LIMIT), \
+    macro(EVENT)
 
 enum resolve_service_enum_category_e
 {
@@ -330,6 +359,12 @@ struct resolve_service_enum_table_s
     .u.service.list = enum_list_service_limit \
 }
 
+#define E_TABLE_SERVICE_EVENT_ZERO { \
+    .category = E_RESOLVE_CATEGORY_SERVICE, \
+    .u.service.category = E_RESOLVE_SERVICE_CATEGORY_EVENT, \
+    .u.service.list = enum_list_service_event \
+}
+
 extern const char *enum_str_service_config[] ;
 extern const char *enum_str_service_path[] ;
 extern const char *enum_str_service_deps[] ;
@@ -339,6 +374,7 @@ extern const char *enum_str_service_environ[] ;
 extern const char *enum_str_service_regex[] ;
 extern const char *enum_str_service_io[] ;
 extern const char *enum_str_service_limit[] ;
+extern const char *enum_str_service_event[] ;
 extern key_description_t const enum_list_service_config[] ;
 extern key_description_t const enum_list_service_path[] ;
 extern key_description_t const enum_list_service_deps[] ;
@@ -348,6 +384,7 @@ extern key_description_t const enum_list_service_environ[] ;
 extern key_description_t const enum_list_service_regex[] ;
 extern key_description_t const enum_list_service_io[] ;
 extern key_description_t const enum_list_service_limit[] ;
+extern key_description_t const enum_list_service_event[] ;
 extern key_description_t const *enum_get_list_service(resolve_service_enum_table_t table) ;
 
 #endif

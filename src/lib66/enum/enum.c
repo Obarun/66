@@ -51,6 +51,7 @@
     X(enum_list_service_regex, E_RESOLVE_SERVICE_REGEX_ENDOFKEY) \
     X(enum_list_service_io, E_RESOLVE_SERVICE_IO_ENDOFKEY) \
     X(enum_list_service_limit, E_RESOLVE_SERVICE_LIMIT_ENDOFKEY) \
+    X(enum_list_service_event, E_RESOLVE_SERVICE_EVENT_ENDOFKEY) \
     X(enum_list_tree, E_RESOLVE_TREE_ENDOFKEY) \
     X(enum_list_tree_master, E_RESOLVE_TREE_MASTER_ENDOFKEY)
 
