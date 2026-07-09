@@ -101,6 +101,16 @@ static void parse_build_oneshot(parse_build_ctx_t *ctx, struct resolve_hash_s *c
     finalize_dependencies(c) ;
 }
 
+static void parse_build_event(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+{
+    log_flow() ;
+
+    char const *name = c->res.sa.s + c->res.name ;
+
+    if (!parse_event_source(c, ctx))
+        log_die(LOG_EXIT_SYS, "parse event source of service: ", name) ;
+}
+
 static void parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
@@ -146,6 +156,10 @@ void parse_build(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         case E_PARSER_TYPE_MODULE:
             parse_build_module(ctx, c) ;
+            break ;
+
+        case E_PARSER_TYPE_EVENT:
+            parse_build_event(ctx, c) ;
             break ;
 
         default:

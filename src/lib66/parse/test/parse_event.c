@@ -202,6 +202,115 @@ static void rejected(char const *label, char const *fe)
     cleanup(&c, w, &st) ;
 }
 
+static int run_source(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st)
+{
+    *c = (struct resolve_hash_s){0} ;
+    assert(parse_store_build(st, fe) == 1) ;
+    *w = resolve_set_struct(DATA_SERVICE, &c->res) ;
+    resolve_init(*w) ;
+    c->res.name = resolve_add_string(*w, "testsrc") ;
+    parse_build_ctx_t ctx = { .st = st, .conf = 0 } ;
+    return parse_event_source(c, &ctx) ;
+}
+
+/* inotify source: Watch + On (IN_* verbatim) */
+static void source_inotify(void)
+{
+    printf("Running test source_inotify...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = event\n"
+        "EventType = inotify\n"
+        "Watch = /etc/resolv.conf\n"
+        "On = ( IN_MODIFY IN_CREATE )\n" ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_source(fe, &c, &w, &st) == 1) ;
+
+    assert(c.res.has_event == 1) ;
+    assert(c.event.type == EVENT_SOURCE_INOTIFY) ;
+    assert(!strcmp(c.event.sa.s + c.event.watch, "/etc/resolv.conf")) ;
+    assert(!strcmp(c.event.sa.s + c.event.on, "IN_MODIFY IN_CREATE")) ;
+    assert(c.event.non == 2) ;
+    assert(c.event.combine == EVENT_COMBINE_ANY) ;
+
+    cleanup(&c, w, &st) ;
+}
+
+/* schedule source: cron Expression + Timezone */
+static void source_schedule(void)
+{
+    printf("Running test source_schedule...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = event\n"
+        "EventType = schedule\n"
+        "Expression = \"0 0 3 * * ?\"\n"
+        "Timezone = Europe/Paris\n" ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_source(fe, &c, &w, &st) == 1) ;
+
+    assert(c.res.has_event == 1) ;
+    assert(c.event.type == EVENT_SOURCE_SCHEDULE) ;
+    assert(!strcmp(c.event.sa.s + c.event.expression, "0 0 3 * * ?")) ;
+    assert(!strcmp(c.event.sa.s + c.event.timezone, "Europe/Paris")) ;
+
+    cleanup(&c, w, &st) ;
+}
+
+/* timer source: Every with a suffix, normalised to milliseconds */
+static void source_timer(void)
+{
+    printf("Running test source_timer...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = event\n"
+        "EventType = timer\n"
+        "Every = 5m\n" ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_source(fe, &c, &w, &st) == 1) ;
+
+    assert(c.res.has_event == 1) ;
+    assert(c.event.type == EVENT_SOURCE_TIMER) ;
+    assert(c.event.interval == 300000) ; // 5 * 60 * 1000
+
+    cleanup(&c, w, &st) ;
+}
+
+/* Every defaults to seconds */
+static void source_timer_default(void)
+{
+    printf("Running test source_timer_default...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = event\n"
+        "EventType = timer\n"
+        "Every = 30\n" ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_source(fe, &c, &w, &st) == 1) ;
+
+    assert(c.event.interval == 30000) ;
+
+    cleanup(&c, w, &st) ;
+}
+
+static void rejected_source(char const *label, char const *fe)
+{
+    printf("Running source rejection test %s...\n", label) ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_source(fe, &c, &w, &st) == 0) ;
+
+    cleanup(&c, w, &st) ;
+}
+
 int main(void)
 {
     service_on_do() ;
@@ -241,6 +350,29 @@ int main(void)
     rejected("bad Do",
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = service\nFrom = ( db )\nOn = ( down )\nDo = explode\n") ;
+
+    source_inotify() ;
+    source_schedule() ;
+    source_timer() ;
+    source_timer_default() ;
+
+    rejected_source("non-producer EventType",
+        "[Main]\nType = event\nEventType = service\nOn = ( down )\n") ;
+
+    rejected_source("inotify without On",
+        "[Main]\nType = event\nEventType = inotify\nWatch = /etc/resolv.conf\n") ;
+
+    rejected_source("inotify with foreign key",
+        "[Main]\nType = event\nEventType = inotify\nWatch = /x\nOn = ( IN_MODIFY )\nEvery = 5\n") ;
+
+    rejected_source("relative Watch",
+        "[Main]\nType = event\nEventType = inotify\nWatch = etc/resolv.conf\nOn = ( IN_MODIFY )\n") ;
+
+    rejected_source("bad cron",
+        "[Main]\nType = event\nEventType = schedule\nExpression = \"not a cron\"\n") ;
+
+    rejected_source("timer bad Every",
+        "[Main]\nType = event\nEventType = timer\nEvery = 5x\n") ;
 
     printf("All tests passed successfully.\n") ;
 
