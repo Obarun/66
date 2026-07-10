@@ -281,7 +281,22 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
     new->live.livedir = old->live.livedir ? resolve_add_string(wres, old->sa.s + old->live.livedir) : 0 ;
     new->live.status = old->live.status ? resolve_add_string(wres, old->sa.s + old->live.status) : 0 ;
     new->live.servicedir = old->live.servicedir ? resolve_add_string(wres, old->sa.s + old->live.servicedir) : 0 ;
-    new->live.scandir = old->live.scandir ? resolve_add_string(wres, old->sa.s + old->live.scandir) : 0 ;
+    /* scandir: oneshot/module entries are hidden from 66-scandir with a leading
+     * dot on the name (see compute_scan_dir). The pre-split 0.8.x layout stored no
+     * such dot, so re-derive it from the type instead of copying verbatim --
+     * otherwise 66-scandir supervises a oneshot and crash-loops it at boot. */
+    if (old->live.scandir) {
+        char const *oldsd = old->sa.s + old->live.scandir ;
+        char const *slash = strrchr(oldsd, '/') ;
+        size_t prefixlen = slash ? (size_t)(slash + 1 - oldsd) : 0 ;
+        char const *entry = oldsd + prefixlen ;
+        if (*entry == '.') entry++ ; // bare name -- idempotent if already dotted
+        char const *dot = new->type == E_PARSER_TYPE_CLASSIC ? "" : "." ;
+        char sd[prefixlen + 1 + strlen(entry) + 1] ;
+        memcpy(sd, oldsd, prefixlen) ;
+        auto_strings(sd + prefixlen, dot, entry) ;
+        new->live.scandir = resolve_add_string(wres, sd) ;
+    } else new->live.scandir = 0 ;
     new->live.statedir = old->live.statedir ? resolve_add_string(wres, old->sa.s + old->live.statedir) : 0 ;
     new->live.eventdir = old->live.eventdir ? resolve_add_string(wres, old->sa.s + old->live.eventdir) : 0 ;
     new->live.supervisedir = old->live.supervisedir ? resolve_add_string(wres, old->sa.s + old->live.supervisedir) : 0 ;
