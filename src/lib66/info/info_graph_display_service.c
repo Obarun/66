@@ -36,7 +36,7 @@ int info_graph_display_service(char const *name)
     uint8_t pid_color = 0 ;
 
     char str_pid[PID_FMT] ;
-    char *ppid ;
+    char const *ppid ;
 
     ss_state_t sta = STATE_ZERO ;
     service_status_t st = STATUS_ZERO ;
@@ -68,10 +68,11 @@ int info_graph_display_service(char const *name)
 
     } else switch (st.state) {
 
-        case STATUS_STATE_DONE :   ppid = "done" ; pid_color = 2 ; break ;
-        case STATUS_STATE_UP :     ppid = "up" ; pid_color = 2 ; break ;
-        case STATUS_STATE_FAILED : ppid = "failed" ; pid_color = 1 ; break ;
-        default :                  ppid = "down" ; pid_color = 1 ; break ;
+        /* the graph shows a compact state: up/done, failed, everything else as down */
+        case STATUS_STATE_UP :
+        case STATUS_STATE_DONE :   ppid = status_state_to_string(st.state) ; pid_color = 2 ; break ;
+        case STATUS_STATE_FAILED : ppid = status_state_to_string(st.state) ; pid_color = 1 ; break ;
+        default :                  ppid = status_state_to_string(STATUS_STATE_DOWN) ; pid_color = 1 ; break ;
     }
 
     if (!ostream_fmt(ostream_1,"%s (%s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s, %s%s%s%s%s)", \

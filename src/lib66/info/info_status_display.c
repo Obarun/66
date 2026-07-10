@@ -54,48 +54,6 @@ static status_field_t const fields_status[] = {
 
 #define NFIELDS_STATUS OPT_COUNT(fields_status)
 
-static char const *state_word(uint8_t v)
-{
-    switch (v) {
-        case STATUS_STATE_DOWN :       return "down" ;
-        case STATUS_STATE_STARTING :   return "starting" ;
-        case STATUS_STATE_UP :         return "up" ;
-        case STATUS_STATE_STOPPING :   return "stopping" ;
-        case STATUS_STATE_FINISHING :  return "finishing" ;
-        case STATUS_STATE_RESTARTING : return "restarting" ;
-        case STATUS_STATE_DONE :       return "done" ;
-        case STATUS_STATE_FAILED :     return "failed" ;
-        default :                      return "unknown" ;
-    }
-}
-
-static char const *result_word(uint8_t v)
-{
-    switch (v) {
-        case STATUS_RESULT_SUCCESS :       return "success" ;
-        case STATUS_RESULT_EXITED :        return "exited" ;
-        case STATUS_RESULT_SIGNALED :      return "signaled" ;
-        case STATUS_RESULT_TIMEOUT_START : return "timeout-start" ;
-        case STATUS_RESULT_TIMEOUT_STOP :  return "timeout-stop" ;
-        case STATUS_RESULT_CRASH_LIMIT :   return "crash-limit" ;
-        case STATUS_RESULT_EXEC_FAILED :   return "exec-failed" ;
-        default :                          return "unknown" ;
-    }
-}
-
-static char const *who_word(uint8_t v)
-{
-    switch (v) {
-        case STATUS_WHO_SELF :       return "self" ;
-        case STATUS_WHO_USER :       return "user" ;
-        case STATUS_WHO_EVENT :      return "event" ;
-        case STATUS_WHO_DEPENDENCY : return "dependency" ;
-        case STATUS_WHO_BOOT :       return "boot" ;
-        case STATUS_WHO_SHUTDOWN :   return "shutdown" ;
-        default :                    return "unknown" ;
-    }
-}
-
 static void display_value(service_status_t const *st, status_field_t const *f)
 {
     void const *p = (char const *)st + f->offset ;
@@ -105,19 +63,19 @@ static void display_value(service_status_t const *st, status_field_t const *f)
 
         case STATUS_KIND_STATE :
 
-            if (!ostream_puts(ostream_1, state_word(*(uint8_t const *)p)))
+            if (!ostream_puts(ostream_1, status_state_to_string(*(uint8_t const *)p)))
                 log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
             break ;
 
         case STATUS_KIND_RESULT :
 
-            if (!ostream_puts(ostream_1, result_word(*(uint8_t const *)p)))
+            if (!ostream_puts(ostream_1, status_result_to_string(*(uint8_t const *)p)))
                 log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
             break ;
 
         case STATUS_KIND_WHO :
 
-            if (!ostream_puts(ostream_1, who_word(*(uint8_t const *)p)))
+            if (!ostream_puts(ostream_1, status_who_to_string(*(uint8_t const *)p)))
                 log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
             break ;
 

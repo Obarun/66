@@ -232,17 +232,12 @@ static void info_get_status(resolve_service_t *res)
     if (status_read(&st, file) < 0)
         log_dieusys(LOG_EXIT_SYS, "read status of: ", res->sa.s + res->name) ;
 
-    char const *word ;
+    char const *word = status_state_to_string(st.state) ;
     switch (st.state) {
-        case STATUS_STATE_UP :         word = "up" ; warn_color = 2 ; break ;
-        case STATUS_STATE_STARTING :   word = "starting" ; warn_color = 2 ; break ;
-        case STATUS_STATE_DONE :       word = "done" ; warn_color = 2 ; break ;
-        case STATUS_STATE_STOPPING :   word = "stopping" ; warn_color = 1 ; break ;
-        case STATUS_STATE_FINISHING :  word = "finishing" ; warn_color = 1 ; break ;
-        case STATUS_STATE_RESTARTING : word = "restarting" ; warn_color = 1 ; break ;
-        case STATUS_STATE_FAILED :     word = "failed" ; warn_color = 1 ; break ;
-        case STATUS_STATE_DOWN :
-        default :                      word = "down" ; warn_color = 1 ; break ;
+        case STATUS_STATE_UP :
+        case STATUS_STATE_STARTING :
+        case STATUS_STATE_DONE :       warn_color = 2 ; break ;
+        default :                      warn_color = 1 ; break ;
     }
 
     // seconds spent in the current state, from the REALTIME stamp
@@ -256,25 +251,19 @@ static void info_get_status(resolve_service_t *res)
     code[u64_fmt(code, st.code)] = 0 ;
     char detail[U64_FMT + 16] = "" ;
     switch (st.result) {
-        case STATUS_RESULT_EXITED :        auto_strings(detail, " (exited ", code, ")") ; break ;
-        case STATUS_RESULT_SIGNALED :      auto_strings(detail, " (signaled ", code, ")") ; break ;
-        case STATUS_RESULT_TIMEOUT_START :
-        case STATUS_RESULT_TIMEOUT_STOP :  auto_strings(detail, " (timeout)") ; break ;
-        case STATUS_RESULT_CRASH_LIMIT :   auto_strings(detail, " (crashed)") ; break ;
-        case STATUS_RESULT_EXEC_FAILED :   auto_strings(detail, " (exec failed)") ; break ;
-        default : break ;
+        case STATUS_RESULT_EXITED :
+        case STATUS_RESULT_SIGNALED :
+            auto_strings(detail, " (", status_result_to_string(st.result), " ", code, ")") ;
+            break ;
+        default :
+            auto_strings(detail, " (", status_result_to_string(st.result), ")") ;
+            break ;
     }
 
     // who triggered the transition (nothing when the service acted on its own)
-    char const *whoby = "" ;
-    switch (st.who) {
-        case STATUS_WHO_USER :       whoby = " by user" ; break ;
-        case STATUS_WHO_EVENT :      whoby = " by event" ; break ;
-        case STATUS_WHO_DEPENDENCY : whoby = " by dependency" ; break ;
-        case STATUS_WHO_BOOT :       whoby = " by boot" ; break ;
-        case STATUS_WHO_SHUTDOWN :   whoby = " by shutdown" ; break ;
-        default : break ; // SELF
-    }
+    char whoby[16] = "" ;
+    if (st.who != STATUS_WHO_SELF)
+        auto_strings(whoby, " by ", status_who_to_string(st.who)) ;
 
     char const *color = warn_color > 1 ? log_color->valid : log_color->error ;
 
