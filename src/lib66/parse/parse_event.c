@@ -14,11 +14,12 @@
 
 #include <stdint.h>
 #include <stdlib.h> // free
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/types.h> // u64_scan
+#include <oblibs/types.h> // u64_scan, u64_scan_strict, sig_parse
 #include <oblibs/sse.h> // parse_cron, cron_t
 
 #include <66/parse.h>
@@ -26,6 +27,7 @@
 #include <66/service.h>
 #include <66/enum_parser.h>
 #include <66/event_rule.h>
+#include <66/status.h> // status_state_from_string, status_result_from_string
 
 #define EVENT_PRESENT(st, k) parse_store_present((st), E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_##k)
 #define MAIN_PRESENT(st, k) parse_store_present((st), E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_##k)
@@ -78,6 +80,110 @@ static int every_to_ms(char const *v, uint32_t *ms)
         return 0 ;
 
     *ms = (uint32_t)r ;
+
+    return 1 ;
+}
+
+static int token_in_list(char const *list, char const *tok, size_t tlen)
+{
+    char const *p = list ;
+
+    while (*p) {
+
+        char const *sp = p ;
+        while (*sp && *sp != ' ') sp++ ;
+
+        if ((size_t)(sp - p) == tlen && !strncmp(p, tok, tlen))
+            return 1 ;
+
+        p = sp ;
+        while (*p == ' ') p++ ;
+    }
+
+    return 0 ;
+}
+
+/* a service On predicate with no svc prefix: a status state or result word, or
+ * an argument predicate <result>:<arg> where the result is the only one that
+ * carries an argument -- EXITED (a code) or SIGNALED (a signal). */
+static int on_service_predicate_ok(char const *cond)
+{
+    char const *colon = strchr(cond, ':') ;
+    if (!colon)
+        return status_state_from_string(cond) >= 0 || status_result_from_string(cond) >= 0 ;
+
+    size_t llen = (size_t)(colon - cond) ;
+    char word[llen + 1] ;
+    memcpy(word, cond, llen) ;
+    word[llen] = 0 ;
+
+    switch (status_result_from_string(word)) {
+
+        case STATUS_RESULT_EXITED: {
+            uint64_t n ;
+            return colon[1] && u64_scan_strict(colon + 1, &n) ;
+        }
+        case STATUS_RESULT_SIGNALED: {
+            int sig ;
+            return colon[1] && sig_parse(colon + 1, &sig) ;
+        }
+        default:
+            return 0 ; // any other word does not take an argument
+    }
+}
+
+static int on_service_token_ok(char const *tok, char const *from, int has_from)
+{
+    char const *colon = strchr(tok, ':') ;
+    if (!colon)
+        return on_service_predicate_ok(tok) ;
+
+    size_t llen = (size_t)(colon - tok) ;
+    char word[llen + 1] ;
+    memcpy(word, tok, llen) ;
+    word[llen] = 0 ;
+
+    // an argument predicate (EXITED / SIGNALED result) is not a svc:cond
+    int r = status_result_from_string(word) ;
+    if (r == STATUS_RESULT_EXITED || r == STATUS_RESULT_SIGNALED)
+        return on_service_predicate_ok(tok) ;
+
+    // svc:cond -- svc must be an explicit From member
+    if (!has_from || !token_in_list(from, tok, llen))
+        return 0 ;
+
+    return on_service_predicate_ok(colon + 1) ;
+}
+
+static int validate_on_tokens(char const *on, int src, char const *from, int has_from, char const *name)
+{
+    char const *p = on ;
+
+    while (*p) {
+
+        char const *sp = p ;
+        while (*sp && *sp != ' ') sp++ ;
+
+        size_t len = (size_t)(sp - p) ;
+        char tok[len + 1] ;
+        memcpy(tok, p, len) ;
+        tok[len] = 0 ;
+
+        int ok = 1 ;
+        if (src == EVENT_SOURCE_SERVICE)
+            ok = on_service_token_ok(tok, from, has_from) ;
+        else if (src == EVENT_SOURCE_SIGNAL) {
+            int sig ;
+            ok = sig_parse(tok, &sig) != 0 ;
+        } else if (src == EVENT_SOURCE_INOTIFY)
+            ok = event_in_is_valid(tok) ;
+
+        if (!ok)
+            log_warnu_return(LOG_EXIT_ZERO, "invalid On token: ", tok, " of service: ", name) ;
+
+        p = sp ;
+        while (*p == ' ') p++ ;
+    }
 
     return 1 ;
 }
@@ -208,6 +314,12 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         }
     }
 
+    if ((src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL) &&
+        !validate_on_tokens(ev->sa.s + ev->on, src, ev->sa.s + ev->from, has_from, name)) {
+        free(wres) ;
+        return 0 ;
+    }
+
     if (has_do) {
 
         v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_DO, 0) ;
@@ -290,6 +402,11 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             if (!read_list(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_ON, wres, &ev->on, &ev->non)) {
                 free(wres) ;
                 log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
+            }
+
+            if (!validate_on_tokens(ev->sa.s + ev->on, EVENT_SOURCE_INOTIFY, 0, 0, name)) {
+                free(wres) ;
+                return 0 ;
             }
             break ;
 

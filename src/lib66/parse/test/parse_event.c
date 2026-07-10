@@ -89,7 +89,7 @@ static void signal_onall_emit(void)
         "[Event]\n"
         "EventType = signal\n"
         "FromField = Depends\n"
-        "OnAll = ( up ready )\n"
+        "OnAll = ( SIGHUP SIGTERM )\n"
         "Emit = sig-caught\n" ;
 
     struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
@@ -99,7 +99,7 @@ static void signal_onall_emit(void)
     assert(c.event.type == EVENT_SOURCE_SIGNAL) ;
     assert(c.event.from == 0 && c.event.nfrom == 0) ;
     assert(c.event.fromfield == EVENT_FROMFIELD_DEPENDS) ;
-    assert(!strcmp(c.event.sa.s + c.event.on, "up ready")) ;
+    assert(!strcmp(c.event.sa.s + c.event.on, "SIGHUP SIGTERM")) ;
     assert(c.event.non == 2) ;
     assert(c.event.combine == EVENT_COMBINE_ALL) ;
     assert(c.event.docmd == EVENT_DO_NONE) ;
@@ -198,6 +198,33 @@ static void rejected(char const *label, char const *fe)
 
     struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 0) ;
+
+    cleanup(&c, w, &st) ;
+}
+
+/* service On predicates: status state|result words, svc:cond (svc in From),
+ * exited:<code>, signaled:<SIG> */
+static void service_on_predicates(void)
+{
+    printf("Running test service_on_predicates...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = classic\n"
+        "[Start]\n"
+        "Execute = ( /bin/true )\n"
+        "[Event]\n"
+        "EventType = service\n"
+        "From = ( db web )\n"
+        "On = ( down signaled db:exited:5 web:up signaled:SIGKILL exec-failed )\n"
+        "Do = restart\n" ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run(fe, &c, &w, &st) == 1) ;
+
+    assert(c.res.has_event == 1) ;
+    assert(!strcmp(c.event.sa.s + c.event.on, "down signaled db:exited:5 web:up signaled:SIGKILL exec-failed")) ;
+    assert(c.event.non == 6) ;
 
     cleanup(&c, w, &st) ;
 }
@@ -314,6 +341,7 @@ static void rejected_source(char const *label, char const *fe)
 int main(void)
 {
     service_on_do() ;
+    service_on_predicates() ;
     signal_onall_emit() ;
     user_on() ;
     inotify_from_do() ;
@@ -351,6 +379,26 @@ int main(void)
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = service\nFrom = ( db )\nOn = ( down )\nDo = explode\n") ;
 
+    rejected("bad On predicate",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( bogus )\nDo = restart\n") ;
+
+    rejected("svc not in From",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( other:up )\nDo = restart\n") ;
+
+    rejected("exited non-numeric",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( exited:abc )\nDo = restart\n") ;
+
+    rejected("signaled bad signal",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( signaled:NOSIG )\nDo = restart\n") ;
+
+    rejected("bad signal name",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = signal\nFrom = ( db )\nOn = ( NOTASIGNAL )\nDo = restart\n") ;
+
     source_inotify() ;
     source_schedule() ;
     source_timer() ;
@@ -373,6 +421,9 @@ int main(void)
 
     rejected_source("timer bad Every",
         "[Main]\nType = event\nEventType = timer\nEvery = 5x\n") ;
+
+    rejected_source("bad inotify constant",
+        "[Main]\nType = event\nEventType = inotify\nWatch = /x\nOn = ( IN_BOGUS )\n") ;
 
     printf("All tests passed successfully.\n") ;
 

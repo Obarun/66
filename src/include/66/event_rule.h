@@ -118,4 +118,33 @@ static inline int event_fromfield_from_string(char const *s)
     return -1 ;
 }
 
+/** @brief inotify(7) constants accepted on an inotify source. Stored verbatim;
+ * the daemon maps each name to its inotify mask. The On predicates of a service
+ * reactor are NOT here -- they are the status vocabulary (see <66/status.h>). */
+#define EVENT_IN_TABLE(macro) \
+    macro("IN_ACCESS") \
+    macro("IN_MODIFY") \
+    macro("IN_ATTRIB") \
+    macro("IN_CLOSE_WRITE") \
+    macro("IN_CLOSE_NOWRITE") \
+    macro("IN_OPEN") \
+    macro("IN_MOVED_FROM") \
+    macro("IN_MOVED_TO") \
+    macro("IN_CREATE") \
+    macro("IN_DELETE") \
+    macro("IN_DELETE_SELF") \
+    macro("IN_MOVE_SELF") \
+    macro("IN_MOVE") \
+    macro("IN_CLOSE") \
+    macro("IN_ALL_EVENTS")
+
+/** @return 1 if @p s is a known inotify constant, 0 otherwise. */
+static inline int event_in_is_valid(char const *s)
+{
+#define EVENT_IN_IF(str) if (!strcmp(s, str)) return 1 ;
+    EVENT_IN_TABLE(EVENT_IN_IF)
+#undef EVENT_IN_IF
+    return 0 ;
+}
+
 #endif
