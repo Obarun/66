@@ -27,9 +27,9 @@ static void event_reader_cb(sse_watcher_t *w, void *cbdata, int revents)
 
     event_reader_t *r = cbdata ;
 
-    // transport-level close/error: a socket peer hangs up, an fdholder fd dies.
-    // On the fifo source this cannot fire (it holds the write end), but the pump
-    // stays transport-neutral: report EOF (len 0) and let the consumer react.
+    /* transport-level close/error: a socket peer hangs up, an fdholder fd dies.
+     * On the fifo source this cannot fire (it holds the write end), but the pump
+     * stays transport-neutral: report EOF (len 0) and let the consumer react.*/
     if (revents & (SSE_ERROR | SSE_HUP)) {
         r->handler(r, 0, 0, r->data) ;
         return ;
@@ -40,9 +40,9 @@ static void event_reader_cb(sse_watcher_t *w, void *cbdata, int revents)
         char buf[256] ;
         ssize_t n = io_read_result(io_read(w->fd, buf, sizeof(buf))) ;
         if (n < 0) {
-            // EPIPE is EOF: the source closed (impossible while a write end is
-            // held, i.e. on a fifo). Report it as a close; any other errno is a
-            // real read failure, logged, the drain stops but the source stays.
+            /* EPIPE is EOF: the source closed (impossible while a write end is
+             * held, i.e. on a fifo). Report it as a close; any other errno is a
+             * real read failure, logged, the drain stops but the source stays. */
             if (errno == EPIPE)
                 r->handler(r, 0, 0, r->data) ;
             else
@@ -52,8 +52,6 @@ static void event_reader_cb(sse_watcher_t *w, void *cbdata, int revents)
         if (!n)
             break ; // would block: nothing more to read for now
 
-        // hand the raw bytes to the consumer; interpretation (byte vs frame) is
-        // its job, not ours
         r->handler(r, buf, (size_t)n, r->data) ;
     }
 }
@@ -71,11 +69,6 @@ int event_reader_attach(event_reader_t *r, sse_epoll_t *ep, int fd, event_handle
     return 1 ;
 }
 
-/*
- * Must not be called from within the handler (it frees the very watcher being
- * dispatched). A handler that wants to stop reading should clear the epoll's
- * running flag instead.
- */
 void event_reader_detach(event_reader_t *r)
 {
     log_flow() ;
@@ -83,7 +76,7 @@ void event_reader_detach(event_reader_t *r)
     if (!r)
         return ;
 
-    sse_free_io(&r->watcher) ;   // removes from the loop and closes the fd
+    sse_free_io(&r->watcher) ; // removes from the loop and closes the fd
 
     r->handler = NULL ;
     r->data = NULL ;

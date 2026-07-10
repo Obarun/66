@@ -23,12 +23,14 @@
 
 #include <66/event.h>
 
-typedef struct wait_slot_s
+struct wait_slot_s
 {
-    event_wait_t *w ;
-    event_match_t m ; // per-source transition interpreter
     unsigned char done ; // this source has reached OK or FAIL: ignore its stream
-} wait_slot_t ;
+    event_wait_t *w ;
+    event_state_t s ; // per-source state interpreter
+    event_aggregator_t ag ; // per-source frame reassembler
+} ;
+typedef struct wait_slot_s wait_slot_t ;
 
 static void event_wait_timeout_cb(sse_watcher_t *w, void *data, int revents)
 {
@@ -39,11 +41,9 @@ static void event_wait_timeout_cb(sse_watcher_t *w, void *data, int revents)
     w->p->running = false ;
 }
 
-static void event_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data)
+static void event_wait_isok(event_frame_t const *f, void *data)
 {
     log_flow() ;
-
-    (void)r ;
 
     wait_slot_t *slot = data ;
     event_wait_t *w = slot->w ;
@@ -51,21 +51,35 @@ static void event_wait_handler(event_reader_t *r, char const *buf, size_t len, v
     if (slot->done)
         return ;
 
-    int verdict = event_match_feed(&slot->m, buf, len) ;
+    int verdict = event_state_update(&slot->s, f) ;
 
-    if (verdict == EVENT_MATCH_OK) {
+    if (verdict == EVENT_STATE_OK) {
         slot->done = 1 ;
         if (++w->triggered == w->n)
             w->epoll.running = false ;
-    } else if (verdict == EVENT_MATCH_FAIL) {
-        /* permanent failure ('O' while waiting up, or supervisor 'x'): a wait_and
-         * can never complete, so end the wait now. w->failed lets
-         * event_wait_run report failure distinctly from a timeout; the caller
+    } else if (verdict == EVENT_STATE_FAIL) {
+        /* permanent failure (a terminal down while waiting up, or the supervisor
+         * exiting): a wait_and can never complete, so end the wait now. w->failed
+         * lets event_wait_run report failure distinctly from a timeout; the caller
          * reconciles against the real status. */
         slot->done = 1 ;
         w->failed = 1 ;
         w->epoll.running = false ;
     }
+}
+
+static void event_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data)
+{
+    log_flow() ;
+
+    (void)r ;
+
+    wait_slot_t *slot = data ;
+
+    if (slot->done)
+        return ;
+
+    event_aggregate(&slot->ag, buf, len, &event_wait_isok, slot) ;
 }
 
 int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, event_t wanted)
@@ -100,12 +114,12 @@ int event_wait_init(event_wait_t *w, char const *const *eventdirs, size_t n, eve
 
         slots[i].w = w ;
         slots[i].done = 0 ;
-        event_match_init(&slots[i].m, wanted, 0, 0) ;
+        event_state_init(&slots[i].s, wanted, 0, 0) ;
 
-        if (!event_fifo_subscribe(&w->fifos[i], &w->epoll, eventdirs[i], &event_wait_handler, &slots[i], 0)) {
+        if (!event_subscribe(&w->fifos[i], &w->epoll, eventdirs[i], &event_wait_handler, &slots[i], 0)) {
 
             for (size_t j = 0 ; j < i ; j++)
-                event_fifo_unsubscribe(&w->fifos[j]) ;
+                event_unsubscribe(&w->fifos[j]) ;
 
             free(w->slots) ; w->slots = NULL ;
             free(w->fifos) ; w->fifos = NULL ;
@@ -147,7 +161,7 @@ void event_wait_free(event_wait_t *w)
     if (w->fifos) {
 
         for (size_t i = 0 ; i < w->n ; i++)
-            event_fifo_unsubscribe(&w->fifos[i]) ;
+            event_unsubscribe(&w->fifos[i]) ;
 
         free(w->fifos) ;
         w->fifos = NULL ;

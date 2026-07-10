@@ -29,6 +29,20 @@
 
 #define DATASIZE 65
 
+#define SVC_SIGNAL_MAP(macro) \
+    macro('a', SIGALRM) \
+    macro('b', SIGABRT) \
+    macro('q', SIGQUIT) \
+    macro('h', SIGHUP) \
+    macro('k', SIGKILL) \
+    macro('t', SIGTERM) \
+    macro('i', SIGINT) \
+    macro('1', SIGUSR1) \
+    macro('2', SIGUSR2) \
+    macro('p', SIGSTOP) \
+    macro('c', SIGCONT) \
+    macro('y', SIGWINCH)
+
 #define SVC_FLAGS_DOWN 1
 #define SVC_FLAGS_UP (1 << 1)
 #define SVC_FLAGS_PROCESSING (1 << 2)
@@ -52,7 +66,8 @@ struct svc_ctx_s
     // Native readiness wait (CLASSIC services: no child, transitions read from
     // the service event fifodir instead of a spawned external wait helper)
     event_fifo_t fifo ; // subscriber on the service event fifodir
-    event_match_t match ; // transition interpreter for this service's wait
+    event_aggregator_t ag ; // per-source frame aggregator feeding the matcher
+    event_state_t match ; // transition interpreter for this service's wait
     bool native ; // uses the native CLASSIC path (no child process)
     bool done ; // completion already emitted (guards event vs timeout)
 

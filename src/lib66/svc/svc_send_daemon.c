@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include "66/constants.h"
 #include <string.h>
 
 #include <oblibs/log.h>
@@ -34,9 +35,9 @@ static int in_state(event_t wanted, int have, unsigned char up, unsigned char re
     if (!have)
         return 0 ; // no status: cannot confirm a service state -> must act
 
-    event_match_t m ;
-    event_match_init(&m, wanted, up, ready) ;
-    return event_match_feed(&m, 0, 0) == EVENT_MATCH_OK ;
+    event_state_t s ;
+    event_state_init(&s, wanted, up, ready) ;
+    return event_state_satisfied(&s) ;
 }
 
 void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
@@ -54,8 +55,8 @@ void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t 
         return ;
     }
 
-    char eventdir[strlen(dir) + sizeof("/event")] ;
-    auto_strings(eventdir, dir, "/event") ;
+    char eventdir[strlen(dir) + SS_EVENTDIR_LEN + 1] ;
+    auto_strings(eventdir, dir, SS_EVENTDIR) ;
     char const *dirs[1] = { eventdir } ;
 
     event_wait_t w ;

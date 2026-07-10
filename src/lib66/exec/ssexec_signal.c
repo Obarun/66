@@ -27,19 +27,9 @@
 #include <66/config.h>
 
 static char const cmdsig[NSIG] = {
-
-    [SIGALRM] = 'a',
-    [SIGABRT] = 'b',
-    [SIGQUIT] = 'q',
-    [SIGHUP] = 'h',
-    [SIGKILL] = 'k',
-    [SIGTERM] = 't',
-    [SIGINT] = 'i',
-    [SIGUSR1] = '1',
-    [SIGUSR2] = '2',
-    [SIGSTOP] = 'p',
-    [SIGCONT] = 'c',
-    [SIGWINCH] = 'y'
+#define SVC_SIGNAL_ENTRY(op, sig) [sig] = op,
+    SVC_SIGNAL_MAP(SVC_SIGNAL_ENTRY)
+#undef SVC_SIGNAL_ENTRY
 } ;
 
 enum {

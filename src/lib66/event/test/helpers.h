@@ -1,7 +1,7 @@
 /* helpers.h — test scaffolding shared by the event test files.
  *
  * fanout_*: mimic 66-supervise's fanout. The real producer scans the
- * fifodir, keeps only entries whose name starts with "ftrig1:" AND whose length
+ * fifodir, keeps only entries whose name starts with "evtsub:" AND whose length
  * is exactly EVENT_FIFO_NAMELEN (39), opens each O_WRONLY|O_NONBLOCK and writes
  * the transition byte. We replicate that filter byte-for-byte: a test that the
  * producer "never sees a visible fifo without a reader" must use this same
@@ -36,10 +36,13 @@ static inline int fanout_count(char const *dir)
     return n ;
 }
 
-/* Write byte `b` into every visible producer-eligible fifo in `dir`.
- * Returns the number of fifos written to, or -1 on opendir failure.
- * A fifo with no reader (ENXIO) is skipped (the real producer would too). */
-static inline int fanout_write(char const *dir, char b)
+/* Write the `len`-byte frame at `buf` into every visible producer-eligible fifo
+ * in `dir`, in ONE write() (a frame is <= EVENT_FRAME_MAX < PIPE_BUF, so the
+ * write is atomic like the real producer's). Returns the number of fifos written
+ * to in full, or -1 on opendir failure. A fifo with no reader (ENXIO) is skipped
+ * (the real producer would too). This replaces the old single-byte fanout: the
+ * channel now carries length-framed messages, not bytes. */
+static inline int fanout_frame(char const *dir, char const *buf, size_t len)
 {
     DIR *d = opendir(dir) ;
     if (!d) return -1 ;
@@ -56,9 +59,9 @@ static inline int fanout_write(char const *dir, char b)
         int fd = open(path, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
         if (fd < 0) continue ;
         ssize_t w ;
-        do w = write(fd, &b, 1) ; while (w < 0 && errno == EINTR) ;
+        do w = write(fd, buf, len) ; while (w < 0 && errno == EINTR) ;
         close(fd) ;
-        if (w == 1) n++ ;
+        if (w == (ssize_t)len) n++ ;
     }
     closedir(d) ;
     return n ;

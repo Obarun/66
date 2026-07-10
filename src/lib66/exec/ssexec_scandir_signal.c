@@ -80,8 +80,8 @@ static void send_fdholder(char const *scandir, uint8_t down)
 
     } else {
 
-        svc_send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_READY, 3000) ;
-        svc_send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_READY, 3000) ;
+        svc_send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_UP_READY, 3000) ;
+        svc_send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_UP_READY, 3000) ;
     }
 }
 

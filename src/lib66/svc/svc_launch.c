@@ -258,7 +258,7 @@ static void svc_wait_teardown(void *data)
     svc_ctx_t *svc = &pmanager->asvc[id] ;
 
     if (svc->fifo.fifopath[0])
-        event_fifo_unsubscribe(&svc->fifo) ;
+        event_unsubscribe(&svc->fifo) ;
 
     if (svc->timeout.fd > 0)
         sse_free_timer(&svc->timeout) ;
@@ -280,6 +280,23 @@ static void complete(uint32_t id, bool success)
         log_warnusys("defer wait teardown for service: ", svc->res->sa.s + svc->res->name) ;
 }
 
+static void svc_wait_on_frame(event_frame_t const *f, void *data)
+{
+    log_flow() ;
+
+    uint32_t id = (uint32_t)(uintptr_t)data ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (svc->done)
+        return ;
+
+    int verdict = event_state_update(&svc->match, f) ;
+    if (verdict == EVENT_STATE_OK)
+        complete(id, true) ;
+    else if (verdict == EVENT_STATE_FAIL)
+        complete(id, false) ;
+}
+
 static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data)
 {
     log_flow() ;
@@ -292,11 +309,7 @@ static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, voi
     if (svc->done)
         return ;
 
-    int verdict = event_match_feed(&svc->match, buf, len) ;
-    if (verdict == EVENT_MATCH_OK)
-        complete(id, true) ;
-    else if (verdict == EVENT_MATCH_FAIL)
-        complete(id, false) ;
+    event_aggregate(&svc->ag, buf, len, &svc_wait_on_frame, data) ;
 }
 
 static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
@@ -339,7 +352,7 @@ static int launch_classic(uint32_t id)
         event_t wanted ;
         switch (pmanager->wsignal[2]) {
             case 'u' : wanted = EVENT_UP ; break ;
-            case 'U' : wanted = EVENT_READY ; break ;
+            case 'U' : wanted = EVENT_UP_READY ; break ;
             case 'd' : wanted = EVENT_DOWN ; break ;
             case 'D' : wanted = EVENT_DOWN_READY ; break ;
             case 'r' : wanted = EVENT_RESTART ; break ;
@@ -348,22 +361,23 @@ static int launch_classic(uint32_t id)
         }
 
         if (!svc->execute->notify) {
-            if (wanted == EVENT_READY) wanted = EVENT_UP ;
+            if (wanted == EVENT_UP_READY) wanted = EVENT_UP ;
             else if (wanted == EVENT_DOWN_READY) wanted = EVENT_DOWN ;
             else if (wanted == EVENT_RESTART_READY) wanted = EVENT_RESTART ;
         }
 
-        event_match_init(&svc->match, wanted, pmanager->operation ? 1 : 0, 0) ;
+        event_state_init(&svc->match, wanted, pmanager->operation ? 1 : 0, 0) ;
+        svc->ag.len = 0 ; // start this wait's reassembler empty
 
         // create the fifodir if missing, then subscribe BEFORE sending the command
         // so no transition is missed (mirrors s6-svlisten ordering)
-        if (!event_fifodir_make(eventdir, getgid())) {
+        if (!event_fifo_make(eventdir, getgid())) {
             log_warnusys("create event fifodir: ", eventdir) ;
             complete(id, false) ;
             return 1 ;
         }
 
-        if (!event_fifo_subscribe(&svc->fifo, &pmanager->loop, eventdir, &svc_wait_handler, (void *)(uintptr_t)id, 0)) {
+        if (!event_subscribe(&svc->fifo, &pmanager->loop, eventdir, &svc_wait_handler, (void *)(uintptr_t)id, 0)) {
             log_warnusys("subscribe to event fifo: ", eventdir) ;
             complete(id, false) ;
             return 1 ;

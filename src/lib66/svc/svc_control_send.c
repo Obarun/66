@@ -26,9 +26,6 @@
 #include <66/svc.h>
 #include <66/constants.h>
 
-/** Send @nops control ops to the supervisor as a fixed <op><who> pair each, in a
- * single write so a sequence stays atomic (2*nops <= PIPE_BUF). @who is the
- * provenance category (status_who_e) latched by the op that flips wantup. */
 int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who)
 {
     log_flow() ;

@@ -13,136 +13,164 @@
  */
 
 #include <errno.h>
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <fcntl.h>
-#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sse.h>
-#include <oblibs/clock.h>
-#include <oblibs/files.h>
-#include <oblibs/fd.h>
 #include <oblibs/io.h>
-#include <oblibs/string.h>
+#include <oblibs/fd.h>
 
 #include <66/event.h>
 
-int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir, event_handler_t *handler, void *data, int priority)
+int event_fifo_make(char const *path, gid_t gid)
 {
     log_flow() ;
 
-    memset(f, 0, sizeof(*f)) ;
-    f->wfd = -1 ;
+    mode_t m = umask(0) ;
 
-    // hidden name carries one extra leading '.' over the visible one
-    if (strlen(eventdir) + 2 + EVENT_FIFO_NAMELEN + 1 > sizeof(f->fifopath)) {
-        errno = ENAMETOOLONG ;
-        log_warnu_return(LOG_EXIT_ZERO, "fit the event fifo path for: ", eventdir) ;
-    }
+    if (mkdir(path, 0700) < 0) {
 
-    struct timespec ts ;
-    if (!clock_now(&ts))
-        log_warnusys_return(LOG_EXIT_ZERO, "read wall clock") ;
+        struct stat st ;
+        umask(m) ;
 
-    char stamp[CLOCK_TAI64N_LEN + 1] ;
-    clock_tai64n_fmt(stamp, &ts) ;
+        if (errno != EEXIST)
+            log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", path) ;
 
-    char hidden[SS_MAX_PATH] ;
+        // lstat, not stat: a symlink planted at path must be rejected, not followed
+        if (lstat(path, &st) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO, "stat directory: ", path) ;
 
-    /* create the fifo under a hidden name (leading '.') so 66-supervise's fanout,
-     * which filters on the visible "ftrig1:" prefix, never opens it before the
-     * read end exists; publish it with a rename once both ends are open. Retry
-     * with a fresh random suffix on a name clash; file_tmpname returns 0 if
-     * getrandom fails, so a broken RNG breaks the loop instead of spinning. */
+        if (st.st_uid != getuid()) {
+            errno = EACCES ;
+            log_warnusys_return(LOG_EXIT_ZERO, "directory not owned by us: ", path) ;
+        }
+
+        if (!S_ISDIR(st.st_mode)) {
+            errno = ENOTDIR ;
+            log_warnusys_return(LOG_EXIT_ZERO, "not a directory: ", path) ;
+        }
+
+    } else umask(m) ;
+
+    if (gid != (gid_t)-1 && chown(path, (uid_t)-1, gid) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "chown directory: ", path) ;
+
+    if (chmod(path, gid != (gid_t)-1 ? 03730 : 01733) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "chmod directory: ", path) ;
+
+    return 1 ;
+}
+
+int event_fifo_clean(char const *path)
+{
+    log_flow() ;
+
+    size_t pathlen = strlen(path) ;
+    DIR *dir = opendir(path) ;
+    if (!dir)
+        log_warnusys_return(LOG_EXIT_ZERO, "open directory: ", path) ;
+
+    int e = 0 ;
+    char tmp[pathlen + 1 + EVENT_FIFO_NAMELEN + 1] ;
+    memcpy(tmp, path, pathlen) ;
+    tmp[pathlen] = '/' ;
+
     for (;;) {
 
-        char rnd[EVENT_FIFO_RANDLEN + 1] ;
-
-        if (!file_tmpname(rnd, EVENT_FIFO_RANDLEN))
-            log_warnusys_return(LOG_EXIT_ZERO, "generate event fifo name") ;
-        rnd[EVENT_FIFO_RANDLEN] = 0 ;
-
-        auto_strings(hidden, eventdir, "/.", EVENT_FIFO_PREFIX, stamp, ":", rnd) ;
-        auto_strings(f->fifopath, eventdir, "/", EVENT_FIFO_PREFIX, stamp, ":", rnd) ;
-
-        if (!mkfifo(hidden, 0622))
+        errno = 0 ;
+        struct dirent *d = readdir(dir) ;
+        if (!d) {
+            if (errno && !e) e = errno ; // readdir failed (errno==0 means clean end)
             break ;
-
-        if (errno != EEXIST) {
-            f->fifopath[0] = 0 ;
-            log_warnusys_return(LOG_EXIT_ZERO, "create event fifo: ", hidden) ;
         }
+
+        if (strncmp(d->d_name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN))
+            continue ;
+        if (strlen(d->d_name) != EVENT_FIFO_NAMELEN)
+            continue ;
+
+        memcpy(tmp + pathlen + 1, d->d_name, EVENT_FIFO_NAMELEN + 1) ;
+
+        /* an orphan fifo (no reader) rejects O_WRONLY|O_NONBLOCK with ENXIO: sweep
+         * it. A live reader (open succeeds) or any other open error is left alone;
+         * the sweep only fails on an unlink that itself fails. */
+        int fd = io_open(tmp, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
+        if (fd >= 0)
+            close_fd(fd) ;
+        else if (errno == ENXIO && unlink(tmp) < 0 && !e)
+            e = errno ; // capture the unlink errno right where it happens
     }
 
-    /* read end first (nonblocking), then a write end so the fifo always has a
-     * writer and reads return EAGAIN instead of EOF when idle. Once attached, the
-     * read end is owned by the pump (event_reader_detach closes it). */
-    int rfd = io_open(hidden, O_RDONLY | O_NONBLOCK | O_CLOEXEC) ;
-    if (rfd < 0) {
-        file_tryunlink(hidden) ;
-        f->fifopath[0] = 0 ;
-        log_warnusys_return(LOG_EXIT_ZERO, "open event fifo read end: ", hidden) ;
-    }
+    closedir(dir) ;
 
-    /* force the mode regardless of the umask so a same-group producer
-     * (66-supervise) can always open the fifo for writing */
-    if (fchmod(rfd, 0622) < 0) {
-        close_fd(rfd) ;
-        file_tryunlink(hidden) ;
-        f->fifopath[0] = 0 ;
-        log_warnusys_return(LOG_EXIT_ZERO, "set event fifo mode: ", hidden) ;
-    }
-
-    f->wfd = io_open(hidden, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
-    if (f->wfd < 0) {
-        close_fd(rfd) ;
-        file_tryunlink(hidden) ;
-        f->fifopath[0] = 0 ;
-        log_warnusys_return(LOG_EXIT_ZERO, "open event fifo write end: ", hidden) ;
-    }
-
-    /* both ends are open: publish the fifo for the producer's fanout */
-    if (rename(hidden, f->fifopath) < 0) {
-        close_fd(rfd) ;
-        close_fd(f->wfd) ; f->wfd = -1 ;
-        file_tryunlink(hidden) ;
-        f->fifopath[0] = 0 ;
-        log_warnusys_return(LOG_EXIT_ZERO, "publish event fifo: ", f->fifopath) ;
-    }
-
-    // hand the read end to the pump; it owns it from here (closed by detach)
-    if (!event_reader_attach(&f->reader, ep, rfd, handler, data, priority)) {
-        close_fd(rfd) ;
-        close_fd(f->wfd) ; f->wfd = -1 ;
-        file_tryunlink(f->fifopath) ;
-        f->fifopath[0] = 0 ;
-        log_warnusys_return(LOG_EXIT_ZERO, "attach event fifo reader") ;
+    if (e) {
+        errno = e ;
+        log_warnusys_return(LOG_EXIT_ZERO, "clean directory: ", path) ;
     }
 
     return 1 ;
 }
 
-void event_fifo_unsubscribe(event_fifo_t *f)
+int event_fifo_notify(char const *path, char const *s, size_t len)
 {
     log_flow() ;
 
-    if (!f)
-        return ;
+    size_t pathlen = strlen(path) ;
+    DIR *dir = opendir(path) ;
+    if (!dir)
+        log_warnusys_return(LOG_EXIT_ZERO, "open directory: ", path) ;
 
-    // unlink first avoiding reaching ENXIO
-    if (f->fifopath[0]) {
-        file_tryunlink(f->fifopath) ;
-        f->fifopath[0] = 0 ;
+    int e = 0 ; // first error, deferred past closedir so the DIR is never leaked
+    char tmp[pathlen + 1 + EVENT_FIFO_NAMELEN + 1] ;
+    memcpy(tmp, path, pathlen) ;
+    tmp[pathlen] = '/' ;
+
+    for (;;) {
+
+        errno = 0 ;
+        struct dirent *d = readdir(dir) ;
+        if (!d) {
+            if (errno && !e) e = errno ;   // readdir failed (errno==0 means clean end)
+            break ;
+        }
+
+        if (strncmp(d->d_name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN))
+            continue ;
+        if (strlen(d->d_name) != EVENT_FIFO_NAMELEN)
+            continue ;
+
+        memcpy(tmp + pathlen + 1, d->d_name, EVENT_FIFO_NAMELEN + 1) ;
+
+        /** Fan the message out: open the subscriber fifo non-blocking and write
+         * @s into it. A fifo with no reader (ENXIO) or whose reader has gone
+         * (EPIPE) is unlinked; a full fifo (EAGAIN) or any short write is dropped.
+         * The producer NEVER blocks: a bad subscriber must not jam the supervisor.
+         * Only a failing unlink (and opendir/readdir above) is a real error. */
+        int fd = io_open(tmp, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
+        if (fd < 0) {
+            if (errno == ENXIO && unlink(tmp) < 0 && !e)
+                e = errno ;
+
+            continue ;
+        }
+
+        ssize_t r = io_write(fd, (char *)s, len) ;
+        if ((r < 0 || (size_t)r < len) && errno == EPIPE && unlink(tmp) < 0 && !e)
+            e = errno ;
+
+        close_fd(fd) ;
     }
 
-    event_reader_detach(&f->reader) ;
+    closedir(dir) ;
 
-    if (f->wfd >= 0) {
-        close_fd(f->wfd) ;
-        f->wfd = -1 ;
+    if (e) {
+        errno = e ;
+        log_warnusys_return(LOG_EXIT_ZERO, "notify directory: ", path) ;
     }
+
+    return 1 ;
 }

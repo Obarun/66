@@ -61,14 +61,14 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
     char const *control ;
     event_t wanted ;
     if (!strcmp(fdh_signame, "start")) {
-        control = "U" ; wanted = EVENT_READY ;
+        control = "U" ; wanted = EVENT_UP_READY ;
     } else if (!strcmp(fdh_signame, "stop")) {
         control = "D" ; wanted = EVENT_DOWN_READY ;
     } else {
         control = "t" ; wanted = EVENT_RESTART_READY ;
     }
 
-    char dir[info->scandir.len + sizeof("/" SS_FDHOLDER) + 1] ;
+    char dir[info->scandir.len + 1 + SS_FDHOLDER_LEN + 1] ;
     auto_strings(dir, info->scandir.s, "/" SS_FDHOLDER) ;
 
     log_trace(fdh_signame, " fdholder service: ", dir) ;

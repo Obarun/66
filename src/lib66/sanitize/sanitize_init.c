@@ -176,7 +176,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
                  * get-or-create), so there is nothing to pre-seed here */
 
                 log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
-                if (!event_fifodir_make(pres->sa.s + pres->live.eventdir, getgid())) {
+                if (!event_fifo_make(pres->sa.s + pres->live.eventdir, getgid())) {
                     cleanup(toclean, pos) ;
                     log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
                 }
@@ -280,7 +280,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
             if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
 
                 log_trace("clean event directory: ", sa + pres->live.eventdir) ;
-                if (!event_fifodir_clean(sa + pres->live.eventdir))
+                if (!event_fifo_clean(sa + pres->live.eventdir))
                     log_warnu("clean event directory: ", sa + pres->live.eventdir) ;
             }
         }

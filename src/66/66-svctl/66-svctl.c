@@ -135,7 +135,7 @@ static event_t wait_to_event(char c)
 {
     switch (c) {
         case 'u' : return EVENT_UP ;
-        case 'U' : return EVENT_READY ;
+        case 'U' : return EVENT_UP_READY ;
         case 'd' : return EVENT_DOWN ;
         case 'D' : return EVENT_DOWN_READY ;
         case 'r' : return EVENT_RESTART ;
@@ -146,7 +146,7 @@ static event_t wait_to_event(char c)
 
 static event_t downgrade_if_no_notif(char const *dir, event_t wanted)
 {
-    if (wanted != EVENT_READY && wanted != EVENT_DOWN_READY && wanted != EVENT_RESTART_READY)
+    if (wanted != EVENT_UP_READY && wanted != EVENT_DOWN_READY && wanted != EVENT_RESTART_READY)
         return wanted ;
 
     char fn[strlen(dir) + 1 + SS_NOTIFICATION_LEN + 1] ;
@@ -156,7 +156,7 @@ static event_t downgrade_if_no_notif(char const *dir, event_t wanted)
         return wanted ;
 
     log_warn(fn, " not present - ignoring request for readiness notification") ;
-    if (wanted == EVENT_READY) return EVENT_UP ;
+    if (wanted == EVENT_UP_READY) return EVENT_UP ;
     if (wanted == EVENT_DOWN_READY) return EVENT_DOWN ;
     return EVENT_RESTART ;
 }

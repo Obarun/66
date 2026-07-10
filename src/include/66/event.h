@@ -40,67 +40,188 @@
 #include <oblibs/clock.h>
 
 #include <66/config.h>
+#include <66/event_rule.h>
 
 /**
- * @brief A service/supervisor event: the format-independent vocabulary.
+ * @brief The waiter vocabulary: what a wait expresses, format-independent.
  *
- * One single typed vocabulary for everything a waiter expresses AND everything
- * the producer emits. The first seven are the transitions 66-supervise actually
- * emits; their wire encoding (a single byte today) lives in `event_to_byte` /
- * `event_from_byte`, NOT here -- a future rich payload swaps the codec while this
- * enum and the matcher stay put. The two RESTART values are wait-only composites
- * (no transition byte): a waiter may want them, the producer never emits them.
- * `EVENT_NONE` is what `event_from_byte` returns for a byte it does not know.
+ * One typed vocabulary for the states a waiter can wait for. It is NOT the wire
+ * format: on the wire a transition carries the full projected status record
+ * (`state`/`result`/`who`/`code`/`pid`, see `event_frame_s`), and the matcher
+ * maps this enum onto that decoded frame (`event_state_update`). The two RESTART
+ * values are wait-only composites (down then up); SUPERVISE_UP/SUPERVISE_DOWN map
+ * to the LIFECYCLE frame kind. `EVENT_NONE` is a not-an-event sentinel.
  */
 typedef enum event_e event_t ;
 enum event_e
 {
-    EVENT_UP,             // process up, not ready           (byte 'u')
-    EVENT_READY,          // process up and ready            (byte 'U')
-    EVENT_DOWN,           // finishing / down                (byte 'd')
-    EVENT_DOWN_READY,     // fully down, ready to start       (byte 'D')
-    EVENT_NORESTART,      // will not be restarted            (byte 'O')
-    EVENT_SUPERVISE_UP,   // supervisor started              (byte 's')
-    EVENT_SUPERVISE_DOWN, // supervisor exiting              (byte 'x')
-    EVENT_RESTART,        // wait-only: down then up          (no byte)
-    EVENT_RESTART_READY,  // wait-only: down then up+ready     (no byte)
-    EVENT_NONE            // unknown / not an event           (no byte)
+    EVENT_UP,             // process up, ready irrelevant
+    EVENT_UP_READY,       // process up and ready
+    EVENT_DOWN,           // finishing / down, ready irrelevant
+    EVENT_DOWN_READY,     // fully down, ready to start
+    EVENT_NORESTART,      // will not be restarted
+    EVENT_SUPERVISE_UP,   // supervisor started (LIFECYCLE up)
+    EVENT_SUPERVISE_DOWN, // supervisor exiting (LIFECYCLE down)
+    EVENT_RESTART,        // wait-only: down then up
+    EVENT_RESTART_READY,  // wait-only: down then up+ready
+    EVENT_NONE            // unknown / not an event
 } ;
 
 /**
- * @brief Wire codec: convert between an event and its single transition byte.
+ * @brief The wire frame: a tagged union broadcast by 66-supervise's fanout.
  *
- * The byte is just today's serialization; isolating it here keeps the rest of
- * the engine format-independent (a rich-payload codec would sit beside these).
+ * The event channel carries length-framed messages, not single bytes. Each frame
+ * is an 8-byte big-endian header followed by a `payload_len`-byte payload:
  *
- * @return event_to_byte: the transition byte for a wire event, or 0 for an event
- *         that never travels on the wire (RESTART, RESTART_READY, NONE).
- * @return event_from_byte: the event for a known byte, or EVENT_NONE otherwise.
+ *   header  [0]    version      u8  = EVENT_VERSION
+ *           [1]    kind         u8  = event_kind_e
+ *           [2]    flags        u8  = EVENT_FLAG_* bitmask
+ *           [3]    reserved     u8  = 0
+ *           [4..7] payload_len  u32 (big-endian)
+ *   payload [0..11] timestamp   CLOCK_PACK (12 bytes, common to every kind)
+ *           then, per kind:
+ *             TRANSITION: state u8, result u8, who u8, code u32, pid u32
+ *             SIGNAL:     signo u8, who u8
+ *             LIFECYCLE:  phase u8 (event_lifecycle_e)
+ *
+ * A frame is at most EVENT_FRAME_MAX bytes, far under PIPE_BUF, so every producer
+ * write is atomic. `state`/`result`/`who` mirror the status record enums
+ * (`status_state_e`/`status_result_e`/`status_who_e`); they are kept as raw bytes
+ * here so this header stays independent of `status.h`.
  */
-extern char event_to_byte(event_t e) ;
-extern event_t event_from_byte(char c) ;
+#define EVENT_VERSION    1
+#define EVENT_HDR_LEN    8
+#define EVENT_FRAME_MAX  31   // header + the largest payload (TRANSITION: 8 + 23)
 
-/** @brief event_match_feed verdicts. */
-#define EVENT_MATCH_FAIL    (-1) // permanent failure ('O' while wanting up, or 'x')
-#define EVENT_MATCH_PENDING   0  // not reached yet
-#define EVENT_MATCH_OK        1  // wanted state reached
+/** @brief Frame flags (header byte 2). */
+#define EVENT_FLAG_TERMINAL  0x01U // a down that will not be restarted (crash budget / finish 125)
+
+/** @brief The frame kind (header byte 1). */
+typedef enum event_kind_e event_kind_t ;
+enum event_kind_e
+{
+    EVENT_KIND_TRANSITION = 0, // a service state transition
+    EVENT_KIND_SIGNAL,         // a signal routed to the service by 66
+    EVENT_KIND_LIFECYCLE       // the supervisor itself came up / is exiting
+} ;
+
+/** @brief LIFECYCLE phase (payload byte after the timestamp). */
+typedef enum event_lifecycle_e event_lifecycle_t ;
+enum event_lifecycle_e
+{
+    EVENT_LIFECYCLE_UP = 0, // supervisor started
+    EVENT_LIFECYCLE_DOWN    // supervisor exiting
+} ;
+
+/**
+ * @struct event_frame_s
+ * @brief A decoded wire frame. Only the fields relevant to `kind` are meaningful.
+ *
+ * @param version, kind, flags  The decoded header (minus the reserved byte).
+ * @param stamp                 The frame timestamp (every kind).
+ * @param who                   Provenance (TRANSITION and SIGNAL).
+ * @param state, result, code, pid  The projected status (TRANSITION only).
+ * @param signo                 The routed signal number (SIGNAL only).
+ * @param phase                 The supervisor lifecycle phase (LIFECYCLE only).
+ */
+typedef struct event_frame_s event_frame_t ;
+struct event_frame_s
+{
+    uint8_t version ;
+    uint8_t kind ;
+    uint8_t flags ;
+    struct timespec stamp ;
+    uint8_t who ;
+    uint8_t state ;  // status_state_e   (TRANSITION)
+    uint8_t result ; // status_result_e  (TRANSITION)
+    uint32_t code ;  // wstat / signal / errno per result (TRANSITION)
+    uint32_t pid ;   // TRANSITION
+    uint8_t signo ;  // SIGNAL
+    uint8_t phase ;  // event_lifecycle_e (LIFECYCLE)
+} ;
+
+/**
+ * @brief Producer-side frame packers: serialize one frame into @out.
+ *
+ * Each writes a complete header + payload into @out (which must be at least
+ * `EVENT_FRAME_MAX` bytes) and returns the number of bytes written. The bytes are
+ * then handed to `event_fifo_notify` (the typed `event_emit_*` helpers do both
+ * in one call). The timestamp is packed with oblibs `clock_pack`.
+ *
+ * @return The frame length in bytes.
+ */
+extern size_t event_frame_pack_transition(char *out, uint8_t state, uint8_t result, uint8_t who, uint32_t code, uint32_t pid, struct timespec const *stamp, uint8_t flags) ;
+extern size_t event_frame_pack_signal(char *out, uint8_t signo, uint8_t who, struct timespec const *stamp) ;
+extern size_t event_frame_pack_lifecycle(char *out, uint8_t phase, struct timespec const *stamp) ;
+
+/**
+ * @struct event_aggregator_s
+ * @brief Per-source frame aggregator: turns pump chunks into whole frames.
+ *
+ * The pump hands raw byte chunks that may split a frame across two reads or carry
+ * several frames at once. The aggregator accumulates the tail of an incomplete frame
+ * in @buf; each consumer keeps one aggregator per source (its address is not hashed,
+ * so it may live inline). Zero-initialize before first use (`len == 0`).
+ *
+ * @param buf A single in-flight frame's bytes (never more than EVENT_FRAME_MAX).
+ * @param len How many bytes of @buf are currently accumulated.
+ */
+typedef struct event_aggregator_s event_aggregator_t ;
+struct event_aggregator_s
+{
+    unsigned char buf[EVENT_FRAME_MAX] ;
+    size_t len ;
+} ;
+
+/**
+ * @brief Callback invoked by the aggregator for each complete frame it assembles.
+ *
+ * @param[in] f    The decoded frame, valid only for the duration of the call.
+ * @param[in] data The opaque cookie passed to `event_aggregate`.
+ */
+typedef void (event_frame_cb_t)(event_frame_t const *f, void *data) ;
+
+/**
+ * @brief Aggregate a raw chunk into whole frames; emit each complete one to @cb.
+ *
+ * Appends @buf to @a's in-flight bytes and, for every complete frame that results,
+ * decodes it and calls @cb(frame, @data). Several frames in one chunk are all
+ * delivered; a frame split across chunks is buffered until complete. A corrupt
+ * header (bad version, or a `payload_len` larger than the largest known payload)
+ * is not fatal: the aggregator drops one byte and resynchronizes on the next
+ * plausible header, so a stray writer on the (0622) fifodir cannot wedge it.
+ *
+ * @param[in,out] a    The per-source aggregator (zero-initialized before first use).
+ * @param[in]     buf  The bytes just read from the source.
+ * @param[in]     len  Number of bytes at @buf. `0` is a no-op.
+ * @param[in]     cb   Invoked once per complete frame.
+ * @param[in]     data Opaque cookie handed back to @cb verbatim.
+ *
+ * @return Nothing; malformed input is resynchronized, never reported as an error.
+ */
+extern void event_aggregate(event_aggregator_t *d, char const *buf, size_t len, event_frame_cb_t *cb, void *data) ;
+
+/** @brief event_state_update verdicts. */
+#define EVENT_STATE_FAIL    (-1) // permanent failure (TERMINAL while wanting up, or supervisor down)
+#define EVENT_STATE_PENDING   0  // not reached yet
+#define EVENT_STATE_OK        1  // wanted state reached
 
 /**
  * @brief Subscriber fifo naming, matching 66-supervise's fanout filter.
  *
- * A subscriber fifo is named `"ftrig1:" + TAI64N stamp + ":" + random suffix`.
- * 66-supervise's fanout filters directory entries on the `"ftrig1:"` prefix
+ * A subscriber fifo is named `"evtsub:" + TAI64N stamp + ":" + random suffix`.
+ * 66-supervise's fanout filters directory entries on the `"evtsub:"` prefix
  * (`EVENT_FIFO_PREFIXLEN` bytes) AND an exact total name length
  * (`EVENT_FIFO_NAMELEN`), so this layout must match it byte for byte; both
- * `event_fifo_subscribe` and `event_fifodir_clean` rely on it.
+ * `event_subscribe` and `event_fifo_clean` rely on it.
  *
- * - `EVENT_FIFO_PREFIX`    the literal `"ftrig1:"` prefix.
+ * - `EVENT_FIFO_PREFIX`    the literal `"evtsub:"` prefix.
  * - `EVENT_FIFO_PREFIXLEN` its length without the NUL (7).
  * - `EVENT_FIFO_RANDLEN`   length of the random suffix (6 chars).
  * - `EVENT_FIFO_NAMELEN`   full entry-name length without the NUL (39):
  *                          prefix + TAI64N stamp + ':' separator + suffix.
  */
-#define EVENT_FIFO_PREFIX     "ftrig1:"
+#define EVENT_FIFO_PREFIX     "evtsub:"
 #define EVENT_FIFO_PREFIXLEN  (sizeof(EVENT_FIFO_PREFIX) - 1)        /* 7 */
 #define EVENT_FIFO_RANDLEN    6
 #define EVENT_FIFO_NAMELEN    (EVENT_FIFO_PREFIXLEN + CLOCK_TAI64N_LEN + 1 + EVENT_FIFO_RANDLEN)  /* 39 */
@@ -108,13 +229,13 @@ extern event_t event_from_byte(char c) ;
 typedef struct event_reader_s event_reader_t ;
 typedef struct event_fifo_s event_fifo_t ;
 typedef struct event_wait_s event_wait_t ;
-typedef struct event_match_s event_match_t ;
+typedef struct event_state_s event_state_t ;
 
 /**
- * @struct event_match_s
+ * @struct event_state_s
  * @brief The transition interpreter: tracks (up, ready) and matches a wanted state.
  *
- * Feed it the raw transition bytes as they arrive; it maintains the decoded
+ * Feed it the decoded frames as they arrive; it maintains the decoded
  * `(up, ready)` pair and tells the caller when @wanted is reached or has
  * permanently failed. The same matcher backs every waiter (event_wait and the
  * svc launch/daemon waits), so the wait semantics live in exactly one place.
@@ -123,7 +244,7 @@ typedef struct event_match_s event_match_t ;
  * @param up, ready    Current decoded process state (seed at init, updated on feed).
  * @param restart_done For a RESTART wait, set once the down phase has been seen.
  */
-struct event_match_s
+struct event_state_s
 {
     event_t wanted ;
     unsigned char up ;
@@ -140,30 +261,44 @@ struct event_match_s
  * @param[in]  ready  Current ready bit, or 0 if unknown.
  *
  * @note A non-RESTART wait whose seed already satisfies @wanted is reported as
- *       matched on the first `event_match_feed` (including a zero-length feed).
- * @see event_match_feed
+ *       matched on the first `event_state_update`.
+ * @see event_state_update
  */
-extern void event_match_init(event_match_t *m, event_t wanted, unsigned char up, unsigned char ready) ;
+extern void event_state_init(event_state_t *m, event_t wanted, unsigned char up, unsigned char ready) ;
 
 /**
- * @brief Feed transition bytes and report whether @wanted has been reached.
+ * @brief Feed one decoded frame and report whether @wanted has been reached.
  *
- * Updates the tracked `(up, ready)` from the bytes in @buf (decoding `d/D/u/U`,
- * handling the two-phase RESTART, and treating `O` while waiting up or `x` as a
- * permanent failure). Supervise waits match the exact `'s'`/`'x'` byte instead.
- * A `len == 0` call evaluates the current state without consuming input.
+ * For a service-state wait, a TRANSITION frame updates the tracked `(up, ready)`
+ * from its `state` field (via a fixed state->(up,ready) mapping), handling the
+ * two-phase RESTART; a frame carrying `EVENT_FLAG_TERMINAL` while waiting up, or a
+ * LIFECYCLE-down (the supervisor is exiting), is a permanent failure; SIGNAL
+ * frames are ignored. A SUPERVISE_UP / SUPERVISE_DOWN wait matches the LIFECYCLE
+ * frame of the corresponding phase instead.
  *
- * @param[in,out] m   Initialized matcher.
- * @param[in]     buf Bytes read from the source (may be NULL when @len is 0).
- * @param[in]     len Number of bytes in @buf.
+ * @param[in,out] m Initialized matcher.
+ * @param[in]     f The decoded frame.
  *
- * @return `EVENT_MATCH_OK` (1) if @wanted is reached, `EVENT_MATCH_FAIL` (-1) on
- *         permanent failure, `EVENT_MATCH_PENDING` (0) otherwise. Once OK or FAIL
+ * @return `EVENT_STATE_OK` (1) if @wanted is reached, `EVENT_STATE_FAIL` (-1) on
+ *         permanent failure, `EVENT_STATE_PENDING` (0) otherwise. Once OK or FAIL
  *         is returned the matcher should not be fed further.
- * @see event_match_init
+ * @see event_state_init
  */
-extern int event_match_feed(event_match_t *m, char const *buf, size_t len) ;
+extern int event_state_update(event_state_t *m, event_frame_t const *f) ;
 
+/**
+ * @brief Whether the matcher's seeded state already satisfies @wanted, no frame.
+ *
+ * Evaluates the seed alone, for a caller that already knows the current
+ * `(up, ready)` and wants to skip the wait when the service is already there. A
+ * SUPERVISE_UP/DOWN or RESTART wait is never satisfied by the seed (it needs a
+ * live frame), so this returns 0 for those.
+ *
+ * @param[in] m Initialized matcher (seeded via `event_state_init`).
+ * @return 1 if @wanted is already satisfied, 0 otherwise.
+ * @see event_state_init
+ */
+extern int event_state_satisfied(event_state_t const *m) ;
 
 /**
  * @brief Consumer callback invoked by the pump with each chunk read from a source.
@@ -196,7 +331,7 @@ extern int event_match_feed(event_match_t *m, char const *buf, size_t len) ;
  * @return Nothing.
  *
  * @note The handler MUST NOT detach its own reader (`event_reader_detach`,
- *       `event_fifo_unsubscribe`): that would free the watcher currently being
+ *       `event_unsubscribe`): that would free the watcher currently being
  *       dispatched. To stop the loop, clear the epoll's `running` flag instead
  *       (`r` reaches the epoll, or the consumer keeps its own handle). Any
  *       teardown of this reader must be deferred until the dispatch has
@@ -297,7 +432,7 @@ extern void event_reader_detach(event_reader_t *r) ;
  * return EAGAIN instead of EOF when idle. `-1` when not held.
  *
  * @param fifopath
- * The published fifo path, unlinked on `event_fifo_unsubscribe`. An empty string
+ * The published fifo path, unlinked on `event_unsubscribe`. An empty string
  * (first byte `'\0'`) means no fifo is currently owned.
  */
 struct event_fifo_s
@@ -325,7 +460,7 @@ struct event_fifo_s
  * emptied, so @f is left clean and need not be unsubscribed.
  *
  * @param[out] f        Fifo source to initialize (zeroed on entry). Must keep a
- *                      STABLE ADDRESS until `event_fifo_unsubscribe` (the pump's
+ *                      STABLE ADDRESS until `event_unsubscribe` (the pump's
  *                      watcher is hashed by address).
  * @param[in]  ep       The SSE event loop to register the read end with.
  * @param[in]  eventdir Service event directory to drop the fifo into. Must be
@@ -349,9 +484,9 @@ struct event_fifo_s
  *
  * @note On the fifo source the handler never sees a `len == 0` close, because
  *       this function holds the write end open for the lifetime of @f.
- * @see event_fifo_unsubscribe
+ * @see event_unsubscribe
  */
-extern int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir, event_handler_t *handler, void *data, int priority) ;
+extern int event_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir, event_handler_t *handler, void *data, int priority) ;
 
 /**
  * @brief Unsubscribe: unlink our fifo, detach the pump, close the write end.
@@ -370,9 +505,9 @@ extern int event_fifo_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *ev
  * @note MUST NOT be called from within the handler: it detaches the pump and so
  *       frees the watcher being dispatched. Defer it until after the dispatch
  *       returns.
- * @see event_fifo_subscribe
+ * @see event_subscribe
  */
-extern void event_fifo_unsubscribe(event_fifo_t *f) ;
+extern void event_unsubscribe(event_fifo_t *f) ;
 
 /**
  * @brief Create (or normalize) a service event fifodir.
@@ -404,9 +539,9 @@ extern void event_fifo_unsubscribe(event_fifo_t *f) ;
  *
  * @note Idempotent: safe to call repeatedly; an existing owned directory has its
  *       perms re-applied each time.
- * @see event_fifodir_clean
+ * @see event_fifo_clean
  */
-extern int event_fifodir_make(char const *path, gid_t gid) ;
+extern int event_fifo_make(char const *path, gid_t gid) ;
 
 /**
  * @brief Sweep orphan subscriber fifos from a fifodir.
@@ -432,9 +567,9 @@ extern int event_fifodir_make(char const *path, gid_t gid) ;
  * @note A `O_WRONLY | O_NONBLOCK` open failing with anything other than `ENXIO`
  *       does NOT cause failure and does NOT unlink the entry; only `ENXIO`
  *       (no reader) triggers an unlink.
- * @see event_fifodir_make
+ * @see event_fifo_make
  */
-extern int event_fifodir_clean(char const *path) ;
+extern int event_fifo_clean(char const *path) ;
 
 /**
  * @brief Fan a message out to every subscriber fifo in a fifodir. The producer
@@ -466,27 +601,28 @@ extern int event_fifodir_clean(char const *path) ;
  * @note A short or failed write that is NOT `EPIPE` (e.g. `EAGAIN` on a full
  *       fifo) is dropped silently and does NOT cause failure; the producer must
  *       not stall on a slow reader.
- * @see event_fifodir_clean
+ * @see event_fifo_clean
  */
-extern int event_fifodir_notify(char const *path, char const *s, size_t len) ;
+extern int event_fifo_notify(char const *path, char const *s, size_t len) ;
 
 /**
- * @brief Typed producer-side emit: fan @n events out to a fifodir in one message.
+ * @brief Typed producer-side emit: pack one frame and fan it out to a fifodir.
  *
- * Encodes each of @ev to its transition byte (`event_to_byte`) and hands the
- * resulting bytes to `event_fifodir_notify` in a single write, so a multi-event
- * transition (e.g. DOWN then DOWN_READY) reaches every subscriber atomically.
- * This is how 66-supervise emits, in the typed vocabulary rather than raw bytes.
+ * Each helper packs a single frame (`event_frame_pack_*`) and hands it to
+ * `event_fifo_notify` in one atomic write, reaching every subscriber. This is
+ * how 66-supervise broadcasts: a TRANSITION carries the projected status
+ * (state/result/who/code/pid, plus a TERMINAL flag on a down that will not
+ * restart), a SIGNAL carries a routed signal number, a LIFECYCLE carries the
+ * supervisor's own up/down.
  *
  * @param[in] path Fifodir to fan out into.
- * @param[in] ev   Events to emit (must be wire events; RESTART/NONE encode to 0).
- * @param[in] n    Number of events (1 or more).
- *
- * @return 1 on success, 0 on failure (the `event_fifodir_notify` errno).
- * @see event_fifodir_notify
- * @see event_to_byte
+ * @return 1 on success, 0 on failure (the `event_fifo_notify` errno).
+ * @see event_fifo_notify
+ * @see event_frame_pack_transition
  */
-extern int event_fifodir_emit(char const *path, event_t const *ev, size_t n) ;
+extern int event_emit_transition(char const *path, uint8_t state, uint8_t result, uint8_t who, uint32_t code, uint32_t pid, struct timespec const *stamp, uint8_t flags) ;
+extern int event_emit_signal(char const *path, uint8_t signo, uint8_t who, struct timespec const *stamp) ;
+extern int event_emit_lifecycle(char const *path, uint8_t phase, struct timespec const *stamp) ;
 
 /**
  * @struct event_wait_s
@@ -522,7 +658,7 @@ extern int event_fifodir_emit(char const *path, event_t const *ev, size_t n) ;
  * `triggered == n`.
  *
  * @param wanted
- * The service state every source is waiting for (interpreted by event_match).
+ * The service state every source is waiting for (interpreted by event_state).
  *
  * @param failed
  * Set when a source reported a permanent failure (`O`/`x`): the wait ended early
@@ -549,7 +685,7 @@ struct event_wait_s
  *
  * Zero-initializes @w, creates its event loop, and -- when @n is non-zero --
  * allocates the @n fifo sources and their per-source cookies and subscribes a
- * fifo to each of @eventdirs (via `event_fifo_subscribe`). If any subscription
+ * fifo to each of @eventdirs (via `event_subscribe`). If any subscription
  * fails, every already-subscribed source is unsubscribed, all allocations are
  * freed, and the loop is released, so @w is left clean and need not be freed.
  * With @n == 0 the loop is created and the function returns success with no
@@ -568,7 +704,7 @@ struct event_wait_s
  *         - the `sse_new` errno if the event loop cannot be created.
  *         - `ENOMEM` if the sources array or the cookies array cannot be
  *           allocated.
- *         - the `event_fifo_subscribe` errno of the source that failed (see that
+ *         - the `event_subscribe` errno of the source that failed (see that
  *           function for the full list).
  *
  * @note The caller must trigger the events (e.g. reload the scandir) AFTER this
@@ -623,5 +759,9 @@ extern int event_wait_run(event_wait_t *w, int timeout_ms) ;
  * @see event_wait_init
  */
 extern void event_wait_free(event_wait_t *w) ;
+
+/* The compiled [Event] rule CDB contract (the source/combine/do enums, the On
+ * vocabulary and the inotify table) is shared with the parser and lives in
+ * <66/event_rule.h>, included above. */
 
 #endif

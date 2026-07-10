@@ -1,9 +1,12 @@
 /* test_event.c — exhaustive, mutation-proven test suite for the 66 `event`
- * module (event_fifodir.c / event_reader.c / event_wait.c).
+ * module (event_frame.c / event_state.c / event_fifo.c / event_subscribe.c /
+ * event_emit.c / event_reader.c / event_wait.c), rewritten for the length-framed payload API
+ * (tagged union) that replaced the single-byte channel.
  *
- * Asserts by EFFECT (stat modes, real fds, on-disk fifo state, transition bytes
- * delivered, struct fields), never by return code alone. Hardened: ASan + UBSan
- * + LSan, with a per-process alarm() anti-hang (a mis-handled fifo would block).
+ * Asserts by EFFECT: on-wire bytes at exact offsets, decoded struct fields,
+ * stat modes, real fds, on-disk fifo state, matcher verdicts, frames delivered.
+ * Never by return code alone. Hardened: ASan + UBSan + LSan, with a per-process
+ * alarm() anti-hang (a mis-handled fifo would block).
  */
 #include "ctest.h"
 
@@ -17,12 +20,16 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <time.h>
 
 #include <oblibs/sse.h>
 #include <oblibs/log.h>
+#include <oblibs/clock.h>
+#include <oblibs/types.h>
 
 #include <66/event.h>
+#include <66/status.h>
 #include "helpers.h"
 
 /* anti-hang: any test that blocks on a fifo dies here, the run is a FAILURE. */
@@ -52,9 +59,559 @@ static void rm_rf(char const *dir)
     rmdir(dir) ;
 }
 
-/* ------------------------------------------------------------------ */
-/* event_fifodir_make                                                  */
-/* ------------------------------------------------------------------ */
+/* a fixed, round-trip-exact timestamp: tv_sec fits u64, tv_nsec fits u32. */
+static struct timespec fixed_stamp(void)
+{
+    struct timespec ts ;
+    ts.tv_sec = (time_t)0x1122334455LL ;
+    ts.tv_nsec = 123456789L ;
+    return ts ;
+}
+
+static uint32_t rd_u32be(unsigned char const *p)
+{
+    uint32_t v ;
+    u32_unpack_big((char const *)p, &v) ;
+    return v ;
+}
+
+/* ================================================================== */
+/* event_frame.c — packers: on-wire layout + pack->decode round trip   */
+/* ================================================================== */
+
+/* a frame-decoding sink: records every complete frame the decoder reassembles,
+ * plus the raw byte stream (the pump is byte-agnostic; the decoder gives meaning). */
+typedef struct {
+    event_aggregator_t ag ;
+    event_frame_t frames[128] ;
+    size_t n ;
+    unsigned char raw[8192] ;
+    size_t rawn ;
+} framesink_t ;
+
+static void framesink_on_frame(event_frame_t const *f, void *data)
+{
+    framesink_t *s = data ;
+    if (s->n < sizeof(s->frames) / sizeof(s->frames[0]))
+        s->frames[s->n++] = *f ;
+}
+
+/* pump handler: accumulate raw bytes and feed the reassembler. */
+static void framesink_handler(event_reader_t *r, char const *buf, size_t len, void *data)
+{
+    (void)r ;
+    framesink_t *s = data ;
+    for (size_t i = 0 ; i < len && s->rawn < sizeof(s->raw) ; i++)
+        s->raw[s->rawn++] = (unsigned char)buf[i] ;
+    event_aggregate(&s->ag, buf, len, framesink_on_frame, s) ;
+}
+
+/* decode a self-contained buffer in one shot (no pump). */
+static size_t decode_all(char const *buf, size_t len, event_frame_t *out, size_t max)
+{
+    framesink_t s = {0} ;
+    event_aggregate(&s.ag, buf, len, framesink_on_frame, &s) ;
+    size_t k = s.n < max ? s.n : max ;
+    for (size_t i = 0 ; i < k ; i++) out[i] = s.frames[i] ;
+    return s.n ;
+}
+
+static void assert_stamp_eq(struct timespec const *a, struct timespec const *b, char const *msg)
+{
+    T_ASSERT_EQ((long long)a->tv_sec, (long long)b->tv_sec, msg) ;
+    T_ASSERT_EQ((long long)a->tv_nsec, (long long)b->tv_nsec, msg) ;
+}
+
+static void test_pack_transition_wire_and_roundtrip(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char out[EVENT_FRAME_MAX] ;
+    /* distinctive values to catch swapped/shifted fields */
+    size_t len = event_frame_pack_transition(out, STATUS_STATE_UP, STATUS_RESULT_EXITED,
+                                       STATUS_WHO_USER, 0xDEADBEEFu, 0x01020304u, &ts,
+                                       EVENT_FLAG_TERMINAL) ;
+    /* frame length = 8 header + 12 stamp + 11 payload = 31 = EVENT_FRAME_MAX */
+    T_ASSERT_EQ(EVENT_FRAME_MAX, (long long)len, "transition frame length is 31") ;
+
+    unsigned char const *b = (unsigned char const *)out ;
+    /* header on the wire, byte by byte */
+    T_ASSERT_EQ(EVENT_VERSION, b[0], "header[0] = version") ;
+    T_ASSERT_EQ(EVENT_KIND_TRANSITION, b[1], "header[1] = kind TRANSITION") ;
+    T_ASSERT_EQ(EVENT_FLAG_TERMINAL, b[2], "header[2] = flags (TERMINAL)") ;
+    T_ASSERT_EQ(0, b[3], "header[3] = reserved 0") ;
+    T_ASSERT_EQ(23, (long long)rd_u32be(b + 4), "header payload_len = 12+11 = 23") ;
+    /* payload fields at their exact offsets (bites a pack-side offset mutation) */
+    T_ASSERT_EQ(STATUS_STATE_UP, b[8 + 12 + 0], "wire state at offset 20") ;
+    T_ASSERT_EQ(STATUS_RESULT_EXITED, b[8 + 12 + 1], "wire result at offset 21") ;
+    T_ASSERT_EQ(STATUS_WHO_USER, b[8 + 12 + 2], "wire who at offset 22") ;
+    T_ASSERT_EQ(0xDEADBEEFu, (long long)rd_u32be(b + 8 + 12 + 3), "wire code (u32 BE) at offset 23") ;
+    T_ASSERT_EQ(0x01020304u, (long long)rd_u32be(b + 8 + 12 + 7), "wire pid (u32 BE) at offset 27") ;
+
+    /* round trip: decode and confirm every field survives */
+    event_frame_t f[2] ;
+    T_ASSERT_EQ(1, (long long)decode_all(out, len, f, 2), "exactly one frame decoded") ;
+    T_ASSERT_EQ(EVENT_VERSION, f[0].version, "decoded version") ;
+    T_ASSERT_EQ(EVENT_KIND_TRANSITION, f[0].kind, "decoded kind") ;
+    T_ASSERT_EQ(EVENT_FLAG_TERMINAL, f[0].flags, "decoded flags TERMINAL") ;
+    assert_stamp_eq(&ts, &f[0].stamp, "decoded stamp round-trips") ;
+    T_ASSERT_EQ(STATUS_STATE_UP, f[0].state, "decoded state") ;
+    T_ASSERT_EQ(STATUS_RESULT_EXITED, f[0].result, "decoded result") ;
+    T_ASSERT_EQ(STATUS_WHO_USER, f[0].who, "decoded who") ;
+    T_ASSERT_EQ(0xDEADBEEFu, (long long)f[0].code, "decoded code u32") ;
+    T_ASSERT_EQ(0x01020304u, (long long)f[0].pid, "decoded pid u32") ;
+}
+
+static void test_pack_transition_no_flag(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char out[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_transition(out, STATUS_STATE_STARTING, STATUS_RESULT_SUCCESS,
+                                       STATUS_WHO_SELF, 0, 0, &ts, 0) ;
+    T_ASSERT_EQ(0, (unsigned char)out[2], "flags byte 0 when no flag") ;
+    event_frame_t f[1] ;
+    T_ASSERT_EQ(1, (long long)decode_all(out, len, f, 1), "one frame") ;
+    T_ASSERT_EQ(0, f[0].flags, "decoded flags 0") ;
+    T_ASSERT_EQ(STATUS_STATE_STARTING, f[0].state, "state starting") ;
+    T_ASSERT_EQ(0, (long long)f[0].code, "code 0") ;
+    T_ASSERT_EQ(0, (long long)f[0].pid, "pid 0") ;
+}
+
+static void test_pack_signal_wire_and_roundtrip(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char out[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_signal(out, 15 /* SIGTERM */, STATUS_WHO_BOOT, &ts) ;
+    /* 8 + 12 + 2 = 22 */
+    T_ASSERT_EQ(22, (long long)len, "signal frame length is 22") ;
+
+    unsigned char const *b = (unsigned char const *)out ;
+    T_ASSERT_EQ(EVENT_VERSION, b[0], "version") ;
+    T_ASSERT_EQ(EVENT_KIND_SIGNAL, b[1], "kind SIGNAL") ;
+    T_ASSERT_EQ(0, b[2], "flags 0") ;
+    T_ASSERT_EQ(14, (long long)rd_u32be(b + 4), "payload_len 12+2 = 14") ;
+    T_ASSERT_EQ(15, b[8 + 12 + 0], "wire signo at offset 20") ;
+    T_ASSERT_EQ(STATUS_WHO_BOOT, b[8 + 12 + 1], "wire who at offset 21") ;
+
+    event_frame_t f[1] ;
+    T_ASSERT_EQ(1, (long long)decode_all(out, len, f, 1), "one frame") ;
+    T_ASSERT_EQ(EVENT_KIND_SIGNAL, f[0].kind, "decoded kind SIGNAL") ;
+    assert_stamp_eq(&ts, &f[0].stamp, "decoded stamp") ;
+    T_ASSERT_EQ(15, f[0].signo, "decoded signo") ;
+    T_ASSERT_EQ(STATUS_WHO_BOOT, f[0].who, "decoded who") ;
+}
+
+static void test_pack_lifecycle_wire_and_roundtrip(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char out[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_lifecycle(out, EVENT_LIFECYCLE_DOWN, &ts) ;
+    /* 8 + 12 + 1 = 21 */
+    T_ASSERT_EQ(21, (long long)len, "lifecycle frame length is 21") ;
+
+    unsigned char const *b = (unsigned char const *)out ;
+    T_ASSERT_EQ(EVENT_VERSION, b[0], "version") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, b[1], "kind LIFECYCLE") ;
+    T_ASSERT_EQ(13, (long long)rd_u32be(b + 4), "payload_len 12+1 = 13") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_DOWN, b[8 + 12 + 0], "wire phase at offset 20") ;
+
+    event_frame_t f[1] ;
+    T_ASSERT_EQ(1, (long long)decode_all(out, len, f, 1), "one frame") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, f[0].kind, "decoded kind LIFECYCLE") ;
+    assert_stamp_eq(&ts, &f[0].stamp, "decoded stamp") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_DOWN, f[0].phase, "decoded phase DOWN") ;
+}
+
+/* ================================================================== */
+/* event_frame.c — event_aggregate reassembly / resync               */
+/* ================================================================== */
+
+static void test_decode_single(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_transition(buf, STATUS_STATE_UP, 0, 0, 7, 99, &ts, 0) ;
+    event_frame_t f[2] ;
+    T_ASSERT_EQ(1, (long long)decode_all(buf, len, f, 2), "one whole frame delivered") ;
+    T_ASSERT_EQ(STATUS_STATE_UP, f[0].state, "state UP") ;
+    T_ASSERT_EQ(7, (long long)f[0].code, "code 7") ;
+    T_ASSERT_EQ(99, (long long)f[0].pid, "pid 99") ;
+}
+
+static void test_decode_two_concatenated(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[2 * EVENT_FRAME_MAX] ;
+    size_t l0 = event_frame_pack_transition(buf, STATUS_STATE_STARTING, 0, 0, 0, 11, &ts, 0) ;
+    size_t l1 = event_frame_pack_lifecycle(buf + l0, EVENT_LIFECYCLE_UP, &ts) ;
+
+    event_frame_t f[4] ;
+    T_ASSERT_EQ(2, (long long)decode_all(buf, l0 + l1, f, 4), "both frames in one chunk delivered") ;
+    T_ASSERT_EQ(EVENT_KIND_TRANSITION, f[0].kind, "first is TRANSITION") ;
+    T_ASSERT_EQ(11, (long long)f[0].pid, "first pid 11") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, f[1].kind, "second is LIFECYCLE") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, f[1].phase, "second phase UP, order preserved") ;
+}
+
+/* a frame split across two feeds at EVERY interior cut point (mid-header and
+ * mid-payload) must be delivered exactly once, complete. */
+static void test_decode_split_all_cutpoints(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_transition(buf, STATUS_STATE_UP, STATUS_RESULT_SUCCESS,
+                                       STATUS_WHO_EVENT, 0xCAFEBABEu, 4242, &ts, 0) ;
+    for (size_t cut = 1 ; cut < len ; cut++) {
+        framesink_t s = {0} ;
+        event_aggregate(&s.ag, buf, cut, framesink_on_frame, &s) ;
+        T_ASSERT_EQ(0, (long long)s.n, "nothing delivered before the frame completes") ;
+        event_aggregate(&s.ag, buf + cut, len - cut, framesink_on_frame, &s) ;
+        T_ASSERT_EQ(1, (long long)s.n, "exactly one frame after the second half") ;
+        T_ASSERT_EQ(0xCAFEBABEu, (long long)s.frames[0].code, "code survives the split") ;
+        T_ASSERT_EQ(4242, (long long)s.frames[0].pid, "pid survives the split") ;
+        T_ASSERT_EQ(STATUS_WHO_EVENT, s.frames[0].who, "who survives the split") ;
+    }
+}
+
+/* one chunk far larger than the pump's 256-byte read buffer, holding many whole
+ * frames plus a trailing partial one: all whole frames delivered in order, the
+ * partial buffered until its tail arrives. (Tests the reassembler directly, so
+ * it is independent of the pump chunking.) */
+static void test_decode_bigchunk_many_plus_partial(void)
+{
+    enum { K = 30 } ;   /* 30 * 31 = 930 bytes > 256 and > 512 */
+    struct timespec ts = fixed_stamp() ;
+    char buf[K * EVENT_FRAME_MAX + EVENT_FRAME_MAX] ;
+    size_t off = 0 ;
+    for (int i = 0 ; i < K ; i++)
+        off += event_frame_pack_transition(buf + off, STATUS_STATE_UP, 0, 0, 0, (uint32_t)i, &ts, 0) ;
+    /* append one more frame but only feed part of it (a straddling partial) */
+    size_t last = event_frame_pack_transition(buf + off, STATUS_STATE_DOWN, 0, 0, 0, 777, &ts, 0) ;
+    size_t partial = 5 ;   /* only 5 bytes of the last frame */
+
+    framesink_t s = {0} ;
+    event_aggregate(&s.ag, buf, off + partial, framesink_on_frame, &s) ;
+    T_ASSERT_EQ(K, (long long)s.n, "all K whole frames delivered from the big chunk") ;
+    for (int i = 0 ; i < K ; i++)
+        T_ASSERT_EQ(i, (long long)s.frames[i].pid, "frames in order with correct pid") ;
+
+    /* feed the tail of the partial: the K+1-th frame now completes */
+    event_aggregate(&s.ag, buf + off + partial, last - partial, framesink_on_frame, &s) ;
+    T_ASSERT_EQ(K + 1, (long long)s.n, "the straddling frame completes on its tail") ;
+    T_ASSERT_EQ(777, (long long)s.frames[K].pid, "tail frame pid 777") ;
+    T_ASSERT_EQ(STATUS_STATE_DOWN, s.frames[K].state, "tail frame state DOWN") ;
+}
+
+static void test_decode_len_zero_noop(void)
+{
+    framesink_t s = {0} ;
+    event_aggregate(&s.ag, NULL, 0, framesink_on_frame, &s) ;
+    T_ASSERT_EQ(0, (long long)s.n, "len==0 is a no-op, no frame") ;
+    T_ASSERT_EQ(0, (long long)s.ag.len, "decoder buffer untouched") ;
+}
+
+/* a corrupt header (version != 1) is dropped byte by byte until the next valid
+ * frame is found: the good frame after it is still delivered. */
+static void test_decode_corrupt_version_resync(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[8 + EVENT_FRAME_MAX] ;
+    /* several stray non-version bytes, then a real frame */
+    buf[0] = (char)0xFF ; buf[1] = (char)0x02 ; buf[2] = (char)0x7E ; buf[3] = (char)0x00 ;
+    size_t len = 4 + event_frame_pack_lifecycle(buf + 4, EVENT_LIFECYCLE_UP, &ts) ;
+
+    event_frame_t f[2] ;
+    T_ASSERT_EQ(1, (long long)decode_all(buf, len, f, 2), "resync past bad version, one frame") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, f[0].kind, "the recovered frame is the valid one") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, f[0].phase, "recovered phase UP") ;
+}
+
+/* a header whose payload_len exceeds the largest known payload triggers a resync
+ * (drop one byte, re-scan): the valid frame after it survives. */
+static void test_decode_bad_len_resync(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[8 + EVENT_FRAME_MAX] ;
+    /* a plausible header start (version 1) but payload_len = 255 (> 23) */
+    buf[0] = (char)EVENT_VERSION ;
+    buf[1] = (char)EVENT_KIND_TRANSITION ;
+    buf[2] = 0 ; buf[3] = 0 ;
+    u32_pack_big(buf + 4, 255) ;
+    size_t len = 8 + event_frame_pack_lifecycle(buf + 8, EVENT_LIFECYCLE_DOWN, &ts) ;
+
+    event_frame_t f[2] ;
+    T_ASSERT_EQ(1, (long long)decode_all(buf, len, f, 2), "resync past over-long payload_len") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, f[0].kind, "recovered valid frame") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_DOWN, f[0].phase, "recovered phase DOWN") ;
+}
+
+/* a header that is valid AND in-bounds but names an UNKNOWN kind: the frame is
+ * consumed (its bytes skipped) but the callback is NOT invoked. A valid frame
+ * placed right after it is delivered — proving the unknown frame was consumed as
+ * a whole, not resynced byte-by-byte. */
+static void test_decode_unknown_kind_consumed_no_cb(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[64] ;
+    /* unknown kind 0x7F, payload_len 13 (<= 23, in bounds): 8 + 13 = 21 bytes */
+    buf[0] = (char)EVENT_VERSION ;
+    buf[1] = (char)0x7F ;
+    buf[2] = 0 ; buf[3] = 0 ;
+    u32_pack_big(buf + 4, 13) ;
+    memset(buf + 8, 0xAB, 13) ;
+    size_t off = 21 ;
+    off += event_frame_pack_lifecycle(buf + off, EVENT_LIFECYCLE_UP, &ts) ;
+
+    event_frame_t f[3] ;
+    size_t n = decode_all(buf, off, f, 3) ;
+    T_ASSERT_EQ(1, (long long)n, "unknown kind not delivered; only the valid frame is") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, f[0].kind, "the delivered frame is the valid one after it") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, f[0].phase, "phase UP: frame boundary honored") ;
+}
+
+/* a valid header naming TRANSITION but with an in-bounds payload_len too short to
+ * hold the transition payload: event_frame_unpack returns 0, the frame is consumed, no
+ * callback; a following valid frame is delivered. */
+static void test_decode_short_payload_consumed_no_cb(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[64] ;
+    /* TRANSITION but payload_len 13 => rest = 1 < 11: too short */
+    buf[0] = (char)EVENT_VERSION ;
+    buf[1] = (char)EVENT_KIND_TRANSITION ;
+    buf[2] = 0 ; buf[3] = 0 ;
+    u32_pack_big(buf + 4, 13) ;
+    memset(buf + 8, 0, 13) ;
+    size_t off = 21 ;
+    off += event_frame_pack_signal(buf + off, 9, STATUS_WHO_SELF, &ts) ;
+
+    event_frame_t f[3] ;
+    size_t n = decode_all(buf, off, f, 3) ;
+    T_ASSERT_EQ(1, (long long)n, "short-payload transition dropped; only the signal delivered") ;
+    T_ASSERT_EQ(EVENT_KIND_SIGNAL, f[0].kind, "the valid signal after it is delivered") ;
+    T_ASSERT_EQ(9, f[0].signo, "signo 9") ;
+}
+
+/* a valid, in-bounds header whose payload_len is shorter than the timestamp
+ * itself (< CLOCK_PACK): event_frame_unpack bails at the clock check, the frame is
+ * consumed, no callback; a following valid frame is delivered. */
+static void test_decode_plen_below_clockpack(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[64] ;
+    buf[0] = (char)EVENT_VERSION ;
+    buf[1] = (char)EVENT_KIND_LIFECYCLE ;
+    buf[2] = 0 ; buf[3] = 0 ;
+    u32_pack_big(buf + 4, 5) ;   /* payload_len 5 < CLOCK_PACK (12), still <= 23 */
+    memset(buf + 8, 0, 5) ;
+    size_t off = 8 + 5 ;
+    off += event_frame_pack_lifecycle(buf + off, EVENT_LIFECYCLE_DOWN, &ts) ;
+
+    event_frame_t f[3] ;
+    size_t n = decode_all(buf, off, f, 3) ;
+    T_ASSERT_EQ(1, (long long)n, "sub-timestamp payload dropped; only the valid frame delivered") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_DOWN, f[0].phase, "valid frame after it delivered") ;
+}
+
+/* stray bytes BETWEEN two valid frames must not swallow either frame: both are
+ * delivered, the garbage in the middle is resynced away. */
+static void test_decode_stray_bytes_between(void)
+{
+    struct timespec ts = fixed_stamp() ;
+    char buf[2 * EVENT_FRAME_MAX + 8] ;
+    size_t off = event_frame_pack_lifecycle(buf, EVENT_LIFECYCLE_UP, &ts) ;
+    buf[off++] = 0x00 ; buf[off++] = (char)0xAA ; buf[off++] = 0x00 ; /* garbage */
+    off += event_frame_pack_lifecycle(buf + off, EVENT_LIFECYCLE_DOWN, &ts) ;
+
+    event_frame_t f[4] ;
+    T_ASSERT_EQ(2, (long long)decode_all(buf, off, f, 4), "both frames survive stray bytes between") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, f[0].phase, "first frame UP") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_DOWN, f[1].phase, "second frame DOWN") ;
+}
+
+/* ================================================================== */
+/* event_state.c — the shared transition interpreter                   */
+/* ================================================================== */
+
+/* build a TRANSITION frame in a static struct (no wire), for direct matching. */
+static event_frame_t mk_transition(uint8_t state, uint8_t flags)
+{
+    event_frame_t f = {0} ;
+    f.version = EVENT_VERSION ; f.kind = EVENT_KIND_TRANSITION ;
+    f.flags = flags ; f.state = state ; f.result = 0 ; f.who = 0 ;
+    return f ;
+}
+static event_frame_t mk_lifecycle(uint8_t phase)
+{
+    event_frame_t f = {0} ;
+    f.version = EVENT_VERSION ; f.kind = EVENT_KIND_LIFECYCLE ; f.phase = phase ;
+    return f ;
+}
+static event_frame_t mk_signal(uint8_t signo)
+{
+    event_frame_t f = {0} ;
+    f.version = EVENT_VERSION ; f.kind = EVENT_KIND_SIGNAL ; f.signo = signo ;
+    return f ;
+}
+
+static void test_match_up(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP, 0, 0) ;
+    event_frame_t fin = mk_transition(STATUS_STATE_FINISHING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &fin), "finishing (0,0): pending for up") ;
+    event_frame_t st = mk_transition(STATUS_STATE_STARTING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &st), "starting sets up=1: up wait reached") ;
+}
+
+static void test_match_ready(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP_READY, 0, 0) ;
+    event_frame_t st = mk_transition(STATUS_STATE_STARTING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &st), "starting (1,0): pending for ready") ;
+    event_frame_t up = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &up), "up (1,1): ready reached") ;
+}
+
+static void test_match_down_from_up(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_DOWN, 1, 0) ;   /* seeded up */
+    event_frame_t up = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &up), "still up: pending for down") ;
+    event_frame_t fin = mk_transition(STATUS_STATE_FINISHING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &fin), "finishing (0,*): down reached") ;
+}
+
+static void test_match_down_ready(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_DOWN_READY, 1, 0) ;
+    event_frame_t fin = mk_transition(STATUS_STATE_FINISHING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &fin), "finishing (0,0): down but not ready") ;
+    event_frame_t dn = mk_transition(STATUS_STATE_DOWN, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &dn), "down (0,1): fully down reached") ;
+}
+
+static void test_match_restart_two_phase(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_RESTART, 1, 0) ;   /* seeded up */
+    event_frame_t up = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &up), "still up, no down seen: pending") ;
+    event_frame_t fin = mk_transition(STATUS_STATE_FINISHING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &fin), "down phase seen, not up again: pending") ;
+    T_ASSERT_EQ(1, m.restart_done, "restart_done latched after the down phase") ;
+    event_frame_t up2 = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &up2), "up after down: restart reached") ;
+}
+
+static void test_match_supervise_up(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_SUPERVISE_UP, 0, 0) ;
+    event_frame_t tr = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &tr), "transition inert for supervise-up") ;
+    event_frame_t sig = mk_signal(15) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &sig), "signal inert for supervise-up") ;
+    event_frame_t dn = mk_lifecycle(EVENT_LIFECYCLE_DOWN) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &dn), "lifecycle-down is not the wanted up") ;
+    event_frame_t up = mk_lifecycle(EVENT_LIFECYCLE_UP) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &up), "lifecycle-up: supervise-up reached") ;
+}
+
+static void test_match_supervise_down(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_SUPERVISE_DOWN, 0, 0) ;
+    event_frame_t up = mk_lifecycle(EVENT_LIFECYCLE_UP) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &up), "lifecycle-up is not the wanted down") ;
+    event_frame_t dn = mk_lifecycle(EVENT_LIFECYCLE_DOWN) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &dn), "lifecycle-down: supervise-down reached") ;
+}
+
+static void test_match_terminal_fastfail_up(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP, 0, 0) ;
+    event_frame_t f = mk_transition(STATUS_STATE_FAILED, EVENT_FLAG_TERMINAL) ;
+    T_ASSERT_EQ(EVENT_STATE_FAIL, event_state_update(&m, &f), "terminal down while waiting up: FAIL") ;
+}
+
+static void test_match_terminal_ok_when_down(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_DOWN, 1, 0) ;   /* seeded up so not pre-satisfied */
+    event_frame_t f = mk_transition(STATUS_STATE_FAILED, EVENT_FLAG_TERMINAL) ;
+    /* down is satisfied by the FAILED (0,1) state BEFORE the terminal check bites */
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &f), "down wait: terminal frame still satisfies down") ;
+}
+
+static void test_match_lifecycle_down_fails_service_wait(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP_READY, 0, 0) ;
+    event_frame_t dn = mk_lifecycle(EVENT_LIFECYCLE_DOWN) ;
+    T_ASSERT_EQ(EVENT_STATE_FAIL, event_state_update(&m, &dn), "supervisor exiting fails a service wait") ;
+}
+
+static void test_match_signal_inert(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP_READY, 0, 0) ;
+    event_frame_t sig = mk_signal(9) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &sig), "signal does not move (up,ready)") ;
+    T_ASSERT_EQ(0, m.up, "signal left up untouched") ;
+    T_ASSERT_EQ(0, m.ready, "signal left ready untouched") ;
+    /* the real transitions still drive it to OK afterwards */
+    event_frame_t st = mk_transition(STATUS_STATE_STARTING, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_PENDING, event_state_update(&m, &st), "starting still pending") ;
+    event_frame_t up = mk_transition(STATUS_STATE_UP, 0) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &up), "up reaches ready after the inert signal") ;
+}
+
+static void test_match_seed_already_up(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_UP, 1, 0) ;   /* already up */
+    /* any first frame reports OK because the seed already satisfies the wait */
+    event_frame_t sig = mk_signal(1) ;
+    T_ASSERT_EQ(EVENT_STATE_OK, event_state_update(&m, &sig), "seed up satisfies up wait on first frame") ;
+}
+
+static void test_match_satisfied_seed(void)
+{
+    event_state_t m ;
+    /* EVENT_DOWN with a down seed (up=0) is already satisfied without any frame */
+    event_state_init(&m, EVENT_DOWN, 0, 0) ;
+    T_ASSERT_EQ(1, event_state_satisfied(&m), "down wait, down seed: satisfied") ;
+    /* EVENT_UP with up=0 is NOT satisfied */
+    event_state_init(&m, EVENT_UP, 0, 0) ;
+    T_ASSERT_EQ(0, event_state_satisfied(&m), "up wait, down seed: not satisfied") ;
+    /* EVENT_UP with up=1 IS satisfied */
+    event_state_init(&m, EVENT_UP, 1, 0) ;
+    T_ASSERT_EQ(1, event_state_satisfied(&m), "up wait, up seed: satisfied") ;
+    /* lifecycle and restart waits are never satisfied by the seed */
+    event_state_init(&m, EVENT_SUPERVISE_UP, 1, 1) ;
+    T_ASSERT_EQ(0, event_state_satisfied(&m), "supervise-up never satisfied by seed") ;
+    event_state_init(&m, EVENT_RESTART, 0, 0) ;
+    T_ASSERT_EQ(0, event_state_satisfied(&m), "restart never satisfied by seed") ;
+}
+
+/* event_state_satisfied must NOT mutate the caller's matcher. */
+static void test_match_satisfied_is_const(void)
+{
+    event_state_t m ;
+    event_state_init(&m, EVENT_RESTART, 1, 1) ;
+    m.restart_done = 0 ;
+    (void)event_state_satisfied(&m) ;
+    T_ASSERT_EQ(0, m.restart_done, "satisfied leaves restart_done untouched") ;
+    T_ASSERT_EQ(1, m.up, "satisfied leaves up untouched") ;
+}
+
+/* ================================================================== */
+/* event_fifo_make                                                  */
+/* ================================================================== */
 
 static void test_make_nogid_mode_01733(void)
 {
@@ -62,40 +619,32 @@ static void test_make_nogid_mode_01733(void)
     char *base = mkdir_scratch(tmpl) ;
     char path[1024] ; snprintf(path, sizeof(path), "%s/fd", base) ;
 
-    /* run under a non-trivial umask to prove the function neutralises it */
     mode_t old = umask(077) ;
 
-    int r = event_fifodir_make(path, (gid_t)-1) ;
+    int r = event_fifo_make(path, (gid_t)-1) ;
     T_ASSERT_EQ(1, r, "make no-gid returns 1") ;
 
     struct stat st ;
     T_ASSERT_EQ(0, stat(path, &st), "stat created dir") ;
     T_ASSERT(S_ISDIR(st.st_mode), "is a directory") ;
-    /* 01733 = sticky + rwx-wx-wx ; umask(077) must NOT have masked it */
     T_ASSERT_EQ(01733, st.st_mode & 07777, "no-gid mode is exactly 01733") ;
 
-    /* umask must be restored to what we set (077), proving the function put it
-     * back after its umask(0). A single probe reads the live umask. */
-    mode_t now = umask(old) ;   /* sets back to original, returns the live one */
+    mode_t now = umask(old) ;
     T_ASSERT_EQ(077, now, "umask restored after make") ;
 
     rm_rf(base) ;
 }
 
-/* make on an existing-and-ours dir RE-APPLIES the canonical mode (it no longer
- * leaves perms untouched): after wrecking the mode, a second make must restore
- * 01733 (no-gid) so the postcondition holds however the dir was left. */
 static void test_make_reapplies_mode(void)
 {
     char tmpl[] = "/tmp/ev_idem_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char path[1024] ; snprintf(path, sizeof(path), "%s/fd", base) ;
 
-    T_ASSERT_EQ(1, event_fifodir_make(path, (gid_t)-1), "first make") ;
-    /* deliberately wreck the mode; the second make must RESTORE the canonical one */
+    T_ASSERT_EQ(1, event_fifo_make(path, (gid_t)-1), "first make") ;
     T_ASSERT_EQ(0, chmod(path, 0700), "force mode 0700") ;
 
-    T_ASSERT_EQ(1, event_fifodir_make(path, (gid_t)-1), "second make re-applies") ;
+    T_ASSERT_EQ(1, event_fifo_make(path, (gid_t)-1), "second make re-applies") ;
 
     struct stat st ;
     T_ASSERT_EQ(0, stat(path, &st), "stat") ;
@@ -115,16 +664,13 @@ static void test_make_existing_not_dir_ENOTDIR(void)
     close(fd) ;
 
     errno = 0 ;
-    int r = event_fifodir_make(path, (gid_t)-1) ;
+    int r = event_fifo_make(path, (gid_t)-1) ;
     T_ASSERT_EQ(0, r, "make on a regular file returns 0") ;
     T_ASSERT_ERRNO(ENOTDIR, "errno ENOTDIR on non-dir") ;
 
     rm_rf(base) ;
 }
 
-/* lstat (not stat) hardening: a symlink planted at the fifodir path must be
- * REFUSED (ENOTDIR), never followed. With stat() the link would resolve to the
- * owned target dir and make would chmod THROUGH it; lstat sees the link itself. */
 static void test_make_rejects_symlink(void)
 {
     char tmpl[] = "/tmp/ev_sym_XXXXXX" ;
@@ -139,11 +685,10 @@ static void test_make_rejects_symlink(void)
     T_ASSERT_EQ(0, stat(target, &before), "stat target before") ;
 
     errno = 0 ;
-    int r = event_fifodir_make(path, (gid_t)-1) ;
+    int r = event_fifo_make(path, (gid_t)-1) ;
     T_ASSERT_EQ(0, r, "make on a symlink returns 0") ;
     T_ASSERT_ERRNO(ENOTDIR, "errno ENOTDIR: symlink rejected, not followed") ;
 
-    // target must be untouched: make must not have chmod'd through the link
     struct stat after ;
     T_ASSERT_EQ(0, stat(target, &after), "stat target after") ;
     T_ASSERT_EQ((int)(before.st_mode & 07777), (int)(after.st_mode & 07777),
@@ -154,62 +699,70 @@ static void test_make_rejects_symlink(void)
 
 static void test_make_gid_path_chmod_branch(void)
 {
-    /* The chown leg must be load-bearing: a fresh dir inherits the process egid
-     * as its group, so to prove chown actually ran we target a SUPPLEMENTARY
-     * group that differs from the egid. chown(-1, gid) to one of our own groups
-     * is allowed unprivileged. If no such group exists, the chown leg is not
-     * separable from the default and we skip the group assertion (declared). */
+    /* The chown leg is load-bearing: a fresh dir inherits the process egid as its
+     * group, so to prove chown actually ran we target a SUPPLEMENTARY group that
+     * differs from the egid. But in a rootless user namespace only the mapped gid
+     * is chownable; a supplementary group maps to the unmapped overflow gid and
+     * chown(-1, gid) fails with EPERM. So we PROBE chownability on the owned base
+     * dir first: if the differing group is chownable, the chown leg is separable
+     * and we assert the dir group changed; otherwise we fall back to the egid and
+     * declare the chown leg not separable (it still exercises the 03730 branch). */
     gid_t egid = getegid() ;
     gid_t groups[64] ;
     int ng = getgroups(64, groups) ;
     T_ASSERT(ng >= 0, "getgroups") ;
-    gid_t target = (gid_t)-1 ;
-    for (int i = 0 ; i < ng ; i++)
-        if (groups[i] != egid) { target = groups[i] ; break ; }
 
     char tmpl[] = "/tmp/ev_gid_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
+
+    gid_t g = egid ;
+    int separable = 0 ;
+    for (int i = 0 ; i < ng ; i++) {
+        if (groups[i] == egid) continue ;
+        if (chown(base, (uid_t)-1, groups[i]) == 0) {   // probe: is it chownable here?
+            g = groups[i] ;
+            separable = 1 ;
+            T_ASSERT_EQ(0, chown(base, (uid_t)-1, egid), "restore base group after probe") ;
+            break ;
+        }
+    }
+
     char path[1024] ; snprintf(path, sizeof(path), "%s/fd", base) ;
 
-    gid_t g = (target != (gid_t)-1) ? target : egid ;
-    int r = event_fifodir_make(path, g) ;
+    int r = event_fifo_make(path, g) ;
     T_ASSERT_EQ(1, r, "make with own gid returns 1") ;
 
     struct stat st ;
     T_ASSERT_EQ(0, stat(path, &st), "stat") ;
     T_ASSERT_EQ(03730, st.st_mode & 07777, "gid mode is exactly 03730 (sgid+grp-write)") ;
-    /* this assertion only bites the chown leg when target != egid */
     T_ASSERT_EQ((long long)g, (long long)st.st_gid, "dir group is the requested gid (chown ran)") ;
-    if (target == (gid_t)-1)
-        fprintf(stderr, "[no supplementary group != egid; chown leg not separable] ") ;
+    if (!separable)
+        fprintf(stderr, "[no chownable group != egid here; chown leg not separable] ") ;
 
     rm_rf(base) ;
 }
 
 static void test_make_parent_missing_returns_0(void)
 {
-    /* mkdir fails with ENOENT (parent absent), errno != EEXIST branch */
     char path[] = "/tmp/ev_nope_does_not_exist_XXX/sub/fd" ;
     errno = 0 ;
-    int r = event_fifodir_make(path, (gid_t)-1) ;
+    int r = event_fifo_make(path, (gid_t)-1) ;
     T_ASSERT_EQ(0, r, "make with missing parent returns 0") ;
     T_ASSERT_ERRNO(ENOENT, "errno ENOENT propagated from mkdir") ;
 }
 
-/* ------------------------------------------------------------------ */
-/* event_fifodir_clean                                                 */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* event_fifo_clean                                                 */
+/* ================================================================== */
 
-/* build a fifo whose name has the exact ftrig1 layout (len 39). */
 static void make_fifo_named(char const *dir, char const *name, char *out, size_t outn)
 {
     snprintf(out, outn, "%s/%s", dir, name) ;
     T_ASSERT_EQ(0, mkfifo(out, 0622), "mkfifo named") ;
 }
 
-/* a valid 39-char ftrig1 name (prefix7 + 25 stamp + ':' + 6 rand) */
-#define VALID_NAME_A "ftrig1:@400000000000000000000000:aaaaaa"
-#define VALID_NAME_B "ftrig1:@400000000000000000000000:bbbbbb"
+#define VALID_NAME_A "evtsub:@400000000000000000000000:aaaaaa"
+#define VALID_NAME_B "evtsub:@400000000000000000000000:bbbbbb"
 
 static void test_clean_orphan_unlinked(void)
 {
@@ -220,8 +773,7 @@ static void test_clean_orphan_unlinked(void)
     make_fifo_named(base, VALID_NAME_A, fifo, sizeof(fifo)) ;
     T_ASSERT_EQ(EVENT_FIFO_NAMELEN, (long long)strlen(VALID_NAME_A), "name is exactly 39") ;
 
-    /* no reader: O_WRONLY|O_NONBLOCK gives ENXIO -> orphan -> unlinked */
-    int r = event_fifodir_clean(base) ;
+    int r = event_fifo_clean(base) ;
     T_ASSERT_EQ(1, r, "clean returns 1") ;
 
     struct stat st ;
@@ -240,11 +792,10 @@ static void test_clean_live_kept(void)
     char fifo[1024] ;
     make_fifo_named(base, VALID_NAME_A, fifo, sizeof(fifo)) ;
 
-    /* hold a read end open -> the fifo HAS a reader -> O_WRONLY succeeds -> kept */
     int rfd = open(fifo, O_RDONLY | O_NONBLOCK | O_CLOEXEC) ;
     T_ASSERT(rfd >= 0, "open read end") ;
 
-    int r = event_fifodir_clean(base) ;
+    int r = event_fifo_clean(base) ;
     T_ASSERT_EQ(1, r, "clean returns 1") ;
 
     struct stat st ;
@@ -260,17 +811,14 @@ static void test_clean_ignores_nonmatching(void)
     char tmpl[] = "/tmp/ev_cl3_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
 
-    /* (a) wrong prefix, right length-ish */
     char f1[1024] ; snprintf(f1, sizeof(f1), "%s/%s", base, "zzzzzz:@4000000000000000000000000:aaaaaa") ;
     T_ASSERT_EQ(0, mkfifo(f1, 0622), "mkfifo wrong-prefix orphan") ;
-    /* (b) right prefix, wrong length (too short) */
-    char f2[1024] ; snprintf(f2, sizeof(f2), "%s/%s", base, "ftrig1:short") ;
+    char f2[1024] ; snprintf(f2, sizeof(f2), "%s/%s", base, "evtsub:short") ;
     T_ASSERT_EQ(0, mkfifo(f2, 0622), "mkfifo short orphan") ;
 
-    int r = event_fifodir_clean(base) ;
+    int r = event_fifo_clean(base) ;
     T_ASSERT_EQ(1, r, "clean returns 1") ;
 
-    /* both are orphans by the ENXIO test, but neither matches the filter -> kept */
     struct stat st ;
     T_ASSERT_EQ(0, stat(f1, &st), "wrong-prefix entry kept") ;
     T_ASSERT_EQ(0, stat(f2, &st), "wrong-length entry kept") ;
@@ -290,7 +838,7 @@ static void test_clean_mixed_orphan_and_live(void)
     int rfd = open(live, O_RDONLY | O_NONBLOCK | O_CLOEXEC) ;
     T_ASSERT(rfd >= 0, "open live read end") ;
 
-    T_ASSERT_EQ(1, event_fifodir_clean(base), "clean returns 1") ;
+    T_ASSERT_EQ(1, event_fifo_clean(base), "clean returns 1") ;
 
     struct stat st ;
     errno = 0 ;
@@ -305,16 +853,15 @@ static void test_clean_mixed_orphan_and_live(void)
 static void test_clean_missing_dir_returns_0(void)
 {
     errno = 0 ;
-    int r = event_fifodir_clean("/tmp/ev_absent_dir_zzz_XXX") ;
+    int r = event_fifo_clean("/tmp/ev_absent_dir_zzz_XXX") ;
     T_ASSERT_EQ(0, r, "clean on absent dir returns 0") ;
     T_ASSERT_ERRNO(ENOENT, "opendir ENOENT") ;
 }
 
-/* ------------------------------------------------------------------ */
-/* event_fifo_subscribe — the fifo create trick                      */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* subscribe scaffolding + a raw byte sink for the pump-level tests    */
+/* ================================================================== */
 
-/* a sink handler that records every byte of each chunk into a caller buffer */
 typedef struct { char buf[4096] ; size_t n ; } sink_t ;
 static void sink_handler(event_reader_t *r, char const *buf, size_t len, void *data)
 {
@@ -324,45 +871,230 @@ static void sink_handler(event_reader_t *r, char const *buf, size_t len, void *d
         s->buf[s->n++] = buf[i] ;
 }
 
+/* drive the loop until the framesink has at least `want` frames, or polls run out. */
+static void pump_frames(sse_epoll_t *ep, framesink_t *s, size_t want)
+{
+    for (int i = 0 ; i < 1000 && s->n < want ; i++)
+        if (sse_run(ep, 200) != 1) break ;
+}
+
+/* ================================================================== */
+/* event_fifo_notify / event_emit_* — producer fanout, end to end   */
+/* ================================================================== */
+
+static void test_notify_delivers_frame_to_subscriber(void)
+{
+    char tmpl[] = "/tmp/ev_nf_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    framesink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
+
+    struct timespec ts = fixed_stamp() ;
+    char frame[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_transition(frame, STATUS_STATE_UP, STATUS_RESULT_SUCCESS,
+                                       STATUS_WHO_USER, 55, 4321, &ts, 0) ;
+    T_ASSERT_EQ(1, event_fifo_notify(ev, frame, len), "notify returns 1") ;
+
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "exactly one frame delivered") ;
+    T_ASSERT_EQ((long long)len, (long long)s.rawn, "raw bytes delivered == frame length") ;
+    T_ASSERT_EQ(EVENT_KIND_TRANSITION, s.frames[0].kind, "kind TRANSITION") ;
+    T_ASSERT_EQ(STATUS_STATE_UP, s.frames[0].state, "state UP") ;
+    T_ASSERT_EQ(55, (long long)s.frames[0].code, "code 55") ;
+    T_ASSERT_EQ(4321, (long long)s.frames[0].pid, "pid 4321") ;
+    T_ASSERT_EQ(STATUS_WHO_USER, s.frames[0].who, "who USER") ;
+
+    event_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+/* two frames concatenated in ONE notify (one write) arrive and decode as two,
+ * in order — the reassembler splits them at the producer boundary. */
+static void test_notify_two_frames_one_call(void)
+{
+    char tmpl[] = "/tmp/ev_nf2_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    framesink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
+
+    struct timespec ts = fixed_stamp() ;
+    char buf[2 * EVENT_FRAME_MAX] ;
+    size_t l0 = event_frame_pack_transition(buf, STATUS_STATE_STARTING, 0, 0, 0, 1, &ts, 0) ;
+    size_t l1 = event_frame_pack_transition(buf + l0, STATUS_STATE_UP, 0, 0, 0, 2, &ts, 0) ;
+    T_ASSERT_EQ(1, event_fifo_notify(ev, buf, l0 + l1), "notify two-frame buffer") ;
+
+    pump_frames(&ep, &s, 2) ;
+    T_ASSERT_EQ(2, (long long)s.n, "two frames delivered from one write") ;
+    T_ASSERT_EQ(1, (long long)s.frames[0].pid, "first frame pid 1") ;
+    T_ASSERT_EQ(STATUS_STATE_STARTING, s.frames[0].state, "first state STARTING") ;
+    T_ASSERT_EQ(2, (long long)s.frames[1].pid, "second frame pid 2") ;
+    T_ASSERT_EQ(STATUS_STATE_UP, s.frames[1].state, "second state UP") ;
+
+    event_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+static void test_emit_transition_e2e(void)
+{
+    char tmpl[] = "/tmp/ev_et_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    framesink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
+
+    struct timespec ts = fixed_stamp() ;
+    T_ASSERT_EQ(1, event_emit_transition(ev, STATUS_STATE_FAILED, STATUS_RESULT_CRASH_LIMIT,
+                                         STATUS_WHO_SELF, 125, 0, &ts, EVENT_FLAG_TERMINAL),
+                "emit_transition returns 1") ;
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "one frame") ;
+    T_ASSERT_EQ(STATUS_STATE_FAILED, s.frames[0].state, "state FAILED") ;
+    T_ASSERT_EQ(STATUS_RESULT_CRASH_LIMIT, s.frames[0].result, "result CRASH_LIMIT") ;
+    T_ASSERT_EQ(EVENT_FLAG_TERMINAL, s.frames[0].flags, "flags TERMINAL carried e2e") ;
+    T_ASSERT_EQ(125, (long long)s.frames[0].code, "code 125") ;
+    assert_stamp_eq(&ts, &s.frames[0].stamp, "stamp carried e2e") ;
+
+    event_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+static void test_emit_signal_e2e(void)
+{
+    char tmpl[] = "/tmp/ev_es_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    framesink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
+
+    struct timespec ts = fixed_stamp() ;
+    T_ASSERT_EQ(1, event_emit_signal(ev, 9 /* SIGKILL */, STATUS_WHO_USER, &ts), "emit_signal returns 1") ;
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "one frame") ;
+    T_ASSERT_EQ(EVENT_KIND_SIGNAL, s.frames[0].kind, "kind SIGNAL") ;
+    T_ASSERT_EQ(9, s.frames[0].signo, "signo 9") ;
+    T_ASSERT_EQ(STATUS_WHO_USER, s.frames[0].who, "who USER") ;
+
+    event_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+static void test_emit_lifecycle_e2e(void)
+{
+    char tmpl[] = "/tmp/ev_el_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    sse_epoll_t ep ;
+    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
+    framesink_t s = {0} ;
+    event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
+
+    struct timespec ts = fixed_stamp() ;
+    T_ASSERT_EQ(1, event_emit_lifecycle(ev, EVENT_LIFECYCLE_UP, &ts), "emit_lifecycle returns 1") ;
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "one frame") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, s.frames[0].kind, "kind LIFECYCLE") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, s.frames[0].phase, "phase UP") ;
+
+    event_unsubscribe(&r) ;
+    sse_free(&ep) ;
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+static void test_notify_sweeps_orphan_and_missing_dir(void)
+{
+    char tmpl[] = "/tmp/ev_no_XXXXXX" ;
+    char *base = mkdir_scratch(tmpl) ;
+    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
+
+    char name[EVENT_FIFO_NAMELEN + 1] ;
+    memset(name, 'a', EVENT_FIFO_NAMELEN) ;
+    memcpy(name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN) ;
+    name[EVENT_FIFO_NAMELEN] = 0 ;
+    char orphan[1024] ; snprintf(orphan, sizeof(orphan), "%s/%s", ev, name) ;
+    T_ASSERT_EQ(0, mkfifo(orphan, 0622), "create orphan fifo") ;
+    T_ASSERT_EQ(1, fanout_count(ev), "orphan is producer-eligible") ;
+
+    struct timespec ts = fixed_stamp() ;
+    char frame[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_lifecycle(frame, EVENT_LIFECYCLE_UP, &ts) ;
+    T_ASSERT_EQ(1, event_fifo_notify(ev, frame, len), "notify sweeps orphan, returns 1") ;
+    T_ASSERT_EQ(0, fanout_count(ev), "orphan unlinked") ;
+
+    errno = 0 ;
+    T_ASSERT_EQ(0, event_fifo_notify("/tmp/ev_absent_zzz_QQQ", frame, len), "missing dir returns 0") ;
+    T_ASSERT_ERRNO(ENOENT, "opendir ENOENT on missing dir") ;
+
+    rm_rf(ev) ; rm_rf(base) ;
+}
+
+/* ================================================================== */
+/* event_subscribe — the fifo create trick (format-agnostic)      */
+/* ================================================================== */
+
 static void test_subscribe_effects_and_mode(void)
 {
     char tmpl[] = "/tmp/ev_sub_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
 
     sse_epoll_t ep ;
     T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
 
     sink_t s = {0} ;
     event_fifo_t r ;
-    int rc = event_fifo_subscribe(&r, &ep, ev, sink_handler, &s, 0) ;
+    int rc = event_subscribe(&r, &ep, ev, sink_handler, &s, 0) ;
     T_ASSERT_EQ(1, rc, "subscribe returns 1") ;
 
-    /* EFFECT: fifopath is set, visible, a fifo, mode forced to 0622 */
     T_ASSERT(r.fifopath[0] != 0, "fifopath populated") ;
-    T_ASSERT(strstr(r.fifopath, "/ftrig1:") != NULL, "visible name has ftrig1 prefix") ;
-    T_ASSERT(strstr(r.fifopath, "/.ftrig1:") == NULL, "visible name is NOT the hidden name") ;
+    T_ASSERT(strstr(r.fifopath, "/evtsub:") != NULL, "visible name has ftrig1 prefix") ;
+    T_ASSERT(strstr(r.fifopath, "/.evtsub:") == NULL, "visible name is NOT the hidden name") ;
 
     struct stat st ;
     T_ASSERT_EQ(0, stat(r.fifopath, &st), "fifo exists on disk") ;
     T_ASSERT(S_ISFIFO(st.st_mode), "it is a fifo") ;
     T_ASSERT_EQ(0622, st.st_mode & 07777, "fifo mode forced to 0622") ;
 
-    /* EFFECT: write end held open (>=0) */
     T_ASSERT(r.wfd >= 0, "write end held open") ;
 
-    /* EFFECT: exactly one producer-eligible fifo, and a producer can open it */
     int enx = -1 ;
     T_ASSERT_EQ(1, fanout_count(ev), "exactly one visible fifo") ;
     T_ASSERT_EQ(1, fanout_open_ok(ev, &enx), "producer opens it without ENXIO") ;
     T_ASSERT_EQ(0, enx, "no ENXIO on the published fifo") ;
 
-    /* no hidden leftover */
     T_ASSERT_EQ(1, dir_entries(ev), "no stray (hidden) leftover entry") ;
 
-    event_fifo_unsubscribe(&r) ;
-    /* EFFECT: unsubscribe closes wfd and unlinks the fifo */
+    event_unsubscribe(&r) ;
     T_ASSERT_EQ(-1, r.wfd, "wfd reset to -1") ;
     T_ASSERT_EQ(0, r.fifopath[0], "fifopath cleared") ;
     T_ASSERT_EQ(0, dir_entries(ev), "fifo unlinked on unsubscribe") ;
@@ -371,16 +1103,12 @@ static void test_subscribe_effects_and_mode(void)
     rm_rf(ev) ; rm_rf(base) ;
 }
 
-/* THE TRICK, hammered: across many subscribe/unsubscribe cycles, a concurrent
- * producer scanning the dir must NEVER see a visible ftrig1 fifo it cannot open
- * (i.e. never an ENXIO). The hidden-name + rename ordering is what guarantees
- * this. We interleave a fanout scan right after subscribe each time. */
 static void test_subscribe_trick_never_visible_without_reader(void)
 {
     char tmpl[] = "/tmp/ev_trick_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
 
     sse_epoll_t ep ;
     T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
@@ -388,16 +1116,14 @@ static void test_subscribe_trick_never_visible_without_reader(void)
 
     for (int i = 0 ; i < 200 ; i++) {
         event_fifo_t r ;
-        T_ASSERT_EQ(1, event_fifo_subscribe(&r, &ep, ev, sink_handler, &s, 0), "subscribe cycle") ;
+        T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, sink_handler, &s, 0), "subscribe cycle") ;
 
-        /* the instant the fifo is visible, its read end already exists:
-         * a producer opening it must succeed, never ENXIO. */
         int enx = -1 ;
         int ok = fanout_open_ok(ev, &enx) ;
         T_ASSERT_EQ(1, ok, "visible fifo always openable by producer") ;
         T_ASSERT_EQ(0, enx, "never a visible fifo without a reader") ;
 
-        event_fifo_unsubscribe(&r) ;
+        event_unsubscribe(&r) ;
         T_ASSERT_EQ(0, dir_entries(ev), "no leftover after unsubscribe") ;
     }
 
@@ -405,82 +1131,54 @@ static void test_subscribe_trick_never_visible_without_reader(void)
     rm_rf(ev) ; rm_rf(base) ;
 }
 
-/* THE TRICK — deterministic, mutation-sensitive proof of the hidden name.
- *
- * The create-side guarantee is "a producer (filtering on the visible 'ftrig1:'
- * prefix + length 39) never sees the fifo before its read end exists". The
- * protected window (mkfifo -> open read end) is sub-microsecond, so a black-box
- * concurrent race cannot hit it reliably. (The teardown side opens no window:
- * event_fifo_unsubscribe unlinks the visible name before closing the ends,
- * like s6 ftrig1_free.) What CAN be
- * proven deterministically, and what the hidden name exists to ensure, is:
- *
- *   (1) the PUBLISHED entry carries the visible 'ftrig1:' name, never '.ftrig1:'
- *   (2) the hidden temp '.ftrig1:' never survives into the published dir
- *   (3) at no point after subscribe returns are there more producer-visible
- *       entries than live readers
- *
- * Mutating the hidden name away (auto_strings "/." -> "/") leaves the temp
- * visible to the producer filter during create AND, on a name clash retry path,
- * could publish duplicates; assertion (1)/(3) below bite on the simplest form
- * of that mutation because the published-vs-hidden distinction collapses. */
 static void test_subscribe_trick_hidden_name(void)
 {
     char tmpl[] = "/tmp/ev_hid_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
 
     sse_epoll_t epp ;
     T_ASSERT_EQ(1, sse_new(&epp, 1), "sse_new") ;
     sink_t s = {0} ;
     event_fifo_t r ;
-    T_ASSERT_EQ(1, event_fifo_subscribe(&r, &epp, ev, sink_handler, &s, 0), "subscribe") ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &epp, ev, sink_handler, &s, 0), "subscribe") ;
 
-    /* (1) published name is visible, not the hidden '.' name */
     char const *slash = strrchr(r.fifopath, '/') ;
     T_ASSERT(slash != NULL, "fifopath has a slash") ;
     T_ASSERT_EQ(0, strncmp(slash + 1, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN),
-                "published basename starts with visible ftrig1: (not '.')") ;
-    T_ASSERT(slash[1] != '.', "published basename is not the hidden '.ftrig1:' name") ;
+                "published basename starts with visible evtsub: (not '.')") ;
+    T_ASSERT(slash[1] != '.', "published basename is not the hidden '.evtsub:' name") ;
 
-    /* (2) no '.ftrig1:' temp survives; exactly one entry, and it is producer-visible */
     DIR *d = opendir(ev) ; T_ASSERT(d != NULL, "opendir") ;
     struct dirent *e ; int hidden = 0, total = 0 ;
     while ((e = readdir(d))) {
         if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue ;
         total++ ;
-        if (!strncmp(e->d_name, ".ftrig1:", 8)) hidden++ ;
+        if (!strncmp(e->d_name, ".evtsub:", 8)) hidden++ ;
     }
     closedir(d) ;
-    T_ASSERT_EQ(0, hidden, "no hidden '.ftrig1:' temp left behind") ;
+    T_ASSERT_EQ(0, hidden, "no hidden '.evtsub:' temp left behind") ;
     T_ASSERT_EQ(1, total, "exactly one entry on disk") ;
-    /* (3) producer-visible entries == live readers (1) */
     T_ASSERT_EQ(1, fanout_count(ev), "one producer-visible fifo for one live reader") ;
 
-    event_fifo_unsubscribe(&r) ;
+    event_unsubscribe(&r) ;
     sse_free(&epp) ;
     rm_rf(ev) ; rm_rf(base) ;
 }
 
-/* THE TRICK under a concurrent producer. A child hammers the dir like
- * 66-supervise's fanout while the parent churns subscriptions. Besides the
- * stress/hardening goal (ASan/UBSan stay clean, no hang, no double-free under
- * real fd churn), it ASSERTS the producer never hits ENXIO: now that unsubscribe
- * unlinks before it closes the ends, the visible name only ever exists while the
- * read end is open (otherwise the open races to ENOENT, never ENXIO). */
 static void test_subscribe_trick_concurrent_smoke(void)
 {
     char tmpl[] = "/tmp/ev_race_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
 
     volatile long *sh = mmap(NULL, 2 * sizeof(long), PROT_READ | PROT_WRITE,
                              MAP_SHARED | MAP_ANONYMOUS, -1, 0) ;
     T_ASSERT(sh != MAP_FAILED, "mmap shared") ;
-    sh[0] = 0 ;   /* stop flag */
-    sh[1] = 0 ;   /* ENXIO count seen by the producer */
+    sh[0] = 0 ;
+    sh[1] = 0 ;
 
     pid_t pid = fork() ;
     T_ASSERT(pid >= 0, "fork") ;
@@ -494,9 +1192,9 @@ static void test_subscribe_trick_concurrent_smoke(void)
     sink_t s = {0} ;
     for (int i = 0 ; i < 2000 ; i++) {
         event_fifo_t r ;
-        T_ASSERT_EQ(1, event_fifo_subscribe(&r, &epp, ev, sink_handler, &s, 0), "subscribe churn") ;
-        event_fifo_unsubscribe(&r) ;
-        T_ASSERT_EQ(0, r.wfd != -1, "wfd cleared after unsubscribe") ;
+        T_ASSERT_EQ(1, event_subscribe(&r, &epp, ev, sink_handler, &s, 0), "subscribe churn") ;
+        event_unsubscribe(&r) ;
+        T_ASSERT_EQ(-1, r.wfd, "wfd cleared after unsubscribe") ;
     }
     sse_free(&epp) ;
 
@@ -510,120 +1208,50 @@ static void test_subscribe_trick_concurrent_smoke(void)
     rm_rf(ev) ; rm_rf(base) ;
 }
 
-/* DOUBLE-FD: the reader holds the write end, so even when an external producer
- * opens and closes its own write end repeatedly, the read end never sees EOF
- * (no SSE_HUP). We prove it by reading actual bytes after many open/close
- * churns of an external writer, and by the watcher never reporting HUP. */
+/* DOUBLE-FD: the reader holds the write end, so an external producer opening and
+ * closing its own write end repeatedly never puts the read end at EOF. Proven by
+ * still delivering frames cleanly after the writer churn. */
 static void test_subscribe_double_fd_no_eof(void)
 {
     char tmpl[] = "/tmp/ev_dfd_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make eventdir") ;
 
     sse_epoll_t ep ;
     T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ;
+    framesink_t s = {0} ;
     event_fifo_t r ;
-    T_ASSERT_EQ(1, event_fifo_subscribe(&r, &ep, ev, sink_handler, &s, 0), "subscribe") ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
 
-    /* external producer: open O_WRONLY, write nothing, close — repeatedly.
-     * If the reader did NOT hold its own wfd, the first such close would put
-     * the read end at EOF (HUP). The held wfd prevents that. */
     for (int i = 0 ; i < 50 ; i++) {
         int w = open(r.fifopath, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
         T_ASSERT(w >= 0, "external producer opens write end") ;
         close(w) ;
     }
 
-    /* now actually deliver a byte and confirm it reads cleanly (no HUP path) */
-    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_UP)), "producer writes one byte") ;
+    struct timespec ts = fixed_stamp() ;
+    char frame[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_transition(frame, STATUS_STATE_UP, 0, 0, 0, 1, &ts, 0) ;
+    T_ASSERT_EQ(1, fanout_frame(ev, frame, len), "producer writes one frame") ;
 
-    /* drive the loop once (timeout so it can't hang); the byte must arrive */
-    int pr = sse_run(&ep, 200) ;
-    T_ASSERT_EQ(1, pr, "sse_run ok") ;
-    T_ASSERT_EQ(1, (long long)s.n, "exactly one byte delivered") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_UP), s.buf[0], "the delivered byte is 'u'") ;
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "exactly one frame delivered after writer churn") ;
+    T_ASSERT_EQ(STATUS_STATE_UP, s.frames[0].state, "delivered state UP") ;
 
-    /* the read end is still alive (wfd kept it open) — verify by a second byte */
-    s.n = 0 ;
-    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_READY)), "producer writes again") ;
-    T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok 2") ;
-    T_ASSERT_EQ(1, (long long)s.n, "second byte delivered after writer churn") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_READY), s.buf[0], "second byte is 'U'") ;
+    len = event_frame_pack_lifecycle(frame, EVENT_LIFECYCLE_DOWN, &ts) ;
+    T_ASSERT_EQ(1, fanout_frame(ev, frame, len), "producer writes again") ;
+    pump_frames(&ep, &s, 2) ;
+    T_ASSERT_EQ(2, (long long)s.n, "second frame delivered, read end still alive") ;
+    T_ASSERT_EQ(EVENT_KIND_LIFECYCLE, s.frames[1].kind, "second frame LIFECYCLE") ;
 
-    event_fifo_unsubscribe(&r) ;
+    event_unsubscribe(&r) ;
     sse_free(&ep) ;
-    rm_rf(ev) ; rm_rf(base) ;
-}
-
-/* PRODUCER fanout: event_fifodir_notify must reach a live subscriber with the
- * exact bytes, including a multi-byte combo like the "dD" set_down_and_ready
- * emits, and report success. */
-static void test_notify_delivers_to_subscriber(void)
-{
-    char tmpl[] = "/tmp/ev_nf_XXXXXX" ;
-    char *base = mkdir_scratch(tmpl) ;
-    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
-
-    sse_epoll_t ep ;
-    T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ;
-    event_fifo_t r ;
-    T_ASSERT_EQ(1, event_fifo_subscribe(&r, &ep, ev, sink_handler, &s, 0), "subscribe") ;
-
-    /* single transition byte */
-    T_ASSERT_EQ(1, event_fifodir_notify(ev, "U", 1), "notify returns 1") ;
-    T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok") ;
-    T_ASSERT_EQ(1, (long long)s.n, "exactly one byte delivered") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_READY), s.buf[0], "the delivered byte is 'U'") ;
-
-    /* multi-byte combo arrives intact */
-    s.n = 0 ;
-    T_ASSERT_EQ(1, event_fifodir_notify(ev, "dD", 2), "notify combo returns 1") ;
-    T_ASSERT_EQ(1, sse_run(&ep, 200), "sse_run ok 2") ;
-    T_ASSERT_EQ(2, (long long)s.n, "two bytes delivered") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_DOWN), s.buf[0], "first byte is 'd'") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_DOWN_READY), s.buf[1], "second byte is 'D'") ;
-
-    event_fifo_unsubscribe(&r) ;
-    sse_free(&ep) ;
-    rm_rf(ev) ; rm_rf(base) ;
-}
-
-/* event_fifodir_notify sweeps an orphan fifo (no reader -> ENXIO -> unlink) and
- * still succeeds; a missing fifodir is a hard error (returns 0). */
-static void test_notify_sweeps_orphan_and_missing_dir(void)
-{
-    char tmpl[] = "/tmp/ev_no_XXXXXX" ;
-    char *base = mkdir_scratch(tmpl) ;
-    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make eventdir") ;
-
-    /* a producer-eligible fifo with NO reader: "ftrig1:" + filler, 39 chars */
-    char name[EVENT_FIFO_NAMELEN + 1] ;
-    memset(name, 'a', EVENT_FIFO_NAMELEN) ;
-    memcpy(name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN) ;
-    name[EVENT_FIFO_NAMELEN] = 0 ;
-    char orphan[1024] ; snprintf(orphan, sizeof(orphan), "%s/%s", ev, name) ;
-    T_ASSERT_EQ(0, mkfifo(orphan, 0622), "create orphan fifo") ;
-    T_ASSERT_EQ(1, fanout_count(ev), "orphan is producer-eligible") ;
-
-    /* open hits ENXIO (no reader) -> unlink; the fanout still returns 1 */
-    T_ASSERT_EQ(1, event_fifodir_notify(ev, "u", 1), "notify sweeps orphan, returns 1") ;
-    T_ASSERT_EQ(0, fanout_count(ev), "orphan unlinked") ;
-
-    /* a missing fifodir cannot be opened: hard error */
-    T_ASSERT_EQ(0, event_fifodir_notify("/tmp/ev_absent_zzz_QQQ", "u", 1), "missing dir returns 0") ;
-
     rm_rf(ev) ; rm_rf(base) ;
 }
 
 static void test_subscribe_nametoolong(void)
 {
-    /* build an eventdir path long enough that strlen+2+39+1 > SS_MAX_PATH,
-     * but the dir itself need not exist: the length check precedes any syscall. */
     char ev[SS_MAX_PATH + 64] ;
     memset(ev, 'a', sizeof(ev) - 1) ;
     ev[0] = '/' ;
@@ -634,7 +1262,7 @@ static void test_subscribe_nametoolong(void)
 
     event_fifo_t r ;
     errno = 0 ;
-    int rc = event_fifo_subscribe(&r, &ep, ev, sink_handler, NULL, 0) ;
+    int rc = event_subscribe(&r, &ep, ev, sink_handler, NULL, 0) ;
     T_ASSERT_EQ(0, rc, "subscribe returns 0 on too-long path") ;
     T_ASSERT_ERRNO(ENAMETOOLONG, "errno ENAMETOOLONG") ;
     T_ASSERT_EQ(0, r.fifopath[0], "nothing published") ;
@@ -645,14 +1273,12 @@ static void test_subscribe_nametoolong(void)
 
 static void test_subscribe_eventdir_missing_cleanup(void)
 {
-    /* eventdir does not exist: mkfifo fails with ENOENT (not EEXIST) ->
-     * subscribe returns 0, fifopath cleared, nothing left behind. */
     sse_epoll_t ep ;
     T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
 
     event_fifo_t r ;
     errno = 0 ;
-    int rc = event_fifo_subscribe(&r, &ep, "/tmp/ev_no_such_dir_zzz_XXX", sink_handler, NULL, 0) ;
+    int rc = event_subscribe(&r, &ep, "/tmp/ev_no_such_dir_zzz_XXX", sink_handler, NULL, 0) ;
     T_ASSERT_EQ(0, rc, "subscribe on missing dir returns 0") ;
     T_ASSERT_ERRNO(ENOENT, "errno ENOENT from mkfifo") ;
     T_ASSERT_EQ(0, r.fifopath[0], "fifopath cleared on failure") ;
@@ -661,99 +1287,69 @@ static void test_subscribe_eventdir_missing_cleanup(void)
     sse_free(&ep) ;
 }
 
-/* ------------------------------------------------------------------ */
-/* event_reader_cb — byte delivery                                     */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* pump (event_reader) delivery + decoder reassembly across chunks     */
+/* ================================================================== */
 
-/* drive the loop until n bytes seen or a bounded number of polls elapse */
-static void pump(sse_epoll_t *ep, sink_t *s, size_t want)
-{
-    for (int i = 0 ; i < 1000 && s->n < want ; i++)
-        if (sse_run(ep, 200) != 1) break ;
-}
-
-static void subscribe_one(sse_epoll_t *ep, event_fifo_t *r, sink_t *s, char const *ev)
-{
-    T_ASSERT_EQ(1, event_fifo_subscribe(r, ep, ev, sink_handler, s, 0), "subscribe") ;
-}
-
-static void test_cb_single_byte(void)
+static void test_cb_single_frame(void)
 {
     char tmpl[] = "/tmp/ev_cb1_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make") ;
     sse_epoll_t ep ; T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ; event_fifo_t r ;
-    subscribe_one(&ep, &r, &s, ev) ;
+    framesink_t s = {0} ; event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
 
-    T_ASSERT_EQ(1, fanout_write(ev, event_to_byte(EVENT_DOWN)), "write 1 byte") ;
-    pump(&ep, &s, 1) ;
-    T_ASSERT_EQ(1, (long long)s.n, "one byte reported once") ;
-    T_ASSERT_EQ(event_to_byte(EVENT_DOWN), s.buf[0], "byte value 'd'") ;
+    struct timespec ts = fixed_stamp() ;
+    char frame[EVENT_FRAME_MAX] ;
+    size_t len = event_frame_pack_lifecycle(frame, EVENT_LIFECYCLE_UP, &ts) ;
+    T_ASSERT_EQ(1, fanout_frame(ev, frame, len), "write one frame") ;
+    pump_frames(&ep, &s, 1) ;
+    T_ASSERT_EQ(1, (long long)s.n, "one frame delivered once") ;
+    T_ASSERT_EQ((long long)len, (long long)s.rawn, "raw byte count matches frame length") ;
+    T_ASSERT_EQ(EVENT_LIFECYCLE_UP, s.frames[0].phase, "phase UP") ;
 
-    event_fifo_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
+    event_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
 }
 
-static void test_cb_multi_in_one_write(void)
+/* many frames written in ONE write far larger than the pump's 256-byte buffer:
+ * the pump chunks it into 256-byte reads and the decoder reassembles frames that
+ * straddle those chunk boundaries. All K frames delivered, in order. */
+static void test_cb_many_frames_over_256(void)
 {
     char tmpl[] = "/tmp/ev_cb2_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make") ;
     sse_epoll_t ep ; T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ; event_fifo_t r ;
-    subscribe_one(&ep, &r, &s, ev) ;
+    framesink_t s = {0} ; event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
 
-    /* one write of several bytes -> each reported once, in order */
-    char const *seq = "uUdDOsx" ;
-    int w = open(r.fifopath, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
-    T_ASSERT(w >= 0, "open writer") ;
-    T_ASSERT_EQ(7, (long long)write(w, seq, 7), "write 7 bytes at once") ;
-    close(w) ;
-
-    pump(&ep, &s, 7) ;
-    T_ASSERT_EQ(7, (long long)s.n, "all 7 bytes reported") ;
-    T_ASSERT_EQ(0, memcmp(s.buf, seq, 7), "bytes reported in order, once each") ;
-
-    event_fifo_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
-}
-
-static void test_cb_large_batch_over_256(void)
-{
-    /* > 256 bytes forces the internal read loop (buf[256]) to iterate */
-    char tmpl[] = "/tmp/ev_cb3_XXXXXX" ;
-    char *base = mkdir_scratch(tmpl) ;
-    char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make") ;
-    sse_epoll_t ep ; T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ; event_fifo_t r ;
-    subscribe_one(&ep, &r, &s, ev) ;
-
-    enum { N = 1000 } ;
-    char big[N] ;
-    for (int i = 0 ; i < N ; i++) big[i] = (i & 1) ? event_to_byte(EVENT_UP) : event_to_byte(EVENT_DOWN) ;
+    enum { K = 40 } ;   /* 40 * 31 = 1240 bytes, several 256-chunk boundaries */
+    struct timespec ts = fixed_stamp() ;
+    char big[K * EVENT_FRAME_MAX] ;
+    size_t off = 0 ;
+    for (int i = 0 ; i < K ; i++)
+        off += event_frame_pack_transition(big + off, STATUS_STATE_UP, 0, 0, 0, (uint32_t)i, &ts, 0) ;
 
     int w = open(r.fifopath, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
     T_ASSERT(w >= 0, "open writer") ;
-    /* write the whole batch (pipe buffer is >=4096, N=1000 fits) */
     ssize_t tot = 0 ;
-    while (tot < N) {
-        ssize_t k = write(w, big + tot, N - tot) ;
+    while ((size_t)tot < off) {
+        ssize_t k = write(w, big + tot, off - tot) ;
         if (k < 0) { if (errno == EINTR) continue ; break ; }
         tot += k ;
     }
     close(w) ;
-    T_ASSERT_EQ(N, (long long)tot, "wrote full batch") ;
+    T_ASSERT_EQ((long long)off, (long long)tot, "wrote the full batch") ;
 
-    /* a SINGLE poll must drain the whole batch: the callback's inner read loop
-     * iterates over the 256-byte buffer until EAGAIN. (This bites a mutation
-     * that breaks out of the read loop after one buffer-full.) */
-    T_ASSERT_EQ(1, sse_run(&ep, 500), "sse_run ok") ;
-    T_ASSERT_EQ(N, (long long)s.n, "one poll drains all >256 bytes (inner read loop)") ;
-    T_ASSERT_EQ(0, memcmp(s.buf, big, N), "batch content preserved exactly") ;
+    pump_frames(&ep, &s, K) ;
+    T_ASSERT_EQ(K, (long long)s.n, "all K frames reassembled across 256-byte chunks") ;
+    for (int i = 0 ; i < K ; i++)
+        T_ASSERT_EQ(i, (long long)s.frames[i].pid, "frame order and pid preserved") ;
 
-    event_fifo_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
+    event_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
 }
 
 static void test_cb_multiple_writes(void)
@@ -761,37 +1357,50 @@ static void test_cb_multiple_writes(void)
     char tmpl[] = "/tmp/ev_cb4_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char ev[1024] ; snprintf(ev, sizeof(ev), "%s/event", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(ev, (gid_t)-1), "make") ;
+    T_ASSERT_EQ(1, event_fifo_make(ev, (gid_t)-1), "make") ;
     sse_epoll_t ep ; T_ASSERT_EQ(1, sse_new(&ep, 1), "sse_new") ;
-    sink_t s = {0} ; event_fifo_t r ;
-    subscribe_one(&ep, &r, &s, ev) ;
+    framesink_t s = {0} ; event_fifo_t r ;
+    T_ASSERT_EQ(1, event_subscribe(&r, &ep, ev, framesink_handler, &s, 0), "subscribe") ;
 
-    char const *want = "udU" ;
+    struct timespec ts = fixed_stamp() ;
+    uint8_t states[3] = { STATUS_STATE_STARTING, STATUS_STATE_UP, STATUS_STATE_DOWN } ;
     for (int i = 0 ; i < 3 ; i++) {
-        T_ASSERT_EQ(1, fanout_write(ev, want[i]), "discrete write") ;
-        pump(&ep, &s, (size_t)(i + 1)) ;
+        char frame[EVENT_FRAME_MAX] ;
+        size_t len = event_frame_pack_transition(frame, states[i], 0, 0, 0, (uint32_t)(i + 100), &ts, 0) ;
+        T_ASSERT_EQ(1, fanout_frame(ev, frame, len), "discrete frame write") ;
+        pump_frames(&ep, &s, (size_t)(i + 1)) ;
     }
-    T_ASSERT_EQ(3, (long long)s.n, "three discrete writes, three bytes") ;
-    T_ASSERT_EQ(0, memcmp(s.buf, want, 3), "order preserved across writes") ;
+    T_ASSERT_EQ(3, (long long)s.n, "three discrete writes, three frames") ;
+    for (int i = 0 ; i < 3 ; i++) {
+        T_ASSERT_EQ(states[i], s.frames[i].state, "state order preserved across writes") ;
+        T_ASSERT_EQ(i + 100, (long long)s.frames[i].pid, "pid order preserved across writes") ;
+    }
 
-    event_fifo_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
+    event_unsubscribe(&r) ; sse_free(&ep) ; rm_rf(ev) ; rm_rf(base) ;
 }
 
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 /* event_wait — wait_and over N fifodirs (the prod scenario)           */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 
-/* make N eventdirs as base/ev0..evN-1, fill dirs[] with their paths (owned). */
 static void make_dirs(char *base, size_t n, char **dirs)
 {
     for (size_t i = 0 ; i < n ; i++) {
         dirs[i] = malloc(1024) ;
         T_ASSERT(dirs[i] != NULL, "malloc dir") ;
         snprintf(dirs[i], 1024, "%s/ev%zu", base, i) ;
-        T_ASSERT_EQ(1, event_fifodir_make(dirs[i], (gid_t)-1), "make eventdir") ;
+        T_ASSERT_EQ(1, event_fifo_make(dirs[i], (gid_t)-1), "make eventdir") ;
     }
 }
 static void free_dirs(size_t n, char **dirs) { for (size_t i = 0 ; i < n ; i++) { rm_rf(dirs[i]) ; free(dirs[i]) ; } }
+
+/* emit a single UP transition (reaches READY) to dir. */
+static int emit_ready(char const *dir)
+{
+    struct timespec ts = fixed_stamp() ;
+    return event_emit_transition(dir, STATUS_STATE_UP, STATUS_RESULT_SUCCESS,
+                                 STATUS_WHO_SELF, 0, 0, &ts, 0) ;
+}
 
 static void test_wait_all_triggered(void)
 {
@@ -801,11 +1410,10 @@ static void test_wait_all_triggered(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
 
-    /* producer triggers AFTER subscribe, BEFORE run (prod ordering) */
     for (size_t i = 0 ; i < N ; i++)
-        T_ASSERT_EQ(1, fanout_write(dirs[i], event_to_byte(EVENT_READY)), "trigger each dir") ;
+        T_ASSERT_EQ(1, emit_ready(dirs[i]), "trigger each dir with an UP transition") ;
 
     int r = event_wait_run(&w, 2000) ;
     T_ASSERT_EQ(1, r, "run returns 1 when all triggered") ;
@@ -815,7 +1423,6 @@ static void test_wait_all_triggered(void)
     T_ASSERT_EQ(0, (long long)w.n, "free resets n") ;
     T_ASSERT(w.fifos == NULL, "fifo sources freed") ;
     T_ASSERT(w.slots == NULL, "slots freed") ;
-    /* all fifos unlinked */
     for (size_t i = 0 ; i < N ; i++) T_ASSERT_EQ(0, dir_entries(dirs[i]), "fifo unlinked") ;
 
     free_dirs(N, dirs) ; rm_rf(base) ;
@@ -829,11 +1436,10 @@ static void test_wait_partial_timeout(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
 
-    /* only 2 of 3 trigger -> deadline must fire, run returns 0 */
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "trigger 0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[2], event_to_byte(EVENT_READY)), "trigger 2") ;
+    T_ASSERT_EQ(1, emit_ready(dirs[0]), "trigger 0") ;
+    T_ASSERT_EQ(1, emit_ready(dirs[2]), "trigger 2") ;
 
     int r = event_wait_run(&w, 300) ;
     T_ASSERT_EQ(0, r, "run returns 0 on partial timeout") ;
@@ -843,7 +1449,7 @@ static void test_wait_partial_timeout(void)
     free_dirs(N, dirs) ; rm_rf(base) ;
 }
 
-static void test_wait_duplicate_byte_idempotent(void)
+static void test_wait_duplicate_frame_idempotent(void)
 {
     char tmpl[] = "/tmp/ev_wd_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
@@ -851,34 +1457,23 @@ static void test_wait_duplicate_byte_idempotent(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
 
-    /* dir0 emits the wanted byte THREE times; dir1 once.
-     * got[] must dedupe: triggered must reach exactly 2, never more. */
-    char b = event_to_byte(EVENT_READY) ;
-    DIR *d = opendir(dirs[0]) ; T_ASSERT(d != NULL, "opendir dir0") ;
-    struct dirent *e ; char path[1024] ;
-    while ((e = readdir(d))) {
-        if (strncmp(e->d_name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN)) continue ;
-        if (strlen(e->d_name) != EVENT_FIFO_NAMELEN) continue ;
-        snprintf(path, sizeof(path), "%s/%s", dirs[0], e->d_name) ;
-        int fd = open(path, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
-        T_ASSERT(fd >= 0, "open dir0 fifo") ;
-        for (int k = 0 ; k < 3 ; k++) T_ASSERT_EQ(1, (long long)write(fd, &b, 1), "write dup") ;
-        close(fd) ;
-    }
-    closedir(d) ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_READY)), "trigger dir1 once") ;
+    /* dir0 emits the wanted UP transition THREE times; dir1 once. The slot's
+     * `done` flag must dedupe so triggered reaches exactly 2, never more. */
+    for (int k = 0 ; k < 3 ; k++)
+        T_ASSERT_EQ(1, emit_ready(dirs[0]), "dir0 duplicate UP transition") ;
+    T_ASSERT_EQ(1, emit_ready(dirs[1]), "dir1 once") ;
 
     int r = event_wait_run(&w, 2000) ;
     T_ASSERT_EQ(1, r, "run returns 1") ;
-    T_ASSERT_EQ(2, (long long)w.triggered, "duplicate bytes do NOT inflate triggered") ;
+    T_ASSERT_EQ(2, (long long)w.triggered, "duplicate frames do NOT inflate triggered") ;
 
     event_wait_free(&w) ;
     free_dirs(N, dirs) ; rm_rf(base) ;
 }
 
-static void test_wait_irrelevant_bytes_ignored(void)
+static void test_wait_irrelevant_frames_ignored(void)
 {
     char tmpl[] = "/tmp/ev_wn_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
@@ -886,32 +1481,29 @@ static void test_wait_irrelevant_bytes_ignored(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
 
-    /* dir0: non-satisfying transitions then the wanted state -> matches.
-     * dir1: only bytes that never reach READY and never fail ('u'=up-not-ready,
-     * 'd'=down, 's'=supervise-up which is irrelevant to a service-state wait) ->
-     * stays pending. So triggered stays 1 and the wait times out (0). */
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_UP)), "up-not-ready dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_DOWN)), "down dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "ready dir0") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_UP)), "up-not-ready dir1") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_DOWN)), "down dir1") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[1], event_to_byte(EVENT_SUPERVISE_UP)), "irrelevant s dir1") ;
+    struct timespec ts = fixed_stamp() ;
+    /* dir0: eventually reaches READY (UP) */
+    T_ASSERT_EQ(1, emit_ready(dirs[0]), "dir0 reaches ready") ;
+    /* dir1: only frames that never reach READY and never fail:
+     * STARTING (up, not ready), DOWN (down, ready but not up), and a SIGNAL. */
+    T_ASSERT_EQ(1, event_emit_transition(dirs[1], STATUS_STATE_STARTING, 0, 0, 0, 0, &ts, 0), "starting dir1") ;
+    T_ASSERT_EQ(1, event_emit_transition(dirs[1], STATUS_STATE_DOWN, 0, 0, 0, 0, &ts, 0), "down dir1") ;
+    T_ASSERT_EQ(1, event_emit_signal(dirs[1], 15, STATUS_WHO_SELF, &ts), "signal dir1 (inert)") ;
 
     int r = event_wait_run(&w, 300) ;
     T_ASSERT_EQ(0, r, "run times out: dir1 never reached READY") ;
     T_ASSERT_EQ(1, (long long)w.triggered, "only dir0 matched") ;
-    T_ASSERT_EQ(0, w.failed, "no permanent-failure byte: not flagged failed") ;
+    T_ASSERT_EQ(0, w.failed, "no terminal frame: not flagged failed") ;
 
     event_wait_free(&w) ;
     free_dirs(N, dirs) ; rm_rf(base) ;
 }
 
-/* A permanent-failure byte ('O' while waiting up, or 'x') ends a wait_and at
- * once -- like s6-svwait, which exits on such an event rather than waiting out
- * the deadline. Proven by both the `failed` flag AND the elapsed time being far
- * below the (generous) timeout. */
+/* a terminal down while waiting up ends the wait_and immediately, like s6-svwait
+ * exiting on such an event rather than waiting out the deadline. Proven by the
+ * `failed` flag AND the elapsed time being far below the generous timeout. */
 static void test_wait_permanent_failure_fast(void)
 {
     char tmpl[] = "/tmp/ev_wf_XXXXXX" ;
@@ -920,11 +1512,14 @@ static void test_wait_permanent_failure_fast(void)
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
 
-    /* dir1 will never come up; dir0 reports it won't be restarted -> the AND is
-     * doomed and must fail immediately, not after the 5s deadline. */
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_NORESTART)), "O dir0") ;
+    struct timespec ts = fixed_stamp() ;
+    /* dir1 will never come up; dir0 reports a terminal FAILED -> the AND is doomed
+     * and must fail immediately, not after the 5s deadline. */
+    T_ASSERT_EQ(1, event_emit_transition(dirs[0], STATUS_STATE_FAILED, STATUS_RESULT_CRASH_LIMIT,
+                                         STATUS_WHO_SELF, 0, 0, &ts, EVENT_FLAG_TERMINAL),
+                "terminal FAILED dir0") ;
 
     struct timespec a, b ;
     clock_gettime(CLOCK_MONOTONIC, &a) ;
@@ -943,29 +1538,24 @@ static void test_wait_permanent_failure_fast(void)
 static void test_wait_zero_dirs(void)
 {
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, NULL, 0, EVENT_READY), "init n=0") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, NULL, 0, EVENT_UP_READY), "init n=0") ;
     T_ASSERT(w.fifos == NULL, "no fifo sources allocated for n=0") ;
     T_ASSERT(w.slots == NULL, "no slots allocated for n=0") ;
     int r = event_wait_run(&w, 1000) ;
     T_ASSERT_EQ(1, r, "run n=0 returns 1 immediately") ;
-    event_wait_free(&w) ;  /* must not crash / leak */
+    event_wait_free(&w) ;
 }
 
 static void test_wait_timeout_zero_no_timer(void)
 {
-    /* timeout_ms == 0: per the code, the timer is only armed for timeout_ms>0.
-     * With one un-triggered reader, sse_poll runs with INFINITE internally but
-     * no timer is set. To avoid an infinite block we trigger the reader so the
-     * handler stops the loop; this confirms timeout_ms==0 arms NO timer (timer
-     * stays inactive) yet the loop still completes via the match. */
     char tmpl[] = "/tmp/ev_wz_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     enum { N = 1 } ;
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
     event_wait_t w ;
-    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_READY), "init") ;
-    T_ASSERT_EQ(1, fanout_write(dirs[0], event_to_byte(EVENT_READY)), "trigger") ;
+    T_ASSERT_EQ(1, event_wait_init(&w, (char const *const *)dirs, N, EVENT_UP_READY), "init") ;
+    T_ASSERT_EQ(1, emit_ready(dirs[0]), "trigger") ;
 
     int r = event_wait_run(&w, 0) ;
     T_ASSERT_EQ(1, r, "run returns 1 (match) with timeout 0") ;
@@ -975,12 +1565,6 @@ static void test_wait_timeout_zero_no_timer(void)
     free_dirs(N, dirs) ; rm_rf(base) ;
 }
 
-/* timeout_ms==0 arms NO timer: with an UN-triggered reader the run blocks
- * indefinitely (sse_poll INFINITE, no deadline). We prove the "no deadline"
- * behaviour in a child: with timeout 0 and no matching byte, the child must
- * still be running after a grace period (it is blocked). A mutation that arms
- * the timer for timeout_ms>=0 would make the child return 0 immediately, so the
- * child would have exited — which we detect and fail on. */
 static void test_wait_timeout_zero_blocks(void)
 {
     char tmpl[] = "/tmp/ev_wzb_XXXXXX" ;
@@ -988,25 +1572,21 @@ static void test_wait_timeout_zero_blocks(void)
     enum { N = 1 } ;
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
-    /* child: subscribe + run(timeout 0) with NO trigger; should block forever */
     pid_t pid = fork() ;
     T_ASSERT(pid >= 0, "fork") ;
     if (pid == 0) {
-        alarm(0) ;   /* drop the inherited suite alarm; parent bounds us */
+        alarm(0) ;
         event_wait_t cw ;
-        if (!event_wait_init(&cw, (char const *const *)dirs, N, EVENT_READY)) _exit(2) ;
-        /* if this returns at all with timeout 0 and no match, the timer fired */
+        if (!event_wait_init(&cw, (char const *const *)dirs, N, EVENT_UP_READY)) _exit(2) ;
         int rc = event_wait_run(&cw, 0) ;
-        _exit(rc == 0 ? 50 : 51) ;   /* 50 = returned on a (bad) deadline */
+        _exit(rc == 0 ? 50 : 51) ;
     }
 
-    /* give the child a grace period; correct code keeps it blocked */
     struct timespec ts = { 0, 350 * 1000000L } ; nanosleep(&ts, NULL) ;
     int st = 0 ;
     pid_t done = waitpid(pid, &st, WNOHANG) ;
     T_ASSERT_EQ(0, done, "child still blocked: timeout_ms==0 armed no deadline") ;
 
-    /* clean up the blocked child */
     kill(pid, SIGKILL) ;
     waitpid(pid, &st, 0) ;
     free_dirs(N, dirs) ; rm_rf(base) ;
@@ -1014,138 +1594,68 @@ static void test_wait_timeout_zero_blocks(void)
 
 static void test_wait_init_rollback_on_bad_dir(void)
 {
-    /* dir1 is missing so subscribe of reader[1] fails -> rollback unsubscribes
-     * reader[0], frees got+readers, frees epoll. LSan proves zero leak; and
-     * reader[0]'s fifo in dir0 must have been unlinked by the rollback. */
     char tmpl[] = "/tmp/ev_wr_XXXXXX" ;
     char *base = mkdir_scratch(tmpl) ;
     char *dirs[2] ;
     dirs[0] = malloc(1024) ; snprintf(dirs[0], 1024, "%s/ev0", base) ;
-    T_ASSERT_EQ(1, event_fifodir_make(dirs[0], (gid_t)-1), "make ev0") ;
-    dirs[1] = malloc(1024) ; snprintf(dirs[1], 1024, "%s/ev_absent", base) ;  /* not created */
+    T_ASSERT_EQ(1, event_fifo_make(dirs[0], (gid_t)-1), "make ev0") ;
+    dirs[1] = malloc(1024) ; snprintf(dirs[1], 1024, "%s/ev_absent", base) ;
 
     event_wait_t w ;
     errno = 0 ;
-    int r = event_wait_init(&w, (char const *const *)dirs, 2, EVENT_READY) ;
+    int r = event_wait_init(&w, (char const *const *)dirs, 2, EVENT_UP_READY) ;
     T_ASSERT_EQ(0, r, "init returns 0 when a subscribe fails") ;
     T_ASSERT(w.fifos == NULL, "fifo sources freed on rollback") ;
     T_ASSERT(w.slots == NULL, "slots freed on rollback") ;
-    /* reader[0]'s fifo was unlinked during rollback */
     T_ASSERT_EQ(0, dir_entries(dirs[0]), "rolled-back reader fifo unlinked") ;
-
-    /* epoll was freed: w.epoll.fd should be -1 after sse_free */
     T_ASSERT_EQ(-1, w.epoll.fd, "epoll freed (fd -1)") ;
 
     rm_rf(dirs[0]) ; free(dirs[0]) ; free(dirs[1]) ; rm_rf(base) ;
-}
-
-/* ---- event_match (the shared transition interpreter) -------------- */
-
-/* feed a NUL-terminated byte string through the matcher, return its verdict. */
-static int m_feed(event_match_t *m, char const *s)
-{
-    return event_match_feed(m, s, strlen(s)) ;
-}
-
-static void test_match_up(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_UP, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down byte: still pending for up") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "u"), "up byte: reached") ;
-}
-
-static void test_match_ready_needs_U(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_READY, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "u"), "up-not-ready: pending for ready") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "U"), "ready byte: reached") ;
-}
-
-static void test_match_down_from_up(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_DOWN, 1, 0) ;   /* seed: currently up */
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, ""), "seeded up: not down yet") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "d"), "down byte: reached") ;
-}
-
-static void test_match_down_ready(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_DOWN_READY, 1, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down-not-ready: pending") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "D"), "fully down: reached") ;
-}
-
-static void test_match_down_combo_one_feed(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_DOWN_READY, 1, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "dD"), "d then D in one read: reached") ;
-}
-
-static void test_match_restart_two_phase(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_RESTART, 1, 0) ;   /* seed: up */
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "u"), "still up, no down seen: pending") ;
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "d"), "down phase reached, not up again: pending") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "u"), "up after down: restart reached") ;
-}
-
-static void test_match_already_satisfied_seed(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_UP, 1, 0) ;   /* already up */
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, ""), "seeded up: up wait already satisfied") ;
-}
-
-static void test_match_norestart_fail(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_READY, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_FAIL, m_feed(&m, "O"), "O while waiting up: permanent failure") ;
-}
-
-static void test_match_supervise_down_fail(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_READY, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_FAIL, m_feed(&m, "x"), "x while waiting ready: supervisor died") ;
-}
-
-static void test_match_norestart_ignored_when_down(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_DOWN, 1, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "Od"), "O ignored when waiting down, then d: reached") ;
-}
-
-static void test_match_supervise_up(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_SUPERVISE_UP, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_PENDING, m_feed(&m, "uU"), "service bytes: pending for supervise-up") ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "s"), "s byte: supervise-up reached") ;
-}
-
-static void test_match_supervise_down(void)
-{
-    event_match_t m ;
-    event_match_init(&m, EVENT_SUPERVISE_DOWN, 0, 0) ;
-    T_ASSERT_EQ(EVENT_MATCH_OK, m_feed(&m, "x"), "x byte: supervise-down reached (not a failure)") ;
 }
 
 /* ------------------------------------------------------------------ */
 
 T_SUITE("event module")
 {
-    VERBOSITY = 0 ;       /* silence expected warn() on error paths */
+    VERBOSITY = 0 ;
     PROG = "test_event" ;
     signal(SIGALRM, on_alarm) ;
-    alarm(60) ;           /* whole-suite anti-hang */
+    alarm(60) ;
+
+    /* frame codec: packers + wire layout + round trip */
+    T_RUN(test_pack_transition_wire_and_roundtrip) ;
+    T_RUN(test_pack_transition_no_flag) ;
+    T_RUN(test_pack_signal_wire_and_roundtrip) ;
+    T_RUN(test_pack_lifecycle_wire_and_roundtrip) ;
+
+    /* decoder: reassembly + resync */
+    T_RUN(test_decode_single) ;
+    T_RUN(test_decode_two_concatenated) ;
+    T_RUN(test_decode_split_all_cutpoints) ;
+    T_RUN(test_decode_bigchunk_many_plus_partial) ;
+    T_RUN(test_decode_len_zero_noop) ;
+    T_RUN(test_decode_corrupt_version_resync) ;
+    T_RUN(test_decode_bad_len_resync) ;
+    T_RUN(test_decode_unknown_kind_consumed_no_cb) ;
+    T_RUN(test_decode_short_payload_consumed_no_cb) ;
+    T_RUN(test_decode_plen_below_clockpack) ;
+    T_RUN(test_decode_stray_bytes_between) ;
+
+    /* matcher */
+    T_RUN(test_match_up) ;
+    T_RUN(test_match_ready) ;
+    T_RUN(test_match_down_from_up) ;
+    T_RUN(test_match_down_ready) ;
+    T_RUN(test_match_restart_two_phase) ;
+    T_RUN(test_match_supervise_up) ;
+    T_RUN(test_match_supervise_down) ;
+    T_RUN(test_match_terminal_fastfail_up) ;
+    T_RUN(test_match_terminal_ok_when_down) ;
+    T_RUN(test_match_lifecycle_down_fails_service_wait) ;
+    T_RUN(test_match_signal_inert) ;
+    T_RUN(test_match_seed_already_up) ;
+    T_RUN(test_match_satisfied_seed) ;
+    T_RUN(test_match_satisfied_is_const) ;
 
     /* fifodir_make */
     T_RUN(test_make_nogid_mode_01733) ;
@@ -1162,11 +1672,15 @@ T_SUITE("event module")
     T_RUN(test_clean_mixed_orphan_and_live) ;
     T_RUN(test_clean_missing_dir_returns_0) ;
 
-    /* fifodir_notify (producer fanout) */
-    T_RUN(test_notify_delivers_to_subscriber) ;
+    /* fifodir_notify + emit_* (producer fanout, end to end) */
+    T_RUN(test_notify_delivers_frame_to_subscriber) ;
+    T_RUN(test_notify_two_frames_one_call) ;
+    T_RUN(test_emit_transition_e2e) ;
+    T_RUN(test_emit_signal_e2e) ;
+    T_RUN(test_emit_lifecycle_e2e) ;
     T_RUN(test_notify_sweeps_orphan_and_missing_dir) ;
 
-    /* reader subscribe / the trick */
+    /* subscribe / the trick */
     T_RUN(test_subscribe_effects_and_mode) ;
     T_RUN(test_subscribe_trick_never_visible_without_reader) ;
     T_RUN(test_subscribe_trick_hidden_name) ;
@@ -1175,34 +1689,19 @@ T_SUITE("event module")
     T_RUN(test_subscribe_nametoolong) ;
     T_RUN(test_subscribe_eventdir_missing_cleanup) ;
 
-    /* reader_cb byte delivery */
-    T_RUN(test_cb_single_byte) ;
-    T_RUN(test_cb_multi_in_one_write) ;
-    T_RUN(test_cb_large_batch_over_256) ;
+    /* pump delivery + decoder reassembly across pump chunks */
+    T_RUN(test_cb_single_frame) ;
+    T_RUN(test_cb_many_frames_over_256) ;
     T_RUN(test_cb_multiple_writes) ;
 
     /* wait */
     T_RUN(test_wait_all_triggered) ;
     T_RUN(test_wait_partial_timeout) ;
-    T_RUN(test_wait_duplicate_byte_idempotent) ;
-    T_RUN(test_wait_irrelevant_bytes_ignored) ;
+    T_RUN(test_wait_duplicate_frame_idempotent) ;
+    T_RUN(test_wait_irrelevant_frames_ignored) ;
     T_RUN(test_wait_permanent_failure_fast) ;
     T_RUN(test_wait_zero_dirs) ;
     T_RUN(test_wait_timeout_zero_no_timer) ;
     T_RUN(test_wait_timeout_zero_blocks) ;
     T_RUN(test_wait_init_rollback_on_bad_dir) ;
-
-    /* event_match (transition interpreter) */
-    T_RUN(test_match_up) ;
-    T_RUN(test_match_ready_needs_U) ;
-    T_RUN(test_match_down_from_up) ;
-    T_RUN(test_match_down_ready) ;
-    T_RUN(test_match_down_combo_one_feed) ;
-    T_RUN(test_match_restart_two_phase) ;
-    T_RUN(test_match_already_satisfied_seed) ;
-    T_RUN(test_match_norestart_fail) ;
-    T_RUN(test_match_supervise_down_fail) ;
-    T_RUN(test_match_norestart_ignored_when_down) ;
-    T_RUN(test_match_supervise_up) ;
-    T_RUN(test_match_supervise_down) ;
 }
