@@ -38,25 +38,25 @@ int tree_resolve_read_cdb(ocdb *c, resolve_tree_t *tres)
     }
 
     /* configuration */
-    if (!resolve_get_key(c, "rversion", &tres->rversion)) {
+    if (!resolve_get_key_u32(c, "rversion", &tres->rversion)) {
         free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
 
-    if (!resolve_get_key(c, "name", &tres->name) ||
-        !resolve_get_key(c, "enabled", &tres->enabled) ||
-        !resolve_get_key(c, "depends", &tres->depends) ||
-        !resolve_get_key(c, "requiredby", &tres->requiredby) ||
-        !resolve_get_key(c, "allow", &tres->allow) ||
-        !resolve_get_key(c, "groups", &tres->groups) ||
-        !resolve_get_key(c, "contents", &tres->contents) ||
-        !resolve_get_key(c, "ndepends", &tres->ndepends) ||
-        !resolve_get_key(c, "nrequiredby", &tres->nrequiredby) ||
-        !resolve_get_key(c, "nallow", &tres->nallow) ||
-        !resolve_get_key(c, "ngroups", &tres->ngroups) ||
-        !resolve_get_key(c, "ncontents", &tres->ncontents) ||
-        !resolve_get_key(c, "init", &tres->init) ||
-        !resolve_get_key(c, "supervised", &tres->supervised)) {
+    if (!resolve_get_key_u32(c, "name", &tres->name) ||
+        !resolve_get_key_u32(c, "enabled", &tres->enabled) ||
+        !resolve_get_key_u32(c, "depends", &tres->depends) ||
+        !resolve_get_key_u32(c, "requiredby", &tres->requiredby) ||
+        !resolve_get_key_u32(c, "allow", &tres->allow) ||
+        !resolve_get_key_u32(c, "groups", &tres->groups) ||
+        !resolve_get_key_u32(c, "contents", &tres->contents) ||
+        !resolve_get_key_u32(c, "ndepends", &tres->ndepends) ||
+        !resolve_get_key_u32(c, "nrequiredby", &tres->nrequiredby) ||
+        !resolve_get_key_u32(c, "nallow", &tres->nallow) ||
+        !resolve_get_key_u32(c, "ngroups", &tres->ngroups) ||
+        !resolve_get_key_u32(c, "ncontents", &tres->ncontents) ||
+        !resolve_get_key_u32(c, "init", &tres->init) ||
+        !resolve_get_key_u32(c, "supervised", &tres->supervised)) {
             free(wres) ;
             return (errno = EINVAL, 0)  ;
     }

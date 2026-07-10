@@ -40,17 +40,17 @@ int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres)
     }
 
     /* configuration */
-    if (!resolve_get_key(c, "rversion", &mres->rversion)) {
+    if (!resolve_get_key_u32(c, "rversion", &mres->rversion)) {
         free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
 
-    if (!resolve_get_key(c, "name", &mres->name) ||
-        !resolve_get_key(c, "allow", &mres->allow) ||
-        !resolve_get_key(c, "current", &mres->current) ||
-        !resolve_get_key(c, "contents", &mres->contents) ||
-        !resolve_get_key(c, "nallow", &mres->nallow) ||
-        !resolve_get_key(c, "ncontents", &mres->ncontents)) {
+    if (!resolve_get_key_u32(c, "name", &mres->name) ||
+        !resolve_get_key_u32(c, "allow", &mres->allow) ||
+        !resolve_get_key_u32(c, "current", &mres->current) ||
+        !resolve_get_key_u32(c, "contents", &mres->contents) ||
+        !resolve_get_key_u32(c, "nallow", &mres->nallow) ||
+        !resolve_get_key_u32(c, "ncontents", &mres->ncontents)) {
             free(wres) ;
             return 0 ;
     }

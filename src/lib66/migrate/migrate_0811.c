@@ -57,107 +57,107 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
     }
 
     /* configuration */
-    if (!resolve_get_key(c, "rversion", &res->rversion)) {
+    if (!resolve_get_key_u32(c, "rversion", &res->rversion)) {
         free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
 
-    if (!resolve_get_key(c, "name", &res->name) ||
-        !resolve_get_key(c, "description", &res->description) ||
-        !resolve_get_key(c, "version", &res->version) ||
-        !resolve_get_key(c, "type", &res->type) ||
-        !resolve_get_key(c, "notify", &res->notify) ||
-        !resolve_get_key(c, "maxdeath", &res->maxdeath) ||
-        !resolve_get_key(c, "earlier", &res->earlier) ||
-        !resolve_get_key(c, "copyfrom", &res->copyfrom) ||
-        !resolve_get_key(c, "intree", &res->intree) ||
-        !resolve_get_key(c, "ownerstr", &res->ownerstr) ||
-        !resolve_get_key(c, "owner", &res->owner) ||
-        !resolve_get_key(c, "treename", &res->treename) ||
-        !resolve_get_key(c, "user", &res->user) ||
-        !resolve_get_key(c, "inns", &res->inns) ||
-        !resolve_get_key(c, "enabled", &res->enabled) ||
-        !resolve_get_key(c, "islog", &res->islog) ||
+    if (!resolve_get_key_u32(c, "name", &res->name) ||
+        !resolve_get_key_u32(c, "description", &res->description) ||
+        !resolve_get_key_u32(c, "version", &res->version) ||
+        !resolve_get_key_u32(c, "type", &res->type) ||
+        !resolve_get_key_u32(c, "notify", &res->notify) ||
+        !resolve_get_key_u32(c, "maxdeath", &res->maxdeath) ||
+        !resolve_get_key_u32(c, "earlier", &res->earlier) ||
+        !resolve_get_key_u32(c, "copyfrom", &res->copyfrom) ||
+        !resolve_get_key_u32(c, "intree", &res->intree) ||
+        !resolve_get_key_u32(c, "ownerstr", &res->ownerstr) ||
+        !resolve_get_key_u32(c, "owner", &res->owner) ||
+        !resolve_get_key_u32(c, "treename", &res->treename) ||
+        !resolve_get_key_u32(c, "user", &res->user) ||
+        !resolve_get_key_u32(c, "inns", &res->inns) ||
+        !resolve_get_key_u32(c, "enabled", &res->enabled) ||
+        !resolve_get_key_u32(c, "islog", &res->islog) ||
 
     /* path configuration */
-        !resolve_get_key(c, "home", &res->path.home) ||
-        !resolve_get_key(c, "frontend", &res->path.frontend) ||
-        !resolve_get_key(c, "src_servicedir", &res->path.servicedir) ||
+        !resolve_get_key_u32(c, "home", &res->path.home) ||
+        !resolve_get_key_u32(c, "frontend", &res->path.frontend) ||
+        !resolve_get_key_u32(c, "src_servicedir", &res->path.servicedir) ||
 
     /* dependencies */
-        !resolve_get_key(c, "depends", &res->dependencies.depends) ||
-        !resolve_get_key(c, "requiredby", &res->dependencies.requiredby) ||
-        !resolve_get_key(c, "optsdeps", &res->dependencies.optsdeps) ||
-        !resolve_get_key(c, "contents", &res->dependencies.contents) ||
-        !resolve_get_key(c, "provide", &res->dependencies.provide) ||
-        !resolve_get_key(c, "ndepends", &res->dependencies.ndepends) ||
-        !resolve_get_key(c, "nrequiredby", &res->dependencies.nrequiredby) ||
-        !resolve_get_key(c, "noptsdeps", &res->dependencies.noptsdeps) ||
-        !resolve_get_key(c, "ncontents", &res->dependencies.ncontents) ||
-        !resolve_get_key(c, "nprovide", &res->dependencies.nprovide) ||
+        !resolve_get_key_u32(c, "depends", &res->dependencies.depends) ||
+        !resolve_get_key_u32(c, "requiredby", &res->dependencies.requiredby) ||
+        !resolve_get_key_u32(c, "optsdeps", &res->dependencies.optsdeps) ||
+        !resolve_get_key_u32(c, "contents", &res->dependencies.contents) ||
+        !resolve_get_key_u32(c, "provide", &res->dependencies.provide) ||
+        !resolve_get_key_u32(c, "ndepends", &res->dependencies.ndepends) ||
+        !resolve_get_key_u32(c, "nrequiredby", &res->dependencies.nrequiredby) ||
+        !resolve_get_key_u32(c, "noptsdeps", &res->dependencies.noptsdeps) ||
+        !resolve_get_key_u32(c, "ncontents", &res->dependencies.ncontents) ||
+        !resolve_get_key_u32(c, "nprovide", &res->dependencies.nprovide) ||
 
     /* execute */
-        !resolve_get_key(c, "run", &res->execute.run.run) ||
-        !resolve_get_key(c, "run_user", &res->execute.run.run_user) ||
-        !resolve_get_key(c, "run_build", &res->execute.run.build) ||
-        !resolve_get_key(c, "run_runas", &res->execute.run.runas) ||
-        !resolve_get_key(c, "finish", &res->execute.finish.run) ||
-        !resolve_get_key(c, "finish_user", &res->execute.finish.run_user) ||
-        !resolve_get_key(c, "finish_build", &res->execute.finish.build) ||
-        !resolve_get_key(c, "finish_runas", &res->execute.finish.runas) ||
-        !resolve_get_key(c, "timeoutstart", &res->execute.timeout.start) ||
-        !resolve_get_key(c, "timeoutstop", &res->execute.timeout.stop) ||
-        !resolve_get_key(c, "down", &res->execute.down) ||
-        !resolve_get_key(c, "downsignal", &res->execute.downsignal) ||
+        !resolve_get_key_u32(c, "run", &res->execute.run.run) ||
+        !resolve_get_key_u32(c, "run_user", &res->execute.run.run_user) ||
+        !resolve_get_key_u32(c, "run_build", &res->execute.run.build) ||
+        !resolve_get_key_u32(c, "run_runas", &res->execute.run.runas) ||
+        !resolve_get_key_u32(c, "finish", &res->execute.finish.run) ||
+        !resolve_get_key_u32(c, "finish_user", &res->execute.finish.run_user) ||
+        !resolve_get_key_u32(c, "finish_build", &res->execute.finish.build) ||
+        !resolve_get_key_u32(c, "finish_runas", &res->execute.finish.runas) ||
+        !resolve_get_key_u32(c, "timeoutstart", &res->execute.timeout.start) ||
+        !resolve_get_key_u32(c, "timeoutstop", &res->execute.timeout.stop) ||
+        !resolve_get_key_u32(c, "down", &res->execute.down) ||
+        !resolve_get_key_u32(c, "downsignal", &res->execute.downsignal) ||
 
     /* live */
-        !resolve_get_key(c, "livedir", &res->live.livedir) ||
-        !resolve_get_key(c, "status", &res->live.status) ||
-        !resolve_get_key(c, "live_servicedir", &res->live.servicedir) ||
-        !resolve_get_key(c, "scandir", &res->live.scandir) ||
-        !resolve_get_key(c, "statedir", &res->live.statedir) ||
-        !resolve_get_key(c, "eventdir", &res->live.eventdir) ||
-        !resolve_get_key(c, "notifdir", &res->live.notifdir) ||
-        !resolve_get_key(c, "supervisedir", &res->live.supervisedir) ||
-        !resolve_get_key(c, "fdholderdir", &res->live.fdholderdir) ||
-        !resolve_get_key(c, "oneshotddir", &res->live.oneshotddir) ||
+        !resolve_get_key_u32(c, "livedir", &res->live.livedir) ||
+        !resolve_get_key_u32(c, "status", &res->live.status) ||
+        !resolve_get_key_u32(c, "live_servicedir", &res->live.servicedir) ||
+        !resolve_get_key_u32(c, "scandir", &res->live.scandir) ||
+        !resolve_get_key_u32(c, "statedir", &res->live.statedir) ||
+        !resolve_get_key_u32(c, "eventdir", &res->live.eventdir) ||
+        !resolve_get_key_u32(c, "notifdir", &res->live.notifdir) ||
+        !resolve_get_key_u32(c, "supervisedir", &res->live.supervisedir) ||
+        !resolve_get_key_u32(c, "fdholderdir", &res->live.fdholderdir) ||
+        !resolve_get_key_u32(c, "oneshotddir", &res->live.oneshotddir) ||
 
     /* logger */
-        !resolve_get_key(c, "logname", &res->logger.name) ||
-        !resolve_get_key(c, "logbackup", &res->logger.backup) ||
-        !resolve_get_key(c, "logmaxsize", &res->logger.maxsize) ||
-        !resolve_get_key(c, "logtimestamp", &res->logger.timestamp) ||
-        !resolve_get_key(c, "logwant", &res->logger.want) ||
-        !resolve_get_key(c, "logrun", &res->logger.execute.run.run) ||
-        !resolve_get_key(c, "logrun_user", &res->logger.execute.run.run_user) ||
-        !resolve_get_key(c, "logrun_build", &res->logger.execute.run.build) ||
-        !resolve_get_key(c, "logrun_runas", &res->logger.execute.run.runas) ||
-        !resolve_get_key(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
-        !resolve_get_key(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
+        !resolve_get_key_u32(c, "logname", &res->logger.name) ||
+        !resolve_get_key_u32(c, "logbackup", &res->logger.backup) ||
+        !resolve_get_key_u32(c, "logmaxsize", &res->logger.maxsize) ||
+        !resolve_get_key_u32(c, "logtimestamp", &res->logger.timestamp) ||
+        !resolve_get_key_u32(c, "logwant", &res->logger.want) ||
+        !resolve_get_key_u32(c, "logrun", &res->logger.execute.run.run) ||
+        !resolve_get_key_u32(c, "logrun_user", &res->logger.execute.run.run_user) ||
+        !resolve_get_key_u32(c, "logrun_build", &res->logger.execute.run.build) ||
+        !resolve_get_key_u32(c, "logrun_runas", &res->logger.execute.run.runas) ||
+        !resolve_get_key_u32(c, "logtimeoutstart", &res->logger.execute.timeout.start) ||
+        !resolve_get_key_u32(c, "logtimeoutstop", &res->logger.execute.timeout.stop) ||
 
     /* environment */
-        !resolve_get_key(c, "env", &res->environ.env) ||
-        !resolve_get_key(c, "envdir", &res->environ.envdir) ||
-        !resolve_get_key(c, "env_overwrite", &res->environ.env_overwrite) ||
-        !resolve_get_key(c, "importfile", &res->environ.importfile) ||
-        !resolve_get_key(c, "nimportfile", &res->environ.nimportfile) ||
+        !resolve_get_key_u32(c, "env", &res->environ.env) ||
+        !resolve_get_key_u32(c, "envdir", &res->environ.envdir) ||
+        !resolve_get_key_u32(c, "env_overwrite", &res->environ.env_overwrite) ||
+        !resolve_get_key_u32(c, "importfile", &res->environ.importfile) ||
+        !resolve_get_key_u32(c, "nimportfile", &res->environ.nimportfile) ||
 
     /* regex */
-        !resolve_get_key(c, "configure", &res->regex.configure) ||
-        !resolve_get_key(c, "directories", &res->regex.directories) ||
-        !resolve_get_key(c, "files", &res->regex.files) ||
-        !resolve_get_key(c, "infiles", &res->regex.infiles) ||
-        !resolve_get_key(c, "ndirectories", &res->regex.ndirectories) ||
-        !resolve_get_key(c, "nfiles", &res->regex.nfiles) ||
-        !resolve_get_key(c, "ninfiles", &res->regex.ninfiles) ||
+        !resolve_get_key_u32(c, "configure", &res->regex.configure) ||
+        !resolve_get_key_u32(c, "directories", &res->regex.directories) ||
+        !resolve_get_key_u32(c, "files", &res->regex.files) ||
+        !resolve_get_key_u32(c, "infiles", &res->regex.infiles) ||
+        !resolve_get_key_u32(c, "ndirectories", &res->regex.ndirectories) ||
+        !resolve_get_key_u32(c, "nfiles", &res->regex.nfiles) ||
+        !resolve_get_key_u32(c, "ninfiles", &res->regex.ninfiles) ||
 
     /* io */
-        !resolve_get_key(c, "stdintype", &res->io.fdin.type) ||
-        !resolve_get_key(c, "stdindest", &res->io.fdin.destination) ||
-        !resolve_get_key(c, "stdouttype", &res->io.fdout.type) ||
-        !resolve_get_key(c, "stdoutdest", &res->io.fdout.destination) ||
-        !resolve_get_key(c, "stderrtype", &res->io.fderr.type) ||
-        !resolve_get_key(c, "stderrdest", &res->io.fderr.destination)) {
+        !resolve_get_key_u32(c, "stdintype", &res->io.fdin.type) ||
+        !resolve_get_key_u32(c, "stdindest", &res->io.fdin.destination) ||
+        !resolve_get_key_u32(c, "stdouttype", &res->io.fdout.type) ||
+        !resolve_get_key_u32(c, "stdoutdest", &res->io.fdout.destination) ||
+        !resolve_get_key_u32(c, "stderrtype", &res->io.fderr.type) ||
+        !resolve_get_key_u32(c, "stderrdest", &res->io.fderr.destination)) {
             free(wres) ;
             return (errno = EINVAL, 0)  ;
     }

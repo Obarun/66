@@ -115,7 +115,8 @@ extern int resolve_add_cdb(ocdbmaker *c, char const *key, char const *str, uint3
 extern int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data) ;
 extern int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data) ;
 extern int resolve_get_sa(strbuf *sa, const ocdb *c) ;
-extern int resolve_get_key(const ocdb *c, const char *key, uint32_t *field) ;
+extern int resolve_get_key_u32(const ocdb *c, const char *key, uint32_t *field) ;
+extern int resolve_get_key_u64(const ocdb *c, const char *key, uint64_t *field) ;
 extern uint32_t resolve_add_uint32(char const *data) ;
 extern uint64_t resolve_add_uint64(char const *data) ;
 
