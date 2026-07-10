@@ -46,6 +46,7 @@ void write_services(resolve_service_t *res, resolve_service_addon_execute_t *ex,
     switch(type) {
 
         case E_PARSER_TYPE_MODULE:
+        case E_PARSER_TYPE_EVENT:
             break ;
 
         case E_PARSER_TYPE_CLASSIC:
