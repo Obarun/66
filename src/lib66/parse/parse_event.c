@@ -103,9 +103,6 @@ static int token_in_list(char const *list, char const *tok, size_t tlen)
     return 0 ;
 }
 
-/* a service On predicate with no svc prefix: a status state or result word, or
- * an argument predicate <result>:<arg> where the result is the only one that
- * carries an argument -- EXITED (a code) or SIGNALED (a signal). */
 static int on_service_predicate_ok(char const *cond)
 {
     char const *colon = strchr(cond, ':') ;
