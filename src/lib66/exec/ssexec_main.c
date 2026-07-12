@@ -152,6 +152,7 @@ static struct { opt_cmd_t const *node ; char const *name ; } const cmd_reg[] = {
     { &cmd_restart,     "restart" },
     { &cmd_free,        "free" },
     { &cmd_signal,      "signal" },
+    { &cmd_emit,        "emit" },
     { &cmd_status,      "status" },
     { &cmd_log,         "log" },
     { &cmd_resolve,     "resolve" },

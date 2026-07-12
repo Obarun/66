@@ -92,6 +92,7 @@ extern opt_cmd_fn ssexec_remove ;
 extern opt_cmd_fn ssexec_status ;
 extern opt_cmd_fn ssexec_signal ;
 extern opt_cmd_fn ssexec_log ;
+extern opt_cmd_fn ssexec_emit ;
 
 extern opt_cmd_t const cmd_start ;
 extern opt_cmd_t const cmd_stop ;
@@ -110,6 +111,7 @@ extern opt_cmd_t const cmd_remove ;
 extern opt_cmd_t const cmd_status ;
 extern opt_cmd_t const cmd_signal ;
 extern opt_cmd_t const cmd_log ;
+extern opt_cmd_t const cmd_emit ;
 
 /** wrapper sub-command handlers (opt_dispatch leaves) */
 extern opt_cmd_fn ssexec_scandir_create ;

@@ -93,6 +93,9 @@
 #define SS_ONESHOTD "oneshotd"
 #define SS_ONESHOTD_LEN (sizeof SS_ONESHOTD - 1)
 
+#define SS_EVENTD "eventd"
+#define SS_EVENTD_LEN (sizeof SS_EVENTD - 1)
+
 #define SS_VAR_UNEXPORT '!'
 
 #define SS_SYM_VERSION "/version"
