@@ -173,7 +173,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success)
         st.result = STATUS_RESULT_EXITED ;
         st.code = (uint32_t)svc->exitcode ;
     }
-    st.who = STATUS_WHO_USER ;
+    st.who = pmanager->info->who ;
     clock_now(&st.stamp) ;
 
     char const *supervisedir = svc->res->sa.s + svc->res->live.supervisedir ;
@@ -394,7 +394,7 @@ static int launch_classic(uint32_t id)
     }
 
     log_trace("sending ", pmanager->signal + 1, " to: ", scandir) ;
-    if (!svc_control_send(scandir, pmanager->signal + 1, strlen(pmanager->signal) - 1, STATUS_WHO_USER)) {
+    if (!svc_control_send(scandir, pmanager->signal + 1, strlen(pmanager->signal) - 1, pmanager->info->who)) {
         complete(id, false) ;
         return 1 ;
     }

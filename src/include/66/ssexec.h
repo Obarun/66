@@ -23,6 +23,7 @@
 #include <oblibs/opt.h>
 
 #include <66/config.h>
+#include <66/status.h>
 
 typedef struct ssexec_s ssexec_t , *ssexec_t_ref ;
 struct ssexec_s
@@ -46,6 +47,7 @@ struct ssexec_s
     uint8_t opt_color ;
     // skip option definition 0->no,1-yes
     uint8_t skip_opt_tree ; // tree,treename, treeallow will not be set. Also, trees permissions is not checked.
+    uint8_t who ; // status_who_e: provenance of the command
 } ;
 
 #define SSEXEC_ZERO {   .base = STRBUF_ZERO, \
@@ -63,7 +65,8 @@ struct ssexec_s
                         .opt_tree = 0, \
                         .opt_timeout = 0, \
                         .opt_color = 0, \
-                        .skip_opt_tree = 0 }
+                        .skip_opt_tree = 0, \
+                        .who = STATUS_WHO_SELF }
 
 extern void ssexec_free(ssexec_t *info) ;
 extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;

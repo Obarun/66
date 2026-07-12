@@ -481,6 +481,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 	log_flow() ;
 
     ssexec_t *info = data ;
+    info->who = STATUS_WHO_BOOT ;
+
     (void)argc ;
     (void)argv ;
 

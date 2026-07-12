@@ -17,6 +17,7 @@
 int main(int argc, char const *const *argv)
 {
     ssexec_t info = SSEXEC_ZERO ;
+    info.who = STATUS_WHO_USER ;
 
     int r = ssexec_main(argc, argv, &info) ;
 
