@@ -23,16 +23,15 @@
 #include <signal.h>
 
 #include <oblibs/log.h>
+#include <oblibs/opt.h>
 #include <oblibs/graph.h>
 #include <oblibs/io.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
 #include <oblibs/types.h>
-#include <oblibs/environ.h>
 #include <oblibs/sse.h>
 #include <oblibs/fd.h>
-#include <oblibs/spawn.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
@@ -196,12 +195,11 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
 
     pos = 0, len = sbl_count(&t) ;
 
-    int n = pmanager->operation == 2 ? 4 : 3 ;
+    int n = pmanager->operation == 2 ? 3 : 2 ;
     int nargc = n + len ;
-    char *newargv[nargc] ;
+    char const *newargv[nargc] ;
     unsigned int m = 0 ;
 
-    newargv[m++] = "66" ;
     newargv[m++] = !pmanager->operation ? "start" : "stop" ;
     if (pmanager->operation == 2)
         newargv[m++] = "-u" ;
@@ -211,25 +209,30 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
 
     newargv[m] = 0 ;
 
-    if (!pmanager->operation) {
+    log_trace("sending ", newargv[0], " command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
-        log_trace("sending start command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
+    /* fork (not exec): the child inherits info -- and thus who -- in memory, and
+     * runs the start/stop command directly. Preserving the caller's ssexec_t is
+     * the whole point (a spawned "66 start" would restart from SSEXEC_ZERO). */
+    tree->pid = fork() ;
+    if (tree->pid < 0) {
+        FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
+        log_warnusys_return(LOG_EXIT_ZERO, newargv[0], " services of tree: ", tree->tres->sa.s + tree->tres->name) ;
+    }
 
-        tree->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
-        if (!tree->pid) {
-            FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
-            log_warnusys_return(LOG_EXIT_ZERO, "start services of tree: ", tree->tres->sa.s + tree->tres->name) ;
-        }
+    if (!tree->pid) {
 
-    } else {
+        /* tear down the inherited tree-manager loop before svc_launch builds its
+         * own: close the epoll/notifier fds and, critically, reset the process-wide
+         * lx_signalfd static state (else svc_launch's sse_start_signal reuses this
+         * signalfd) while unblocking the inherited signal mask. */
+        sse_free_signal(&pmanager->signalfd) ;
+        close(pmanager->loop.fd) ;
+        close(pmanager->notifd[0]) ;
+        close(pmanager->notifd[1]) ;
 
-        log_trace("sending stop command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
-
-        tree->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
-        if (!tree->pid) {
-            FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
-            log_warnusys_return(LOG_EXIT_ZERO, "stop services of tree: ", tree->tres->sa.s + tree->tres->name) ;
-        }
+        opt_cmd_t const *cmd = !pmanager->operation ? &cmd_start : &cmd_stop ;
+        _exit(opt_dispatch(m, newargv, cmd, info)) ;
     }
 
     if (!sse_start_child(&pmanager->loop, &tree->child, child_cb, (void*)(uintptr_t)id, tree->pid, 2, true)) {
