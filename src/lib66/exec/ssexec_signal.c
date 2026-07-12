@@ -22,7 +22,6 @@
 #include <oblibs/attributes.h>
 
 #include <66/svc.h>
-#include <66/graph.h>
 #include <66/ssexec.h>
 #include <66/config.h>
 
@@ -174,14 +173,10 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
 
     ssexec_t *info = data ;
 
-    int r ;
-    uint8_t requiredby = 1, propagate = sig_propagate, woption = sig_woption ;
-    char *cmdmsg = 0 ;
+    uint8_t propagate = sig_propagate, woption = sig_woption ;
     char wsignal[5] ;
     char signal[DATASIZE + 1] ;
     unsigned int datalen = sig_datalen ;
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
 
     memcpy(wsignal, sig_wsignal, sizeof wsignal) ;
     memcpy(signal, sig_signal, sizeof signal) ;
@@ -197,42 +192,5 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
     if (argc < 1 || datalen < 2)
         return opt_emit_usage(cmd_signal.name, &cmd_signal) ;
 
-    if (signal[1] == 'u' || signal[1] == 'U')
-        requiredby = 0 ;
-
-    if (signal[1] == 'r')
-        cmdmsg = "restart" ;
-    else if (signal[1] == 'h')
-        cmdmsg = "reload" ;
-
-    if (propagate) {
-        if (requiredby) {
-            FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
-        } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
-    }
-
-    if ((svc_scandir_ok(info->scandir.s)) != 1)
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
-
-    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
-
-    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
-
-    if (!nservice) {
-        if (errno == EINVAL)
-            log_dieusys(LOG_EXIT_USER, "build the graph") ;
-
-        log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
-    }
-
-    svc_ctx_t asvc[graph.g.nsort] ;
-
-    svc_init_ctx(asvc, &graph, requiredby, flag) ;
-
-    r = svc_launch(asvc, graph.g.nsort, requiredby, info, wsignal, woption, signal, cmdmsg, propagate) ;
-
-    service_graph_destroy(&graph) ;
-
-    return r ;
+    return svc_send(argv, argc, info, signal, wsignal, woption, propagate) ;
 }
