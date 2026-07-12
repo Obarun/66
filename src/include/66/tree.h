@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_TREE_H
@@ -266,5 +266,6 @@ extern void hash_free_tree(hash_t *hash) ;
 /** signal */
 extern void tree_init_ctx(tree_ctx_t *atree, tree_graph_t *g, uint8_t requiredby, uint32_t flag) ;
 extern int tree_launch(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *info) ;
+extern int tree_send(uint8_t operation, char const *treename, uint8_t dofork, ssexec_t *info) ;
 
 #endif
