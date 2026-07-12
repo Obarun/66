@@ -40,6 +40,8 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/ssexec.h>
+#include <66/tree.h>
+#include <66/utils.h>
 
 static unsigned int mask = SS_BOOT_UMASK ;
 static unsigned int rescan = SS_BOOT_RESCAN ;
@@ -317,7 +319,7 @@ static void split_tmpfs(char *dst,char const *str)
     dst[len] = 0 ;
 }
 
-static inline void run_stage2 (strbuf *env, const char *tty)
+static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 {
     log_flow() ;
 
@@ -365,7 +367,38 @@ static inline void run_stage2 (strbuf *env, const char *tty)
             sulogin("copy stderr to stdout","") ;
     }
 
-    exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env->s, env->len) ;
+    if (container)
+        exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env->s, env->len) ;
+
+    info->live.len = 0 ;
+    if (!auto_strbuf(&info->live, live) || set_livedir(&info->live) <= 0) {
+        log_warnusys("set live directory: ", live) ;
+        _exit(LOG_EXIT_SYS) ;
+    }
+
+    info->scandir.len = 0 ;
+    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_uncounted(&info->scandir)
+        || set_livescan(&info->scandir, info->owner) <= 0) {
+        log_warnusys("set scandir directory: ", info->live.s) ;
+        _exit(LOG_EXIT_SYS) ;
+    }
+
+    size_t modn = sbl_count(env), elen = environ_length((char const *const *)environ) ;
+    char const *merged[elen + modn + 1] ;
+    environ_merge(merged, elen + modn + 1, (char const *const *)environ, elen, env->s, env->len) ;
+    environ = (char **)merged ;
+
+    log_info("Starting services of tree: ", tree) ;
+
+    int rc = tree_send(0, tree, 0, info) ;
+
+    if (rc)
+        log_warnu("start services of tree: ", tree) ;
+
+    /* End-of-boot event is emitted here -- boot-done on success, boot-failed
+     * otherwise -- once the eventd EMIT client exists. Tracked separately. */
+
+    _exit(rc) ;
 }
 
 static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, strbuf *env)
@@ -711,7 +744,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
             sulogin("fork: ",container ? rcinit_container : rcinit) ;
 
         if (!pid)
-            run_stage2(&env, tty) ;
+            run_stage2(&env, tty, info) ;
 
         reset_stdin() ;
         setsid() ;
