@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <string.h>
 #include <errno.h>
 
 #include <oblibs/log.h>
@@ -99,24 +98,10 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
 
     sanitize_init(&graph, flag) ;
 
-    char *sig[propagate] ;
-    sig[0] = "-wD" ;
-    sig[1] = "-D" ;
-
-    if (propagate > 3) {
-
-        sig[2] = "-P" ;
-        sig[3] = 0 ;
-
-    } else sig[2] = 0 ;
-
-    r = svc_send_wait(argv, argc, sig, propagate, info) ;
+    r = svc_send(argv, argc, info, "-D", "-wD", 1, nopropagate ? 0 : 1) ;
 
     if (r)
         log_warnusys("stop service selection") ;
-
-    sig[0] = "-wU" ;
-    sig[1] = "-U" ;
 
     {
         /** use ssexec_start here to handle freed

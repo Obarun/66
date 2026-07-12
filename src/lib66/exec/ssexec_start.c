@@ -101,14 +101,11 @@ int ssexec_start(int argc, char const *const *argv, void *data)
 
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
-    uint8_t propagate = 3 ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE|/* sanitize_init */GRAPH_WANT_LOGGER, nservice = 0 ;
     int e = 0 ;
 
-    if (nopropagate) {
+    if (nopropagate)
         FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-        propagate++ ;
-    }
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -131,21 +128,6 @@ int ssexec_start(int argc, char const *const *argv, void *data)
     /** initiate services at the corresponding scandir */
     sanitize_init(&graph, flag) ;
 
-    char *sig[propagate] ;
-    if (propagate > 3) {
-
-        sig[0] = "-P" ;
-        sig[1] = "-wU" ;
-        sig[2] = "-u" ;
-        sig[3] = 0 ;
-
-    } else {
-
-        sig[0] = "-wU" ;
-        sig[1] = "-u" ;
-        sig[2] = 0 ;
-    }
-
     char const *nargv[nservice + 1] ;
     nservice = 0 ;
     HASH_FOREACH(&graph.g.vertexes, c, tmp)
@@ -153,7 +135,7 @@ int ssexec_start(int argc, char const *const *argv, void *data)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send_wait(nargv, nservice, sig, propagate, info) ;
+    e = svc_send(nargv, nservice, info, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
 
     service_graph_destroy(&graph) ;
 

@@ -72,17 +72,14 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
 
     int r, nargc = 0 ;
     char const *nargv[argc] ;
-    uint8_t siglen = 2 ;
     vertex_t *c, *tmp ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_DEPENDS, nservice = 0 ;
 
     unsigned int m = 0 ;
 
-    if (nopropagate) {
+    if (nopropagate)
         FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
-        siglen++ ;
-    }
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -101,20 +98,7 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
         log_warn_return(LOG_EXIT_ZERO, "service selection is not supervised -- try to start it first") ;
     }
 
-    char *sig[siglen] ;
-    if (siglen > 2) {
-
-        sig[0] = "-P" ;
-        sig[1] = "-H" ;
-        sig[2] = 0 ;
-
-    } else {
-
-        sig[0] = "-H" ;
-        sig[1] = 0 ;
-    }
-
-    r = svc_send_wait(argv, argc, sig, siglen, info) ;
+    r = svc_send(argv, argc, info, "-h", "-w ", 0, nopropagate ? 0 : 1) ;
     if (r) {
         service_graph_destroy(&graph) ;
         return r ;
@@ -144,23 +128,7 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
         nargv[m] = 0 ;
         int verbo = VERBOSITY ;
         VERBOSITY = 0 ;
-        char *nsig[siglen + 1] ;
-
-        if (siglen > 2) {
-
-            nsig[0] = "-P" ;
-            nsig[1] = "-wU" ;
-            nsig[2] = "-u" ;
-            nsig[3] = 0 ;
-
-        } else {
-
-            nsig[0] = "-wU" ;
-            nsig[1] = "-u" ;
-            nsig[2] = 0 ;
-        }
-        siglen++ ;
-        r = svc_send_wait(nargv, nargc, nsig, siglen, info) ;
+        r = svc_send(nargv, nargc, info, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
         VERBOSITY = verbo ;
     }
 

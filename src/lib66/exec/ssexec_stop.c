@@ -79,14 +79,10 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
 
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
-    uint8_t propagate = 3 ;
     int e = 0 ;
     uint32_t flag = GRAPH_WANT_SUPERVISED, nservice = 0 ;
 
-    if (nopropagate)
-        propagate++ ;
-
-    /* the requiredby closure is only consumed by svc_unsupervise: 66 signal
+    /* the requiredby closure is only consumed by svc_unsupervise: svc_send
      * re-collects it on its own for the plain down signal. Build it only when
      * the unsupervise path actually walks the graph. */
     if (unsupervise) {
@@ -111,21 +107,6 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
     if (!graph.g.nsort)
         log_warn_return(e,"no services found to handle") ;
 
-    char *sig[propagate] ;
-    if (propagate > 3) {
-
-        sig[0] = "-P" ;
-        sig[1] = "-wD" ;
-        sig[2] = "-d" ;
-        sig[3] = 0 ;
-
-    } else {
-
-        sig[0] = "-wD" ;
-        sig[1] = "-d" ;
-        sig[2] = 0 ;
-    }
-
     char const *nargv[nservice + 1] ;
     nservice = 0 ;
     HASH_FOREACH(&graph.g.vertexes, c, tmp)
@@ -133,7 +114,7 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send_wait(nargv, nservice, sig, propagate, info) ;
+    e = svc_send(nargv, nservice, info, "-d", "-wD", 1, nopropagate ? 0 : 1) ;
 
     if (e)
         return e ;
