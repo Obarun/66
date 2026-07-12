@@ -768,7 +768,10 @@ static int svc_manager_start(void)
             continue ;
         }
 
-        npid++ ;
+        /* a module is handled synchronously by svc_compute_ns and never spawns an
+         * async process to wait for: it must not enter the npid tally. */
+        if (svc->res->type != E_PARSER_TYPE_MODULE)
+            npid++ ;
 
         // Check if we can start this service now
         if (deps_satisfied(pos)) {
@@ -821,7 +824,8 @@ static int svc_manager_stop(void)
             continue ;
         }
 
-        npid++ ;
+        if (svc->res->type != E_PARSER_TYPE_MODULE)
+            npid++ ;
 
         // Check if we can start this service now
         if (deps_satisfied(pos)) {
@@ -891,6 +895,7 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info
 
     uint32_t vertex_to_asvc[SS_MAX_SERVICE] ;
     uint32_t *saved_v2svc = v2svc ;
+    uint32_t saved_npid = npid ;
 
     npid = 0 ;
 
@@ -921,10 +926,12 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info
     }
 
     svc_manager_free() ;
-    /** svc_compute_ns call svc_launch and ovewritte the
-     * pmanager global pointer. Be sure to reassign to the
-     * original one. */
+    /** svc_compute_ns calls svc_launch and overwrites the pmanager global
+     * pointer, v2svc and resets npid to run its own tally. Restore all three
+     * to the values the outer invocation was relying on. */
     pmanager = saved_manager ;
     v2svc = saved_v2svc ;
+    npid = saved_npid ;
+
     return !result ? 1 : 0 ;
 }
