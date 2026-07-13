@@ -148,7 +148,6 @@ static info_field_t const fields[] = {
     { "eventtype",       INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, type),       DATA_SERVICE_EVENT },
     { "eventfrom",       INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, from),       DATA_SERVICE_EVENT },
     { "neventfrom",      INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, nfrom),      DATA_SERVICE_EVENT },
-    { "eventfromfield",  INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, fromfield),  DATA_SERVICE_EVENT },
     { "eventon",         INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, on),         DATA_SERVICE_EVENT },
     { "neventon",        INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, non),        DATA_SERVICE_EVENT },
     { "eventcombine",    INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, combine),    DATA_SERVICE_EVENT },

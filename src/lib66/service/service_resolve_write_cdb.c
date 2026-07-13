@@ -272,7 +272,6 @@ int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_ev
         !resolve_add_cdb_uint(c, "eventtype", ev->type) ||
         !resolve_add_cdb_uint(c, "eventfrom", ev->from) ||
         !resolve_add_cdb_uint(c, "neventfrom", ev->nfrom) ||
-        !resolve_add_cdb_uint(c, "eventfromfield", ev->fromfield) ||
         !resolve_add_cdb_uint(c, "eventon", ev->on) ||
         !resolve_add_cdb_uint(c, "neventon", ev->non) ||
         !resolve_add_cdb_uint(c, "eventcombine", ev->combine) ||

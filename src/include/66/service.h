@@ -259,7 +259,6 @@ struct resolve_service_addon_event_s
     uint32_t type ; // integer, event_source_t
     uint32_t from ; // string, space-separated list of explicit From sources
     uint32_t nfrom ; // integer
-    uint32_t fromfield ; // integer, bitmask of event_fromfield_t
     uint32_t on ; // string, space-separated list of On tokens
     uint32_t non ; // integer
     uint32_t combine ; // integer, event_combine_t (0=any 1=all)
@@ -271,7 +270,7 @@ struct resolve_service_addon_event_s
     uint32_t interval ; // integer, milliseconds
 } ;
 
-#define RESOLVE_SERVICE_ADDON_EVENT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_EVENT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s

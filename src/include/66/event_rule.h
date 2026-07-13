@@ -61,19 +61,6 @@ enum event_combine_e
     EVENT_COMBINE_ENDOFKEY
 } ;
 
-#define EVENT_FROMFIELD_TABLE(macro) \
-    macro(EVENT_FROMFIELD_DEPENDS,    "Depends",     (1u << 0)) \
-    macro(EVENT_FROMFIELD_REQUIREDBY, "RequiredBy",  (1u << 1)) \
-    macro(EVENT_FROMFIELD_OPTSDEPS,   "OptsDepends", (1u << 2))
-
-typedef enum event_fromfield_e event_fromfield_t ;
-enum event_fromfield_e
-{
-#define EVENT_FROMFIELD_ENUM(id, str, bit) id = bit,
-    EVENT_FROMFIELD_TABLE(EVENT_FROMFIELD_ENUM)
-#undef EVENT_FROMFIELD_ENUM
-} ;
-
 static inline char const *event_src_to_string(event_source_t v)
 {
     switch (v) {
@@ -110,13 +97,6 @@ static inline int event_do_from_string(char const *s)
     return -1 ;
 }
 
-static inline int event_fromfield_from_string(char const *s)
-{
-#define EVENT_FROMFIELD_IF(id, str, bit) if (!strcmp(s, str)) return id ;
-    EVENT_FROMFIELD_TABLE(EVENT_FROMFIELD_IF)
-#undef EVENT_FROMFIELD_IF
-    return -1 ;
-}
 
 /** @brief inotify(7) constants accepted on an inotify source. Stored verbatim;
  * the daemon maps each name to its inotify mask. The On predicates of a service

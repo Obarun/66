@@ -217,7 +217,6 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         log_warn_return(LOG_EXIT_ZERO, "invalid EventType: ", v, " of service: ", name) ;
 
     int has_from = EVENT_PRESENT(st, FROM) ;
-    int has_ff = EVENT_PRESENT(st, FROMFIELD) ;
     int has_on = EVENT_PRESENT(st, ON) ;
     int has_onall = EVENT_PRESENT(st, ONALL) ;
     int has_do = EVENT_PRESENT(st, DO) ;
@@ -225,11 +224,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     if (src == EVENT_SOURCE_USER) {
 
-        if (has_from || has_ff)
-            log_warn_return(LOG_EXIT_ZERO, "a user reactor is sourceless: From/FromField not allowed of service: ", name) ;
+        if (has_from)
+            log_warn_return(LOG_EXIT_ZERO, "a user reactor is sourceless: From not allowed of service: ", name) ;
 
-    } else if (!has_from && !has_ff)
-        log_warn_return(LOG_EXIT_ZERO, "an event reactor requires From or FromField of service: ", name) ;
+    } else if (!has_from)
+        log_warn_return(LOG_EXIT_ZERO, "an event reactor requires From of service: ", name) ;
 
     /* condition: On / OnAll */
     switch (src) {
@@ -277,19 +276,6 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     if (has_from && !read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, wres, &ev->from, &ev->nfrom)) {
         free(wres) ;
         log_warnu_return(LOG_EXIT_ZERO, "read the From list of service: ", name) ;
-    }
-
-    if (has_ff) {
-
-        v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROMFIELD, 0) ;
-        int bit = event_fromfield_from_string(v) ;
-
-        if (bit < 0) {
-            free(wres) ;
-            log_warn_return(LOG_EXIT_ZERO, "invalid FromField: ", v, " of service: ", name) ;
-        }
-
-        ev->fromfield = (uint32_t)bit ;
     }
 
     if (has_on) {

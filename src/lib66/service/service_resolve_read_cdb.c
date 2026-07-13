@@ -245,7 +245,6 @@ int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t 
         !resolve_get_key_u32(c, "eventtype", &ev->type) ||
         !resolve_get_key_u32(c, "eventfrom", &ev->from) ||
         !resolve_get_key_u32(c, "neventfrom", &ev->nfrom) ||
-        !resolve_get_key_u32(c, "eventfromfield", &ev->fromfield) ||
         !resolve_get_key_u32(c, "eventon", &ev->on) ||
         !resolve_get_key_u32(c, "neventon", &ev->non) ||
         !resolve_get_key_u32(c, "eventcombine", &ev->combine) ||

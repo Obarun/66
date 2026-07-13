@@ -36,7 +36,6 @@ static void test_roundtrip(char const *dir)
     ev.type = EVENT_SOURCE_SCHEDULE ;
     ev.from = resolve_add_string(w, "svc1 svc2") ;
     ev.nfrom = 2 ;
-    ev.fromfield = EVENT_FROMFIELD_DEPENDS | EVENT_FROMFIELD_REQUIREDBY ;
     ev.on = resolve_add_string(w, "up down") ;
     ev.non = 2 ;
     ev.combine = EVENT_COMBINE_ALL ;
@@ -63,7 +62,6 @@ static void test_roundtrip(char const *dir)
     assert(back.type == EVENT_SOURCE_SCHEDULE) ;
     assert(!strcmp(back.sa.s + back.from, "svc1 svc2")) ;
     assert(back.nfrom == 2) ;
-    assert(back.fromfield == (EVENT_FROMFIELD_DEPENDS | EVENT_FROMFIELD_REQUIREDBY)) ;
     assert(!strcmp(back.sa.s + back.on, "up down")) ;
     assert(back.non == 2) ;
     assert(back.combine == EVENT_COMBINE_ALL) ;

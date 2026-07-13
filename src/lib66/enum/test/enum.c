@@ -449,7 +449,6 @@ void test_parser_enums(void) {
     // resolve_parser_enum_section_event_t
     assert(E_PARSER_SECTION_EVENT_EVENTTYPE == (m)++);
     assert(E_PARSER_SECTION_EVENT_FROM == (m)++);
-    assert(E_PARSER_SECTION_EVENT_FROMFIELD == (m)++);
     assert(E_PARSER_SECTION_EVENT_ON == (m)++);
     assert(E_PARSER_SECTION_EVENT_ONALL == (m)++);
     assert(E_PARSER_SECTION_EVENT_DO == (m)++);
@@ -628,6 +627,7 @@ void test_service_enums(void) {
     assert(E_RESOLVE_SERVICE_LIVE_SUPERVISEDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_FDHOLDERDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_ONESHOTDDIR == (m)++);
+    assert(E_RESOLVE_SERVICE_LIVE_EVENTDDIR == (m)++);
     assert(E_RESOLVE_SERVICE_LIVE_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -816,7 +816,7 @@ void test_parser_lists(void) {
         assert(enum_list_parser_section_event[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_event[i].name, enum_str_parser_section_event[i]) == 0);
         int expected_values[] = {
-            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET,
+            E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET,
             E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE
         };
         assert(enum_list_parser_section_event[i].expected == expected_values[i]);

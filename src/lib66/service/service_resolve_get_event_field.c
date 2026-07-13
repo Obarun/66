@@ -65,10 +65,6 @@ int service_resolve_get_event_field(strbuf *sa, resolve_service_addon_event_t *e
             str = fmt ;
             break ;
 
-        case E_RESOLVE_SERVICE_EVENT_FROMFIELD:
-            fmt[u32_fmt(fmt, ev->fromfield)] = 0 ;
-            str = fmt ;
-            break ;
 
         case E_RESOLVE_SERVICE_EVENT_NON:
             fmt[u32_fmt(fmt, ev->non)] = 0 ;

@@ -215,7 +215,6 @@ typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_e
 #define SECTION_EVENT_TEMPLATE(macro) \
     macro(EVENTTYPE,    "EventType",    E_PARSER_EXPECT_LINE), \
     macro(FROM,         "From",         E_PARSER_EXPECT_BRACKET), \
-    macro(FROMFIELD,    "FromField",    E_PARSER_EXPECT_LINE), \
     macro(ON,           "On",           E_PARSER_EXPECT_BRACKET), \
     macro(ONALL,        "OnAll",        E_PARSER_EXPECT_BRACKET), \
     macro(DO,           "Do",           E_PARSER_EXPECT_LINE), \

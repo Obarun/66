@@ -258,7 +258,6 @@ typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
     macro(TYPE,        "eventtype"), \
     macro(FROM,        "eventfrom"), \
     macro(NFROM,       "neventfrom"), \
-    macro(FROMFIELD,   "eventfromfield"), \
     macro(ON,          "eventon"), \
     macro(NON,         "neventon"), \
     macro(COMBINE,     "eventcombine"), \

@@ -62,9 +62,6 @@ void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resol
             ev->nfrom = resolve_add_uint32(data) ;
             break ;
 
-        case E_RESOLVE_SERVICE_EVENT_FROMFIELD:
-            ev->fromfield = resolve_add_uint32(data) ;
-            break ;
 
         case E_RESOLVE_SERVICE_EVENT_NON:
             ev->non = resolve_add_uint32(data) ;

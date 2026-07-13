@@ -66,7 +66,6 @@ static void service_on_do(void)
     assert(c.event.type == EVENT_SOURCE_SERVICE) ;
     assert(!strcmp(c.event.sa.s + c.event.from, "db")) ;
     assert(c.event.nfrom == 1) ;
-    assert(c.event.fromfield == 0) ;
     assert(!strcmp(c.event.sa.s + c.event.on, "down")) ;
     assert(c.event.non == 1) ;
     assert(c.event.combine == EVENT_COMBINE_ANY) ;
@@ -76,7 +75,7 @@ static void service_on_do(void)
     cleanup(&c, w, &st) ;
 }
 
-/* signal reactor: OnAll (all) + Emit, FromField=Depends */
+/* signal reactor: OnAll (all) + Emit, explicit From */
 static void signal_onall_emit(void)
 {
     printf("Running test signal_onall_emit...\n") ;
@@ -88,7 +87,7 @@ static void signal_onall_emit(void)
         "Execute = ( /bin/true )\n"
         "[Event]\n"
         "EventType = signal\n"
-        "FromField = Depends\n"
+        "From = ( db )\n"
         "OnAll = ( SIGHUP SIGTERM )\n"
         "Emit = sig-caught\n" ;
 
@@ -97,8 +96,8 @@ static void signal_onall_emit(void)
 
     assert(c.res.has_event == 1) ;
     assert(c.event.type == EVENT_SOURCE_SIGNAL) ;
-    assert(c.event.from == 0 && c.event.nfrom == 0) ;
-    assert(c.event.fromfield == EVENT_FROMFIELD_DEPENDS) ;
+    assert(!strcmp(c.event.sa.s + c.event.from, "db")) ;
+    assert(c.event.nfrom == 1) ;
     assert(!strcmp(c.event.sa.s + c.event.on, "SIGHUP SIGTERM")) ;
     assert(c.event.non == 2) ;
     assert(c.event.combine == EVENT_COMBINE_ALL) ;
@@ -371,9 +370,9 @@ int main(void)
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = bogus\nFrom = ( db )\nOn = ( down )\nDo = restart\n") ;
 
-    rejected("bad FromField",
+    rejected("missing From",
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
-        "[Event]\nEventType = service\nFromField = Nope\nOn = ( down )\nDo = restart\n") ;
+        "[Event]\nEventType = service\nOn = ( down )\nDo = restart\n") ;
 
     rejected("bad Do",
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
