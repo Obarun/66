@@ -513,35 +513,31 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         auto_chown(mode) ;
 }
 
-static void create_service_oneshot(char const *scandir, ssexec_t *info)
+static void create_service_socket(char const *scandir, char const *name, char const *bin, char const *operand)
 {
     log_flow() ;
 
-    (void)info ;
-
     size_t scandirlen = strlen(scandir) ;
-    size_t fdlen = scandirlen + 1 + SS_ONESHOTD_LEN ;
+    size_t namelen = strlen(name) ;
 
-    char dst[fdlen + 16] ;
+    char dst[scandirlen + 1 + namelen + 16] ;
 
-    /* 66-oneshotd binds its own socket and self-protects via SO_PEERCRED:
-     * just a service dir, a readiness fd (>= 3) and a one-line run. */
-    auto_strings(dst, scandir, "/", SS_ONESHOTD) ;
+    auto_strings(dst, scandir, "/", name) ;
     auto_dir(dst, 0755) ;
     auto_chown(dst) ;
 
-    write_min_resolve(dst, SS_ONESHOTD, 3) ;
+    write_min_resolve(dst, name, 3) ;
 
     auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
 
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + strlen(bin) + strlen(operand) + 64 + 1 ;
 
     char run[runlen] ;
     auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
                 "fdmove -c 2 1\n", \
-                SS_LIBEXECPREFIX "66-oneshotd -d 3 -- s\n") ;
+                SS_LIBEXECPREFIX, bin, " -d 3 -- ", operand, "\n") ;
 
-    auto_strings(dst, scandir, "/", SS_ONESHOTD, "/run") ;
+    auto_strings(dst, scandir, "/", name, "/run") ;
 
     // -1 file_write do not accept closed string
     if (!file_write(dst, run, strlen(run) - 1))
@@ -551,45 +547,7 @@ static void create_service_oneshot(char const *scandir, ssexec_t *info)
     auto_chown(dst) ;
 }
 
-static void create_service_fdholder(char const *scandir, ssexec_t *info)
-{
-    log_flow() ;
-
-    (void)info ;
-
-    size_t scandirlen = strlen(scandir) ;
-    size_t fdlen = scandirlen + 1 + SS_FDHOLDER_LEN ;
-
-    char dst[fdlen + 16] ;
-
-    /* 66-fdholderd binds its own socket and self-protects:
-     * just a service dir, a readiness fd (>= 3) and a one-line run. */
-    auto_strings(dst, scandir, "/", SS_FDHOLDER) ;
-    auto_dir(dst, 0755) ;
-    auto_chown(dst) ;
-
-    write_min_resolve(dst, SS_FDHOLDER, 3) ;
-
-    auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
-
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + 64 + 1 ;
-
-    char run[runlen] ;
-    auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
-                "fdmove -c 2 1\n", \
-                SS_LIBEXECPREFIX "66-fdholderd -d 3 -- s\n") ;
-
-    auto_strings(dst, scandir, "/", SS_FDHOLDER, "/run") ;
-
-    // -1 file_write do not accept closed string
-    if (!file_write(dst, run, strlen(run) - 1))
-        log_dieusys(LOG_EXIT_SYS, "write: ", dst) ;
-
-    auto_chmod(dst, 0755) ;
-    auto_chown(dst) ;
-}
-
-static void create_scandir(char const *live, char const *scandir, ssexec_t *info)
+static void create_scandir(char const *live, char const *scandir)
 {
     log_flow() ;
 
@@ -625,8 +583,9 @@ static void create_scandir(char const *live, char const *scandir, ssexec_t *info
         write_shutdownd(live, scandir) ;
     }
 
-    create_service_fdholder(scandir, info) ;
-    create_service_oneshot(scandir, info) ;
+    create_service_socket(scandir, SS_FDHOLDER, "66-fdholderd", "s") ;
+    create_service_socket(scandir, SS_ONESHOTD, "66-oneshotd", "s") ;
+    create_service_socket(scandir, SS_EVENTD, "66-eventd", scandir) ;
 }
 
 void sanitize_live(char const *live)
@@ -734,7 +693,7 @@ int ssexec_scandir_create(int argc, char const *const *argv, void *data)
         log_trace("sanitize ", info->live.s, " ...") ;
         sanitize_live(info->live.s) ;
         log_info ("Create scandir ", info->scandir.s, " ...") ;
-        create_scandir(info->live.s, info->scandir.s, info) ;
+        create_scandir(info->live.s, info->scandir.s) ;
 
     } else
         log_info("Scandir: ", info->scandir.s, " already exist, keeping it") ;

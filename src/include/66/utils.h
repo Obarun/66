@@ -44,6 +44,7 @@ extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 extern int set_ownerhome_stack_byuid(char *store, uid_t owner) ;
 extern void set_treeinfo(ssexec_t *info) ;
 extern void set_info(ssexec_t *info) ;
+extern int notifier_isvalid(const char *str) ;
 
 /**
  * if a < b return -1

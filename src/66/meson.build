@@ -9,6 +9,10 @@ exe_configs = {
     'sources': ['66-echo.c'],
     'deps': [oblibs_dep]
   },
+  '66-eventd': {
+    'sources': ['66-eventd.c', 'lib/eventd_rule.c'],
+    'deps': [lib66_dep]
+  },
   '66-execute': {
     'sources': ['66-execute.c'],
     'deps': [lib66_dep]
@@ -71,7 +75,7 @@ exe_configs = {
   }
 }
 
-libexec_exes = ['66-execute', '66-fdholderd', '66-oneshot', '66-oneshotd', '66-shutdownd', '66-svctl']
+libexec_exes = ['66-execute', '66-eventd', '66-fdholderd', '66-oneshot', '66-oneshotd', '66-shutdownd', '66-svctl']
 exe_install_dirs = {}
 foreach exe : libexec_exes
   exe_install_dirs += {exe: get_option('libexecdir')}
@@ -183,5 +187,29 @@ if get_option('test')
       test('66-scandir_' + t + '_test', scandir_test_exe,
         env: {'LD_LIBRARY_PATH': meson.current_build_dir()})
     endforeach
+  endif
+endif
+
+# 66-eventd's rule engine lives in 66-eventd/lib (eventd_rule.c), private to the
+# daemon (only 66-eventd loads/matches rules). Its predicate suite has its own
+# main(); wire it explicitly, compiling the engine .c into the test and linking
+# lib66 (eventd_rule_load reads the resolve CDB).
+if get_option('test')
+  eventd_lib_dir = bin_dir / '66-eventd' / 'lib'
+  eventd_test_dir = eventd_lib_dir / 'test'
+  if fs.is_dir(eventd_test_dir)
+    eventd_lib_srcs = files(eventd_lib_dir / 'eventd_rule.c')
+    eventd_test_inc = include_directories('66-eventd/lib')
+    eventd_link_args = get_option('enable-static-executable') ? static_link_args : exe_link_args
+    eventd_test_exe = executable('test_66-eventd_predicate',
+      sources: [files(eventd_test_dir / 'predicate.c')] + eventd_lib_srcs,
+      include_directories: [incdir, eventd_test_inc],
+      dependencies: [lib66_dep],
+      build_by_default: false,
+      c_args: exe_c_args,
+      link_args: eventd_link_args,
+      pie: get_option('enable-pie')
+    )
+    test('66-eventd_predicate_test', eventd_test_exe)
   endif
 endif
