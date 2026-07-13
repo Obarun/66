@@ -363,8 +363,13 @@ static int launch_classic(uint32_t id)
     /* every has_event reactor arms its runtime rule with the daemon on start.
      * a Do=start reactor is additionally armed-not-launched: its ./down (seeded
      * at parse) keeps it supervised-down and the event action brings it up later,
-     * so skip the up command entirely. */
-    if (!pmanager->operation && svc->res->has_event) {
+     * so skip the up command entirely.
+     *
+     * An event-driven start (who=EVENT) is the
+     * daemon firing that Do -- it must launch, not re-arm-and-wait.
+     */
+
+    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT) {
 
         if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', svc->res->sa.s + svc->res->name))
             log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
