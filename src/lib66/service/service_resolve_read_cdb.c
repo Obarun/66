@@ -76,7 +76,8 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
         !resolve_get_key_u32(c, "eventdir", &res->live.eventdir) ||
         !resolve_get_key_u32(c, "supervisedir", &res->live.supervisedir) ||
         !resolve_get_key_u32(c, "fdholderdir", &res->live.fdholderdir) ||
-        !resolve_get_key_u32(c, "oneshotddir", &res->live.oneshotddir)) {
+        !resolve_get_key_u32(c, "oneshotddir", &res->live.oneshotddir) ||
+        !resolve_get_key_u32(c, "eventddir", &res->live.eventddir)) {
             return (errno = EINVAL, 0)  ;
     }
 

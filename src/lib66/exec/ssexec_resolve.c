@@ -106,6 +106,7 @@ static info_field_t const fields[] = {
     { "supervisedir",    INFO_FIELD_STR, offsetof(resolve_service_t, live.supervisedir) },
     { "fdholderdir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.fdholderdir) },
     { "oneshotddir",     INFO_FIELD_STR, offsetof(resolve_service_t, live.oneshotddir) },
+    { "eventddir",       INFO_FIELD_STR, offsetof(resolve_service_t, live.eventddir) },
 
     { "env",             INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, env),           DATA_SERVICE_ENVIRON },
     { "envdir",          INFO_FIELD_STR, offsetof(resolve_service_addon_environ_t, envdir),        DATA_SERVICE_ENVIRON },

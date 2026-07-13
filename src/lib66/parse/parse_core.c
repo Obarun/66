@@ -387,6 +387,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
     res->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
     res->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
     res->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
+    res->live.eventddir = compute_pipe_service(wres, info, SS_EVENTD) ;
 
     free(wres) ;
 

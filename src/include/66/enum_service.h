@@ -146,7 +146,8 @@ typedef enum resolve_service_enum_execute_e resolve_service_enum_execute_t ;
     macro(EVENTDIR,         "eventdir"), \
     macro(SUPERVISEDIR,     "supervisedir"), \
     macro(FDHOLDERDIR,      "fdholderdir"), \
-    macro(ONESHOTDDIR,      "oneshotddir")
+    macro(ONESHOTDDIR,      "oneshotddir"), \
+    macro(EVENTDDIR,        "eventddir")
 
 enum resolve_service_enum_live_e
 {

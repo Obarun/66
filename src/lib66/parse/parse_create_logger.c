@@ -215,6 +215,7 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, resol
     log->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
     log->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
     log->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
+    log->live.eventddir = compute_pipe_service(wres, info, SS_EVENTD) ;
 
     {
         resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, logio) ;

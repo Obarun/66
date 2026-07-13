@@ -302,6 +302,15 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
     new->live.supervisedir = old->live.supervisedir ? resolve_add_string(wres, old->sa.s + old->live.supervisedir) : 0 ;
     new->live.fdholderdir = old->live.fdholderdir ? resolve_add_string(wres, old->sa.s + old->live.fdholderdir) : 0 ;
     new->live.oneshotddir = old->live.oneshotddir ? resolve_add_string(wres, old->sa.s + old->live.oneshotddir) : 0 ;
+    if (old->live.oneshotddir) {
+        // derive <scandir>/eventd from the sibling <scandir>/oneshotd
+        char const *osd = old->sa.s + old->live.oneshotddir ;
+        size_t rootlen = strlen(osd) - SS_ONESHOTD_LEN ;
+        char ev[rootlen + SS_EVENTD_LEN + 1] ;
+        memcpy(ev, osd, rootlen) ;
+        auto_strings(ev + rootlen, SS_EVENTD) ;
+        new->live.eventddir = resolve_add_string(wres, ev) ;
+    } else new->live.eventddir = 0 ;
 
     // logger -> core boolean flag + transient addon (log-dir owner moves onto io)
     new->logger = old->logger.want ? 1 : 0 ;

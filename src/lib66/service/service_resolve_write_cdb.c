@@ -77,7 +77,8 @@ int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
         !resolve_add_cdb_uint(c, "eventdir", res->live.eventdir) ||
         !resolve_add_cdb_uint(c, "supervisedir", res->live.supervisedir) ||
         !resolve_add_cdb_uint(c, "fdholderdir", res->live.fdholderdir) ||
-        !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir))
+        !resolve_add_cdb_uint(c, "oneshotddir", res->live.oneshotddir) ||
+        !resolve_add_cdb_uint(c, "eventddir", res->live.eventddir))
             return 0 ;
 
     return 1 ;

@@ -168,6 +168,10 @@ static void modify_live(resolve_service_t *res, char const *data, uint32_t field
             res->live.oneshotddir = resolve_add_string(wres, data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_LIVE_EVENTDDIR:
+            res->live.eventddir = resolve_add_string(wres, data) ;
+            break ;
+
         default:
             break ;
     }

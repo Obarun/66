@@ -131,9 +131,10 @@ struct resolve_service_addon_live_s
     uint32_t supervisedir ; // string, /run/66/state/uid/service_name/supervise -> /var/lib/66/system/service/svc/service_name/supervise
     uint32_t fdholderdir ; // string, /run/66/state/uid/service_name/scandir/fdholder
     uint32_t oneshotddir ; // string, /run/66/state/uid/service_name/scandir/oneshotd
+    uint32_t eventddir ; // string, /run/66/state/uid/service_name/scandir/eventd
 } ;
 
-#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_LIVE_ZERO { 0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_addon_logger_s resolve_service_addon_logger_t, *resolve_service_addon_logger_t_ref ;
 struct resolve_service_addon_logger_s

@@ -185,6 +185,10 @@ static int get_live(strbuf *sa, resolve_service_t *res, resolve_service_enum_liv
             str = res->sa.s + res->live.oneshotddir ;
             break ;
 
+        case E_RESOLVE_SERVICE_LIVE_EVENTDDIR:
+            str = res->sa.s + res->live.eventddir ;
+            break ;
+
         default:
             return e ;
     }
