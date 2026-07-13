@@ -88,4 +88,55 @@ extern int eventd_rule_load(char const *base, char const *name, resolve_service_
  */
 extern void eventd_rule_free(resolve_service_addon_event_t *r) ;
 
+/**
+ * @brief Synthesize the current TRANSITION frame of a source, for `eventd_rule_onall`.
+ *
+ * `eventd_rule_onall` calls this once per OTHER source it must check. The callback
+ * reads that source's committed status and builds a frame reflecting its state at
+ * time T; the daemon's implementation (`reactor_source_status`) reads the source's
+ * resolve, then its `svc_status`, and fills @out as a TRANSITION frame carrying the
+ * source's `state`, `result` and `code`. @svc is a bare source name that is NOT
+ * NUL-terminated: exactly @svclen bytes are valid and the callee must not read past
+ * them. A return of 0 makes the OnAll conjunction fail (the source's state is not
+ * available, so the rule cannot be proven).
+ *
+ * @param[in]  svc    The source name; NOT NUL-terminated, @svclen bytes valid.
+ * @param[in]  svclen The length of @svc in bytes.
+ * @param[out] out    Filled with the source's current TRANSITION frame on success;
+ *                    left untouched when the callback returns 0.
+ * @param[in]  ctx    Opaque caller context passed through from `eventd_rule_onall`
+ *                    (the daemon passes none and ignores it).
+ * @return 1 if the source's state was read and @out was filled, 0 if it could not be
+ *         determined (which fails the OnAll conjunction).
+ */
+typedef int (*eventd_frame_fn)(char const *svc, size_t svclen, event_frame_t *out, void *ctx) ;
+
+/**
+ * @brief Complete an OnAll conjunction across sources OTHER than @source.
+ *
+ * `eventd_rule_match` decides only the incoming frame's own source. This function
+ * closes an `OnAll` rule by checking every REMAINING source. It walks @r's `on`
+ * tokens and, for each, decides applicability exactly as the daemon does: a bare
+ * token (no `:`) is skipped -- it was already decided against the incoming frame; a
+ * token whose prefix before `:` is NOT one of @r's `from` sources (an argument token
+ * such as `exited:0`) is skipped; the token whose source prefix equals @source is
+ * skipped -- that source is already confirmed by the incoming frame. Every OTHER
+ * `svc:cond` token is a source that must currently hold: @get_frame synthesizes that
+ * source's current frame and the condition after the `:` is matched with
+ * `eventd_token_match`. If @get_frame returns 0 (the source's state is unknown) or a
+ * condition fails to match, the conjunction cannot hold and this returns 0 at once.
+ * A non-ALL rule (`combine != EVENT_COMBINE_ALL`) has no cross-source part and
+ * returns 1 without inspecting any token.
+ *
+ * @param[in] r         The rule. Only used when `r->combine == EVENT_COMBINE_ALL`.
+ * @param[in] source    The name of the source that emitted the incoming frame; its
+ *                      own `on` tokens are skipped (already confirmed).
+ * @param[in] get_frame Callback used to obtain each other source's current frame.
+ * @param[in] ctx       Opaque context passed verbatim to @get_frame.
+ * @return 1 if the rule is not `OnAll`, or if every other-source token matches its
+ *         source's current state; 0 as soon as @get_frame reports a source's state
+ *         unknown or an other-source token fails to match.
+ */
+extern int eventd_rule_onall(resolve_service_addon_event_t const *r, char const *source, eventd_frame_fn get_frame, void *ctx) ;
+
 #endif

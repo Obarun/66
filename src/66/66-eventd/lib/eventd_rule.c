@@ -169,3 +169,43 @@ int eventd_rule_match(resolve_service_addon_event_t const *r, char const *source
     // ALL is completed cross-source by the daemon; here it is this source's part
     return r->combine == EVENT_COMBINE_ALL ? all : any ;
 }
+
+int eventd_rule_onall(resolve_service_addon_event_t const *r, char const *source, eventd_frame_fn get_frame, void *ctx)
+{
+    if (r->combine != EVENT_COMBINE_ALL)
+        return 1 ;
+
+    size_t srclen = strlen(source) ;
+    char const *p = r->sa.s + r->on ;
+
+    for (uint32_t i = 0 ; i < r->non ; i++) {
+
+        size_t tlen ;
+        char const *start = p ;
+        p = list_next(p, &tlen) ;
+
+        char token[tlen + 1] ;
+        memcpy(token, start, tlen) ;
+        token[tlen] = 0 ;
+
+        char const *colon = strchr(token, ':') ;
+        if (!colon)
+            continue ; // bare token: decided against the incoming frame in eventd_rule_match
+
+        size_t svclen = (size_t)(colon - token) ;
+        if (!source_in_from(r, token, svclen))
+            continue ; // the colon is an argument (e.g. exited:0), not a source prefix
+
+        if (svclen == srclen && !memcmp(token, source, srclen))
+            continue ; // this frame's own source: already confirmed
+
+        event_frame_t f ;
+        if (!get_frame(token, svclen, &f, ctx))
+            return 0 ; // the other source's state is unknown -> conjunction cannot hold
+
+        if (!eventd_token_match(colon + 1, &f))
+            return 0 ;
+    }
+
+    return 1 ;
+}
