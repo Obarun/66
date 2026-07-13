@@ -13,16 +13,13 @@
  */
 
 #include <string.h>
-#include <fcntl.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
-#include <oblibs/socket.h>
-#include <oblibs/io.h>
-#include <oblibs/fd.h>
 
 #include <66/ssexec.h>
+#include <66/svc.h>
 #include <66/constants.h>
 #include <66/config.h>
 
@@ -53,23 +50,11 @@ int ssexec_emit(int argc, char const *const *argv, void *data)
     if (!namelen || namelen > SS_MAX_SERVICE_NAME)
         log_die(LOG_EXIT_USER, "invalid event name: ", name) ;
 
-    char sock[strlen(info->scandir.s) + SS_EVENTD_LEN + 3 + 1] ;
-    auto_strings(sock, info->scandir.s, "/", SS_EVENTD, "/s") ;
+    char eventddir[info->scandir.len + 1 + SS_EVENTD_LEN + 1] ;
+    auto_strings(eventddir, info->scandir.s, "/", SS_EVENTD) ;
 
-    char frame[1 + namelen + 1] ;
-    auto_strings(frame, "e", name) ;
-
-    int fd = socketunix_create(O_CLOEXEC) ;
-    if (fd < 0)
-        log_dieusys(LOG_EXIT_SYS, "create socket") ;
-
-    if (socketunix_connect(fd, sock) < 0) {
-        close_fd(fd) ;
-        log_dieusys(LOG_EXIT_SYS, "connect to event daemon: ", sock) ;
-    }
-
-    if (!io_writenclose(fd, frame, 1 + namelen))
-        log_dieusys(LOG_EXIT_SYS, "send event to: ", sock) ;
+    if (!svcd_notify(eventddir, 'e', name))
+        log_dieusys(LOG_EXIT_SYS, "emit event to the event daemon") ;
 
     return 0 ;
 }

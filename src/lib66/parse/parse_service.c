@@ -36,6 +36,7 @@
 #include <66/state.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/event_rule.h>
 #include <66/tree.h>
 #include <66/sanitize.h>
 #include <66/symlink.h>
@@ -346,92 +347,98 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
             if (!mkdtemp(sa.s))
                 log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
+            /* a Do=start reactor is armed, not launched: force it down so
+             * supervision keeps it offline until an event brings it up */
+            if (c->res.has_event && c->event.docmd == EVENT_DO_START)
+                c->execute.down = 1 ;
+
             write_services(&c->res, &c->execute, &c->environ, sa.s, rforce) ;
 
             parse_write_state(&c->res, sa.s, rforce) ;
 
             service_resolve_write_remote(&c->res, sa.s, rforce) ;
 
+            char const *gname = c->res.sa.s + c->res.name ;
+            size_t glen = strlen(c->res.sa.s + c->res.name) ;
+
             if (c->res.has_limit) {
-                char const *lname = c->res.sa.s + c->res.name ;
-                char aname[strlen(lname) + SS_ADDON_LIMIT_SUFFIX_LEN + 1] ;
-                auto_strings(aname, lname, SS_ADDON_LIMIT_SUFFIX) ;
+                char aname[glen + SS_ADDON_LIMIT_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_LIMIT_SUFFIX) ;
                 resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &c->limit) ;
                 if (!resolve_write_at(wlimit, sa.s, aname)) {
                     free(wlimit) ;
-                    log_dieusys(LOG_EXIT_SYS, "write limit addon of: ", lname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write limit addon of: ", gname) ;
                 }
                 free(wlimit) ;
             }
 
             if (c->res.has_environ) {
-                char const *ename = c->res.sa.s + c->res.name ;
-                char aname[strlen(ename) + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ;
-                auto_strings(aname, ename, SS_ADDON_ENVIRON_SUFFIX) ;
+                char aname[glen + SS_ADDON_ENVIRON_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_ENVIRON_SUFFIX) ;
                 resolve_wrapper_t_ref wenv = resolve_set_struct(DATA_SERVICE_ENVIRON, &c->environ) ;
                 if (!resolve_write_at(wenv, sa.s, aname)) {
                     free(wenv) ;
-                    log_dieusys(LOG_EXIT_SYS, "write environ addon of: ", ename) ;
+                    log_dieusys(LOG_EXIT_SYS, "write environ addon of: ", gname) ;
                 }
                 free(wenv) ;
             }
 
             if (c->res.has_io) {
-                char const *ioname = c->res.sa.s + c->res.name ;
-                char aname[strlen(ioname) + SS_ADDON_IO_SUFFIX_LEN + 1] ;
-                auto_strings(aname, ioname, SS_ADDON_IO_SUFFIX) ;
+
+                char aname[glen + SS_ADDON_IO_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_IO_SUFFIX) ;
                 resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &c->io) ;
                 if (!resolve_write_at(wio, sa.s, aname)) {
                     free(wio) ;
-                    log_dieusys(LOG_EXIT_SYS, "write io addon of: ", ioname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write io addon of: ", gname) ;
                 }
                 free(wio) ;
             }
 
             if (c->res.has_execute) {
-                char const *exname = c->res.sa.s + c->res.name ;
-                char aname[strlen(exname) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
-                auto_strings(aname, exname, SS_ADDON_EXECUTE_SUFFIX) ;
+
+                char aname[glen + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_EXECUTE_SUFFIX) ;
                 resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &c->execute) ;
                 if (!resolve_write_at(wex, sa.s, aname)) {
                     free(wex) ;
-                    log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", exname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", gname) ;
                 }
                 free(wex) ;
             }
 
             if (c->res.has_dependencies) {
-                char const *dname = c->res.sa.s + c->res.name ;
-                char aname[strlen(dname) + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ;
-                auto_strings(aname, dname, SS_ADDON_DEPENDENCIES_SUFFIX) ;
+
+                char aname[glen + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_DEPENDENCIES_SUFFIX) ;
                 resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
                 if (!resolve_write_at(wdep, sa.s, aname)) {
                     free(wdep) ;
-                    log_dieusys(LOG_EXIT_SYS, "write dependencies addon of: ", dname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write dependencies addon of: ", gname) ;
                 }
                 free(wdep) ;
             }
 
             if (c->res.has_regex) {
-                char const *rxname = c->res.sa.s + c->res.name ;
-                char aname[strlen(rxname) + SS_ADDON_REGEX_SUFFIX_LEN + 1] ;
-                auto_strings(aname, rxname, SS_ADDON_REGEX_SUFFIX) ;
+
+                char aname[glen + SS_ADDON_REGEX_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_REGEX_SUFFIX) ;
                 resolve_wrapper_t_ref wrx = resolve_set_struct(DATA_SERVICE_REGEX, &c->regex) ;
                 if (!resolve_write_at(wrx, sa.s, aname)) {
                     free(wrx) ;
-                    log_dieusys(LOG_EXIT_SYS, "write regex addon of: ", rxname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write regex addon of: ", gname) ;
                 }
                 free(wrx) ;
             }
 
             if (c->res.has_event) {
-                char const *evname = c->res.sa.s + c->res.name ;
-                char aname[strlen(evname) + SS_ADDON_EVENT_SUFFIX_LEN + 1] ;
-                auto_strings(aname, evname, SS_ADDON_EVENT_SUFFIX) ;
+
+                char aname[glen + SS_ADDON_EVENT_SUFFIX_LEN + 1] ;
+                auto_strings(aname, gname, SS_ADDON_EVENT_SUFFIX) ;
                 resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &c->event) ;
                 if (!resolve_write_at(wev, sa.s, aname)) {
                     free(wev) ;
-                    log_dieusys(LOG_EXIT_SYS, "write event addon of: ", evname) ;
+                    log_dieusys(LOG_EXIT_SYS, "write event addon of: ", gname) ;
                 }
                 free(wev) ;
             }

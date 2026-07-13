@@ -34,6 +34,8 @@
 #include <oblibs/spawn.h>
 
 #include <66/service.h>
+#include <66/resolve.h>
+#include <66/event_rule.h>
 #include <66/state.h>
 #include <66/status.h>
 #include <66/enum_parser.h>
@@ -331,6 +333,20 @@ static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
     complete(id, false) ;
 }
 
+static uint32_t reactor_docmd(resolve_service_t *res)
+{
+    if (!res->has_event)
+        return EVENT_DO_NONE ;
+
+    resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    int r = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) ;
+
+    uint32_t docmd = r == 1 ? ev.docmd : EVENT_DO_NONE ;
+    resolve_free(wev) ;
+    return docmd ;
+}
+
 /** Native CLASSIC launch: send the control command over supervise/control and,
  * when a wait was requested (-w), watch the event fifodir for the transition.
  * Owns its service's completion: it always returns 1 and reports success/failure
@@ -343,6 +359,21 @@ static int launch_classic(uint32_t id)
     char *scandir = svc->res->sa.s + svc->res->live.scandir ;
 
     svc->native = true ;
+
+    /* every has_event reactor arms its runtime rule with the daemon on start.
+     * a Do=start reactor is additionally armed-not-launched: its ./down (seeded
+     * at parse) keeps it supervised-down and the event action brings it up later,
+     * so skip the up command entirely. */
+    if (!pmanager->operation && svc->res->has_event) {
+
+        if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', svc->res->sa.s + svc->res->name))
+            log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
+
+        if (reactor_docmd(svc->res) == EVENT_DO_START) {
+            complete(id, true) ;
+            return 1 ;
+        }
+    }
 
     if (pmanager->woption) {
 

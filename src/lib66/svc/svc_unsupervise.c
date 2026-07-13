@@ -32,6 +32,9 @@ static void sanitize_it(resolve_service_t *res, fdholder_client_t *a)
 {
     log_flow() ;
 
+    if (res->has_event && !svcd_notify(res->sa.s + res->live.eventddir, 'd', res->sa.s + res->name))
+        log_warnusys("disarm event reactor: ", res->sa.s + res->name) ;
+
     ss_state_t sta = STATE_ZERO ;
 
     if (!state_read(&sta, res))
