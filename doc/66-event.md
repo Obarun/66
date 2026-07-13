@@ -143,7 +143,7 @@ selects which family of source it subscribes to and, for `service`/`signal`/`use
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`/`FromField`, `On`/`OnAll`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | — |
 
 ```ini
 # frontend: backend
@@ -175,7 +175,7 @@ Do    = restart
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`/`FromField`, `On`/`OnAll`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | — |
 
 ```ini
 # frontend: sshd
@@ -237,7 +237,7 @@ The same `alerter` also fires if an operator runs `66 emit backend-down` from a 
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`/`FromField`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `Do`/`Emit` | — |
 
 A reactor to a configured source carries **no `On`**: the condition lives in the source and
 is authoritative. To react differently, create a distinct source.
@@ -313,11 +313,11 @@ and acyclic.
 
 | EventType | Source (`[Main]`) | Reactor (`[Event]`) |
 |---|---|---|
-| `inotify` | `Watch` + `On` | `From`/`FromField` + `Do`/`Emit` |
-| `schedule` | `Expression` (+ `Timezone`) | `From`/`FromField` + `Do`/`Emit` |
-| `timer` | `Every` | `From`/`FromField` + `Do`/`Emit` |
-| `service` | *(not a source)* | `From`/`FromField` + `On`/`OnAll` + `Do`/`Emit` |
-| `signal` | *(not a source)* | `From`/`FromField` + `On`/`OnAll` + `Do`/`Emit` |
+| `inotify` | `Watch` + `On` | `From` + `Do`/`Emit` |
+| `schedule` | `Expression` (+ `Timezone`) | `From` + `Do`/`Emit` |
+| `timer` | `Every` | `From` + `Do`/`Emit` |
+| `service` | *(not a source)* | `From` + `On`/`OnAll` + `Do`/`Emit` |
+| `signal` | *(not a source)* | `From` + `On`/`OnAll` + `Do`/`Emit` |
 | `user` | *(not a source)* | `On` + `Do`/`Emit` *(no `From`)* |
 
 Every reactor carries `EventType` and at least one of `Do` / `Emit`. Every source carries
@@ -442,85 +442,18 @@ From = ( rabbitmq )
 The source(s) a reactor subscribes to. **Always explicit** — sources are never inferred from
 the `On` list.
 
-* mandatory: yes for every reactor **except** `user`, unless [`FromField`](#fromfield) is
-  used instead. At least one of `From` / `FromField` must be present.
+* mandatory: yes for every reactor **except** `user` (which is sourceless).
 
 * syntax: [brackets](66-frontend.html#brackets)
 
 * valid values: the name of any valid service. For `service`/`signal` it is a supervised
   service; for `inotify`/`schedule`/`timer` it is the name of the `event`-type source.
 
-### FromField
-
-**Source Snippet**:
-```ini
-FromField = Depends
-```
-
-Turns this service's own dependency relationships into event sources, so you don't have to
-restate them in [`From`](#from). Instead of naming each source, you point at one of the
-service's existing dependency lists; the rule then reacts to whatever that list currently
-holds. `66` records the *choice* of list in the resolve file (not a frozen copy of it), and
-[66-eventd](66-eventd.html) **resolves it to concrete service names when it loads the rule**,
-reading the service's current dependency list. The reaction therefore sees a plain list of
-sources, with no indirection.
-
-The benefit is that the event rule **follows the dependency list automatically**: add or
-remove an entry later and the set of sources tracks it — no second place to keep in sync, and
-no re-parse needed for the change to take effect.
-
-* mandatory: no — but at least one of `From` / `FromField` must be present (except `user`,
-  which is sourceless).
-
-* syntax: [inline](66-frontend.html#inline)
-
-* valid values:
-
-    * `Depends` — the service's [`Depends`](66-frontend.html#depends) list: react to the
-      services this one needs.
-    * `RequiredBy` — its [`RequiredBy`](66-frontend.html#requiredby) list: react to the
-      services that need this one (computed from the whole system graph).
-    * `OptsDepends` — its [`OptsDepends`](66-frontend.html#optsdepends) list: react to the
-      optional dependency that was actually selected.
-
-    `From` and `FromField` are **unioned**, duplicates removed — use either, or both.
-
-**Example — restart on any dependency going down.** `webapp` depends on `postgres` and
-`redis`; the rule below restarts it whenever either one goes down, without naming them a
-second time:
-
-```ini
-# frontend: webapp
-[Main]
-Type = classic
-Description = "web application"
-Depends = ( postgres redis )
-[Start]
-Execute = ( /usr/bin/webapp )
-[Event]
-EventType = service
-FromField = Depends
-On = ( down )
-Do = restart
-```
-
-Here `FromField = Depends` reacts to `postgres` and `redis` — exactly as if you had written
-`From = ( postgres redis )`, but resolved from the live `Depends` list. Add a third entry to
-`Depends` and it becomes an event source too, automatically, with no re-parse.
-
-**Example — union of `FromField` and `From`.** Combine the dependency list with an extra,
-unrelated source:
-
-```ini
-[Event]
-EventType = service
-FromField = Depends
-From = ( rabbitmq )
-On = ( down )
-Do = restart
-```
-
-Here the sources are `postgres`, `redis` **and** `rabbitmq`.
+For a `service`/`signal` reactor, each `From` source also becomes a **dependency** of the
+reactor. `66` supervises the sources before it arms the reactor, so `66-eventd` always
+subscribes to a source that already exists — and reads the source's current state at that
+moment. A reactor whose source is already in the awaited state therefore fires immediately,
+instead of waiting for the source's next transition.
 
 ### On / OnAll
 
@@ -650,7 +583,6 @@ Reactor (an `[Event]` section added to a normal service):
 [Event]
 EventType =
 From = ()
-FromField =
 On = ()
 OnAll = ()
 Do =
