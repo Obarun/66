@@ -30,7 +30,7 @@ The *66-shutdown* program abides to the standards of the LSB-3.0.0 [shutdown](ht
 
 - **-H, --help**: prints this help.
 
-- **-v, --verbose** *number*: increase/decrease the verbosity of the command.
+- **-v, --verbosity** *number*: increase/decrease the verbosity of the command.
 
 - **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 

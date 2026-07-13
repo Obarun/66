@@ -25,7 +25,7 @@ This program expects to find a regular file or a directory in *src* containing o
 
 - **-h, --help**: prints this help.
 
-- **-v, --verbose** *verbosity*: increases/decreases the verbosity of the command.
+- **-v, --verbosity** *verbosity*: increases/decreases the verbosity of the command.
     * *1*: only print error messages. This is the default.
     * *2*: also print warning messages.
     * *3*: also print tracing messages.
