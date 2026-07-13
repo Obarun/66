@@ -43,6 +43,7 @@
 
 #include <66/oneshot.h>
 #include <66/constants.h>
+#include <66/utils.h>
 
 typedef struct oneshot_job_s oneshot_job_t ;
 struct oneshot_job_s
@@ -89,7 +90,7 @@ static oneshot_daemon_t osd = {
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                          .help = "print this help" },
-    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "number", .help = "increase/decrease verbosity" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbosity", .arg = OPT_REQUIRED, .argname = "number", .help = "increase/decrease verbosity" },
     { .id = 'd',         .shortname = 'd', .longname = "notify",  .arg = OPT_REQUIRED, .argname = "number", .help = "notify readiness on file descriptor fd (>= 3)" },
     { .id = 'b',         .shortname = 'b', .longname = "backlog", .arg = OPT_REQUIRED, .argname = "number", .help = "listen backlog" },
 } ;
@@ -504,22 +505,6 @@ static void server_cleanup(void)
     log_info("oneshot daemon stopped") ;
 }
 
-static int notifier_isvalid(const char *str)
-{
-	uint32_t u ;
-
-	if (!u32_scan_strict(str, &u) || u > INT_MAX)
-		log_die(LOG_EXIT_USER, "invalid notification file descriptor: ", str) ;
-
-	if (u < 3)
-		log_die(LOG_EXIT_USER, "file descriptor must be 3 or more") ;
-
-	if (fcntl(u, F_GETFD) < 0)
-		log_diesys(LOG_EXIT_USER, "invalid file descriptor") ;
-
-	return (int)u ;
-}
-
 int main(int argc, char const *const *argv)
 {
     log_flow() ;
@@ -575,7 +560,7 @@ int main(int argc, char const *const *argv)
     if (!server_init(argv[0], backlog))
         log_dieu(LOG_EXIT_SYS, "initialize oneshot daemon") ;
 
-    if (notif >= 0 && write(notif, "\n", 1) < 0)
+    if (io_write(notif, "\n", 1) < 0)
         log_dieusys(LOG_EXIT_SYS, "notify readiness") ;
 
     int r = sse_poll(&osd.epoll, SSE_TIMEOUT_INFINITE) ;

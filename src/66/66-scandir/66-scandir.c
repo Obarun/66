@@ -954,7 +954,7 @@ int main(int argc, char const *const *argv)
 
     initial_cleanup() ;
     if (notif) {
-        if (write(notif, "\n", 1) < 0) log_warnusys("notify readiness") ;
+        if (io_write(notif, "\n", 1) < 0) log_warnusys("notify readiness") ;
         close(notif) ;
     }
 

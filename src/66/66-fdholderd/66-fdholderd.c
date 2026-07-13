@@ -42,6 +42,7 @@
 #include <oblibs/socket.h>
 
 #include <66/fdholder.h>
+#include <66/utils.h>
 
 // one stored descriptor, keyed by name
 typedef struct fdholder_entry_s fdholder_entry_t ;
@@ -113,7 +114,7 @@ static fdholder_daemon_t fdh = {
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                          .help = "print this help" },
-    { .id = 'v',         .shortname = 'v', .longname = "verbose", .arg = OPT_REQUIRED, .argname = "number", .help = "increase/decrease verbosity" },
+    { .id = 'v',         .shortname = 'v', .longname = "verbosity", .arg = OPT_REQUIRED, .argname = "number", .help = "increase/decrease verbosity" },
     { .id = 'd',         .shortname = 'd', .longname = "notify",  .arg = OPT_REQUIRED, .argname = "fd",     .help = "notify readiness on file descriptor fd (>= 3)" },
     { .id = 'n',         .shortname = 'n', .longname = "maxfds",  .arg = OPT_REQUIRED, .argname = "number", .help = "maximum number of stored descriptors" },
     { .id = 'b',         .shortname = 'b', .longname = "backlog", .arg = OPT_REQUIRED, .argname = "number", .help = "listen backlog" },
@@ -831,12 +832,7 @@ int main(int argc, char const *const *argv)
                     break ;
                 case 'd' :
                 {
-                    uint32_t f ;
-                    /* 0/1/2 are reserved by the daemon (stdio + logging) ; the
-                     * readiness fd is an out-of-band channel, always >= 3 */
-                    if (!u32_scan_strict(st.arg, &f) || f < 3)
-                        return opt_emit_usage(cmd.name, &cmd) ;
-                    notif = (int)f ;
+                    notif = notifier_isvalid(st.arg) ;
                     break ;
                 }
                 case 'n' :
@@ -874,7 +870,7 @@ int main(int argc, char const *const *argv)
     if (!server_init(argv[0], backlog))
         log_dieu(LOG_EXIT_SYS, "initialize fdholder daemon") ;
 
-    if (notif >= 0 && write(notif, "\n", 1) < 0)
+    if (io_write(notif, "\n", 1) < 0)
         log_dieusys(LOG_EXIT_SYS, "notify readiness") ;
 
     int r = sse_poll(&fdh.epoll, SSE_TIMEOUT_INFINITE) ;
