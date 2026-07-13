@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <dirent.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -37,6 +38,7 @@
 
 #include <66/event.h>
 #include <66/event_rule.h>
+#include <66/resolve.h>
 #include <66/status.h>
 #include <66/constants.h>
 #include <66/utils.h>
@@ -343,6 +345,48 @@ static void eventd_emit(char const *name)
     char nb[U32_FMT] ;
     nb[u32_fmt(nb, s->refcount)] = 0 ;
     log_info("user event ", name, ": ", nb, " reactor(s)") ;
+}
+
+/* At the very first use of repopulate, the scandir
+ * should be empty. In any others case, best-efford to
+ * recover the previous state.*/
+static void repopulate(char const *scandir)
+{
+    log_flow() ;
+
+    DIR *dir = opendir(".") ;
+    if (!dir) {
+        log_warnusys("opendir scandir for repopulation: ", scandir) ;
+        return ;
+    }
+
+    struct dirent *d ;
+    errno = 0 ;
+    while ((d = readdir(dir))) {
+
+        if (d->d_name[0] == '.'
+         || !strcmp(d->d_name, SS_EVENTD)
+         || !strcmp(d->d_name, SS_ONESHOTD)
+         || !strcmp(d->d_name, SS_FDHOLDER)) {
+            errno = 0 ;
+            continue ;
+        }
+
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        int armit = resolve_read(wres, sysdir, d->d_name) == 1 && res.has_event ;
+        resolve_free(wres) ;
+
+        if (armit)
+            eventd_arm(d->d_name) ;
+
+        errno = 0 ;
+    }
+
+    if (errno)
+        log_warnusys("readdir scandir for repopulation: ", scandir) ;
+
+    closedir(dir) ;
 }
 
 static void conn_dispatch(eventd_conn_t *conn)
@@ -652,6 +696,8 @@ int main(int argc, char const *const *argv)
         log_dieu(LOG_EXIT_SYS, "initialize event daemon") ;
 
     log_info("event daemon watching scandir: ", scandir) ;
+
+    repopulate(scandir) ;
 
     if (io_write(notif, "\n", 1) < 0)
         log_dieusys(LOG_EXIT_SYS, "notify readiness") ;
