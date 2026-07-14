@@ -63,7 +63,7 @@
 #define ONESHOT_HDR_SIZE           8
 
 /** @brief Maximum number of simultaneous client connections the daemon accepts.
- * Beyond this, `conn_create` closes the freshly accepted socket and refuses the
+ * Beyond this, `client_create` closes the freshly accepted socket and refuses the
  * connection. */
 #define ONESHOT_MAXCLIENTS_DEFAULT 64
 

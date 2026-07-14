@@ -42,8 +42,6 @@ static inline unsigned int parse_signal (char const *signal)
     return i ;
 }
 
-/** The sub-command name selects the signal. The thin entries
- * (do_tree_start/stop/free) post it here; the body reads it. */
 static char const *tree_signal_name = 0 ;
 static uint8_t tree_signal_fork = 0 ;
 
@@ -58,9 +56,6 @@ int on_tree_signal(int id, char const *arg, void *data)
 
     return 0 ;
 }
-
-/** Select the signal from the sub-command name, then run the handler. The leaf
- * options (-f) have already been scanned by opt_dispatch at the sub-node. */
 
 int do_tree_start(int argc, char const *const *argv, void *data)
 {

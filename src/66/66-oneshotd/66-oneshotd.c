@@ -53,14 +53,14 @@ struct oneshot_job_s
 {
     sse_watcher_t wchild ;
     pid_t pid ;
-    struct oneshot_conn_s *conn ; // NULL once the client is gone
+    struct oneshot_client_s *conn ; // NULL once the client is gone
     uint8_t down ;  // ran the finish (1) or run (0) script
     uint8_t who ;   // status_who_e to stamp into the status
     char servicedir[SS_MAX_PATH_LEN] ; // allocated inline with the job, used to write the status
 } ;
 
-typedef struct oneshot_conn_s oneshot_conn_t ;
-struct oneshot_conn_s
+typedef struct oneshot_client_s oneshot_client_t ;
+struct oneshot_client_s
 {
     int key ; // stream fd, hash key
     sse_stream_t *stream ;
@@ -143,7 +143,7 @@ static void oneshotd_write_status(char const *servicedir, uint8_t down, uint8_t 
 
 // responses
 
-static void respond(oneshot_conn_t *conn, uint8_t status, void const *payload, size_t paylen)
+static void respond(oneshot_client_t *conn, uint8_t status, void const *payload, size_t paylen)
 {
     char hdr[ONESHOT_HDR_SIZE] ;
     oneshot_hdr_pack(hdr, ONESHOT_CMD_RESPONSE, status, 0, (uint32_t)paylen) ;
@@ -180,7 +180,7 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
     bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
     oneshotd_write_status(job->servicedir, job->down, job->who, success, (uint32_t)WEXITSTATUS(wstat)) ;
 
-    oneshot_conn_t *conn = job->conn ;
+    oneshot_client_t *conn = job->conn ;
     if (conn) {
         char pl[4] ;
         u32_pack_big(pl, wstat) ;
@@ -193,7 +193,7 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
 
 // handlers
 
-static void handle_run(oneshot_conn_t *conn, uint8_t flags, uint8_t who, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_run(oneshot_client_t *conn, uint8_t flags, uint8_t who, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -295,7 +295,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
 {
     log_flow() ;
 
-    oneshot_conn_t *conn = ctx ;
+    oneshot_client_t *conn = ctx ;
 
     if (!conn || conn->closing) {
         close_all(msg->afd, msg->nfd) ;
@@ -326,7 +326,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
 
 // connection
 
-static void conn_destroy(oneshot_conn_t *conn)
+static void client_destroy(oneshot_client_t *conn)
 {
     if (!conn || conn->closing)
         return ;
@@ -352,12 +352,12 @@ static void conn_destroy(oneshot_conn_t *conn)
     free(conn) ;
 }
 
-static void conn_read_cb(sse_stream_t *stream, void *data)
+static void client_read_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
     (void)stream ;
 
-    oneshot_conn_t *conn = data ;
+    oneshot_client_t *conn = data ;
     if (!conn || conn->closing)
         return ;
 
@@ -365,7 +365,7 @@ static void conn_read_cb(sse_stream_t *stream, void *data)
         int r = stream_message_read(&conn->reader, oneshot_parse_header) ;
         if (r < 0) {
             flog_warnsys("read from client fd %d", conn->key) ;
-            conn_destroy(conn) ;
+            client_destroy(conn) ;
             return ;
         }
         if (r == 0)
@@ -373,30 +373,30 @@ static void conn_read_cb(sse_stream_t *stream, void *data)
     }
 }
 
-static void conn_write_cb(sse_stream_t *stream, void *data)
+static void client_write_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
     (void)stream ; (void)data ;
 }
 
-static void conn_close_cb(sse_stream_t *stream, void *data)
+static void client_close_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
     (void)stream ;
-    conn_destroy(data) ;
+    client_destroy(data) ;
 }
 
-static void conn_error_cb(sse_stream_t *stream, int error, void *data)
+static void client_error_cb(sse_stream_t *stream, int error, void *data)
 {
     log_flow() ;
     (void)stream ;
 
     errno = error ;
-    flog_warnusys("client fd %d", ((oneshot_conn_t *)data)->key) ;
-    conn_destroy(data) ;
+    flog_warnusys("client fd %d", ((oneshot_client_t *)data)->key) ;
+    client_destroy(data) ;
 }
 
-static int conn_create(int fd)
+static int client_create(int fd)
 {
     log_flow() ;
 
@@ -405,14 +405,14 @@ static int conn_create(int fd)
         log_warnusys_return(LOG_EXIT_ZERO, "too many clients - refusing connection") ;
     }
 
-    oneshot_conn_t *conn = calloc(1, sizeof(*conn)) ;
+    oneshot_client_t *conn = calloc(1, sizeof(*conn)) ;
     if (!conn) {
         close_fd(fd) ;
         log_warnusys_return(LOG_EXIT_ZERO, "allocate client") ;
     }
 
     conn->key = fd ;
-    conn->stream = sse_stream_new(fd, conn_read_cb, conn_write_cb, conn_close_cb, conn_error_cb, conn) ;
+    conn->stream = sse_stream_new(fd, client_read_cb, client_write_cb, client_close_cb, client_error_cb, conn) ;
     if (!conn->stream) {
         close_fd(fd) ;
         free(conn) ;
@@ -484,7 +484,7 @@ static void server_accept_cb(sse_watcher_t *w, void *data, int revents)
             return ;
         }
 
-        conn_create(fd) ;
+        client_create(fd) ;
     }
 }
 
@@ -547,9 +547,9 @@ static void server_cleanup(void)
 {
     log_flow() ;
 
-    oneshot_conn_t *c, *tc ;
+    oneshot_client_t *c, *tc ;
     HASH_FOREACH(&osd.conns, c, tc) {
-        conn_destroy(c) ;
+        client_destroy(c) ;
     }
     hash_free(&osd.conns) ;
 
@@ -612,7 +612,7 @@ int main(int argc, char const *const *argv)
 
     osd.owner = geteuid() ;
 
-    if (!hash_init(&osd.conns, 0, offsetof(oneshot_conn_t, node)))
+    if (!hash_init(&osd.conns, 0, offsetof(oneshot_client_t, node)))
         log_dieusys(LOG_EXIT_SYS, "initialize connection table") ;
 
     if (!server_init(argv[0], backlog))

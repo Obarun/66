@@ -65,8 +65,8 @@ struct fdholder_pipe_s
 } ;
 
 // one connected client, keyed by socket fd
-typedef struct fdholder_conn_s fdholder_conn_t ;
-struct fdholder_conn_s
+typedef struct fdholder_clientcom_s fdholder_clientcom_t ;
+struct fdholder_clientcom_s
 {
     int key ; // stream fd, hash key
     sse_stream_t *stream ;
@@ -211,7 +211,7 @@ static void close_all(int const *afd, int nfd)
             close_fd(afd[i]) ;
 }
 
-static int conn_pclose_add(fdholder_conn_t *conn, int fd)
+static int client_pclose_add(fdholder_clientcom_t *conn, int fd)
 {
     if (conn->npclose == conn->capclose) {
         size_t nc = conn->capclose ? conn->capclose + (conn->capclose >> 1) : 4 ;
@@ -227,7 +227,7 @@ static int conn_pclose_add(fdholder_conn_t *conn, int fd)
 
 // responses
 
-static void respond(fdholder_conn_t *conn, uint8_t status, void const *payload, size_t paylen, int fd)
+static void respond(fdholder_clientcom_t *conn, uint8_t status, void const *payload, size_t paylen, int fd)
 {
     char hdr[FDHOLDER_HDR_SIZE] ;
     fdholder_hdr_pack(hdr, FDHOLDER_CMD_RESPONSE, status, 0, (uint32_t)paylen) ;
@@ -245,7 +245,7 @@ static void respond(fdholder_conn_t *conn, uint8_t status, void const *payload, 
  * returned. On a contract violation any stray descriptors are closed, a PROTO
  * answer is sent and 0 is returned.
  */
-static inline int request_name(fdholder_conn_t *conn, char const *pl, size_t pll, int const *afd, int nfd, char *out)
+static inline int request_name(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd, char *out)
 {
     if (nfd != 0) {
         close_all(afd, nfd) ;
@@ -265,7 +265,7 @@ static inline int request_name(fdholder_conn_t *conn, char const *pl, size_t pll
 
 // handlers
 
-static void handle_store(fdholder_conn_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_store(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -319,7 +319,7 @@ static void handle_store(fdholder_conn_t *conn, char const *pl, size_t pll, int 
     flog_info("stored '%s' as fd %d%s", e->name, e->fd, e->expire_abs ? "" : " (never expires)") ;
 }
 
-static void handle_retrieve(fdholder_conn_t *conn, uint8_t flags, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_retrieve(fdholder_clientcom_t *conn, uint8_t flags, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -342,7 +342,7 @@ static void handle_retrieve(fdholder_conn_t *conn, uint8_t flags, char const *pl
 
     if (dodelete) {
         hash_del(&fdh.entries, e) ;
-        if (!conn_pclose_add(conn, fd)) {
+        if (!client_pclose_add(conn, fd)) {
             log_warnusys("defer close of fd; closing now") ;
             close_fd(fd) ;
         }
@@ -354,7 +354,7 @@ static void handle_retrieve(fdholder_conn_t *conn, uint8_t flags, char const *pl
     }
 }
 
-static void handle_delete(fdholder_conn_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_delete(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -378,7 +378,7 @@ static void handle_delete(fdholder_conn_t *conn, char const *pl, size_t pll, int
     flog_info("deleted '%s' (fd %d)", name, fd) ;
 }
 
-static void handle_list(fdholder_conn_t *conn)
+static void handle_list(fdholder_clientcom_t *conn)
 {
     log_flow() ;
 
@@ -405,7 +405,7 @@ static void handle_list(fdholder_conn_t *conn)
  * The daemon keeps both ends (the kernel dups the requested one at send time), so
  * the pair survives either side restarting. Pipe ends never expire.
  */
-static void handle_pipe(fdholder_conn_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_pipe(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -463,7 +463,7 @@ static void handle_pipe(fdholder_conn_t *conn, char const *pl, size_t pll, int c
     flog_info("handed %s end of '%s'", end == FDHOLDER_END_READ ? "read" : "write", name) ;
 }
 
-static void handle_pipe_delete(fdholder_conn_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_pipe_delete(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
@@ -490,7 +490,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
 {
     log_flow() ;
 
-    fdholder_conn_t *conn = ctx ;
+    fdholder_clientcom_t *conn = ctx ;
 
     if (!conn || conn->closing) {
         close_all(msg->afd, msg->nfd) ;
@@ -538,7 +538,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
 
 // connection
 
-static void conn_destroy(fdholder_conn_t *conn)
+static void client_destroy(fdholder_clientcom_t *conn)
 {
     if (!conn || conn->closing)
         return ;
@@ -560,12 +560,12 @@ static void conn_destroy(fdholder_conn_t *conn)
     free(conn) ;
 }
 
-static void conn_read_cb(sse_stream_t *stream, void *data)
+static void client_read_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
     (void)stream ;
 
-    fdholder_conn_t *conn = data ;
+    fdholder_clientcom_t *conn = data ;
     if (!conn || conn->closing)
         return ;
 
@@ -573,7 +573,7 @@ static void conn_read_cb(sse_stream_t *stream, void *data)
         int r = stream_message_read(&conn->reader, fdholder_parse_header) ;
         if (r < 0) {
             flog_warnsys("read from client fd %d", conn->key) ;
-            conn_destroy(conn) ;
+            client_destroy(conn) ;
             return ;
         }
         if (r == 0)
@@ -581,11 +581,11 @@ static void conn_read_cb(sse_stream_t *stream, void *data)
     }
 }
 
-static void conn_write_cb(sse_stream_t *stream, void *data)
+static void client_write_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
 
-    fdholder_conn_t *conn = data ;
+    fdholder_clientcom_t *conn = data ;
     if (!conn || conn->closing)
         return ;
 
@@ -598,24 +598,24 @@ static void conn_write_cb(sse_stream_t *stream, void *data)
     conn->npclose = 0 ;
 }
 
-static void conn_close_cb(sse_stream_t *stream, void *data)
+static void client_close_cb(sse_stream_t *stream, void *data)
 {
     log_flow() ;
     (void)stream ;
-    conn_destroy(data) ;
+    client_destroy(data) ;
 }
 
-static void conn_error_cb(sse_stream_t *stream, int error, void *data)
+static void client_error_cb(sse_stream_t *stream, int error, void *data)
 {
     log_flow() ;
     (void)stream ;
 
     errno = error ;
-    flog_warnusys("client fd %d", ((fdholder_conn_t *)data)->key) ;
-    conn_destroy(data) ;
+    flog_warnusys("client fd %d", ((fdholder_clientcom_t *)data)->key) ;
+    client_destroy(data) ;
 }
 
-static int conn_create(int fd)
+static int client_create(int fd)
 {
     log_flow() ;
 
@@ -624,14 +624,14 @@ static int conn_create(int fd)
         log_warnusys_return(LOG_EXIT_ZERO, "too many clients - refusing connection") ;
     }
 
-    fdholder_conn_t *conn = calloc(1, sizeof(*conn)) ;
+    fdholder_clientcom_t *conn = calloc(1, sizeof(*conn)) ;
     if (!conn) {
         close_fd(fd) ;
         log_warnusys_return(LOG_EXIT_ZERO, "allocate client") ;
     }
 
     conn->key = fd ;
-    conn->stream = sse_stream_new(fd, conn_read_cb, conn_write_cb, conn_close_cb, conn_error_cb, conn) ;
+    conn->stream = sse_stream_new(fd, client_read_cb, client_write_cb, client_close_cb, client_error_cb, conn) ;
     if (!conn->stream) {
         close_fd(fd) ;
         free(conn) ;
@@ -705,7 +705,7 @@ static void server_accept_cb(sse_watcher_t *w, void *data, int revents)
             return ;
         }
 
-        conn_create(fd) ;
+        client_create(fd) ;
     }
 }
 
@@ -785,9 +785,9 @@ static void server_cleanup(void)
     }
     hash_free(&fdh.pipes) ;
 
-    fdholder_conn_t *c, *tc ;
+    fdholder_clientcom_t *c, *tc ;
     HASH_FOREACH(&fdh.conns, c, tc) {
-        conn_destroy(c) ;
+        client_destroy(c) ;
     }
     hash_free(&fdh.conns) ;
 
@@ -864,7 +864,7 @@ int main(int argc, char const *const *argv)
 
     if (!hash_init(&fdh.entries, 0, offsetof(fdholder_entry_t, node))
      || !hash_init(&fdh.pipes, 0, offsetof(fdholder_pipe_t, node))
-     || !hash_init(&fdh.conns, 0, offsetof(fdholder_conn_t, node)))
+     || !hash_init(&fdh.conns, 0, offsetof(fdholder_clientcom_t, node)))
         log_dieusys(LOG_EXIT_SYS, "initialize hash tables") ;
 
     if (!server_init(argv[0], backlog))

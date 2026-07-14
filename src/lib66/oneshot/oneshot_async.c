@@ -28,9 +28,7 @@
 
 #include <66/oneshot.h>
 
-/* Deliver the outcome to the caller exactly once. Every path (response,
- * connection drop, transport error) funnels through here; `done` is the guard. */
-static void async_deliver(oneshot_async_t *a, uint8_t status, uint32_t wstat)
+static void async_dispatch(oneshot_async_t *a, uint8_t status, uint32_t wstat)
 {
     if (a->done)
         return ;
@@ -50,7 +48,7 @@ static void async_response_handler(io_rb_iovec_t *msg, void *data)
         close_fd(msg->afd[i]) ;
 
     if (msg->niov < 1) {
-        async_deliver(a, ONESHOT_ERR, 0) ;
+        async_dispatch(a, ONESHOT_ERR, 0) ;
         return ;
     }
 
@@ -59,7 +57,7 @@ static void async_response_handler(io_rb_iovec_t *msg, void *data)
     uint8_t status = (uint8_t)hdr[2] ;
 
     if (command != ONESHOT_CMD_RESPONSE) {
-        async_deliver(a, ONESHOT_ERR, 0) ;
+        async_dispatch(a, ONESHOT_ERR, 0) ;
         return ;
     }
 
@@ -67,7 +65,7 @@ static void async_response_handler(io_rb_iovec_t *msg, void *data)
     if (status == ONESHOT_OK && msg->niov > 1 && msg->iov[1].iov_len >= 4)
         u32_unpack_big(msg->iov[1].iov_base, &wstat) ;
 
-    async_deliver(a, status, wstat) ;
+    async_dispatch(a, status, wstat) ;
 }
 
 static void async_read_cb(sse_stream_t *stream, void *data)
@@ -81,7 +79,7 @@ static void async_read_cb(sse_stream_t *stream, void *data)
         int r = stream_message_read(&a->reader, oneshot_parse_header) ;
         if (r < 0) {
             log_warnusys("read response from oneshot daemon") ;
-            async_deliver(a, ONESHOT_ERR, 0) ;
+            async_dispatch(a, ONESHOT_ERR, 0) ;
             return ;
         }
         if (!r)
@@ -103,7 +101,7 @@ static void async_close_cb(sse_stream_t *stream, void *data)
     (void)stream ;
 
     // connection dropped: a still-pending request has failed
-    async_deliver(data, ONESHOT_ERR, 0) ;
+    async_dispatch(data, ONESHOT_ERR, 0) ;
 }
 
 static void async_error_cb(sse_stream_t *stream, int error, void *data)
@@ -114,7 +112,7 @@ static void async_error_cb(sse_stream_t *stream, int error, void *data)
     errno = error ;
     log_warnusys("communicate with oneshot daemon") ;
 
-    async_deliver(data, ONESHOT_ERR, 0) ;
+    async_dispatch(data, ONESHOT_ERR, 0) ;
 }
 
 int oneshot_async_send(oneshot_async_t *a, sse_epoll_t *loop, char const *socket, uint8_t down, uint8_t who, char const *servicedir, oneshot_async_cb_t *cb, void *data)
