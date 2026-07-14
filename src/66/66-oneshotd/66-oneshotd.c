@@ -525,7 +525,8 @@ static int server_init(char const *socket_path, int backlog)
         log_warnusys_return(LOG_EXIT_ZERO, "set signals") ;
     }
 
-    osd.sfd = sse_streamux_create_server(socket_path, backlog) ;
+    int fdlock ;
+    osd.sfd = sse_streamux_create_server(socket_path, backlog, &fdlock) ;
     if (osd.sfd < 0) {
         sse_free(&osd.epoll) ;
         log_warnusys_return(LOG_EXIT_ZERO, "create server socket: ", socket_path) ;

@@ -101,6 +101,7 @@ struct eventd_s
     sse_watcher_t wsignal ;
     sse_watcher_t wserver ; // control socket accept watcher
     int sfd ;               // control socket listening fd ; owned by wserver
+    int lockfd ;            // bind lock fd of the control socket ; owned by us
     uid_t owner ;           // scandir owner ; only it may talk to the socket
     hash_t sources ;        // eventd_source_t*
     hash_t reactors ;       // eventd_reactor_t*
@@ -113,6 +114,7 @@ static eventd_t eventd = {
     .wsignal = SSE_WATCHER_ZERO,
     .wserver = SSE_WATCHER_ZERO,
     .sfd = -1,
+    .lockfd = -1,
     .owner = -1,
     .sources = HASH_ZERO,
     .reactors = HASH_ZERO,
@@ -406,10 +408,17 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
 
     if (!pid) {
 
-        // dismantle the inherited context, and build a fresh one
-        sse_free_signal(&eventd.wsignal) ;
+        // log as the action it runs (start/restart/...), not as the daemon
+        PROG = doname ;
+
+        sse_free_signal(&eventd.wsignal) ; // restores the signal mask + closes the signalfd
         close(eventd.epoll.fd) ;
         close(eventd.sfd) ;
+        close(eventd.lockfd) ;
+
+        eventd_client_t *c, *tc ;
+        HASH_FOREACH(&eventd.clients, c, tc)
+            close(c->fd) ;
 
         ssexec_t info = SSEXEC_ZERO ;
         info.owner = eventd.owner ;
@@ -1024,20 +1033,23 @@ static int eventd_init(void)
     if (!sse_ignore_signal(&eventd.wsignal, SIGPIPE) ||
         !sse_attach_signal(&eventd.wsignal, SIGTERM) ||
         !sse_attach_signal(&eventd.wsignal, SIGINT)) {
+        log_warnusys("set signals") ; // log before teardown: sse_free clobbers errno
         sse_free(&eventd.epoll) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "set signals") ;
+        return LOG_EXIT_ZERO ;
     }
 
-    eventd.sfd = sse_streamux_create_server(EVENTD_SOCKET, 0) ;
+    eventd.sfd = sse_streamux_create_server(EVENTD_SOCKET, 0, &eventd.lockfd) ;
     if (eventd.sfd < 0) {
+        log_warnusys("create control socket: ", EVENTD_SOCKET) ; // log before teardown: sse_free clobbers errno
         sse_free(&eventd.epoll) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "create control socket: ", EVENTD_SOCKET) ;
+        return LOG_EXIT_ZERO ;
     }
 
     if (!sse_start_io(&eventd.epoll, &eventd.wserver, server_accept_cb, NULL, eventd.sfd, SSE_READ, 0)) {
+        log_warnusys("watch control socket") ; // log before teardown: sse_free clobbers errno
         close_fd(eventd.sfd) ;
         sse_free(&eventd.epoll) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "watch control socket") ;
+        return LOG_EXIT_ZERO ;
     }
 
     return 1 ;
