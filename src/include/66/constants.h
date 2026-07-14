@@ -88,7 +88,7 @@
 #define SS_ADDON_EVENT_SUFFIX ".event"
 #define SS_ADDON_EVENT_SUFFIX_LEN (sizeof SS_ADDON_EVENT_SUFFIX - 1)
 
-#define SS_FDHOLDER "fdholder"
+#define SS_FDHOLDER "fdholderd"
 #define SS_FDHOLDER_LEN (sizeof SS_FDHOLDER - 1)
 #define SS_ONESHOTD "oneshotd"
 #define SS_ONESHOTD_LEN (sizeof SS_ONESHOTD - 1)
