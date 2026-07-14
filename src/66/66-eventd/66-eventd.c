@@ -973,22 +973,35 @@ static void repopulate(char const *scandir)
     errno = 0 ;
     while ((d = readdir(dir))) {
 
-        if (d->d_name[0] == '.'
-         || !strcmp(d->d_name, SS_EVENTD)
-         || !strcmp(d->d_name, SS_ONESHOTD)
-         || !strcmp(d->d_name, SS_FDHOLDER)) {
+        char const *name = d->d_name ;
+
+        // oneshot/module reactors and tick sources live under a hidden ".name"
+        // entry (66-scandir skips them by the leading dot): strip it and process
+        // them too, but never the "." / ".." directory entries themselves.
+        if (name[0] == '.') {
+            if (!name[1] || (name[1] == '.' && !name[2])) { errno = 0 ; continue ; }
+            name++ ;
+        }
+
+        if (!strcmp(name, SS_EVENTD)
+         || !strcmp(name, SS_ONESHOTD)
+         || !strcmp(name, SS_FDHOLDER)) {
             errno = 0 ;
             continue ;
         }
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-        int armit = resolve_read(wres, sysdir, d->d_name) == 1 && res.has_event ;
+
+        if (resolve_read(wres, sysdir, name) == 1) {
+            // a source carries has_event too, so test the type first
+            if (res.type == E_PARSER_TYPE_EVENT)
+                eventd_arm_source(&res, source_get_who(&res)) ;
+            else if (res.has_event)
+                eventd_arm(name) ;
+        }
+
         resolve_free(wres) ;
-
-        if (armit)
-            eventd_arm(d->d_name) ;
-
         errno = 0 ;
     }
 
