@@ -413,6 +413,96 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
     free(wres) ;
 }
 
+#ifndef FAKELEN
+#define FAKELEN strlen(run)
+#endif
+
+static void compute_log_script(resolve_service_t *log, resolve_service_addon_execute_t *logexec, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
+{
+    log_flow() ;
+
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, logexec) ;
+
+    int build = !strcmp(lg->sa.s + lg->execute.run.build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
+
+    char *pmax = 0 ;
+    char *pback = 0 ;
+    char max[U32_FMT] ;
+    char back[U32_FMT] ;
+    char *timestamp = 0 ;
+    int itimestamp = SS_LOGGER_TIMESTAMP ;
+    char *logrunner = lg->execute.run.runas ? lg->sa.s + lg->execute.run.runas : SS_LOGGER_RUNNER ;
+
+    logexec->run.runas = resolve_add_string(wres, logrunner) ;
+
+    // timestamp
+    uint32_t ts = lg->timestamp == E_PARSER_TIME_ENDOFKEY ? (uint32_t)itimestamp : lg->timestamp ;
+    timestamp = ts == E_PARSER_TIME_NONE ? "" : ts == E_PARSER_TIME_ISO ? "T" : "t" ;
+
+    /** backup */
+    if (lg->backup) {
+
+        back[u32_fmt(back,lg->backup)] = 0 ;
+        pback = back ;
+
+    }
+
+    /** file size */
+    if (lg->maxsize) {
+
+        max[u32_fmt(max,lg->maxsize)] = 0 ;
+        pmax = max ;
+
+    }
+
+    char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" ;
+
+    {
+        /** run scripts */
+        char run[strlen(shebang) + strlen(SS_EXTLIBEXECPREFIX) + 17 + strlen(log->sa.s + log->name) + 1 + 1] ;
+
+        auto_strings(run, \
+                    shebang, \
+                    SS_EXTLIBEXECPREFIX "66-execute start ", \
+                    log->sa.s + log->name, "\n") ;
+
+        logexec->run.run = resolve_add_string(wres, run) ;
+
+    }
+
+    {
+        if (!build) {
+            /** run.user script */
+            char run[SS_MAX_PATH_LEN + 1] ;
+
+            auto_strings(run, shebang) ;
+
+            auto_strings(run + FAKELEN, SS_BINPREFIX "66-log ") ;
+
+            if (SS_LOGGER_NOTIFY)
+                auto_strings(run + FAKELEN, "-d3 ") ;
+
+            auto_strings(run + FAKELEN, "n", pback, " ") ;
+
+            if (timestamp[0])
+                auto_strings(run + FAKELEN, timestamp, " ") ;
+
+            auto_strings(run + FAKELEN, "s", pmax, " ", io->sa.s + io->fdout.destination, "\n") ;
+
+            logexec->run.run_user = resolve_add_string(wres, run) ;
+
+        } else {
+
+            char run[strlen(lg->sa.s + lg->execute.run.run_user) + 2] ;
+            auto_strings(run, lg->sa.s + lg->execute.run.run_user, "\n") ;
+
+            logexec->run.run_user = resolve_add_string(wres, run) ;
+        }
+    }
+
+    free(wres) ;
+}
+
 static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 {
     int fd ;
@@ -448,6 +538,21 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     }
 
     migrate_ensure_log_owner(&new, &io, &logger) ;
+
+    if (new.islog && new.type == E_PARSER_TYPE_CLASSIC) {
+
+        resolve_wrapper_t_ref lgw = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
+        resolve_init(lgw) ;
+        logger.backup = res.logger.backup ;
+        logger.maxsize = res.logger.maxsize ;
+        logger.timestamp = res.logger.timestamp ;
+        logger.execute.run.build = res.logger.execute.run.build ? resolve_add_string(lgw, res.sa.s + res.logger.execute.run.build) : 0 ;
+        logger.execute.run.runas = res.logger.execute.run.runas ? resolve_add_string(lgw, res.sa.s + res.logger.execute.run.runas) : 0 ;
+        logger.execute.run.run_user = res.logger.execute.run.run_user ? resolve_add_string(lgw, res.sa.s + res.logger.execute.run.run_user) : 0 ;
+        free(lgw) ;
+
+        compute_log_script(&new, &execute, &io, &logger) ;
+    }
 
     if (!resolve_write(wres, info->base.s, name))
         log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
