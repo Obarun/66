@@ -40,8 +40,11 @@
 #include <oblibs/fd.h>
 #include <oblibs/files.h>
 #include <oblibs/socket.h>
+#include <oblibs/string.h>
+#include <oblibs/clock.h>
 
 #include <66/oneshot.h>
+#include <66/status.h>
 #include <66/constants.h>
 #include <66/utils.h>
 
@@ -51,6 +54,9 @@ struct oneshot_job_s
     sse_watcher_t wchild ;
     pid_t pid ;
     struct oneshot_conn_s *conn ; // NULL once the client is gone
+    uint8_t down ;  // ran the finish (1) or run (0) script
+    uint8_t who ;   // status_who_e to stamp into the status
+    char servicedir[SS_MAX_PATH_LEN] ; // allocated inline with the job, used to write the status
 } ;
 
 typedef struct oneshot_conn_s oneshot_conn_t ;
@@ -109,6 +115,32 @@ static void close_all(int const *afd, int nfd)
             close_fd(afd[i]) ;
 }
 
+// status
+
+static void oneshotd_write_status(char const *servicedir, uint8_t down, uint8_t who, bool success, uint32_t code)
+{
+    log_flow() ;
+
+    service_status_t st = STATUS_ZERO ;
+
+    if (success) {
+        st.state = down ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
+        st.result = STATUS_RESULT_SUCCESS ;
+    } else {
+        st.state = STATUS_STATE_FAILED ;
+        st.result = STATUS_RESULT_EXITED ;
+        st.code = code ;
+    }
+    st.who = who ;
+    clock_now(&st.stamp) ;
+
+    char file[strlen(servicedir) + SS_SUPERVISEDIR_LEN + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, servicedir, SS_SUPERVISEDIR, "/", SS_STATUS) ;
+
+    if (!status_write(&st, file))
+        log_warnusys("write runtime status of: ", servicedir) ;
+}
+
 // responses
 
 static void respond(oneshot_conn_t *conn, uint8_t status, void const *payload, size_t paylen)
@@ -129,6 +161,7 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
     if (w->api_errno != 0) {
         log_warn("child watcher error: ", strerror(w->api_errno)) ;
         sse_free_child(w) ;
+        oneshotd_write_status(job->servicedir, job->down, job->who, false, 0) ;
         if (job->conn) {
             job->conn->job = NULL ;
             respond(job->conn, ONESHOT_ERR, NULL, 0) ;
@@ -144,6 +177,9 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
     uint32_t wstat = cd ? (uint32_t)cd->status : 0 ;
     sse_free_child(w) ;
 
+    bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
+    oneshotd_write_status(job->servicedir, job->down, job->who, success, (uint32_t)WEXITSTATUS(wstat)) ;
+
     oneshot_conn_t *conn = job->conn ;
     if (conn) {
         char pl[4] ;
@@ -157,11 +193,11 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
 
 // handlers
 
-static void handle_run(oneshot_conn_t *conn, uint8_t flags, char const *pl, size_t pll, int const *afd, int nfd)
+static void handle_run(oneshot_conn_t *conn, uint8_t flags, uint8_t who, char const *pl, size_t pll, int const *afd, int nfd)
 {
     log_flow() ;
 
-    if (nfd != 3 || pll == 0 || pll >= SS_MAX_PATH_LEN || pl[0] != '/' || conn->job) {
+    if (nfd != 3 || pll == 0 || pll >= SS_MAX_PATH_LEN || pl[0] != '/' || conn->job || who >= STATUS_WHO_ENDOFKEY) {
         close_all(afd, nfd) ;
         respond(conn, ONESHOT_PROTO, NULL, 0) ;
         return ;
@@ -172,6 +208,21 @@ static void handle_run(oneshot_conn_t *conn, uint8_t flags, char const *pl, size
     servicedir[pll] = 0 ;
     uint8_t down = (flags & ONESHOT_FLAG_DOWN) != 0 ;
 
+    /* a oneshot with no finish script has nothing to bring down: report success
+     * (DOWN status) without forking, so no script exit code is fabricated */
+    if (down) {
+        char script[pll + 1 + 6 + 1] ;
+        auto_strings(script, servicedir, "/", "finish") ;
+        if (access(script, F_OK) < 0) {
+            close_all(afd, nfd) ;
+            oneshotd_write_status(servicedir, down, who, true, 0) ;
+            char pl4[4] ;
+            u32_pack_big(pl4, 0) ;
+            respond(conn, ONESHOT_OK, pl4, 4) ;
+            return ;
+        }
+    }
+
     /* copy the received descriptors off the stack-borrowed afd array */
     int cfd[3] = { afd[0], afd[1], afd[2] } ;
 
@@ -179,6 +230,7 @@ static void handle_run(oneshot_conn_t *conn, uint8_t flags, char const *pl, size
     if (pid < 0) {
         log_warnusys("fork") ;
         close_all(cfd, 3) ;
+        oneshotd_write_status(servicedir, down, who, false, 0) ;
         respond(conn, ONESHOT_ERR, NULL, 0) ;
         return ;
     }
@@ -209,16 +261,20 @@ static void handle_run(oneshot_conn_t *conn, uint8_t flags, char const *pl, size
     // parent: the child holds its own copies now
     close_all(cfd, 3) ;
 
-    oneshot_job_t *job = malloc(sizeof(*job)) ;
+    oneshot_job_t *job = malloc(sizeof(*job) + pll + 1) ;
     if (!job) {
         log_warnusys("allocate job") ;
         kill(pid, SIGKILL) ;
         waitpid(pid, NULL, 0) ;
+        oneshotd_write_status(servicedir, down, who, false, 0) ;
         respond(conn, ONESHOT_ERR, NULL, 0) ;
         return ;
     }
     job->pid = pid ;
     job->conn = conn ;
+    job->down = down ;
+    job->who = who ;
+    memcpy(job->servicedir, servicedir, pll + 1) ;
     conn->job = job ;
 
     if (!sse_start_child(&osd.epoll, &job->wchild, oneshot_child_cb, job, pid, 2, true)) {
@@ -227,6 +283,7 @@ static void handle_run(oneshot_conn_t *conn, uint8_t flags, char const *pl, size
         waitpid(pid, NULL, 0) ;
         conn->job = NULL ;
         free(job) ;
+        oneshotd_write_status(servicedir, down, who, false, 0) ;
         respond(conn, ONESHOT_ERR, NULL, 0) ;
         return ;
     }
@@ -253,6 +310,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
 
     char const *hdr = msg->iov[0].iov_base ;
     uint8_t command = (uint8_t)hdr[1] ;
+    uint8_t who = (uint8_t)hdr[2] ;
     uint8_t flags = (uint8_t)hdr[3] ;
     char const *pl = msg->niov > 1 ? msg->iov[1].iov_base : NULL ;
     size_t pll = msg->niov > 1 ? msg->iov[1].iov_len : 0 ;
@@ -263,7 +321,7 @@ static void handle_message(io_rb_iovec_t *msg, void *ctx)
         return ;
     }
 
-    handle_run(conn, flags, pl, pll, msg->afd, msg->nfd) ;
+    handle_run(conn, flags, who, pl, pll, msg->afd, msg->nfd) ;
 }
 
 // connection
