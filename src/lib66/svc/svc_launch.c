@@ -518,6 +518,13 @@ static int launch_service(uint32_t id)
 
         int r = svc_compute_ns(pmanager, id) ;
         announce(id, !r ? true : false) ;
+
+        if (!r) {
+            svc->state = 0 ;
+            FLAGS_SET(svc->state, !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
+            wait_deps(id) ;
+        }
+
         return r ? 0 : 1 ;
 
     } else if (type == E_PARSER_TYPE_EVENT) {
