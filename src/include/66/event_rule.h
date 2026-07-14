@@ -101,27 +101,30 @@ static inline int event_do_from_string(char const *s)
 /** @brief inotify(7) constants accepted on an inotify source. Stored verbatim;
  * the daemon maps each name to its inotify mask. The On predicates of a service
  * reactor are NOT here -- they are the status vocabulary (see <66/status.h>). */
+/** The macro receives the bare inotify token, so a consumer can stringify it for
+ * validation (no <sys/inotify.h> needed) or use it as the mask constant (the
+ * daemon, which includes <sys/inotify.h>). */
 #define EVENT_IN_TABLE(macro) \
-    macro("IN_ACCESS") \
-    macro("IN_MODIFY") \
-    macro("IN_ATTRIB") \
-    macro("IN_CLOSE_WRITE") \
-    macro("IN_CLOSE_NOWRITE") \
-    macro("IN_OPEN") \
-    macro("IN_MOVED_FROM") \
-    macro("IN_MOVED_TO") \
-    macro("IN_CREATE") \
-    macro("IN_DELETE") \
-    macro("IN_DELETE_SELF") \
-    macro("IN_MOVE_SELF") \
-    macro("IN_MOVE") \
-    macro("IN_CLOSE") \
-    macro("IN_ALL_EVENTS")
+    macro(IN_ACCESS) \
+    macro(IN_MODIFY) \
+    macro(IN_ATTRIB) \
+    macro(IN_CLOSE_WRITE) \
+    macro(IN_CLOSE_NOWRITE) \
+    macro(IN_OPEN) \
+    macro(IN_MOVED_FROM) \
+    macro(IN_MOVED_TO) \
+    macro(IN_CREATE) \
+    macro(IN_DELETE) \
+    macro(IN_DELETE_SELF) \
+    macro(IN_MOVE_SELF) \
+    macro(IN_MOVE) \
+    macro(IN_CLOSE) \
+    macro(IN_ALL_EVENTS)
 
 /** @return 1 if @p s is a known inotify constant, 0 otherwise. */
 static inline int event_in_is_valid(char const *s)
 {
-#define EVENT_IN_IF(str) if (!strcmp(s, str)) return 1 ;
+#define EVENT_IN_IF(tok) if (!strcmp(s, #tok)) return 1 ;
     EVENT_IN_TABLE(EVENT_IN_IF)
 #undef EVENT_IN_IF
     return 0 ;

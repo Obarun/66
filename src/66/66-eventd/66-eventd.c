@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <sys/inotify.h>
 #include <dirent.h>
 
 #include <oblibs/log.h>
@@ -76,11 +77,13 @@ typedef struct eventd_source_s eventd_source_t ;
 struct eventd_source_s
 {
     char name[SS_MAX_SERVICE_NAME] ; // hash key
-    event_fifo_t fifo ; // fifodir subscription ; used iff subscribed ; address must stay stable
+    event_fifo_t fifo ; // service/signal fifodir subscription ; address must stay stable
     event_aggregator_t ag ;
+    sse_watcher_t watcher ; // tick (timer/inotify/schedule) watcher ; address must stay stable
+    cron_t cron ; // schedule expression ; the watcher keeps a pointer to it, so it must outlive the watcher
     uint8_t type ; // event_source_t
-    uint8_t subscribed ; // fifodir effectively subscribed
-    uint32_t refcount ; // number of armed reactors referencing this source
+    uint8_t subscribed ; // fifodir subscribed (service/signal) or watcher armed (tick)
+    uint32_t refcount ; // number of armed reactors referencing this source (service/signal/user)
     hash_node_t node ;
 } ;
 
@@ -168,14 +171,71 @@ static void eventd_event_handler(event_reader_t *r, char const *buf, size_t len,
 static void source_destroy(eventd_source_t *s)
 {
     hash_del(&eventd.sources, s) ;
-    if (s->subscribed)
-        event_unsubscribe(&s->fifo) ;
+
+    if (s->subscribed) {
+        switch (s->type) {
+            case EVENT_SOURCE_SERVICE :
+            case EVENT_SOURCE_SIGNAL :
+                event_unsubscribe(&s->fifo) ;
+                break ;
+            case EVENT_SOURCE_TIMER :
+                sse_free_timer(&s->watcher) ;
+                break ;
+            case EVENT_SOURCE_INOTIFY :
+                sse_free_inotify(&s->watcher) ;
+                break ;
+            case EVENT_SOURCE_SCHEDULE :
+                sse_free_schedule(&s->watcher) ;
+                break ;
+            default :
+                break ; // user: nothing
+        }
+    }
+
     free(s) ;
+}
+
+static int source_is_tick(uint8_t type)
+{
+    return type == EVENT_SOURCE_INOTIFY || type == EVENT_SOURCE_TIMER || type == EVENT_SOURCE_SCHEDULE ;
+}
+
+static struct { char const *name ; size_t len ; uint32_t mask ; } const event_in_table[] = {
+#define EVENT_IN_ROW(tok) { #tok, sizeof(#tok) - 1, (uint32_t)(tok) },
+    EVENT_IN_TABLE(EVENT_IN_ROW)
+#undef EVENT_IN_ROW
+} ;
+
+static uint32_t inotify_mask_from_on(char const *on, uint32_t non)
+{
+    uint32_t mask = 0 ;
+    char const *p = on ;
+
+    for (uint32_t i = 0 ; i < non ; i++) {
+
+        ssize_t got = get_len_until(p, ' ') ;
+        size_t tlen = got < 0 ? strlen(p) : (size_t)got ;
+
+        for (size_t j = 0 ; j < sizeof(event_in_table) / sizeof(event_in_table[0]) ; j++)
+            if (tlen == event_in_table[j].len && !memcmp(p, event_in_table[j].name, tlen)) {
+                mask |= event_in_table[j].mask ;
+                break ;
+            }
+
+        p += tlen + 1 ;
+    }
+
+    return mask ;
 }
 
 static void source_ref(char const *name, size_t len, uint8_t type)
 {
     log_flow() ;
+
+    // a tick source (timer/inotify/schedule) is armed by its own start, not by a
+    // reactor referencing it in From: nothing to wire here
+    if (source_is_tick(type))
+        return ;
 
     eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
     if (s) {
@@ -190,6 +250,7 @@ static void source_ref(char const *name, size_t len, uint8_t type)
     }
 
     s->ag.len = 0 ; // the reassembler starts empty
+    s->watcher = (sse_watcher_t)SSE_WATCHER_ZERO ;
     s->type = type ;
     s->subscribed = 0 ;
     s->refcount = 1 ;
@@ -218,16 +279,16 @@ static void source_ref(char const *name, size_t len, uint8_t type)
         }
 
         s->subscribed = 1 ;
-
-    } else if (type != EVENT_SOURCE_USER) {
-
-        log_warn("tick source not activated yet: ", s->name) ; // timer/schedule/inotify : T3
     }
 }
 
-static void source_unref(char const *name, size_t len)
+static void source_unref(char const *name, size_t len, uint8_t type)
 {
     log_flow() ;
+
+    // tick sources are not reactor-refcounted (see source_ref)
+    if (source_is_tick(type))
+        return ;
 
     eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
     if (!s)
@@ -278,7 +339,7 @@ static void reactor_wire(eventd_reactor_t *re, int arm)
         if (arm)
             source_ref(nm, plen, type) ;
         else
-            source_unref(nm, plen) ;
+            source_unref(nm, plen, type) ;
 
         p += plen + 1 ;
     }
@@ -742,13 +803,14 @@ static void eventd_emit(char const *name)
     eventd_drain_emits() ;
 }
 
-static void source_write_status(resolve_service_t *res, uint8_t up, uint8_t who)
+static void source_write_status(resolve_service_t *res, uint32_t state, uint8_t who)
 {
     log_flow() ;
 
     service_status_t st = STATUS_ZERO ;
-    st.state = up ? STATUS_STATE_DONE : STATUS_STATE_DOWN ;
-    st.result = STATUS_RESULT_SUCCESS ;
+    st.state = state ;
+    // a source has no process: FAILED means its watcher could not be started
+    st.result = state == STATUS_STATE_FAILED ? STATUS_RESULT_EXEC_FAILED : STATUS_RESULT_SUCCESS ;
     st.who = who ;
     clock_now(&st.stamp) ;
 
@@ -760,22 +822,138 @@ static void source_write_status(resolve_service_t *res, uint8_t up, uint8_t who)
         log_warnusys("write source status of: ", res->sa.s + res->name) ;
 }
 
+static void source_tick_cb(sse_watcher_t *w, void *cbdata, int event)
+{
+    log_flow() ;
+
+    (void)w ; (void)event ;
+
+    eventd_source_t *s = cbdata ;
+
+    reactor_run(s->name, 0) ;
+    eventd_drain_emits() ;
+}
+
 static void eventd_arm_source(resolve_service_t *res, uint8_t who)
 {
     log_flow() ;
 
-    source_write_status(res, 1, who) ;
+    char const *name = res->sa.s + res->name ;
+    size_t len = strlen(name) ;
 
-    log_info("armed event source: ", res->sa.s + res->name) ;
+    eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
+    if (s && s->subscribed) {
+        source_write_status(res, STATUS_STATE_DONE, who) ; // idempotent : already armed
+        return ;
+    }
+
+    resolve_service_addon_event_t cfg = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    int r = eventd_rule_load(sysdir, name, &cfg) ;
+    if (r <= 0) {
+        log_warnu("load source config: ", name) ;
+        return ;
+    }
+
+    if (!s) {
+
+        s = malloc(sizeof(*s) + len + 1) ;
+        if (!s) {
+            eventd_rule_free(&cfg) ;
+            log_warnusys("allocate source: ", name) ;
+            return ;
+        }
+
+        s->ag.len = 0 ;
+        s->watcher = (sse_watcher_t)SSE_WATCHER_ZERO ;
+        s->cron = (cron_t)CRON_EXPR_ZERO ;
+        s->type = (uint8_t)cfg.type ;
+        s->subscribed = 0 ;
+        s->refcount = 0 ;
+        memcpy(s->name, name, len + 1) ;
+
+        if (!hash_add(&eventd.sources, s->name, len, s)) {
+            eventd_rule_free(&cfg) ;
+            free(s) ;
+            log_warnusys("register source: ", name) ;
+            return ;
+        }
+    }
+
+    switch (cfg.type) {
+
+        case EVENT_SOURCE_TIMER :
+            if (sse_start_timer(&eventd.epoll, &s->watcher, source_tick_cb, s, (int)cfg.interval, (int)cfg.interval, 0))
+                s->subscribed = 1 ;
+            else
+                log_warnusys("start timer for source: ", name) ;
+            break ;
+
+        case EVENT_SOURCE_INOTIFY :
+            if (!sse_start_inotify(&eventd.epoll, &s->watcher, source_tick_cb, s, 0)) {
+                log_warnusys("start inotify for source: ", name) ;
+                break ;
+            }
+            if (!sse_attach_inotify(&s->watcher, cfg.sa.s + cfg.watch, inotify_mask_from_on(cfg.sa.s + cfg.on, cfg.non))) {
+                log_warnusys("watch path for source: ", name) ;
+                sse_free_inotify(&s->watcher) ;
+                break ;
+            }
+            s->subscribed = 1 ;
+            break ;
+
+        case EVENT_SOURCE_SCHEDULE :
+            {
+                char const *tz = cfg.timezone ? cfg.sa.s + cfg.timezone : 0 ;
+                if (!parse_cron(cfg.sa.s + cfg.expression, &s->cron, tz)) {
+                    log_warnusys("parse cron expression for source: ", name) ;
+                    break ;
+                }
+                if (sse_start_schedule(&eventd.epoll, &s->watcher, source_tick_cb, s, &s->cron, 0))
+                    s->subscribed = 1 ;
+                else
+                    log_warnusys("start schedule for source: ", name) ;
+                break ;
+            }
+
+        default :
+            log_warn("source EventType not activated yet: ", name) ;
+            break ;
+    }
+
+    eventd_rule_free(&cfg) ;
+
+    if (!s->subscribed) {
+        source_write_status(res, STATUS_STATE_FAILED, who) ;
+        return ;
+    }
+
+    source_write_status(res, STATUS_STATE_DONE, who) ;
+    log_info("armed event source: ", name) ;
 }
 
 static void eventd_disarm_source(resolve_service_t *res, uint8_t who)
 {
     log_flow() ;
 
-    source_write_status(res, 0, who) ;
+    char const *name = res->sa.s + res->name ;
 
-    log_info("disarmed event source: ", res->sa.s + res->name) ;
+    eventd_source_t *s = hash_find(&eventd.sources, name, strlen(name)) ;
+    if (s)
+        source_destroy(s) ; // frees the watcher and removes the entry
+
+    source_write_status(res, STATUS_STATE_DOWN, who) ;
+    log_info("disarmed event source: ", name) ;
+}
+
+static uint8_t source_get_who(resolve_service_t *res)
+{
+    // recover the who that armed the source before the restart, from its status
+    char const *supervisedir = res->sa.s + res->live.supervisedir ;
+    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, supervisedir, "/", SS_STATUS) ;
+
+    service_status_t st = STATUS_ZERO ;
+    return status_read(&st, file) ? st.who : STATUS_WHO_SELF ;
 }
 
 /* At the very first use of repopulate, the scandir
