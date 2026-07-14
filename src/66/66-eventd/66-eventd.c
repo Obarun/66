@@ -318,7 +318,8 @@ static int reactor_state_allows(uint32_t state, uint32_t docmd)
     switch (docmd) {
 
         case EVENT_DO_START :
-            return state == STATUS_STATE_DOWN || state == STATUS_STATE_DONE || state == STATUS_STATE_FAILED ;
+            return state == STATUS_STATE_DOWN || state == STATUS_STATE_DONE
+                || state == STATUS_STATE_FAILED || state == STATUS_STATE_WAITING ;
 
         case EVENT_DO_STOP :
         case EVENT_DO_RESTART :

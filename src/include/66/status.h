@@ -36,7 +36,8 @@
     macro(STATUS_STATE_FINISHING,  "finishing") \
     macro(STATUS_STATE_RESTARTING, "restarting") \
     macro(STATUS_STATE_DONE,       "done") \
-    macro(STATUS_STATE_FAILED,     "failed")
+    macro(STATUS_STATE_FAILED,     "failed") \
+    macro(STATUS_STATE_WAITING,    "waiting")
 
 typedef enum status_state_e status_state_t ;
 enum status_state_e

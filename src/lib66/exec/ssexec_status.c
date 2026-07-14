@@ -40,6 +40,7 @@
 #include <66/constants.h>
 #include <66/tree.h>
 #include <66/enum_parser.h>
+#include <66/event_rule.h>
 #include <66/resolve.h>
 #include <66/state.h>
 #include <66/service.h>
@@ -214,6 +215,20 @@ static void info_display_intree(char const *field,resolve_service_t *res)
     info_display_string(res->sa.s + res->treename) ;
 }
 
+static int reactor_is_start(resolve_service_t *res)
+{
+    if (!res->has_event)
+        return 0 ;
+
+    resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    int start = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) == 1
+             && ev.docmd == EVENT_DO_START ;
+    resolve_free(wev) ;
+
+    return start ;
+}
+
 static void info_get_status(resolve_service_t *res)
 {
     int warn_color = 0 ;
@@ -232,11 +247,18 @@ static void info_get_status(resolve_service_t *res)
     if (status_read(&st, file) < 0)
         log_dieusys(LOG_EXIT_SYS, "read status of: ", res->sa.s + res->name) ;
 
-    char const *word = status_state_to_string(st.state) ;
-    switch (st.state) {
+    /* a down classic event reactor is 'waiting' (armed): 66-supervise keeps its
+     * status binary up/down, so the event meaning is derived here. */
+    uint8_t estate = st.state ;
+    if (st.state == STATUS_STATE_DOWN && res->type == E_PARSER_TYPE_CLASSIC && reactor_is_start(res))
+        estate = STATUS_STATE_WAITING ;
+
+    char const *word = status_state_to_string(estate) ;
+    switch (estate) {
         case STATUS_STATE_UP :
         case STATUS_STATE_STARTING :
-        case STATUS_STATE_DONE :       warn_color = 2 ; break ;
+        case STATUS_STATE_DONE :
+        case STATUS_STATE_WAITING :    warn_color = 2 ; break ;
         default :                      warn_color = 1 ; break ;
     }
 

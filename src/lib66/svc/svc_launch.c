@@ -73,6 +73,7 @@ static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, voi
 static void complete(uint32_t id, bool success) ;
 static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat) ;
 static void svc_oneshot_teardown(void *data) ;
+static uint32_t reactor_readdo(resolve_service_t *res) ;
 
 // helpers
 static uint32_t get_asvc_id(vertex_t *v)
@@ -167,7 +168,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success)
     service_status_t st = STATUS_ZERO ;
 
     if (success) {
-        st.state = (svc->waiting || pmanager->operation) ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
+        st.state = svc->waiting ? STATUS_STATE_WAITING : (pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
         st.result = STATUS_RESULT_SUCCESS ;
     } else {
         st.state = STATUS_STATE_FAILED ;
@@ -199,9 +200,16 @@ static void announce(uint32_t id, bool success)
 
     auto_strings(file, scandir, "/down") ;
 
-    /* classic status is owned by 66-supervise, oneshot status by 66-oneshotd;
-     * svc_launch only writes the status of a module, which has no daemon. */
-    if (svc->res->type == E_PARSER_TYPE_MODULE)
+    /* an event-armed Do=start reactor at rest is waiting, not up: the event layer
+     * owns this, so svc_launch records it for a oneshot/module reactor (a classic's
+     * waiting is derived from its down state, 66-supervise stays binary). Outside a
+     * reactor, only a module's status is svc_launch's to write (it has no daemon). */
+    if (!pmanager->operation && svc->res->has_event
+        && (svc->res->type == E_PARSER_TYPE_ONESHOT || svc->res->type == E_PARSER_TYPE_MODULE)
+        && reactor_readdo(svc->res) == EVENT_DO_START)
+        svc->waiting = true ;
+
+    if (svc->waiting || svc->res->type == E_PARSER_TYPE_MODULE)
         svc_runtime_write(svc, success) ;
 
     if (success) {
@@ -334,7 +342,7 @@ static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
     complete(id, false) ;
 }
 
-static uint32_t reactor_docmd(resolve_service_t *res)
+static uint32_t reactor_readdo(resolve_service_t *res)
 {
     if (!res->has_event)
         return EVENT_DO_NONE ;
@@ -373,7 +381,7 @@ static int launch_classic(uint32_t id)
 
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_docmd(svc->res) == EVENT_DO_START) {
+        && reactor_readdo(svc->res) == EVENT_DO_START) {
         complete(id, true) ;
         return 1 ;
     }
@@ -448,7 +456,7 @@ static int launch_oneshot(uint32_t id)
     char const *name = svc->res->sa.s + svc->res->name ;
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_docmd(svc->res) == EVENT_DO_START) {
+        && reactor_readdo(svc->res) == EVENT_DO_START) {
         svc->native = true ;
         complete(id, true) ;
         return 1 ;
@@ -503,8 +511,7 @@ static int launch_service(uint32_t id)
     } else if (type == E_PARSER_TYPE_MODULE) {
 
         if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-            && reactor_docmd(svc->res) == EVENT_DO_START) {
-            svc->waiting = true ;
+            && reactor_readdo(svc->res) == EVENT_DO_START) {
             complete(id, true) ;
             return 1 ;
         }
