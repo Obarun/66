@@ -347,6 +347,19 @@ static uint32_t reactor_docmd(resolve_service_t *res)
     return docmd ;
 }
 
+static void reactor_arm(uint32_t id)
+{
+    log_flow() ;
+
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+
+    if (pmanager->operation || !svc->res->has_event || pmanager->info->who == STATUS_WHO_EVENT)
+        return ;
+
+    if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', svc->res->sa.s + svc->res->name))
+        log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
+}
+
 /** Native CLASSIC launch: send the control command over supervise/control and,
  * when a wait was requested (-w), watch the event fifodir for the transition.
  * Owns its service's completion: it always returns 1 and reports success/failure
@@ -360,24 +373,16 @@ static int launch_classic(uint32_t id)
 
     svc->native = true ;
 
-    /* every has_event reactor arms its runtime rule with the daemon on start.
-     * a Do=start reactor is additionally armed-not-launched: its ./down (seeded
-     * at parse) keeps it supervised-down and the event action brings it up later,
-     * so skip the up command entirely.
-     *
-     * An event-driven start (who=EVENT) is the
-     * daemon firing that Do -- it must launch, not re-arm-and-wait.
-     */
+    /* a classic Do=start reactor is armed-not-launched: its ./down (seeded at
+     * parse) keeps it supervised-down and the event action brings it up later, so
+     * skip the up command entirely. reactor_arm (in launch_service) already
+     * registered the rule; an event-driven start (who=EVENT) is the daemon firing
+     * that Do and must launch, not re-arm-and-wait. */
 
-    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT) {
-
-        if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', svc->res->sa.s + svc->res->name))
-            log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
-
-        if (reactor_docmd(svc->res) == EVENT_DO_START) {
-            complete(id, true) ;
-            return 1 ;
-        }
+    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+        && reactor_docmd(svc->res) == EVENT_DO_START) {
+        complete(id, true) ;
+        return 1 ;
     }
 
     if (pmanager->woption) {
@@ -449,6 +454,8 @@ static int launch_service(uint32_t id)
     svc_ctx_t *svc = &pmanager->asvc[id] ;
 
     uint8_t type = svc->res->type ;
+
+    reactor_arm(id) ;
 
     if (type == E_PARSER_TYPE_CLASSIC) {
 
