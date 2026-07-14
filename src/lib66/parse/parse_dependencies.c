@@ -25,7 +25,6 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_parser.h>
-#include <66/event_rule.h>
 
 int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep)
 {
@@ -85,41 +84,40 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
         dep->ndepends += dep->noptsdeps ;
     }
 
+    /* a reactor depends on its From sources so the graph starts them before it
+     * arms: a service/signal source is supervised before eventd subscribes to its
+     * fifodir, a tick source (inotify/timer/schedule) is armed before its reactor
+     * wants it. A user reactor is sourceless (no From) and never reaches this fold. */
     if (parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE) &&
         parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM)) {
 
-        int src = event_src_from_string(parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE, 0)) ;
+        size_t flen = 0 ;
+        char const *fv = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, &flen) ;
 
-        if (src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL) {
+        _alloc_sbl_(strb, flen + 1) ;
+        if (!strbuf_copyb(&strb, fv, flen))
+            log_die_nomem("strbuf") ;
 
-            size_t flen = 0 ;
-            char const *fv = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, &flen) ;
+        if (!parse_list(&strb)) {
+            free(wres) ;
+            parse_error_return(0, 8, table) ;
+        }
 
-            _alloc_sbl_(strb, flen + 1) ;
-            if (!strbuf_copyb(&strb, fv, flen))
-                log_die_nomem("strbuf") ;
+        if (strb.len) {
 
-            if (!parse_list(&strb)) {
-                free(wres) ;
-                parse_error_return(0, 8, table) ;
+            uint32_t nfrom = 0 ;
+            uint32_t from = parse_compute_list(wres, &strb, &nfrom, 0) ;
+
+            if (dep->ndepends) {
+                char t[strlen(dep->sa.s + dep->depends) + strlen(dep->sa.s + from) + 2] ;
+                auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + from) ;
+                dep->depends = resolve_add_string(wres, t) ;
+            } else {
+                char t[strlen(dep->sa.s + from) + 1] ;
+                auto_strings(t, dep->sa.s + from) ;
+                dep->depends = resolve_add_string(wres, t) ;
             }
-
-            if (strb.len) {
-
-                uint32_t nfrom = 0 ;
-                uint32_t from = parse_compute_list(wres, &strb, &nfrom, 0) ;
-
-                if (dep->ndepends) {
-                    char t[strlen(dep->sa.s + dep->depends) + strlen(dep->sa.s + from) + 2] ;
-                    auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + from) ;
-                    dep->depends = resolve_add_string(wres, t) ;
-                } else {
-                    char t[strlen(dep->sa.s + from) + 1] ;
-                    auto_strings(t, dep->sa.s + from) ;
-                    dep->depends = resolve_add_string(wres, t) ;
-                }
-                dep->ndepends += nfrom ;
-            }
+            dep->ndepends += nfrom ;
         }
     }
 
