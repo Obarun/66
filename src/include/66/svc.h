@@ -26,6 +26,7 @@
 #include <66/ssexec.h>
 #include <66/event.h>
 #include <66/status.h>
+#include <66/oneshot.h>
 
 #define DATASIZE 65
 
@@ -60,8 +61,11 @@ struct svc_ctx_s
     resolve_service_addon_dependencies_t *dependencies ; // dependencies addon (module contents)
 
     // Watchers
-    sse_watcher_t child ; // Child process watcher
     sse_watcher_t timeout ; // Timeout watcher
+
+    // ONESHOT services: the run/finish script is run by 66-oneshotd; this is the
+    // async request/response state multiplexed on the manager loop
+    oneshot_async_t oneshot ;
 
     // Native readiness wait (CLASSIC services: no child, transitions read from
     // the service event fifodir instead of a spawned external wait helper)
@@ -92,8 +96,8 @@ typedef struct svc_ctx_s svc_ctx_t ;
     .res = NULL, \
     .execute = NULL, \
     .dependencies = NULL, \
-    .child = {0}, \
     .timeout = {0}, \
+    .oneshot = {0}, \
     .native = false, \
     .done = false, \
     .state = 0, \

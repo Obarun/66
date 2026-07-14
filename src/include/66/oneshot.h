@@ -34,8 +34,8 @@
  *   - the wire framing helpers (`oneshot_hdr_pack`, `oneshot_parse_header`,
  *     `oneshot_status_str`),
  *   - the in-child script executor (`oneshot_exec_script`),
- *   - the synchronous request/response client (`oneshot_client_t`,
- *     `oneshot_client_init`, `oneshot_run`, `oneshot_client_end`).
+ *   - the asynchronous request/response client (`oneshot_async_t`,
+ *     `oneshot_async_send`, `oneshot_async_end`), multiplexed on a caller's loop.
  *
  * @note A response status is the PROTOCOL outcome (could the daemon run the script
  * at all), distinct from the script's own exit code. The script's full `waitpid`
@@ -73,8 +73,8 @@
 
 /** @brief Largest payload that fits, together with the header, in one `io_rb`
  * message buffer (`IO_RB_BUFFER_SIZE - ONESHOT_HDR_SIZE`). `oneshot_parse_header`
- * rejects any frame announcing a longer payload with `EMSGSIZE`, and `oneshot_run`
- * rejects a longer service directory path with `EINVAL`. */
+ * rejects any frame announcing a longer payload with `EMSGSIZE`, and
+ * `oneshot_async_send` rejects a longer service directory path with `EINVAL`. */
 #define ONESHOT_PAYLOAD_MAX        (IO_RB_BUFFER_SIZE - ONESHOT_HDR_SIZE)
 
 /**
@@ -115,17 +115,22 @@ enum oneshot_status_e
  * Wire header layout (ONESHOT_HDR_SIZE bytes, explicit big-endian):
  *   [0] version
  *   [1] command
- *   [2] status   (responses only ; 0 in requests)
+ *   [2] status (responses) / who (requests)
  *   [3] flags
  *   [4..7] payload_len (uint32, big-endian)
  * File descriptors travel out-of-band through SCM_RIGHTS, never in the payload.
+ *
+ * Byte [2] is direction-dependent: a response carries the protocol status there,
+ * while a RUN request carries the `status_who_e` provenance (who) to stamp into
+ * the status the daemon writes for the oneshot.
  *
  *   request                                                      ancillary fds
  *   -------------------------------------------------------------------------
  *   RUN     +----------------------------+                          3 fds
  *           | servicedir (payload_len)   |   stdin/stdout/stderr to dup onto
  *           +----------------------------+   the script's 0/1/2 ; servicedir is
- *           op (up/down) lives in header flags (ONESHOT_FLAG_DOWN), NOT NUL-terminated
+ *           op (up/down) lives in header flags (ONESHOT_FLAG_DOWN), NOT NUL-terminated ;
+ *           who lives in header byte [2]
  *
  *   response  header.command = ONESHOT_CMD_RESPONSE, header.status = result.
  *   -------------------------------------------------------------------------
@@ -145,8 +150,9 @@ enum oneshot_status_e
  * @param[out] hdr         Buffer of at least `ONESHOT_HDR_SIZE` bytes. Must not be
  *                         NULL (not checked; a NULL pointer is undefined behaviour).
  * @param[in] command      Command code (see `oneshot_cmd_e`); written verbatim.
- * @param[in] status       Status code (see `oneshot_status_e`); written verbatim.
- *                         Meaningful in responses only; pass 0 in requests.
+ * @param[in] status       Byte [2] value, written verbatim: a `oneshot_status_e`
+ *                         status code in a response, or the `status_who_e` who in
+ *                         a RUN request.
  * @param[in] flags        Header flags (e.g. `ONESHOT_FLAG_DOWN`); written verbatim.
  * @param[in] payload_len  Number of payload bytes that will follow the header.
  *
@@ -225,169 +231,98 @@ extern char const *oneshot_status_str(uint8_t status) ;
  *
  * @note The exit-code/no-return contract is the only contract: the function never
  * hands a status back to its caller. It never `_exit(0)`s for a missing `finish`
- * script -- an absent script is a failing `execve` (`ENOENT`) and exits 127.
- * @see oneshot_run
+ * script -- an absent script is a failing `execve` (`ENOENT`) and exits 127. The
+ * daemon short-circuits the "no finish script on stop" case before forking, so
+ * this executor is only reached when the target script is expected to exist.
  */
 extern void oneshot_exec_script(char const *servicedir, uint8_t down) ;
 
-// client library (oneshot_client.c)
+// async client library (oneshot_async.c)
 
 /**
- * @struct oneshot_client_s
- * @brief State of a synchronous oneshot client connection.
+ * @brief Result callback: delivered exactly once per in-flight RUN request.
  *
- * Wraps an SSE event loop driving a single Unix-socket stream to the daemon. The
- * client is request/response and single-shot per call: `oneshot_run` queues one
- * RUN request, runs the loop until a reply arrives (or the connection drops, a
- * watched signal fires, or the guard timer expires), and records the outcome in
- * @c status / @c wstat. Initialize with `oneshot_client_init` and release with
- * `oneshot_client_end`. After a successful `oneshot_run` returning 1, read
- * @c status to learn the protocol outcome and, when it is `ONESHOT_OK`, @c wstat
- * for the script's `waitpid` status.
- *
- * @param epoll
- * The SSE epoll event loop driving the connection.
- *
- * @param stream
- * The buffered Unix-socket stream to the daemon. NULL once closed/released.
- *
- * @param reader
- * The message reader that reassembles framed responses from the stream.
- *
- * @param wsignal
- * Signal watcher. `SIGPIPE` is ignored; `SIGTERM` and `SIGINT` stop the loop.
- *
- * @param wtimer
- * Guard-timer watcher, armed by `oneshot_run` only when its timeout is > 0.
- *
- * @param hdrbuf
- * Heap buffer of `ONESHOT_HDR_SIZE` bytes backing the reader's header.
- *
- * @param paybuf
- * Heap buffer of `IO_RB_BUFFER_SIZE` bytes backing the reader's payload.
- *
- * @param timer_active
- * True while the guard timer is armed; managed internally.
- *
- * @param request_sent
- * True once a RUN request has been written to the stream.
- *
- * @param response_received
- * True once a complete response frame has been handled.
- *
- * @param status
- * The `oneshot_status_e` of the last response. Set to `ONESHOT_ERR` on any
- * transport failure, connection drop before reply, or non-`ONESHOT_CMD_RESPONSE`
- * reply. Valid after `oneshot_run` regardless of its return value.
- *
- * @param wstat
- * The script's raw `waitpid` status. Valid only when @c status is `ONESHOT_OK`;
- * 0 in every other case.
+ * @param[in] data    Opaque caller context handed to `oneshot_async_send`.
+ * @param[in] status  Protocol outcome (`oneshot_status_e`). `ONESHOT_OK` means the
+ *                    daemon forked and reaped the script; any other value (including
+ *                    a connection drop before reply) is a failure.
+ * @param[in] wstat   The script's raw `waitpid` status; valid only when @p status
+ *                    is `ONESHOT_OK`, 0 otherwise.
  */
-typedef struct oneshot_client_s oneshot_client_t ;
-struct oneshot_client_s
+typedef void oneshot_async_cb_t(void *data, uint8_t status, uint32_t wstat) ;
+
+/**
+ * @struct oneshot_async_s
+ * @brief State of a single asynchronous RUN request multiplexed on a caller's loop.
+ *
+ * Unlike the daemon's own server or a blocking client, this carries no private
+ * event loop: `oneshot_async_send` attaches the stream to a loop the caller already
+ * runs, so many requests progress concurrently on one `sse_epoll_t`. The result is
+ * delivered through `oneshot_async_cb_t` from within that loop; `done` guards the
+ * single-delivery guarantee across the response, connection-drop and error paths.
+ *
+ * @param stream   Buffered Unix-socket stream to the daemon. NULL once released.
+ * @param reader   Message reader reassembling the framed response.
+ * @param hdrbuf   Heap buffer of `ONESHOT_HDR_SIZE` bytes backing the reader header.
+ * @param paybuf   Heap buffer of `IO_RB_BUFFER_SIZE` bytes backing the reader payload.
+ * @param cb       Result callback; called at most once.
+ * @param data     Opaque context forwarded to @c cb.
+ * @param done     True once the result has been delivered (or delivery suppressed by
+ *                 `oneshot_async_end`); blocks any further callback.
+ */
+typedef struct oneshot_async_s oneshot_async_t ;
+struct oneshot_async_s
 {
-    sse_epoll_t epoll ;
     sse_stream_t *stream ;
     stream_message_t reader ;
-    sse_watcher_t wsignal ;
-    sse_watcher_t wtimer ;
     char *hdrbuf ;
     char *paybuf ;
-
-    bool timer_active ;
-    bool request_sent ;
-    bool response_received ;
-    uint8_t status ; // oneshot_status_e of the last response
-    uint32_t wstat ; // raw waitpid status of the script (valid iff status == ONESHOT_OK)
+    oneshot_async_cb_t *cb ;
+    void *data ;
+    bool done ;
 } ;
 
 /**
- * @brief Connect a client to the daemon and initialize @p c for use.
+ * @brief Connect to the daemon, attach to @p loop, and send one RUN request.
  *
- * Zeroes @p c, creates the SSE event loop, installs a signal watcher (ignoring
- * `SIGPIPE`, attaching `SIGTERM` and `SIGINT`), connects to the daemon's Unix
- * socket at @p socket, creates the stream, allocates the header/payload buffers,
- * initializes the message reader and attaches the stream to the loop. On any
- * failure it unwinds everything allocated so far before returning, so @p c is left
- * in a released state and must not be passed to `oneshot_client_end`.
+ * Zeroes @p a, connects (non-blocking) to the daemon socket at @p socket, creates
+ * the stream and attaches it to @p loop, then sends one RUN request whose payload
+ * is @p servicedir (not NUL-terminated on the wire), whose header byte [2] carries
+ * @p who and whose flags carry @p down, forwarding the caller's `0`/`1`/`2` through
+ * `SCM_RIGHTS`. The request is fire-and-forget: control returns immediately and the
+ * outcome arrives later through @p cb as the caller runs @p loop. On any immediate
+ * failure everything allocated is unwound and @p cb is NOT called.
  *
- * @param[out] c       Client to initialize. Must not be NULL (not checked).
- * @param[in] socket   Filesystem path of the daemon's Unix domain socket. Must not
- *                     be NULL (forwarded to the connect helper).
+ * @param[out] a          Request state to initialize. Must not be NULL (not checked).
+ * @param[in] loop        Event loop the caller runs; the stream is attached to it.
+ * @param[in] socket      Filesystem path of the daemon's Unix domain socket.
+ * @param[in] down        0 -> up/`run` script; non-zero -> down/`finish` script.
+ * @param[in] who         `status_who_e` provenance carried in header byte [2].
+ * @param[in] servicedir  Service directory path. Nonempty, at most `ONESHOT_PAYLOAD_MAX`.
+ * @param[in] cb          Result callback, invoked once when the outcome is known.
+ * @param[in] data        Opaque context forwarded to @p cb.
  *
  * @return Status code:
- *      - 1 on success; @p c is ready for `oneshot_run` and must be released with
- *        `oneshot_client_end`.
- *      - 0 on failure; the failing step has already logged a diagnostic. No
- *        dedicated errno is set by this function: it forwards the errno left by
- *        the underlying failing call (`sse_new`, the signal-watcher setup,
- *        `sse_streamux_create_client` connecting to @p socket, `sse_stream_new`,
- *        the buffer `malloc`s, the reader init, or `sse_stream_attach`).
- *
- * @note On a 0 return @p c has been fully torn down internally; do not call
- * `oneshot_client_end` on it.
+ *      - 1 the request is in flight; @p cb will fire later and @p a must be released
+ *        with `oneshot_async_end`.
+ *      - 0 immediate failure (errno set); @p a is already torn down and @p cb will
+ *        NOT be called. `EINVAL` if @p servicedir is empty or too long; otherwise
+ *        the errno of the failing connect/alloc/send step.
  */
-extern int oneshot_client_init(oneshot_client_t *c, char const *socket) ;
+extern int oneshot_async_send(oneshot_async_t *a, sse_epoll_t *loop, char const *socket, uint8_t down, uint8_t who, char const *servicedir, oneshot_async_cb_t *cb, void *data) ;
 
 /**
- * @brief Release every resource held by @p c.
+ * @brief Close the stream and free the buffers of @p a.
  *
- * Disarms the guard timer if active, closes the stream, frees the signal watcher
- * and the event loop, and frees and NULLs the header/payload buffers. Call exactly
- * once on a client that `oneshot_client_init` returned 1 for.
+ * Marks @p a done (suppressing any pending callback), closes the stream -- which
+ * signals the daemon to `SIGKILL` a still-running script -- and frees and NULLs the
+ * header/payload buffers. Safe to call once after the result is delivered, or to
+ * abort a request still in flight (e.g. on a caller-side timeout).
  *
- * @param[in,out] c  Client to release. Must not be NULL (not checked). Pointers
- *                   it owns are set to NULL.
+ * @param[in,out] a  Request to release. Must not be NULL (not checked).
  *
  * @return Nothing. Always succeeds.
  */
-extern void oneshot_client_end(oneshot_client_t *c) ;
-
-/**
- * @brief Ask the daemon to run the up or down script of @p servicedir, forwarding
- * the caller's `0`/`1`/`2` to the script, and block until the result is known.
- *
- * Sends one RUN request whose payload is @p servicedir (not NUL-terminated on the
- * wire) and whose ancillary data carries the caller's current descriptors `0`,
- * `1` and `2`, then runs the event loop until a response frame is handled, the
- * connection drops, a watched signal (`SIGTERM`/`SIGINT`) fires, or the guard timer
- * expires. When @p timeout is > 0 it arms a guard timer of that many milliseconds;
- * when <= 0 no guard timer is set and the call can block indefinitely. On a
- * received `ONESHOT_OK` response the script's `waitpid` status is stored in
- * @c c->wstat. The protocol outcome is always available in @c c->status after the
- * call.
- *
- * @param[in,out] c       Initialized client (from `oneshot_client_init`). Must not
- *                        be NULL (not checked). Updated in place: @c status,
- *                        @c wstat, @c request_sent, @c response_received.
- * @param[in] down        0 -> request the up/`run` script; non-zero -> request the
- *                        down/`finish` script (sets `ONESHOT_FLAG_DOWN`).
- * @param[in] servicedir  Service directory path. Must be nonempty and at most
- *                        `ONESHOT_PAYLOAD_MAX` bytes (its length, NUL excluded).
- * @param[in] timeout     Guard-timer duration in milliseconds; <= 0 disables it.
- *
- * @return Status code:
- *      - 1 if a response was received from the daemon. Inspect @c c->status for
- *        the protocol outcome (`ONESHOT_OK`, `ONESHOT_ERR`, `ONESHOT_PROTO`),
- *        and @c c->wstat when @c c->status is `ONESHOT_OK`.
- *      - 0 if no response was obtained; @c c->status is forced to `ONESHOT_ERR`.
- *        This covers a rejected argument, a send failure, a timeout, a watched
- *        signal, and a connection drop before reply.
- *
- * @retval 0 errno is set to `EINVAL` if @p servicedir is empty or longer than
- *         `ONESHOT_PAYLOAD_MAX`.
- * @retval 0 if `stream_message_send_with_fds` fails, the failure is logged and
- *         errno reflects that underlying send error.
- * @retval 0 if the loop ends without a response (timeout, watched signal, or
- *         connection drop): @c c->status is `ONESHOT_ERR` and errno is not set to
- *         any dedicated value by this function.
- *
- * @note A return of 1 does NOT mean the script succeeded; it means the daemon
- * answered. The script's success/failure is encoded in @c c->wstat (a `waitpid`
- * status) and is meaningful only when @c c->status is `ONESHOT_OK`.
- * @see oneshot_status_str
- */
-extern int oneshot_run(oneshot_client_t *c, uint8_t down, char const *servicedir, int timeout) ;
+extern void oneshot_async_end(oneshot_async_t *a) ;
 
 #endif

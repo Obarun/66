@@ -26,12 +26,10 @@
 #include <oblibs/io.h>
 #include <oblibs/types.h>
 #include <oblibs/log.h>
-#include <oblibs/environ.h>
 #include <oblibs/string.h>
 #include <oblibs/clock.h>
 #include <oblibs/sse.h>
 #include <oblibs/fd.h>
-#include <oblibs/spawn.h>
 
 #include <66/service.h>
 #include <66/resolve.h>
@@ -49,7 +47,6 @@ enum svc_event_type_e
 {
     SVC_EVENT_CHILD_SUCCESS,
     SVC_EVENT_CHILD_FAILED,
-    SVC_EVENT_TIMEOUT,
     SVC_EVENT_SHUTDOWN_REQUEST
 } ;
 typedef enum svc_event_type_e svc_event_type_t ;
@@ -69,11 +66,13 @@ static uint32_t *v2svc ;
 // prototype
 static int launch_service(uint32_t id) ;
 static int launch_classic(uint32_t id) ;
-static void child_cb(sse_watcher_t *w, void *cbdata, int event) ;
+static int launch_oneshot(uint32_t id) ;
 static void timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
 static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event) ;
 static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data) ;
 static void complete(uint32_t id, bool success) ;
+static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat) ;
+static void svc_oneshot_teardown(void *data) ;
 
 // helpers
 static uint32_t get_asvc_id(vertex_t *v)
@@ -200,7 +199,9 @@ static void announce(uint32_t id, bool success)
 
     auto_strings(file, scandir, "/down") ;
 
-    if (svc->res->type != E_PARSER_TYPE_CLASSIC)
+    /* classic status is owned by 66-supervise, oneshot status by 66-oneshotd;
+     * svc_launch only writes the status of a module, which has no daemon. */
+    if (svc->res->type == E_PARSER_TYPE_MODULE)
         svc_runtime_write(svc, success) ;
 
     if (success) {
@@ -447,6 +448,40 @@ static int launch_classic(uint32_t id)
     return 1 ;
 }
 
+static int launch_oneshot(uint32_t id)
+{
+    log_flow() ;
+
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
+    char const *name = svc->res->sa.s + svc->res->name ;
+    char *servicedir = svc->res->sa.s + svc->res->live.servicedir ;
+    char *oneshotdir = svc->res->sa.s + svc->res->live.oneshotddir ;
+    char oneshot[strlen(oneshotdir) + 2 + 1] ;
+    auto_strings(oneshot, oneshotdir, "/s") ;
+
+    log_trace("sending ", !pmanager->operation ? "start" : "stop", " to: ", oneshot) ;
+
+    if (!oneshot_async_send(&svc->oneshot, &pmanager->loop, oneshot, pmanager->operation, pmanager->info->who, servicedir, &svc_oneshot_result, (void *)(uintptr_t)id)) {
+        log_warnusys("request oneshot daemon for service: ", name) ;
+        npid-- ;
+        announce(id, false) ;
+        return 1 ;
+    }
+
+    uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
+    if (timeout) {
+        if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1)) {
+            log_warnusys("start timer watcher for service: ", name) ;
+            oneshot_async_end(&svc->oneshot) ;
+            npid-- ;
+            announce(id, false) ;
+            return 1 ;
+        }
+    }
+
+    return 1 ;
+}
+
 static int launch_service(uint32_t id)
 {
     log_flow() ;
@@ -463,48 +498,13 @@ static int launch_service(uint32_t id)
 
     } else if (type == E_PARSER_TYPE_ONESHOT) {
 
-        char *servicedir = svc->res->sa.s + svc->res->live.servicedir ;
-        char *oneshotdir = svc->res->sa.s + svc->res->live.oneshotddir ;
-        char *scandir = svc->res->sa.s + svc->res->live.scandir ;
-        char oneshot[strlen(oneshotdir) + 2 + 1] ;
-        auto_strings(oneshot, oneshotdir, "/s") ;
-
-        char *newargv[5] ;
-        unsigned int m = 0 ;
-        newargv[m++] = SS_LIBEXECPREFIX "66-oneshot" ;
-        newargv[m++] = oneshot ;
-        newargv[m++] = !pmanager->operation ? "up" : "down" ;
-        newargv[m++] = servicedir ;
-        newargv[m++] = 0 ;
-
-        log_trace("sending ", !pmanager->operation ? "start" : "stop", " to: ", scandir) ;
-
-        svc->pid = spawn_path(newargv[0], (char const *const *)newargv, (char const *const *)environ) ;
-        if (!svc->pid) {
-            FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
-            log_warnusys_return(LOG_EXIT_ZERO, "spawn service: ", svc->res->sa.s + svc->res->name) ;
-        }
+        return launch_oneshot(id) ;
 
     } else if (type == E_PARSER_TYPE_MODULE) {
 
         int r = svc_compute_ns(pmanager, id) ;
         announce(id, !r ? true : false) ;
         return r ? 0 : 1 ;
-    }
-
-    // Setup child watcher/
-    if (!sse_start_child(&pmanager->loop, &svc->child, child_cb, (void *)(uintptr_t)id, svc->pid, 2, true)) {
-        if (svc->pid)
-            kill(svc->pid, SIGKILL);
-        svc->state = SVC_FLAGS_FAILED ;
-        log_warnusys_return(LOG_EXIT_ZERO, "start child watcher for service: ", svc->res->sa.s + svc->res->name) ;
-    }
-
-    // Setup timeout watcher if any
-    uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
-    if (timeout) {
-        if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1))
-            log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for service: ",  svc->res->sa.s + svc->res->name) ;
     }
 
     return 1 ;
@@ -609,8 +609,9 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
         switch (msg.type) {
 
             case SVC_EVENT_CHILD_SUCCESS:
-                /* native CLASSIC services have no child watcher: account the
-                 * completion here (the child path decrements in child_cb) */
+                /* native CLASSIC services have no async result callback: account
+                 * the completion here (the oneshot path decrements in
+                 * svc_oneshot_result) */
                 if (svc->native)
                     npid-- ;
                 svc->state = 0 ;
@@ -626,11 +627,6 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
 
                 if (pmanager->propagate)
                     propagate_failure(msg.id) ;
-                break ;
-
-            case SVC_EVENT_TIMEOUT:
-                svc->state = 0 ;
-                FLAGS_SET(svc->state, SVC_FLAGS_TIMEOUT) ;
                 break ;
 
             case SVC_EVENT_SHUTDOWN_REQUEST:
@@ -653,74 +649,73 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
     }
 }
 
-static void child_cb(sse_watcher_t *w, void *cbdata, int event)
+static void svc_oneshot_teardown(void *data)
 {
     log_flow() ;
 
-    uint32_t id = (uint32_t)(uintptr_t)cbdata;
-    svc_ctx_t *svc = &pmanager->asvc[id];
+    uint32_t id = (uint32_t)(uintptr_t)data ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-    if (w->api_errno != 0) {
-        log_warn("child watcher error: ", strerror(w->api_errno)) ;
-        npid--;
-        svc->state = SVC_FLAGS_FAILED ;
-        announce(id, false) ;
-        sse_free_child(w) ;
-        return ;
-    }
+    oneshot_async_end(&svc->oneshot) ;
+}
 
-    if (!(event & SSE_READ)) {
-        log_warn("unexpected event on child callback") ;
-        return ;
-    }
+static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat)
+{
+    log_flow() ;
 
-    if (event & (SSE_HUP | SSE_READ)) {
+    uint32_t id = (uint32_t)(uintptr_t)data ;
+    svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-        sse_child_t *data = (sse_child_t *)w->sdata;
-        if (!data) {
-            log_warn("child watcher sdata is NULL") ;
-            sse_free_child(w) ;
-            return ;
-        }
+    if (svc->timeout.fd > 0)
+        sse_free_timer(&svc->timeout) ;
 
-        int wstat = data->status ;
-        npid-- ;
+    npid-- ;
 
+    if (status == ONESHOT_OK) {
         svc->exitcode = WEXITSTATUS(wstat) ;
-
-        bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
-        announce(id, success) ;
-
-        if (svc->timeout.fd > 0)
-            sse_free_timer(&svc->timeout) ;
-
-        sse_free_child(&svc->child) ;
+        announce(id, !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) ;
+    } else {
+        announce(id, false) ;
     }
+
+    if (!sse_defer(&pmanager->loop, &svc_oneshot_teardown, data))
+        log_warnusys("defer oneshot teardown for service: ", svc->res->sa.s + svc->res->name) ;
 }
 
 static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
 {
     log_flow() ;
 
+    (void)event ;
+
     uint32_t id = (uint32_t)(uintptr_t)cbdata ;
     svc_ctx_t *svc = &pmanager->asvc[id] ;
-    (void)event ;
+
+    /* the daemon reply may already have completed the service and freed this
+     * timer earlier in the same dispatch batch: do nothing (and do not re-free) */
+    if (svc->oneshot.done)
+        return ;
+
+    // one-shot timer that just fired
+    sse_free_timer(w) ;
+
     if (w->api_errno != 0) {
         log_warn("timeout watcher error: ", strerror(w->api_errno)) ;
-        sse_free_timer(w) ;
         return ;
     }
 
-    if (svc && svc->pid > 0) {
-        // Kill the service
-        log_warn("service timeout, killing: ", svc->res->sa.s + svc->res->name) ;
-        kill(svc->pid, SIGTERM) ;
+    log_warn("transition timeout for service: ", svc->res->sa.s + svc->res->name) ;
 
-        svc_send_event(SVC_EVENT_TIMEOUT, id) ;
-    }
+    /* block the daemon reply and drive the failure ourselves; the deferred
+     * teardown closes the stream, which makes 66-oneshotd SIGKILL the running
+     * script and write its FAILED status */
+    svc->oneshot.done = true ;
 
-    // one-shot timer
-    sse_free_timer(w) ;
+    npid-- ;
+    announce(id, false) ;
+
+    if (!sse_defer(&pmanager->loop, &svc_oneshot_teardown, cbdata))
+        log_warnusys("defer oneshot teardown for service: ", svc->res->sa.s + svc->res->name) ;
 }
 
 // main API

@@ -22,11 +22,6 @@
 
 #include <66/oneshot.h>
 
-/*
- * The caller (66-oneshot) has already validated servicedir (absolute, bounded,
- * script present) and the daemon's request handler re-bounds it ; here we only
- * chdir into it and exec the run (up) or finish (down) script.
- */
 void oneshot_exec_script(char const *servicedir, uint8_t down)
 {
     char const *file = down ? "finish" : "run" ;
