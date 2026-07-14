@@ -148,7 +148,7 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
             }
             state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
 
-            if (pres->type == E_PARSER_TYPE_ONESHOT) {
+            if (pres->type == E_PARSER_TYPE_ONESHOT || pres->type == E_PARSER_TYPE_EVENT) {
 
                 if (!state_write(&sta, pres)) {
                     cleanup(toclean, pos) ;

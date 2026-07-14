@@ -43,6 +43,7 @@
 #include <66/event.h>
 #include <66/event_rule.h>
 #include <66/resolve.h>
+#include <66/enum_parser.h>
 #include <66/status.h>
 #include <66/svc.h>
 #include <66/constants.h>
@@ -83,14 +84,14 @@ struct eventd_source_s
     hash_node_t node ;
 } ;
 
-typedef struct eventd_conn_s eventd_conn_t ;
-struct eventd_conn_s
+typedef struct eventd_client_s eventd_client_t ;
+struct eventd_client_s
 {
     int fd ;
     sse_watcher_t w ;
     size_t blen ; // bytes buffered
     hash_node_t node ;
-    char buf[1 + SS_MAX_SERVICE_NAME + 1] ; // <verb:1><name>
+    char buf[2 + SS_MAX_SERVICE_NAME + 1] ; // <verb:1><who:1><name>
 } ;
 
 typedef struct eventd_s eventd_t ;
@@ -103,7 +104,7 @@ struct eventd_s
     uid_t owner ;           // scandir owner ; only it may talk to the socket
     hash_t sources ;        // eventd_source_t*
     hash_t reactors ;       // eventd_reactor_t*
-    hash_t conns ;          // eventd_conn_t*
+    hash_t clients ;          // eventd_client_t*
     strbuf emitq ;          // sbl of pending emit names (flattened emit recursion)
 } ;
 
@@ -115,7 +116,7 @@ static eventd_t eventd = {
     .owner = -1,
     .sources = HASH_ZERO,
     .reactors = HASH_ZERO,
-    .conns = HASH_ZERO,
+    .clients = HASH_ZERO,
     .emitq = SBL_ZERO
 } ;
 
@@ -731,6 +732,42 @@ static void eventd_emit(char const *name)
     eventd_drain_emits() ;
 }
 
+static void source_write_status(resolve_service_t *res, uint8_t up, uint8_t who)
+{
+    log_flow() ;
+
+    service_status_t st = STATUS_ZERO ;
+    st.state = up ? STATUS_STATE_DONE : STATUS_STATE_DOWN ;
+    st.result = STATUS_RESULT_SUCCESS ;
+    st.who = who ;
+    clock_now(&st.stamp) ;
+
+    char const *supervisedir = res->sa.s + res->live.supervisedir ;
+    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, supervisedir, "/", SS_STATUS) ;
+
+    if (!status_write(&st, file))
+        log_warnusys("write source status of: ", res->sa.s + res->name) ;
+}
+
+static void eventd_arm_source(resolve_service_t *res, uint8_t who)
+{
+    log_flow() ;
+
+    source_write_status(res, 1, who) ;
+
+    log_info("armed event source: ", res->sa.s + res->name) ;
+}
+
+static void eventd_disarm_source(resolve_service_t *res, uint8_t who)
+{
+    log_flow() ;
+
+    source_write_status(res, 0, who) ;
+
+    log_info("disarmed event source: ", res->sa.s + res->name) ;
+}
+
 /* At the very first use of repopulate, the scandir
  * should be empty. In any others case, best-efford to
  * recover the previous state.*/
@@ -773,26 +810,51 @@ static void repopulate(char const *scandir)
     closedir(dir) ;
 }
 
-static void conn_dispatch(eventd_conn_t *conn)
+static void client_dispatch(eventd_client_t *conn)
 {
     log_flow() ;
 
-    if (!conn->blen) {
-        log_warn("empty request on control socket") ;
+    if (conn->blen < 2) {
+        log_warn("request too short on control socket") ;
         return ;
     }
 
     char verb = conn->buf[0] ;
-    size_t namelen = conn->blen - 1 ;
+    uint8_t who = (uint8_t)conn->buf[1] ;
+    size_t namelen = conn->blen - 2 ;
 
     if (!namelen) {
         log_warn("request without a name on control socket") ;
         return ;
     }
 
+    if (who >= STATUS_WHO_ENDOFKEY) {
+        log_warn("invalid who on control socket") ;
+        return ;
+    }
+
     char name[namelen + 1] ;
-    memcpy(name, conn->buf + 1, namelen) ;
+    memcpy(name, conn->buf + 2, namelen) ;
     name[namelen] = 0 ;
+
+    if (verb == 'a' || verb == 'd') {
+
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+        if (resolve_read(wres, sysdir, name) == 1 && res.type == E_PARSER_TYPE_EVENT) {
+
+            if (verb == 'a')
+                eventd_arm_source(&res, who) ;
+            else
+                eventd_disarm_source(&res, who) ;
+
+            resolve_free(wres) ;
+            return ;
+        }
+
+        resolve_free(wres) ;
+    }
 
     switch (verb) {
 
@@ -806,26 +868,26 @@ static void conn_dispatch(eventd_conn_t *conn)
     }
 }
 
-static void conn_destroy(eventd_conn_t *conn)
+static void client_destroy(eventd_client_t *conn)
 {
     log_flow() ;
 
-    hash_del(&eventd.conns, conn) ;
+    hash_del(&eventd.clients, conn) ;
     sse_free_io(&conn->w) ; // frees the watcher AND closes conn->fd
     free(conn) ;
 }
 
-static void conn_read_cb(sse_watcher_t *w, void *data, int revents)
+static void client_read_cb(sse_watcher_t *w, void *data, int revents)
 {
     log_flow() ;
 
     (void)w ;
 
-    eventd_conn_t *conn = data ;
+    eventd_client_t *conn = data ;
 
     if (revents & SSE_ERROR) {
         log_warnusys("control socket connection") ;
-        conn_destroy(conn) ;
+        client_destroy(conn) ;
         return ;
     }
 
@@ -833,7 +895,7 @@ static void conn_read_cb(sse_watcher_t *w, void *data, int revents)
 
         if (conn->blen == sizeof(conn->buf)) {
             log_warn("request too long on control socket") ;
-            conn_destroy(conn) ;
+            client_destroy(conn) ;
             return ;
         }
 
@@ -849,25 +911,25 @@ static void conn_read_cb(sse_watcher_t *w, void *data, int revents)
 
         // r < 0 : EPIPE marks the client's EOF, anything else is a real error
         if (errno == EPIPE)
-            conn_dispatch(conn) ;
+            client_dispatch(conn) ;
         else
             log_warnusys("read from control socket") ;
 
-        conn_destroy(conn) ;
+        client_destroy(conn) ;
         return ;
     }
 }
 
-static int conn_create(int fd)
+static int client_create(int fd)
 {
     log_flow() ;
 
-    if (hash_count(&eventd.conns) >= EVENTD_MAXCLIENTS) {
+    if (hash_count(&eventd.clients) >= EVENTD_MAXCLIENTS) {
         close_fd(fd) ;
         log_warn_return(LOG_EXIT_ZERO, "too many connections - refusing") ;
     }
 
-    eventd_conn_t *conn = malloc(sizeof(*conn)) ;
+    eventd_client_t *conn = malloc(sizeof(*conn)) ;
     if (!conn) {
         close_fd(fd) ;
         log_warnusys_return(LOG_EXIT_ZERO, "allocate connection") ;
@@ -877,13 +939,13 @@ static int conn_create(int fd)
     conn->w = (sse_watcher_t)SSE_WATCHER_ZERO ;
     conn->blen = 0 ;
 
-    if (!sse_start_io(&eventd.epoll, &conn->w, conn_read_cb, conn, fd, SSE_READ, 0)) {
+    if (!sse_start_io(&eventd.epoll, &conn->w, client_read_cb, conn, fd, SSE_READ, 0)) {
         close_fd(fd) ;
         free(conn) ;
         log_warnusys_return(LOG_EXIT_ZERO, "watch connection") ;
     }
 
-    if (!hash_add(&eventd.conns, &conn->fd, sizeof(conn->fd), conn)) {
+    if (!hash_add(&eventd.clients, &conn->fd, sizeof(conn->fd), conn)) {
         sse_free_io(&conn->w) ; // closes fd
         free(conn) ;
         log_warnusys_return(LOG_EXIT_ZERO, "register connection") ;
@@ -925,7 +987,7 @@ static void server_accept_cb(sse_watcher_t *w, void *data, int revents)
             return ;
         }
 
-        conn_create(fd) ;
+        client_create(fd) ;
     }
 }
 
@@ -984,9 +1046,9 @@ static void eventd_cleanup(void)
 {
     log_flow() ;
 
-    eventd_conn_t *c, *tc ;
-    HASH_FOREACH(&eventd.conns, c, tc)
-        conn_destroy(c) ;
+    eventd_client_t *c, *tc ;
+    HASH_FOREACH(&eventd.clients, c, tc)
+        client_destroy(c) ;
 
     eventd_reactor_t *re, *tre ;
     HASH_FOREACH(&eventd.reactors, re, tre)
@@ -996,7 +1058,7 @@ static void eventd_cleanup(void)
     HASH_FOREACH(&eventd.sources, s, ts)
         source_destroy(s) ;
 
-    hash_free(&eventd.conns) ;
+    hash_free(&eventd.clients) ;
     hash_free(&eventd.reactors) ;
     hash_free(&eventd.sources) ;
     strbuf_free(&eventd.emitq) ;
@@ -1072,7 +1134,7 @@ int main(int argc, char const *const *argv)
 
     if (!hash_init(&eventd.sources, 0, offsetof(eventd_source_t, node)) ||
         !hash_init(&eventd.reactors, 0, offsetof(eventd_reactor_t, node)) ||
-        !hash_init(&eventd.conns, 0, offsetof(eventd_conn_t, node)))
+        !hash_init(&eventd.clients, 0, offsetof(eventd_client_t, node)))
         log_dieusys(LOG_EXIT_SYS, "initialize runtime tables") ;
 
     if (!eventd_init())

@@ -120,7 +120,7 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
         return e ;
 
     if (unsupervise)
-        svc_unsupervise(&graph) ;
+        svc_unsupervise(&graph, info->who) ;
 
     service_graph_destroy(&graph) ;
 

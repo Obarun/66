@@ -24,7 +24,7 @@
 
 #include <66/svc.h>
 
-int svcd_notify(char const *eventddir, char verb, char const *name)
+int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name)
 {
     log_flow() ;
 
@@ -33,9 +33,10 @@ int svcd_notify(char const *eventddir, char verb, char const *name)
     char sock[strlen(eventddir) + 2 + 1] ;
     auto_strings(sock, eventddir, "/s") ;
 
-    char frame[1 + namelen] ; // <verb><name>, no terminator ; the daemon reads to EOF
+    char frame[2 + namelen] ; // <verb><who><name>, no terminator ; the daemon reads to EOF
     frame[0] = verb ;
-    memcpy(frame + 1, name, namelen) ;
+    frame[1] = (char)who ;
+    memcpy(frame + 2, name, namelen) ;
 
     int fd = socketunix_create(O_CLOEXEC) ;
     if (fd < 0)
@@ -46,7 +47,7 @@ int svcd_notify(char const *eventddir, char verb, char const *name)
         return 0 ;
     }
 
-    if (!io_writenclose(fd, frame, 1 + namelen))
+    if (!io_writenclose(fd, frame, 2 + namelen))
         return 0 ; // io_writenclose closed fd already ; errno set
 
     return 1 ;

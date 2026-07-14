@@ -53,7 +53,7 @@ int ssexec_emit(int argc, char const *const *argv, void *data)
     char eventddir[info->scandir.len + 1 + SS_EVENTD_LEN + 1] ;
     auto_strings(eventddir, info->scandir.s, "/", SS_EVENTD) ;
 
-    if (!svcd_notify(eventddir, 'e', name))
+    if (!svcd_notify(eventddir, 'e', info->who, name))
         log_dieusys(LOG_EXIT_SYS, "emit event to the event daemon") ;
 
     return 0 ;

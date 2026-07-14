@@ -28,11 +28,11 @@
 #include <66/svc.h>
 #include <66/enum_parser.h>
 
-static void sanitize_it(resolve_service_t *res, fdholder_client_t *a)
+static void sanitize_it(resolve_service_t *res, fdholder_client_t *a, uint8_t who)
 {
     log_flow() ;
 
-    if (res->has_event && !svcd_notify(res->sa.s + res->live.eventddir, 'd', res->sa.s + res->name))
+    if (res->has_event && !svcd_notify(res->sa.s + res->live.eventddir, 'd', who, res->sa.s + res->name))
         log_warnusys("disarm event reactor: ", res->sa.s + res->name) ;
 
     ss_state_t sta = STATE_ZERO ;
@@ -60,7 +60,7 @@ static void sanitize_it(resolve_service_t *res, fdholder_client_t *a)
 }
 
 /** this function assume that the services is already down */
-void svc_unsupervise(service_graph_t *g)
+void svc_unsupervise(service_graph_t *g, uint8_t who)
 {
     log_flow() ;
 
@@ -98,7 +98,7 @@ void svc_unsupervise(service_graph_t *g)
             isstarted = true ;
         }
 
-        sanitize_it(&hash->res, &a) ;
+        sanitize_it(&hash->res, &a, who) ;
 
         if (hash->res.type == E_PARSER_TYPE_MODULE && hash->dependencies.ncontents) {
 
@@ -120,7 +120,7 @@ void svc_unsupervise(service_graph_t *g)
 
                 h->visit = 1 ;
 
-                sanitize_it(&h->res, &a) ;
+                sanitize_it(&h->res, &a, who) ;
             }
         }
     }

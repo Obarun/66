@@ -354,10 +354,11 @@ static void reactor_arm(uint32_t id)
 
     svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-    if (pmanager->operation || !svc->res->has_event || pmanager->info->who == STATUS_WHO_EVENT)
+    if (pmanager->operation || !svc->res->has_event || svc->res->type == E_PARSER_TYPE_EVENT
+        || pmanager->info->who == STATUS_WHO_EVENT)
         return ;
 
-    if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', svc->res->sa.s + svc->res->name))
+    if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', pmanager->info->who, svc->res->sa.s + svc->res->name))
         log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
 }
 
@@ -511,6 +512,20 @@ static int launch_service(uint32_t id)
         int r = svc_compute_ns(pmanager, id) ;
         announce(id, !r ? true : false) ;
         return r ? 0 : 1 ;
+
+    } else if (type == E_PARSER_TYPE_EVENT) {
+
+        char const *eventddir = svc->res->sa.s + svc->res->live.eventddir ;
+        char const *name = svc->res->sa.s + svc->res->name ;
+
+        if (!svcd_notify(eventddir, pmanager->operation ? 'd' : 'a', pmanager->info->who, name))
+            log_warnusys(pmanager->operation ? "disarm event source: " : "arm event source: ", name) ;
+
+        svc->native = true ;
+
+        complete(id, true) ;
+
+        return 1 ;
     }
 
     return 1 ;
