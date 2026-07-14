@@ -167,7 +167,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success)
     service_status_t st = STATUS_ZERO ;
 
     if (success) {
-        st.state = pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
+        st.state = (svc->waiting || pmanager->operation) ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
         st.result = STATUS_RESULT_SUCCESS ;
     } else {
         st.state = STATUS_STATE_FAILED ;
@@ -361,10 +361,6 @@ static void reactor_arm(uint32_t id)
         log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
 }
 
-/** Native CLASSIC launch: send the control command over supervise/control and,
- * when a wait was requested (-w), watch the event fifodir for the transition.
- * Owns its service's completion: it always returns 1 and reports success/failure
- * through complete()/announce() (so npid is decremented once, in notifier_cb). */
 static int launch_classic(uint32_t id)
 {
     log_flow() ;
@@ -374,11 +370,6 @@ static int launch_classic(uint32_t id)
 
     svc->native = true ;
 
-    /* a classic Do=start reactor is armed-not-launched: its ./down (seeded at
-     * parse) keeps it supervised-down and the event action brings it up later, so
-     * skip the up command entirely. reactor_arm (in launch_service) already
-     * registered the rule; an event-driven start (who=EVENT) is the daemon firing
-     * that Do and must launch, not re-arm-and-wait. */
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
         && reactor_docmd(svc->res) == EVENT_DO_START) {
@@ -454,6 +445,14 @@ static int launch_oneshot(uint32_t id)
 
     svc_ctx_t *svc = &pmanager->asvc[id] ;
     char const *name = svc->res->sa.s + svc->res->name ;
+
+    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+        && reactor_docmd(svc->res) == EVENT_DO_START) {
+        svc->native = true ;
+        complete(id, true) ;
+        return 1 ;
+    }
+
     char *servicedir = svc->res->sa.s + svc->res->live.servicedir ;
     char *oneshotdir = svc->res->sa.s + svc->res->live.oneshotddir ;
     char oneshot[strlen(oneshotdir) + 2 + 1] ;
@@ -501,6 +500,13 @@ static int launch_service(uint32_t id)
         return launch_oneshot(id) ;
 
     } else if (type == E_PARSER_TYPE_MODULE) {
+
+        if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+            && reactor_docmd(svc->res) == EVENT_DO_START) {
+            svc->waiting = true ;
+            complete(id, true) ;
+            return 1 ;
+        }
 
         int r = svc_compute_ns(pmanager, id) ;
         announce(id, !r ? true : false) ;

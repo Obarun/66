@@ -74,6 +74,7 @@ struct svc_ctx_s
     event_state_t match ; // transition interpreter for this service's wait
     bool native ; // uses the native CLASSIC path (no child process)
     bool done ; // completion already emitted (guards event vs timeout)
+    bool waiting ; // Do=start reactor armed-not-launched: report its status down
 
     // State management
     uint8_t state ; // Current state
@@ -100,6 +101,7 @@ typedef struct svc_ctx_s svc_ctx_t ;
     .oneshot = {0}, \
     .native = false, \
     .done = false, \
+    .waiting = false, \
     .state = 0, \
     .target_state = 0, \
     .index = 0, \
