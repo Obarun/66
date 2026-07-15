@@ -451,7 +451,7 @@ do not need to re-`start` your rules by hand after the daemon bounces.
   `66`. They are opposite directions.
 * **`reload` does not wake a `signal` reactor.** See [`reload` is not a
   signal](#reload-is-not-a-signal) above — the single most common source of confusion.
-* **`Do = start` on an up service is a no-op.** See [state gating](#when-a-reactor-actually-fires--state-gating).
+* **`Do = start` on an up service is a no-op.** See [state gating](#when-a-reactor-actually-fires-state-gating).
 * **Quartz `?`.** A `schedule` expression must carry `?` on day-of-month or day-of-week; it
   has no `@reboot`.
 * **`Emit` chains can loop.** `Emit = a` triggering a rule whose `Emit = b` triggering a rule

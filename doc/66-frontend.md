@@ -748,7 +748,7 @@ The filesystem path an `inotify` source watches, paired with [`On`](#on).
 On = ( IN_CLOSE_WRITE IN_MOVE_SELF )
 ```
 
-The [inotify(7)](https://man7.org/linux/man-pages/man7/inotify.7.html) event(s) an `inotify` source reacts to on its [`Watch`](#watch) path. (The reactor key [`On`](#on--onall) in the [`[Event]`](#section-event) section is a different vocabulary.)
+The [inotify(7)](https://man7.org/linux/man-pages/man7/inotify.7.html) event(s) an `inotify` source reacts to on its [`Watch`](#watch) path. (The reactor key [`On`](#on-onall) in the [`[Event]`](#section-event) section is a different vocabulary.)
 
 * mandatory: yes for an `inotify` source; not valid otherwise.
 
@@ -1702,7 +1702,7 @@ This section is *optional*. It turns an ordinary `classic`, `oneshot` or `module
 EventType = service
 ```
 
-Selects which family of trigger the reactor subscribes to, and therefore which [`On`](#on--onall) vocabulary applies. Same key, same values as the source [`EventType`](#eventtype) in `[Main]`, but placed here for a reactor.
+Selects which family of trigger the reactor subscribes to, and therefore which [`On`](#on-onall) vocabulary applies. Same key, same values as the source [`EventType`](#eventtype) in `[Main]`, but placed here for a reactor.
 
 * mandatory: yes for a reactor.
 
@@ -1713,7 +1713,7 @@ Selects which family of trigger the reactor subscribes to, and therefore which [
     * service : react to the status transitions (up/down/crash/…) of a supervised service named in [`From`](#from).
     * signal : react to a signal routed by `66` to a supervised service named in [`From`](#from).
     * user : react to a name raised by [66 emit](66-emit.html) or by another reactor's [`Emit`](#emit). A `user` reactor is **sourceless** — no [`From`](#from).
-    * inotify / schedule / timer : react to the `Type = event` source named in [`From`](#from). The condition lives in the source, so these carry **no** [`On`](#on--onall).
+    * inotify / schedule / timer : react to the `Type = event` source named in [`From`](#from). The condition lives in the source, so these carry **no** [`On`](#on-onall).
 
 #### From
 
@@ -1722,7 +1722,7 @@ Selects which family of trigger the reactor subscribes to, and therefore which [
 From = ( rabbitmq )
 ```
 
-The source(s) the reactor subscribes to. **Always explicit** — sources are never inferred from [`On`](#on--onall).
+The source(s) the reactor subscribes to. **Always explicit** — sources are never inferred from [`On`](#on-onall).
 
 * mandatory: yes for every reactor **except** `user` (which is sourceless).
 
@@ -1793,7 +1793,7 @@ Raises a `user` event of the given name when the trigger fires, **independently*
 
 * syntax: [inline](#inline)
 
-* valid values: any name. It matches the [`On`](#on--onall) of a `user` reactor.
+* valid values: any name. It matches the [`On`](#on-onall) of a `user` reactor.
 
 ## A word about the Execute key
 
