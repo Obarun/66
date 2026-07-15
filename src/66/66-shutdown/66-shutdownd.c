@@ -47,6 +47,9 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/svc.h>
+#include <66/ssexec.h>
+#include <66/tree.h>
+#include <66/utils.h>
 
 #define STAGE4_FILE "stage4"
 #define DOTPREFIX ".66-shutdownd:"
@@ -128,28 +131,30 @@ static void parse_conf(char const *confile,char *rcshut,char const *key)
     }
 }
 
-static inline void run_rcshut (void)
+static inline void stop_trees (void)
 {
     log_flow() ;
 
-    pid_t pid ;
-    size_t conflen = strlen(conf) ;
-    char rcshut[4096] ;
-    char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
-    auto_conf(confile,conflen) ;
-    parse_conf(confile,rcshut,"RCSHUTDOWN") ;
-    char const *rcshut_argv[3] = { rcshut, confile, 0 } ;
-    pid = spawn_path(rcshut_argv[0], rcshut_argv, (char const *const *)environ) ;
-    if (pid)
-    {
-        int wstat ;
-        if (process_wait(pid, &wstat) == -1) log_dieusys(LOG_EXIT_SYS, "waitpid") ;
-        if (WIFSIGNALED(wstat))
-            flog_warn(rcshut, " was killed by signal %d", WTERMSIG(wstat)) ;
-        else if (WEXITSTATUS(wstat))
-            flog_warn("%s exited %d", rcshut, WEXITSTATUS(wstat)) ;
-    }
-    else log_warnusys("spawn ", rcshut) ;
+    ssexec_t info = SSEXEC_ZERO ;
+    info.owner = getuid() ;
+    info.ownerlen = uid_format(info.ownerstr, info.owner) ;
+    info.ownerstr[info.ownerlen] = 0 ;
+    info.who = STATUS_WHO_SHUTDOWN ;
+
+    if (!set_ownersysdir(&info.base, info.owner))
+        log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
+
+    if (!auto_strbuf(&info.live, live) || set_livedir(&info.live) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "set live directory: ", live) ;
+
+    if (!strbuf_copy(&info.scandir, &info.live) || !strbuf_uncounted(&info.scandir)
+        || set_livescan(&info.scandir, info.owner) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "set scandir directory") ;
+
+    tree_send(2, 0, 0, &info) ; // 2 = free
+    tree_send(2, SS_BOOT_TREE, 0, &info) ;
+
+    ssexec_free(&info) ;
 }
 
 static void schedule_deadline (sse_watcher_t *tw, int ms)
@@ -385,8 +390,6 @@ static void on_deadline (sse_watcher_t *w, void *cbdata, int event)
     (void)event ;
     shutdownd_ctx_t *ctx = cbdata ;
 
-    run_rcshut() ;
-
     if (*ctx->what != 'S')
         w->p->running = false ;   /* was the loop `break`: proceed to shutdown */
     /* else: one-shot timer already disarmed (= infinite deadline), keep looping */
@@ -499,6 +502,8 @@ int main (int argc, char const *const *argv)
 
     close_fd(fdw) ;
     close_fd(fdr) ;
+
+    stop_trees() ;
 
     if (!inns && !nologger)
         restore_console() ;
