@@ -147,10 +147,10 @@ straight back up — a fresh `pid`, the uptime reset to zero.
 
 ### execline is not mandatory
 
-By default the `Execute` field is [execline](https://skarnet.org/software/execline)
-(`Build = auto` prepends an execline shebang). But you are not tied to it: set
-`Build = custom` and make the **first line** of `Execute` your own shebang —
-`66` then runs the script verbatim, in whatever language you like.
+By default the `Execute` field is [execline](https://skarnet.org/software/execline).
+But you are not tied to it: make the **first line** of `Execute` your own shebang
+(`#!…`) and `66` detects it, then runs the script verbatim, in whatever language
+you like.
 
 The same heartbeat daemon in bash:
 
@@ -160,7 +160,6 @@ Type = classic
 Description = "heartbeat in bash"
 
 [Start]
-Build = custom
 Execute = (#!/usr/bin/bash
 while true ; do
     echo heartbeat
@@ -177,7 +176,6 @@ Type = classic
 Description = "heartbeat in python"
 
 [Start]
-Build = custom
 Execute = (#!/usr/bin/python3
 import time
 while True:

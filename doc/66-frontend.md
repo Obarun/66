@@ -829,24 +829,11 @@ The period of a `timer` source: a relative, monotonic interval that fires again 
 
 This section is *mandatory*. (!)
 
-#### Build
+#### Build (deprecated)
 
-**Source Snippet**:
-```ini
-Build = auto
-```
+The build type is no longer set by this key — it is detected automatically from the [`Execute`](#execute) field. An `Execute` whose first non-blank line is a shebang (`#!…`) is treated as a **custom** script and run verbatim in that interpreter; otherwise it is an [execline](https://skarnet.org/software/execline) script. See [A word about the Execute key](#a-word-about-the-execute-key).
 
-Determines how the service script is generated from the `Execute` field.
-
-* mandatory: no
-
-* syntax: [inline](#inline)
-
-* valid value:
-
-    * auto : creates a service script by copying the `Execute` field verbatim and prepending an [execline](https://skarnet.org/software/execline) shebang to the beginning of the script. This is the **default**.
-
-    * custom : Creates a service script by copying the `Execute` field verbatim and applying the specified shebang to execute the script. **Do not forget** to set the shebang at `Execute` key field.
+`Build` is still accepted for now but **ignored**: declaring it only emits a deprecation warning at parse time. Remove it from your frontends.
 
 #### RunAs
 
@@ -925,8 +912,8 @@ and reports the transition as failed.
 
 This section is *optional*.
 
-It handles the stop process of the service. It shares the `Build`, `RunAs`, and
-`Execute` keys with [[Start]](#section-start), plus its own `TimeoutStop` key.
+It handles the stop process of the service. It shares the `RunAs` and `Execute`
+keys with [[Start]](#section-start), plus its own `TimeoutStop` key.
 
 #### TimeoutStop
 
@@ -954,13 +941,13 @@ This section is optional and controls the behavior of the default logging system
 
 It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](#section-main) **must be set** to `66log`, or these keys **must not** be defined at all.
 
-This section extends the `Build`, `RunAs`, and `Execute` key fields from [[Start]](#section-start) and the `TimeoutStart` and `TimeoutStop` key fields from [[Start]](#section-start) and [[Stop]](#section-stop) . These are also valid keys for [[Logger]](#section-logger) and behave the same way they do in the other sections, but none of them is mandatory—see example below. When they are not specified, the default behaviour for those keys is applied.
+This section extends the `RunAs` and `Execute` key fields from [[Start]](#section-start) and the `TimeoutStart` and `TimeoutStop` key fields from [[Start]](#section-start) and [[Stop]](#section-stop) . These are also valid keys for [[Logger]](#section-logger) and behave the same way they do in the other sections, but none of them is mandatory—see example below. When they are not specified, the default behaviour for those keys is applied.
 
 Furthermore there are some keys specific to the log.
 
 The following key names are also valid:
 
-- `Build`, `RunAs`, and `Execute` — See [[Start]](#section-start)
+- `RunAs` and `Execute` — See [[Start]](#section-start)
 - `TimeoutStart` — See [[Start]](#section-start); `TimeoutStop` — See [[Stop]](#section-stop)
 
 #### Backup
@@ -1810,10 +1797,9 @@ Raises a `user` event of the given name when the trigger fires, **independently*
 
 ## A word about the Execute key
 
-As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
+The `Execute` key can be written in any language. Make the **first non-blank line** of the field a shebang (`#!/usr/bin/bash`, `#!/usr/bin/python3`, …): `66` detects it and treats the script as **custom**, running it verbatim in that interpreter. Without a shebang, the field is an [execline](https://skarnet.org/software/execline) script. For example, to write your `Execute` field with bash:
 
 ```
-Build = custom
 Execute = (#!/usr/bin/bash
 echo "This script displays available services"
 for i in $(ls %%service_system%%); do
@@ -1851,7 +1837,7 @@ the final result will be
 
 ensuring that the very first line of the script is the declaration of the shebang to avoid an ***Exec format error***.
 
-Note that with `Build=custom`, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format.
+Note that in a custom (shebang) script, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format.
 
 [identifier](66-identifier.html) is still also **interpreted** even in custom script.
 
@@ -1994,19 +1980,16 @@ Timezone =
 Every =
 
 [Start]
-Build =
 RunAs =
 Execute = ()
 TimeoutStart =
 
 [Stop]
-Build =
 RunAs =
 Execute = ()
 TimeoutStop =
 
 [Logger]
-Build =
 RunAs =
 Backup =
 MaxSize =

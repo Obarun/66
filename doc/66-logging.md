@@ -53,8 +53,8 @@ tail -F %%system_log%%/foo/current
 
 ## Tuning: the [Logger] section
 
-Optional. It controls rotation and timestamping. It also accepts `Build`,
-`RunAs`, `Execute`, `TimeoutStart` and `TimeoutStop`, which behave as in
+Optional. It controls rotation and timestamping. It also accepts `RunAs`,
+`Execute`, `TimeoutStart` and `TimeoutStop`, which behave as in
 [[Start]](66-frontend.html#section-start) and [[Main]](66-frontend.html#section-main).
 
 ```
@@ -93,8 +93,8 @@ for `file:`, `console`, `syslog`, `null` and the other targets.
 
 ## Custom loggers
 
-With `Build = custom` in `[Logger]`, the `Backup`, `MaxSize` and `Timestamp`
-keys have **no effect**: you write the logging command yourself in the
+With a custom (shebang) `Execute` in `[Logger]`, the `Backup`, `MaxSize` and
+`Timestamp` keys have **no effect**: you write the logging command yourself in the
 `Execute` field. Use this only when you need a logging pipeline `66-log` cannot
 express.
 
