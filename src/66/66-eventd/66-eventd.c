@@ -268,6 +268,8 @@ static void source_ref(char const *name, size_t len, uint8_t type)
 
     s->ag.len = 0 ; // the reassembler starts empty
     s->watcher = (sse_watcher_t)SSE_WATCHER_ZERO ;
+    s->cron = (cron_t)CRON_EXPR_ZERO ;
+    s->wd = -1 ;
     s->type = type ;
     s->subscribed = 0 ;
     s->refcount = 1 ;
@@ -449,7 +451,7 @@ static int reactor_backstop(eventd_reactor_t *re)
     return 0 ;
 }
 
-static int reactor_check_backstop(eventd_reactor_t *re)
+static int reactor_enforce_backstop(eventd_reactor_t *re)
 {
     if (!reactor_backstop(re))
         return 0 ;
@@ -465,14 +467,14 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
     log_flow() ;
 
     uint32_t docmd = re->rule.docmd ;
-    opt_cmd_t const *cmd = reactor_func(docmd) ;
+    opt_cmd_t const *func = reactor_func(docmd) ;
     char const *doname = event_do_to_string(docmd) ;
 
-    if (!cmd)
+    if (!func)
         return ;
 
     // anti-loop
-    if (reactor_check_backstop(re))
+    if (reactor_enforce_backstop(re))
         return ;
 
     pid_t pid = fork() ;
@@ -514,7 +516,7 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
         // call the subcommand handler directly: argv is its operands (argv[0] is
         // the first positional), no options to parse -- no need for opt_dispatch
         char const *argv[] = { re->name, 0 } ;
-        _exit(cmd->fn(1, argv, &info)) ;
+        _exit(func->fn(1, argv, &info)) ;
     }
 
     re->pid = pid ;
@@ -587,7 +589,7 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     // Emit-only reactor (Do=none)
     if (!doname) {
 
-        if (reactor_check_backstop(re))
+        if (reactor_enforce_backstop(re))
             return ;
 
         eventd_enqueue_emit(re->rule.sa.s + re->rule.emit) ;
@@ -631,7 +633,7 @@ static void reactor_run(char const *source, event_frame_t const *f)
     }
 }
 
-static void reactor_update(eventd_reactor_t *re)
+static void reactor_catch_up(eventd_reactor_t *re)
 {
     if (re->rule.type != EVENT_SOURCE_SERVICE)
         return ;
@@ -730,7 +732,7 @@ static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event)
     eventd_drain_emits() ;
 }
 
-static void eventd_arm(char const *name)
+static void eventd_arm_reactor(char const *name)
 {
     log_flow() ;
 
@@ -777,11 +779,11 @@ static void eventd_arm(char const *name)
     log_info("armed reactor: ", name) ;
 
     // the sources may already hold the awaited condition: fire it now if so
-    reactor_update(re) ;
+    reactor_catch_up(re) ;
     eventd_drain_emits() ;
 }
 
-static void eventd_disarm(char const *name)
+static void eventd_disarm_reactor(char const *name)
 {
     log_flow() ;
 
@@ -1097,7 +1099,7 @@ static void repopulate(char const *scandir)
             if (res.type == E_PARSER_TYPE_EVENT)
                 eventd_arm_source(&res, source_get_who(&res)) ;
             else if (res.has_event)
-                eventd_arm(name) ;
+                eventd_arm_reactor(name) ;
         }
 
         resolve_free(wres) ;
@@ -1158,8 +1160,8 @@ static void client_dispatch(eventd_client_t *conn)
 
     switch (verb) {
 
-        case 'a' : eventd_arm(name) ; break ;
-        case 'd' : eventd_disarm(name) ; break ;
+        case 'a' : eventd_arm_reactor(name) ; break ;
+        case 'd' : eventd_disarm_reactor(name) ; break ;
         case 'e' : eventd_emit(name) ; break ;
 
         default :
