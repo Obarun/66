@@ -1,5 +1,5 @@
 /*
- * event_rule.c
+ * eventd_rule.c
  *
  * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
  *

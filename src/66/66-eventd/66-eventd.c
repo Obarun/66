@@ -392,9 +392,6 @@ static int reactor_filter_on(eventd_reactor_t const *re, char const *source, eve
 // filter 2 -- reactor state x Do
 static int reactor_state_allows(uint32_t state, uint32_t docmd)
 {
-    if (docmd == EVENT_DO_RECONFIGURE || docmd == EVENT_DO_FREE)
-        return 1 ;
-
     switch (docmd) {
 
         case EVENT_DO_START :
@@ -567,7 +564,7 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     if (!reactor_filter_on(re, source, f))
         return ;
 
-    // OnAll needed a T time
+    // OnAll needs a point-in-time snapshot of every source's status
     if (!eventd_rule_onall(&re->rule, source, reactor_source_status, 0)) {
         log_info("reactor ", re->name, ": OnAll unmet across sources") ;
         return ;
@@ -578,7 +575,7 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     int has_emit = re->rule.emit != 0 ;
 
     if (!doname && !has_emit)
-        return ; // neither Do nor Emit(should never happens)
+        return ; // neither Do nor Emit (should never happen)
 
     /** own-reap latch : a reactor whose action is in flight absorbs every
      * re-trigger until it reaps -- covers the status_read latency*/
