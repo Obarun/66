@@ -311,12 +311,15 @@ static inline void unsupervise_tree (void)
 {
     log_flow() ;
 
-    char const *except[5] =
+    /* the conditional entry stays last: a NULL in the middle would terminate the
+     * match loop early and stop excepting the daemons listed after it */
+    char const *except[6] =
     {
         SS_BOOT_SHUTDOWND,
-        nologger ? 0 : SS_SCANDIR "-" SS_LOG,
         SS_ONESHOTD,
         SS_FDHOLDER,
+        SS_EVENTD,
+        nologger ? 0 : SS_SCANDIR "-" SS_LOG,
         0
     } ;
     size_t livelen = strlen(live) ;
