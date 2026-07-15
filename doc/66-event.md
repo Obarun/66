@@ -5,7 +5,13 @@ system** by running a `66` command on itself — restart when a file changes, re
 signal reaches another service, start on a schedule, or start when a dependency dies. The
 reaction is declared in the frontend service file and compiled into the service resolve
 file at parse time. The daemon that runs the rules at runtime is
-[66-eventd](66-eventd.html); this page documents how you *declare* them.
+[66-eventd](66-eventd.html).
+
+This page documents the **model** and its **runtime behaviour**. The per-field syntax —
+which key goes in which section, its allowed values — is part of the frontend reference in
+[66-frontend](66-frontend.html): the `Type = event` source keys live in
+[`[Main]`](66-frontend.html#section-main), the reactor keys in the
+[`[Event]`](66-frontend.html#section-event) section.
 
 ## A worked example
 
@@ -50,8 +56,8 @@ reactors act.
 Every event flows from a **source** to one or more **reactors**.
 
 * A **reactor** is an ordinary service (`classic`, `oneshot` or `module`) that gains an
-  [`[Event]`](#declaring-a-reactor-the-event-section) section. When its source fires, it
-  runs a `66` command **on itself** and/or raises a named event.
+  [`[Event]`](66-frontend.html#section-event) section. When its source fires, it runs a
+  `66` command **on itself** and/or raises a named event.
 * A **source** is a service of the new [`event`](66-frontend.html#type) type. It runs no
   process; it only emits events. Its configuration lives **directly in `[Main]`**, there is
   no `[Event]` section. There are three families of source:
@@ -64,7 +70,7 @@ Two more reactor families need no configured source at all:
 * **service** — react to the up/down/crash transitions of any supervised service;
 * **signal** — react to a signal routed by `66` to a supervised service;
 * **user** — react to a name raised by [66 emit](66-emit.html), or by another reactor's
-  [`Emit`](#emit) key.
+  `Emit` key.
 
 ### About the `event` type and arming
 
@@ -83,7 +89,8 @@ one source, or one reactor — never both, and never several rules at once.
 ## Declaring a source (`[Main] Type = event`)
 
 A source is a whole frontend of type `event`. The `EventType` key selects the family; the
-remaining keys depend on it.
+remaining keys depend on it. Field syntax is documented in
+[66-frontend](66-frontend.html#section-main).
 
 ### EventType = inotify (source)
 
@@ -136,8 +143,9 @@ Every = 30s
 
 A reactor is an ordinary supervised service that adds an `[Event]` section. The `EventType`
 selects which family of source it subscribes to and, for `service`/`signal`/`user`, which
-[`On`](#on--onall) vocabulary applies. When the trigger fires the reactor performs a
-[`Do`](#do), raises an [`Emit`](#emit), or both — at least one is required.
+`On` vocabulary applies. When the trigger fires the reactor performs a `Do`, raises an
+`Emit`, or both — at least one is required. Field syntax is documented in
+[66-frontend](66-frontend.html#section-event).
 
 ### EventType = service (reactor)
 
@@ -198,10 +206,10 @@ Do   = reload
 | reactor | `[Event]` | `EventType`, `On`, `Do`/`Emit` | — |
 
 A `user` reactor has **no `From`** — it listens for a *name*, wherever that name comes from.
-A name is raised in two ways: by hand with `66 emit <name>`, or by another reactor's
-[`Emit`](#emit) key. That second form is how reactions chain. In the pair below, `backend`
-reacts to `rabbitmq` going down by stopping itself **and** raising `backend-down`; `alerter`
-listens for that name:
+A name is raised in two ways: by hand with `66 emit <name>`, or by another reactor's `Emit`
+key. That second form is how reactions chain. In the pair below, `backend` reacts to
+`rabbitmq` going down by stopping itself **and** raising `backend-down`; `alerter` listens
+for that name:
 
 ```ini
 # frontend: backend
@@ -242,10 +250,10 @@ The same `alerter` also fires if an operator runs `66 emit backend-down` from a 
 A reactor to a configured source carries **no `On`**: the condition lives in the source and
 is authoritative. To react differently, create a distinct source.
 
-`EventType` is still stated explicitly here, even though [`From`](#from) already names the
-source. It is redundant for these three families but kept on purpose: every reactor is then
-uniform and self-describing — you read the family from the section itself, without having to
-open the source's frontend.
+`EventType` is still stated explicitly here, even though `From` already names the source. It
+is redundant for these three families but kept on purpose: every reactor is then uniform and
+self-describing — you read the family from the section itself, without having to open the
+source's frontend.
 
 ```ini
 # frontend: backup  — runs every night, driven by the nightly-3am source above
@@ -321,232 +329,118 @@ and acyclic.
 | `user` | *(not a source)* | `On` + `Do`/`Emit` *(no `From`)* |
 
 Every reactor carries `EventType` and at least one of `Do` / `Emit`. Every source carries
-`[Main] Type = event`.
+`[Main] Type = event`. Each key's full definition — mandatory-ness, syntax and valid values
+— is in [66-frontend](66-frontend.html#section-event).
 
-## Key reference
+## Runtime behaviour
 
-### EventType
+Declaring a rule is only half the story; the other half is *when* and *whether* it actually
+fires. `66-eventd` applies several rules that are easy to miss on paper. This section is the
+authoritative description of them.
 
-**Source Snippet**:
-```ini
-EventType = service
-```
+### Arming and disarming
 
-Selects the family of event. In a source it appears in `[Main]`; in a reactor it appears in
-the `[Event]` section. It is distinct from the [`[Main] Type`](66-frontend.html#type) key.
+For a `Type = event` **source**, [66 start](66-start.html) and [66 stop](66-stop.html) do not
+supervise a process — they **arm** and **disarm** the source at the daemon (open the inotify
+watch, program the timer or schedule). For a **reactor**, its own `66 start` arms it; `66 stop`
+disarms it.
 
-* mandatory: yes (!)
+A reactor whose action is `Do = start` is a special case: it is **armed, not launched**. The
+parser forces such a service *down*, and starting it only registers the rule — the service
+comes up later, when its event fires. In [66 status](66-status.html) an armed-and-idle
+`oneshot`/`module` reactor shows the **WAITING** state; a `classic` reactor simply shows
+*down*.
 
-* syntax: [inline](66-frontend.html#inline)
+### When a reactor actually fires — state gating
 
-* valid values: `service`, `signal`, `inotify`, `schedule`, `timer`, `user` — see the
-  [synthesis table](#synthesis-keys-per-eventtype).
+When the trigger matches, `66-eventd` still checks the reactor's **current state** before
+running its `Do`. The command is only issued when it would do something:
 
-### Watch
+| `Do` | Fires only if the service is… |
+|---|---|
+| `start` | `down`, `done`, `failed` or `waiting` |
+| `stop`, `restart`, `reload` | `up` |
+| `reconfigure`, `free` | *(any state — always fires)* |
 
-**Source Snippet**:
-```ini
-Watch = /etc/resolv.conf
-```
+The most common surprise follows from the first row: **`Do = start` does not restart a
+service that is already up** — it is a silent no-op (logged as *inhibited*). That is by
+design: `start` means “bring it up”, and a healthy up service is already there. If the
+reactor's own status cannot be read at that moment, every `Do` except `reconfigure`/`free`
+is inhibited.
 
-The filesystem path an `inotify` **source** watches, paired with [`On`](#on--onall).
+### Firing immediately on arm
 
-* mandatory: yes for an `inotify` source; not valid elsewhere.
+Because each `From` source is also a **dependency** of the reactor, `66` brings the source
+up before it arms the reactor. `66-eventd` therefore reads the source's *current* state at
+arm time: a `service` reactor whose awaited condition **already holds** fires at once,
+instead of waiting for the source's next transition. You do not have to arrange for the
+event to happen strictly after the reactor is armed.
 
-* syntax: [inline](66-frontend.html#inline)
+### `On` versus `OnAll`
 
-* valid values: any absolute path to an existing file or directory.
+`On` is an **OR**: the reactor fires as soon as one listed condition matches. `OnAll` is an
+**AND** evaluated on a **point-in-time snapshot** of every source's committed status — it
+fires only when all conditions hold *at the same instant*. A subtlety worth remembering: if
+one source's state cannot be determined at that instant, the `OnAll` **fails** (an
+unprovable condition is treated as unmet), not merely “not yet true”.
 
-### Expression
+### `reload` is not a signal
 
-**Source Snippet**:
-```ini
-Expression = "0 0 3 * * ?"
-```
+This is the least intuitive rule. `66 reload` and a `Do = reload` action deliver the
+service's reload-signal to its process, but they do **not** announce a signal to the event
+system. Consequently **a reload never wakes a `signal` reactor** listening on, say,
+`On = ( SIGHUP )` — even though the reload may itself send SIGHUP under the hood.
 
-The cron expression of a `schedule` **source**. The engine is a **Quartz-style** scheduler —
-read the notes, it is **not** classic 5-field Vixie cron.
+A `signal` reactor fires only for a signal **routed by `66`** ([66 signal](66-signal.html), or
+a `Do` that maps to a signal) to a service that was **up** when the signal was routed. A
+signal aimed at an already-down service announces nothing (it killed nothing).
 
-* mandatory: yes for a `schedule` source; not valid elsewhere.
+### The in-flight latch
 
-* syntax: [quotes](66-frontend.html#quotes)
+While a reactor's action is running — forked but not yet reaped — the reactor **absorbs every
+re-trigger** until that action completes. This covers the short window between issuing the
+command and the target's status being written back, so a burst of events cannot stack up a
+pile of duplicate actions. The latch applies to `Emit`-only reactors too.
 
-* valid values — a cron expression of **5, 6 or 7 space-separated fields**:
+### The anti-loop backstop
 
-    ````
-    [seconds] minutes hours day-of-month month day-of-week [year]
-    ````
+If a reactor fires **10 times within 10 seconds**, `66-eventd` decides it is runaway and
+**squelches** it: the reactor is disarmed and destroyed, with a warning in the log. It is
+*not* throttled and it does **not** re-arm itself — a fresh [66 start](66-start.html) is
+required to bring it back. The backstop also applies to `Emit`, which is what ultimately
+breaks a cyclic `Emit` chain.
 
-    | Fields | Layout |
-    |---|---|
-    | 5 | `min hour dom month dow` (seconds default to `0`) |
-    | 6 | `sec min hour dom month dow` |
-    | 7 | `sec min hour dom month dow year` |
+### `Emit` timing
 
-    Ranges `0-59`/`0-59`/`0-23`/`1-31`/`1-12`/`0-7`/`1970-2200`. Months accept `JAN`..`DEC`,
-    days accept `SUN`..`SAT` (case-insensitive, `0` = Sunday). Operators: `*` `,` `-` `/`
-    plus Quartz `?` (no specific value), `L` (last), `L-<n>`, `LW` (last weekday), `<n>W`
-    (nearest weekday), `<n>L` (last weekday-n), `<n>#<m>` (m-th weekday-n, `6#3` = 3rd
-    Friday). Macros: `@yearly`/`@annually`, `@monthly`, `@weekly`, `@daily`/`@midnight`,
-    `@hourly`, `@minutely`, `@secondly`.
+A reactor that carries both `Do` and `Emit` raises its event **after** the `Do` has
+committed (once the action process is reaped), not the instant the trigger matches. An
+`Emit`-only reactor raises its event as soon as the filters pass.
 
-* notes:
+### Tick sources at runtime
 
-    * You **must** put `?` on either day-of-month or day-of-week — they cannot both carry a
-      value. Even in 5 fields, `"0 3 * * *"` is **rejected**; write `"0 3 * * ?"`.
-    * There is **no `@reboot`** macro.
-    * The expression is validated at [66 parse](66-parse.html) time; an invalid one fails
-      with a clear error rather than silently at runtime.
+`timer`, `inotify` and `schedule` sources are started and stopped like any `Type = event`
+service, but they are **not** supervised by the scandir and are **not** reference-counted by
+the reactors that name them — each is armed by its own `start`. `66-eventd` writes their
+status itself: *done* when armed, *down* when disarmed, *failed* when the underlying watcher
+dies.
 
-### Timezone
+A source can die at runtime: if an `inotify` source's watched path is removed (the kernel
+drops the watch), or a timer/schedule watcher errors, **that one source** goes *failed* while
+every other source keeps ticking. Re-create the path and `66 start` it again to re-arm — the
+death is not permanent.
 
-**Source Snippet**:
-```ini
-Timezone = Europe/Paris
-```
+### Cascading a disarm
 
-The timezone the [`Expression`](#expression) of a `schedule` source is evaluated in.
+Since a reactor **depends** on its `From` sources, `66 free <source>` (without `-P`)
+propagates to the reactors that require it and **disarms them in cascade**. You free the
+source, and the rules that fed on it go away with it.
 
-* mandatory: no.
+### Recovery after `66-eventd` restarts
 
-* syntax: [inline](66-frontend.html#inline)
-
-* valid values: any IANA timezone name (`UTC`, `Europe/Paris`, …), up to 255 characters.
-  When omitted, the schedule is evaluated in **UTC**.
-
-### Every
-
-**Source Snippet**:
-```ini
-Every = 30s
-```
-
-The period of a `timer` **source**: a relative, monotonic interval that fires again and
-again, unaffected by wall-clock changes.
-
-* mandatory: yes for a `timer` source; not valid elsewhere.
-
-* syntax: [inline](66-frontend.html#inline)
-
-* valid values: a positive whole number with an optional unit suffix — `s` (or none) for
-  seconds, `m` minutes, `h` hours, `d` days. Examples: `30s`, `5m`, `1h`, `90`. The value
-  must be at least one second.
-
-### From
-
-**Source Snippet**:
-```ini
-From = ( rabbitmq )
-```
-
-The source(s) a reactor subscribes to. **Always explicit** — sources are never inferred from
-the `On` list.
-
-* mandatory: yes for every reactor **except** `user` (which is sourceless).
-
-* syntax: [brackets](66-frontend.html#brackets)
-
-* valid values: the name of any valid service. For `service`/`signal` it is a supervised
-  service; for `inotify`/`schedule`/`timer` it is the name of the `event`-type source.
-
-For a `service`/`signal` reactor, each `From` source also becomes a **dependency** of the
-reactor. `66` supervises the sources before it arms the reactor, so `66-eventd` always
-subscribes to a source that already exists — and reads the source's current state at that
-moment. A reactor whose source is already in the awaited state therefore fires immediately,
-instead of waiting for the source's next transition.
-
-### On / OnAll
-
-**Source Snippet**:
-```ini
-On    = ( down )
-OnAll = ( auth:up db:up )
-```
-
-The trigger condition(s). Two keys select how several conditions combine:
-
-* `On` — a single condition, or a bracketed list treated as **OR** (fires if any listed
-  condition matches). Valid for every family that carries a condition.
-* `OnAll` — an **AND**: fires only when all listed conditions hold at once. It is an AND over
-  **current states**, so it is valid only for `service` and `signal` reactors; a `user`
-  reactor — whose conditions are momentary emitted names, not states — uses `On` only.
-
-Use exactly one of them.
-
-* mandatory: yes for `service`, `signal`, `user` reactors and for the `inotify` **source**;
-  forbidden for `inotify`/`schedule`/`timer` reactors.
-
-* syntax: [brackets](66-frontend.html#brackets) — parentheses required, even for a single
-  value: `On = ( down )`.
-
-* valid values — depend on `EventType`:
-
-    * **`service`** — a status **state** word — `down`, `starting`, `up`, `stopping`,
-      `finishing`, `restarting`, `done`, `failed` — or a status **result** word — `success`,
-      `exited`, `signaled`, `timeout-start`, `timeout-stop`, `crash-limit`, `exec-failed`. Two
-      results take an argument: `exited:<code>` (a specific exit code) and `signaled:<SIG>`
-      (a specific signal, e.g. `signaled:SIGKILL`). These are exactly the words `66 status`
-      prints, so a rule reads the same as the state it reacts to. (`signaled` means *the
-      process died from a signal*, unlike a `signal` reactor which means *a routed signal was
-      received*.)
-    * **`signal`** — a signal name, e.g. `SIGHUP`.
-    * **`user`** — the emitted name, e.g. `backend-down`.
-    * **`inotify` source** — one or more standard `inotify(7)` event names watched on
-      [`Watch`](#watch): `IN_ACCESS`, `IN_MODIFY`, `IN_ATTRIB`, `IN_CLOSE_WRITE`,
-      `IN_CLOSE_NOWRITE`, `IN_OPEN`, `IN_MOVED_FROM`, `IN_MOVED_TO`, `IN_CREATE`, `IN_DELETE`,
-      `IN_DELETE_SELF`, `IN_MOVE_SELF`, plus the shorthands `IN_MOVE`
-      (`IN_MOVED_FROM`+`IN_MOVED_TO`), `IN_CLOSE` (`IN_CLOSE_WRITE`+`IN_CLOSE_NOWRITE`) and
-      `IN_ALL_EVENTS`. These are the kernel's own constants and map straight to the watch
-      mask.
-
-      Beware: `IN_CREATE`/`IN_DELETE`/`IN_MOVED_*` only fire for entries **inside** a watched
-      directory, not for a watched file. A tool that replaces a file atomically (write-temp
-      then rename — dhcpcd, certbot, most editors) does **not** raise `IN_MODIFY` on it; watch
-      the directory (`IN_CREATE`/`IN_MOVED_TO`) or the file with `IN_MOVE_SELF`/
-      `IN_DELETE_SELF`.
-
-* per-source form: in a list, a bare token (`up`) applies to **all** sources of `From`; a
-  `service:condition` token (`auth:up`) scopes the condition to one named source, which must
-  be a member of `From`.
-
-### Do
-
-**Source Snippet**:
-```ini
-Do = restart
-```
-
-The `66` command the reactor runs **on itself** when the trigger fires.
-
-* mandatory: no on its own, but a reactor must define at least one of `Do` / [`Emit`](#emit).
-  A source never has a `Do`.
-
-* syntax: [inline](66-frontend.html#inline)
-
-* valid values: exactly one of `start`, `stop`, `restart`, `reload`, `reconfigure`, `free` —
-  the matching `66` command ([66 start](66-start.html), [66 stop](66-stop.html),
-  [66 restart](66-restart.html), [66 reload](66-reload.html),
-  [66 reconfigure](66-reconfigure.html), [66 free](66-free.html)). Bare commands only, no
-  argument.
-
-### Emit
-
-**Source Snippet**:
-```ini
-Emit = backend-down
-```
-
-Raises a `user` event of the given name when the trigger fires, **independently** of
-[`Do`](#do). This is how reactions chain: another reactor with `EventType = user` and
-`On = ( <name> )` will fire in turn (as would `66 emit <name>`). A reactor may carry `Do`,
-`Emit`, or both.
-
-* mandatory: no on its own, but a reactor must define at least one of [`Do`](#do) / `Emit`.
-  A source never has an `Emit`.
-
-* syntax: [inline](66-frontend.html#inline)
-
-* valid values: any name. It matches the `On` of a `user` reactor.
+`66-eventd` is itself supervised and may restart (a crash, a scandir reconfigure). On
+startup it **repopulates** from the scandir: it re-arms every supervised event source and
+every reactor it finds, best-effort. Arming is idempotent, so nothing is double-armed. You
+do not need to re-`start` your rules by hand after the daemon bounces.
 
 ## Notes and pitfalls
 
@@ -555,11 +449,14 @@ Raises a `user` event of the given name when the trigger fires, **independently*
 * **`signaled` vs `signal`.** `On = ( signaled )` on a `service` reactor fires when the target
   *dies from a signal*; a `signal` reactor fires when a signal is *routed to* the target by
   `66`. They are opposite directions.
+* **`reload` does not wake a `signal` reactor.** See [`reload` is not a
+  signal](#reload-is-not-a-signal) above — the single most common source of confusion.
+* **`Do = start` on an up service is a no-op.** See [state gating](#when-a-reactor-actually-fires--state-gating).
 * **Quartz `?`.** A `schedule` expression must carry `?` on day-of-month or day-of-week; it
   has no `@reboot`.
 * **`Emit` chains can loop.** `Emit = a` triggering a rule whose `Emit = b` triggering a rule
-  whose `Emit = a` is a cycle. `66-eventd` breaks such loops at runtime; still, keep chains
-  short and acyclic.
+  whose `Emit = a` is a cycle. `66-eventd` breaks such loops with the [backstop](#the-anti-loop-backstop);
+  still, keep chains short and acyclic.
 
 ## Prototype
 
