@@ -742,7 +742,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         pid = fork() ;
 
         if (pid == -1)
-            sulogin("fork: stage2") ;
+            sulogin("fork: ", "stage2") ;
 
         if (!pid)
             run_stage2(&env, tty, info) ;

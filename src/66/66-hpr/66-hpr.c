@@ -121,7 +121,7 @@ int main (int argc, char const *const *argv)
     if (geteuid())
     {
         errno = EPERM ;
-        log_diesys(LOG_EXIT_USER, "nice try, peon") ;
+        log_diesys(LOG_EXIT_USER, "nice try, but you need to be root") ;
     }
 
     if (what >= 4)
