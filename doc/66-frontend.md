@@ -1401,7 +1401,9 @@ The `66` command the reactor runs **on itself** when the trigger fires.
 
 * notes:
 
-    The command is gated by the reactor's current state (see [66-event](66-event.html#runtime-behaviour)): `Do = start` is a no-op on an already-up service; `stop`/`restart`/`reload` act only on an up service; `reconfigure`/`free` always act.
+    The command is gated by the reactor's current state, mirroring the matching `66` command (see [66-event](66-event.html#runtime-behaviour)). A service counts as *active* when it is up or done, and *inert* when it is down or failed. `Do = start` acts unless the service is already active; `Do = stop` and `Do = reload` act on an active service and are inhibited on an inert one; `Do = restart` always acts, converging to up even from down (like `66 restart`); `reconfigure`/`free` always act.
+
+    `Do = reload` signals a running process, so it is **rejected at parse time on a `oneshot` reactor** (a oneshot has no process to signal). It is valid on a `classic` reactor and on a `module` reactor, where it reaches the module's own services.
 
 ### Emit
 

@@ -314,6 +314,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         }
 
         ev->docmd = (uint32_t)d ;
+
+        if (d == EVENT_DO_RELOAD && res->type == E_PARSER_TYPE_ONESHOT) {
+            free(wres) ;
+            log_warn_return(LOG_EXIT_ZERO, "Do=reload needs a process to signal, not allowed on a oneshot reactor of service: ", name) ;
+        }
     }
 
     if (has_emit) {
