@@ -135,8 +135,6 @@
 
 /** container */
 #define SS_BOOT_CONTAINER 0
-#define SS_BOOT_RCINIT_CONTAINER "rc.init.container"
-#define SS_BOOT_RCINIT_CONTAINER_LEN (sizeof SS_BOOT_RCINIT_CONTAINER - 1)
 #define SS_BOOT_CONTAINER_DIR SS_SCANDIR "/container"
 #define SS_BOOT_CONTAINER_DIR_LEN (sizeof SS_BOOT_CONTAINER_DIR - 1)
 #define SS_BOOT_CONTAINER_HALTFILE "halt"

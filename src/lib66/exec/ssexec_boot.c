@@ -52,6 +52,7 @@ static char const *banner = "\n[Starts stage1 process...]" ;
 static char const *slashdev = 0 ;
 static char const *envdir = 0 ;
 static char const *fifo = 0 ;
+static char const *haltfile = 0 ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static char const *cver = 0 ;
 
@@ -60,7 +61,6 @@ static char const *cver = 0 ;
 static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
 static char live[SS_MAX_PATH_LEN + 1] = SS_LIVE ;
 static char tree[SS_MAX_PATH_LEN + 1] = SS_BOOT_TREE ;
-static char rcinit_container[SS_MAX_PATH_LEN + 1] = SS_SKEL_DIR SS_BOOT_RCINIT_CONTAINER ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
 
@@ -187,9 +187,7 @@ static void parse_conf(const char *conf)
         { "LIVE",             CONF_STR,  live,             1 },
         { "TREE",             CONF_STR,  tree,             0 },
         { "UMASK",            CONF_UINT, &mask,            0 },
-        { "CONTAINER",        CONF_UINT, &container,       0 },
         { "CATCHLOG",         CONF_UINT, &catch_log,       0 },
-        { "RCINIT_CONTAINER", CONF_STR,  rcinit_container, 1 },
         { 0, 0, 0, 0 }
     } ;
 
@@ -315,6 +313,18 @@ static void split_tmpfs(char *dst,char const *str)
     dst[len] = 0 ;
 }
 
+static void set_container_exitcode(uint32_t code)
+{
+    char fmt[U32_FMT] ;
+    fmt[u32_fmt(fmt, code)] = 0 ;
+
+    char content[9 + U32_FMT + 11 + 1] ; // "EXITCODE=" <code> "\nHALTCODE=p\n"
+    auto_strings(content, "EXITCODE=", fmt, "\nHALTCODE=p\n") ;
+
+    if (!file_write(haltfile, content, strlen(content)))
+        log_warnusys("write container halt file: ", haltfile) ;
+}
+
 static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 {
     log_flow() ;
@@ -345,17 +355,6 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
             sulogin("copy stderr to stdout","") ;
     }
 
-    if (container) {
-
-        char const *newargv[3] = { rcinit_container, confile, 0 } ;
-
-        set_env(env, "VERBOSITY", cver) ;
-        set_env(env, "TREE", tree) ;
-        set_env(env, "LIVE", live) ;
-
-        exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env->s, env->len) ;
-    }
-
     info->live.len = 0 ;
     if (!auto_strbuf(&info->live, live) || set_livedir(&info->live) <= 0) {
         log_warnusys("set live directory: ", live) ;
@@ -380,7 +379,7 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 
     if (rc) {
 
-        log_warnu("start services of tree: ", tree) ;
+        log_warnu("start services of tree: ", tree, " -- see log with '66 log system'") ;
 
     } else {
 
@@ -389,8 +388,11 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
         rc = tree_send(0, 0, 0, info) ;
 
         if (rc)
-            log_warnu("start enabled trees") ;
+            log_warnu("start enabled trees -- see log with '66 log system'") ;
     }
+
+    if (container && rc)
+        set_container_exitcode(LOG_EXIT_SYS) ;
 
     /* TODO: End-of-boot event is emitted here -- boot-done on success, boot-failed otherwise */
 
@@ -476,6 +478,7 @@ static opt_t const opts_boot[] = {
     { .id = 'd',         .shortname = 'd', .longname = "dev",         .arg = OPT_REQUIRED, .argname = "path",     .help = "mount dev directory" },
     { .id = 'b',         .shortname = 'b', .longname = "banner",      .arg = OPT_REQUIRED, .argname = "message",  .help = "print banner at the beginning of the init process" },
     { .id = 'l',         .shortname = 'l', .longname = "log-user",    .arg = OPT_REQUIRED, .argname = "username", .help = "run catch-all logger as log_user user" },
+    { .id = 'c',         .shortname = 'c', .longname = "container",   .arg = OPT_NONE,                            .help = "boot a container" },
 } ;
 
 static uint8_t boot_tmpfs = 0 ;
@@ -491,6 +494,7 @@ static int on_boot(int id, char const *arg, void *data)
         case 'd' : slashdev = arg ; break ;
         case 'b' : banner = arg ; break ;
         case 'l' : log_user = arg ; break ;
+        case 'c' : container = 1 ; break ;
     }
 
     return 0 ;
@@ -546,6 +550,13 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
     auto_strings(tfifo, live, "/", SS_BOOT_LOGFIFO) ;
     fifo = tfifo ;
+
+    // outlives the fork: run_stage2 writes it on a container boot failure
+    char thalt[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
+    if (container) {
+        auto_strings(thalt, live, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
+        haltfile = thalt ;
+    }
 
     if (fcntl(1, F_GETFD) < 0)
         hasconsole = 0 ;
@@ -692,12 +703,6 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
     // environment
     {
-        if (container) {
-            char tmp[strlen(live) + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
-            auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
-            set_env(&env, "CONTAINER_HALTCMD", tmp) ;
-        }
-
         // SS_ENVIRONMENT_ADMDIR
         if (!environ_merge_dir(&env, info->environment.s))
             sulogin("merge environment directory: ", info->environment.s) ;
@@ -737,7 +742,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         pid = fork() ;
 
         if (pid == -1)
-            sulogin("fork: ",container ? rcinit_container : "stage2") ;
+            sulogin("fork: stage2") ;
 
         if (!pid)
             run_stage2(&env, tty, info) ;
