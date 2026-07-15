@@ -826,10 +826,6 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_io(&res) ;
 
-    /** We can now send message to a eventd handler socket.
-     * For now, just send a simple message */
-    log_info(action == EXECUTE_START ? "Starting" : "Stopping", " service: ", service) ;
-
     execute_environment(nenvp, envp, &eram, &info, &res) ;
 
     execute_script(brunuser, &res, &ex, &info) ;
