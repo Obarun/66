@@ -455,7 +455,7 @@ Frontend files for regular account **must be** now localized at `%%service_syste
     - `pipeline`: This option was removed. It was only present for `s6-rc`.
     - `env`: This option was removed. The simple declaration of the [environment] section is sufficient to activate the options.
 
-- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](66-frontend.html#a-word-about-the-execute-key) documentation for futhers information.
+- `@shebang`: Deprecated but kept for compatibility reasons. Declare your shebang directly within the `@execute` field. Refers to [frontend](66-frontend.html#appendix-b-the-execute-key-in-depth) documentation for futhers information.
 
 - `@build`: Not mandatory anymore, as it will be declared 'auto' by default.
 

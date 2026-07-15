@@ -189,7 +189,7 @@ of `Execute` (66 strips any whitespace before it), and the program must stay in
 the **foreground** — the `while` loops above never exit, so supervision keeps
 working. (Note `flush=True` in Python: without it, stdout is buffered and your
 logs would appear only in bursts.) See
-[A word about the Execute key](66-frontend.html#a-word-about-the-execute-key)
+[The Execute key in depth](66-frontend.html#appendix-b-the-execute-key-in-depth)
 for the details.
 
 ## Step 4 — Make it persistent with enable
