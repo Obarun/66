@@ -99,9 +99,10 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
 
         svc_status(svc.res, &st) ;
 
-        /* up means the process is alive (classic) or the oneshot latched DONE. */
         if (st.pid > 0 || st.state == STATUS_STATE_DONE)
             FLAGS_SET(svc.state, SVC_FLAGS_UP) ;
+        else if (st.state == STATUS_STATE_WAITING)
+            FLAGS_SET(svc.state, SVC_FLAGS_WAITING) ;
         else
             FLAGS_SET(svc.state, SVC_FLAGS_DOWN) ;
 

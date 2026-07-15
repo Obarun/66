@@ -52,6 +52,7 @@
 #define SVC_FLAGS_FAILED (1 << 5)
 #define SVC_FLAGS_WAITING_DEPS (1 << 6)
 #define SVC_FLAGS_TIMEOUT (1 << 7)
+#define SVC_FLAGS_WAITING (1 << 8)
 
 struct svc_ctx_s
 {
@@ -77,8 +78,8 @@ struct svc_ctx_s
     bool waiting ; // Do=start reactor armed-not-launched: report its status down
 
     // State management
-    uint8_t state ; // Current state
-    uint8_t target_state ; // Desired state
+    uint16_t state ; // Current state
+    uint16_t target_state ; // Desired state
 
     // Dependencies
     uint32_t index ; // vertex index of the service
