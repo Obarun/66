@@ -1,67 +1,82 @@
-# Module service usage
+# Using a module
 
-This documentation describe how to use *module* from an user point of view. If you want to create a *module*, refers to [service module creation](66-module-creation.html) page.
+A **module** is a service that expands into a whole set of services, brought up as an
+[instance](66-instantiated-service.html). This page is the user's side — how to run,
+configure and manage one. To build your own, see [creating a module](66-module-creation.html).
+The running example is `webapp@`, the module built there: a web application instance made of
+a `server` and an optional `worker`.
 
-A *module* is an [instantiated service](66-instantiated-service.html) and can be managed like any other instantiated services. For instance, to [start](66-start.html) it
+## Starting an instance
 
-```
-66 start foo@bar
-```
-
-where `foo@` is the name of the *module* and `bar` the name of its instance. If the *module* was never parsed before, you will get the default configuration defined by the developer of the *module* service.
-
-Obviously you can [enable](66-enable.html) it
-
-```
-66 enable foo@bar
-```
-
-or makes these two operations in one pass
+A module is instantiated like any other instantiated service — the name after the `@` is the
+instance:
 
 ```
-66 enable -S foo@bar
+66 start webapp@blog
 ```
 
-The advantage of a *module* reside in the facts that you can [configure](66-configure.html) the *module* according to your needs. To do so,
+`webapp@` is the module, `blog` the instance. If it was never parsed before, `66` parses it
+first, with the module author's default configuration.
+
+You usually [enable](66-enable.html) it so it comes back on the next boot:
 
 ```
-66 configure foo@bar
+66 enable webapp@blog
 ```
 
-This command allow you to change the environment variable of the *module* and so, its configuration.
-
-Now, you need to apply the changes
+or enable and start in one pass:
 
 ```
-66 reconfigure foo@bar
+66 enable -S webapp@blog
 ```
 
-The *module* should now use your configuration. The [reconfigure](66-reconfigure.html) command need to be called each time you change the configuration of the *module*. If you don't use the [reconfigure](66-reconfigure.html) command, the *module* keeps the previous configuration.
+## Configuring an instance
 
-# Manage service within *module*
-
-As *module* is a set of services, when you start it, several services may be started. You can get the list of the services within *module* using the [status](66-status.html) command.
-
-```
-66 status foo@bar
-```
-
-The command displays different fields, notably the `contents` field corresponding to the list of the services within the *module*. You can control the state of these services like you do for any other services by applying the following syntax
+The point of a module is that each instance is **configurable**. Its tunables are the
+variables of the module's `[Environment]` — for `webapp@`, whether the worker runs. Edit them
+with [66 configure](66-configure.html):
 
 ```
-66 <command> <module_name>:<service_name>
+66 configure webapp@blog
 ```
 
-For example, if `foo@bar` contain the service `baz`
+Changes do **not** take effect until you re-parse the instance with
+[66 reconfigure](66-reconfigure.html):
 
 ```
-66 stop foo@bar:baz
+66 reconfigure webapp@blog
 ```
 
-Simply separates the name of the *module* and the name of the service by a colon `:`.
+Run `reconfigure` every time you change an instance's configuration; until you do, the
+instance keeps its previous one. Setting `WEBAPP_WORKER=no` and reconfiguring, for example,
+drops the `worker` from `webapp@blog` on the next parse.
 
-A *module* can contain instantiated service. In this case use the same syntax specifying the complete name of the instantiated service. If `foo@bar` contain the instantiated service `bar@bou`, do
+## Managing the services inside a module
+
+Starting a module starts several services at once. List them with
+[66 status](66-status.html) — the `contents` field holds the services the instance expanded
+to:
 
 ```
-66 reload foo@bar:bar@bou
+66 status webapp@blog
+```
+
+Address any one of them with the `module:service` name — the module instance, a colon, and
+the inside service:
+
+```
+66 stop webapp@blog:worker
+```
+
+The colon separates the instance (`webapp@blog`) from the inside service (`worker`); it is the
+service's real, stored name, so every `66` command accepts it:
+
+```
+66 restart webapp@blog:server
+```
+
+If an inside service is itself instantiated, give its full name after the colon:
+
+```
+66 reload webapp@blog:cache@ro
 ```

@@ -1,114 +1,287 @@
-# Module service creation
+# Creating a module
 
-A module is an [instantiated](66-instantiated-service.html) service. It works the same way as a service frontend file but allows the user/admin to configure a set of different kind of services before executing the parse process. Also, the set of services can be configured with the conjunction of a script called *configure* which can be made in any language.
+A **module** is a service of [`Type = module`](66-frontend.html#type) that expands, at
+[parse](66-parse.html) time, into a whole **set** of services carried in its own directory.
+It is an [instantiated service](66-instantiated-service.html): you write it once as
+`webapp@` and the admin brings up as many independent instances as needed — `webapp@blog`,
+`webapp@shop`, … — each parsed from the same template with its instance name substituted in.
 
-This allows one to pre-configure a set of parameters or other services for special tasks without knowing the exact target of the module. The best example is the module for booting a machine. Each machine is different and the set of services need to be adaptable as much as possible for different kinds of machines during boot; e.g booting a container.
+Reach for a module when you ship *several services that belong together* and must be
+**instantiated** and **configured** as a unit: a per-site web stack, a per-interface network
+bundle, the boot sequence of a machine. The services inside a module are **isolated**: an
+inside service may depend on another inside service, but never on a service outside the
+module, and nothing outside may depend on an inside one. (The module *as a whole* may still
+depend on outside services — see [Depending on outside services](#depending-on-outside-services).)
 
-Additionally, a service of type 'module' can be likened to a sandbox. Services within a module are isolated from those outside it, and vice versa. For example, you cannot have a service within a module depending on a service outside the module, and vice versa. The isolation ensures that there is no interdependency between services inside and outside the module.
+This page builds one module from scratch — `webapp@`, a web application instance made of a
+**server** and an optional **worker** — and explains each moving part as we add it. To use a
+module once it exists, see [module usage](66-module-usage.html).
 
-A module is defined with two elements:
+## The module we will build
 
-- a directory located in the same directory as any other service [frontend](66-frontend.html#the-frontend-service-file) file.
+`webapp@blog` should bring up:
 
-- An [instantiated frontend service](66-instantiated-service.html) file located at the root of that directory.
+- `server` — the web server for the `blog` instance, always present;
+- `worker` — a background worker, present only when the instance asks for it.
 
-## Frontend file
+The instance name (`blog`) must flow into both services, the listening address is fixed by
+us (the module author), and whether the worker runs is a per-instance choice the admin makes
+with [66 configure](66-configure.html). Every one of those needs is met by a distinct part of
+the module, introduced below.
 
-The [instantiated frontend service](66-instantiated-service.html) is written as any other instantiated service with its own specification—see the section [[Regex]](66-frontend.html#section-regex).
+## Anatomy of a module directory
 
-## Module directory
-
-The module directory have the following structure:
+A module lives in a directory named like the module — `webapp@` — placed **among your other
+service frontends** (e.g. `%%service_system%%/webapp@`). Ours will end up like this:
 
 ```
-.
-├── activated
-│   ├── depends
-│   └── requiredby
-├── configure
-│   └── configure
-├── frontend
-└── module_frontend_file
+webapp@/
+├── webapp@              # the module frontend (Type = module)
+├── frontend/
+│   ├── server          # a normal frontend, the instance's web server
+│   └── worker          # a normal frontend, the instance's worker
+├── configure/
+│   └── configure       # optional script: per-instance decisions
+└── activated/
+    ├── server          # empty file → 'server' is part of every instance
+    ├── depends/        # (module's dependencies on OUTSIDE services)
+    └── requiredby/     # (services OUTSIDE that require this module)
 ```
 
-- *activated*: This directory contains empty files named after the services you want to activate for the module. Usually, this directory is populated through the configuration file, but if you manually create empty files named after the service you want to activate, the service will be activated at every configuration of the module regardless of user requests. This directory **is not** mandatory and is created at parse process of the module if it does not exist yet.
+Only the module frontend and the `frontend/` services are really yours to write; `66`
+creates the `configure/`, `activated/`, `activated/depends` and `activated/requiredby`
+directories at parse time if you leave them out. We fill them in on purpose.
 
-- *activated/depends* and *activated/requiredby*: These directories function similarly to their parent directory, with the exception that they pertain to the dependencies and required-by relationships of the module. Hence, these directories allow you to define dependencies or required-by relationships either through the `configure` script or by manually creating empty files, similar to what can be done in the *activated* directory. These directories **are not** mandatory and are created at parse process of the module if they do not exist yet.
+## Step 1 — the module frontend
 
-- *configure*: This directory may contain an **executable** file script named configure. For example, `%%service_system%%/foo/configure/configure`. The sub-directory **must** be named *configure* and the file script **must** be named *configure*. This file **is not** mandatory. The parser will detect if the file exists and it runs it if it's the case. It's up to you to write the *configure* script file with the language of your choice as long as you define a correct *shebang*.
+The file at the root of the directory, named exactly like the module (`webapp@`), declares
+the service as a module. It is a normal [frontend](66-frontend.html), restricted to the keys
+a module understands (see [Allowed keys](#allowed-keys)), plus the module-only
+[`[Regex]`](66-frontend.html#section-regex) section that drives the expansion.
 
-    Also, this directory can contain any files or directories that you need to configure your module. It's the responsability of the module creator to properly use or dispatch files or directories found inside the *configure* directory with the help of the *configure* script or during the module installation phase. The parser will not handle any other file than the *configure* script for you.
+```ini
+# webapp@
+[Main]
+Type = module
+Version = 0.1.0
+Description = "web application instance @I"
+User = ( root )
 
-    **Note**: The *configure* script is launched after the parsing of the frontend file, meaning all regex operations on directories and files are already made.
+[Environment]
+WEBAPP_WORKER=yes
 
-- *frontend*: This directory can contain any frontend files for any kind of services. Also, this directory can contain sub-directories containing another frontend service files. This can be done recursively. Frontend file used by the module **must** be present on that directory. You cannot call a frontend file through the `configure` script from outside this directory. Also, do not make a copy of an existing frontend file inside this directory. If you want to use an existing frontend file, you **must** rename it differently than the one coming from your system. This directory **is not** mandatory and is created at parse process of the module if it does not exist yet.
+[Regex]
+Configure = @I
+InFiles = ( :server:LISTENADDR=0.0.0.0:8080 )
+```
 
-The frontend file of the module itself **must** be present at the root of the module directory.
+`@I` is an [identifier](66-identifier.html): for `webapp@blog` it expands to the instance
+name, **`blog`** (the part after the `@`). Identifiers are substituted **first**, before
+anything else in the module, so `Description` above becomes `"web application instance blog"`.
 
-Any services that you need **must** be present **inside** the frontend directory. The parser only deals with these directories. If a service `fooA` has `fooB` as dependency, `fooA` ***and*** `fooB` **must** exist in the e.g. `%%service_system%%/<module_name>/frontend` directory.
+`[Environment]` holds the module's tunables. `WEBAPP_WORKER` is the knob the admin flips per
+instance with [66 configure](66-configure.html); we read it from the
+[configure script](#step-4-the-configure-script) below.
 
-## A word about the [[Main]](66-frontend.html#section-main) section with the module type
+The `[Regex]` keys are explained in [Step 3](#step-3-the-regex-transformations).
 
-The valid fields in section [[Main]](66-frontend.html#section-main) are:
+## Step 2 — the inside services
 
-- Type
-- Description
-- Version
-- User
-- Depends
-- RequiredBy
-- OptsDepends
-- CopyFrom
+Everything the module runs lives in `frontend/`, as ordinary frontends. Write the local name
+you want to address later (`server`, `worker`); dependencies between inside services use
+those same local names.
 
-All other fields from [[Main]](66-frontend.html#section-main) section are not allowed.
+```ini
+# frontend/server
+[Main]
+Type = classic
+Description = "web server for @I"
 
-## Module process creation
+[Start]
+Execute = ( httpd -listen LISTENADDR -name @I )
+```
 
-The name `foo@` will be used in this explanation as a module name.
+```ini
+# frontend/worker
+[Main]
+Type = classic
+Description = "background worker for @I"
+Depends = ( server )
 
-When you do e.g. `66 parse foo@system`:
+[Start]
+Execute = ( webapp-worker --app @I )
+```
 
-- It searches for the corresponding `%%service_system%%/foo/foo@` frontend service file.
+`worker` depends on `server`: a dependency **inside** the module. It resolves to the module's
+own `server` because `66` looks the name up in `frontend/` only — this is the isolation rule.
+A `Depends = ( something-outside )` here would fail at parse: an inside service cannot reach
+out. Both `@I` occurrences will become `blog`; `LISTENADDR` is handled next.
 
-- It reads, parses, and replaces [identifier](66-identifier.html).
+## Step 3 — the `[Regex]` transformations
 
-- It checks if the `%%service_system%%/foo/configure`, `%%service_system%%/foo/frontend` and `%%service_system%%/foo/activated/{depends,requiredby}` directories exist and create it if it is not the case.
+When `66` parses `webapp@blog` it copies the whole `webapp@` directory to a working
+`webapp@blog` and rewrites the copy through the [`[Regex]`](66-frontend.html#section-regex)
+keys, in this fixed order: **identifiers (`@I`) → `InFiles` → `Directories` → `Files` →
+`configure`**. The four regex keys:
 
-- It verbatim copies the `%%service_system%%/foo` directory to `%%service_system%%/foo@system`.
+- **`InFiles`** — replace text *inside* the `frontend/` files. `:name:regex=value` targets one
+  file; `::regex=value` targets all. Our module uses it to inject the listening address into
+  `server`:
 
-- It applies the regex defined with `InFiles` field to `%%service_system%%/foo@system/frontend` files.
+  ```ini
+  InFiles = ( :server:LISTENADDR=0.0.0.0:8080 )
+  ```
 
-- It applies the regex defined with `Directories` field to `%%service_system%%/foo@system/frontend` directories, if any.
+  turns `httpd -listen LISTENADDR -name blog` into `httpd -listen 0.0.0.0:8080 -name blog`.
+  (The replacement value may itself contain identifiers — `@I` is expanded before the regex
+  runs — so `::SOCK=/run/@I.sock` would inject `/run/blog.sock`.)
 
-- It applies the regex defined with `Files` field to `%%service_system%%/foo@system/frontend` files.
+- **`Directories`** — rename sub-directories of `frontend/`. `Directories = ( DM=sddm )`
+  renames `use-DM/` to `use-sddm/`.
 
-- It runs the `%%service_system%%/foo@system/configure` script if it exists.
+- **`Files`** — rename files, same rule as `Directories`. `Files = ( GENERIC=@I )` renames the
+  file `GENERIC` to `blog`.
 
-- It reads and parses all frontend services files found at `%%service_system%%/foo@system/activated` and its `depends` and `requiredby` subdirectories.
+- **`Configure`** — the value passed as `$1` to the [configure script](#step-4-the-configure-script).
+  We pass `@I`, so the script receives `blog`.
 
-### Environment variable passed to the script `configure`
+`webapp@` needs only `InFiles` and `Configure`; `Directories`/`Files` are shown for
+completeness. Keys you do not use may be omitted.
 
-At launch of the script `configure`, the parser passes the following variables to the environment:
+## Step 4 — the configure script
 
-- `MOD_NAME`: name of the module.
-- `MOD_BASE`: `%%system_dir%%/system` for root, `$HOME/%%user_dir%%/system` for regular user.
-- `MOD_LIVE`: `%%livedir%%`.
-- `MOD_TREE`: `%%system_dir%%/system/<treename>` for root, `$HOME/%%user_dir%%/system/<treename>` for regular user.
-- `MOD_SCANDIR`: `%%livedir%%/scandir/0` for root, `%%livedir%%/scandir/<owner_uid>` for regular user.
-- `MOD_TREENAME`: name of the tree.
-- `MOD_OWNER`: numerical UID value of the owner of the process.
-- `MOD_VERBOSITY`: verbosity level passed to parser.
-- `MOD_COLOR`: color state passed to the parser. `MOD_COLOR=0` means color disabled where `MOD_COLOR=1` means color enabled.
-- `MOD_MODULE_DIR`: path of the module directory.
-- `MOD_SKEL_DIR`: `%%skel%%`
-- `MOD_SERVICE_SYSDIR`: `%%service_system%%`
-- `MOD_ENVIRONMENT_ADMDIR`: `%%environment_adm%%`
-- `MOD_SERVICE_ADMDIR`: `%%service_adm%%`
-- `MOD_SERVICE_ADMCONFDIR`: `%%service_admconf%%`
-- `MOD_SCRIPT_SYSDIR`: `%%script_system%%`
-- `MOD_USER_DIR`: `%%user_dir%%`
-- `MOD_SERVICE_USERDIR`: `%%service_user%%`
-- `MOD_SERVICE_USERCONFDIR`: `%%service_userconf%%`
-- `MOD_SCRIPT_USERDIR`: `%%script_user%%`
-- `MOD_ENVIRONMENT_USERDIR`: `%%environment_user%%`
+`configure/configure` is an **optional executable** run once per parse, **after** the regex
+passes and **before** the inside services are read. That timing is the point: the script can
+edit the working copy — most usefully, populate `activated/` — so the set of services is
+decided *dynamically*, per instance.
 
+```bash
+#!/usr/bin/bash
+# $1 is the [Regex] Configure value — here, the instance name.
+# WEBAPP_WORKER comes from [Environment]; `66 configure` lets the admin override it.
+
+instance="$1"
+
+if [ "${WEBAPP_WORKER}" = yes ] ; then
+    touch ../activated/worker      # cwd is the module's configure/ directory
+else
+    rm -f ../activated/worker
+fi
+
+echo "configured webapp instance ${instance}, worker=${WEBAPP_WORKER}" >&2
+```
+
+The script runs with its working directory set to the module's `configure/` directory, so
+`../activated/` is the sibling to write into. If the script exits non-zero the **whole parse
+fails** — validate inputs and let a real error stop the build rather than shipping a broken
+instance. Its environment carries the module's `[Environment]` merged with a set of
+`MOD_*` variables (see [Configure environment](#configure-environment)).
+
+## Step 5 — activation
+
+`activated/` decides which inside services actually start. Each **empty file** there names one
+service from `frontend/` to bring up. A file committed in the module sources is activated for
+**every** instance; a file created by the configure script is activated **conditionally**.
+
+Our module ships `activated/server` (the server is always part of an instance) and lets the
+configure script add `activated/worker` when `WEBAPP_WORKER=yes`. So `webapp@blog` with the
+default environment starts `server` **and** `worker`; an instance configured with
+`WEBAPP_WORKER=no` starts `server` alone.
+
+`activated/depends/` and `activated/requiredby/` are covered in
+[Depending on outside services](#depending-on-outside-services).
+
+## Step 6 — parse and verify
+
+Install the `webapp@` directory beside your other frontends, then parse an instance:
+
+```
+66 parse webapp@blog
+```
+
+`66` performs the copy, the regex passes, the configure script and finally reads the
+activated services. Inspect the result with [66 status](66-status.html):
+
+```
+66 status webapp@blog
+```
+
+The `contents` field lists the services the module expanded to — for us,
+`webapp@blog:server` and (with the default environment) `webapp@blog:worker`. From there,
+[enable](66-enable.html) and [start](66-start.html) the instance, and address the inside
+services by their full `module:service` name — see [module usage](66-module-usage.html).
+
+## Depending on outside services
+
+Isolation forbids an *inside* service from depending on an *outside* one, but the **module
+itself** may depend on outside services. Declare those on the module frontend with
+[`Depends`](66-frontend.html#depends) / [`RequiredBy`](66-frontend.html#requiredby), or drop
+empty files into `activated/depends/` and `activated/requiredby/` (which the configure script
+can populate dynamically, exactly like `activated/`). If `webapp@` needs a shared database to
+be up first:
+
+```ini
+# in webapp@'s [Main]
+Depends = ( postgresql )
+```
+
+`postgresql` is resolved as a normal, outside service. The isolation rule only bites on the
+services *inside* `frontend/`.
+
+## Reference
+
+### Allowed keys
+
+A module frontend is parsed for a subset of the frontend keys; the rest are **silently
+ignored** (no error), because a module runs no process of its own.
+
+- **[`[Main]`](66-frontend.html#section-main)** — honoured: `Type`, `Description`, `Version`,
+  `User`, `Depends`, `RequiredBy`, `OptsDepends`, `Provide`, `Conflict`, `Flags`, `InTree`,
+  `CopyFrom`. The execution keys (`Execute`, `RunAs`, …) and the `[Start]`/`[Stop]`/`[Logger]`
+  sections are ignored — a module has no run script.
+- **[`[Environment]`](66-frontend.html#section-environment)** — the module's tunables, exposed
+  to the configure script and overridable with [66 configure](66-configure.html).
+- **[`[Regex]`](66-frontend.html#section-regex)** — `Configure`, `InFiles`, `Directories`,
+  `Files`, as in [Step 3](#step-3-the-regex-transformations).
+
+`contents` is **not** an authoring key: `66` computes it from the services the module
+expanded to. A `Contents = …` written by hand is ignored and overwritten.
+
+### Parse order
+
+For `66 parse webapp@blog`, `66`:
+
+1. substitutes [identifiers](66-identifier.html) (`@I` → `blog`) in the module frontend;
+2. copies `%%service_system%%/webapp@` to the working `webapp@blog`;
+3. applies `InFiles`, then `Directories`, then `Files` to the `frontend/` copy;
+4. runs `configure/configure` (if present);
+5. reads and parses the services listed in `activated/`, plus `activated/depends` and
+   `activated/requiredby`.
+
+### Configure environment
+
+Besides the module's own `[Environment]`, the configure script receives these variables. Its
+first argument (`$1`) is the `[Regex] Configure` value.
+
+| Variable | Value |
+|---|---|
+| `MOD_NAME` | the module name |
+| `MOD_BASE` | the owner's system directory (`%%system_dir%%/system` for root, `$HOME/%%user_dir%%/system` for a user) |
+| `MOD_LIVE` | `%%livedir%%` |
+| `MOD_SCANDIR` | the scandir path |
+| `MOD_TREENAME` | the tree the instance is parsed into |
+| `MOD_OWNER` | numerical UID of the process owner |
+| `MOD_COLOR` | `1` if colour is enabled, else `0` |
+| `MOD_VERBOSITY` | verbosity level passed to the parser |
+| `MOD_MODULE_DIR` | path of the module's working directory |
+| `MOD_SKEL_DIR` | `%%skel%%` |
+| `MOD_SERVICE_SYSDIR` | `%%service_system%%` |
+| `MOD_SERVICE_ADMDIR` | `%%service_adm%%` |
+| `MOD_SERVICE_ADMCONFDIR` | `%%service_admconf%%` |
+| `MOD_SCRIPT_SYSDIR` | `%%script_system%%` |
+| `MOD_ENVIRONMENT_ADMDIR` | `%%environment_adm%%` |
+| `MOD_USER_DIR` | `%%user_dir%%` |
+| `MOD_SERVICE_USERDIR` | `%%service_user%%` |
+| `MOD_SERVICE_USERCONFDIR` | `%%service_userconf%%` |
+| `MOD_SCRIPT_USERDIR` | `%%script_user%%` |
+| `MOD_ENVIRONMENT_USERDIR` | `%%environment_user%%` |
