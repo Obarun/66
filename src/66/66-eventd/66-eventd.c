@@ -134,7 +134,7 @@ static eventd_t eventd = {
 
 static char sysdir[SS_MAX_PATH_LEN + 1] ;
 
-static void reactor_run(char const *source, event_frame_t const *f) ;
+static void reactor_run(uint8_t kind, char const *source, event_frame_t const *f) ;
 static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event) ;
 static void reactor_destroy(eventd_reactor_t *re) ;
 static void eventd_enqueue_emit(char const *name) ;
@@ -157,7 +157,12 @@ static void eventd_on_frame(event_frame_t const *f, void *data)
 {
     eventd_source_t *s = data ;
 
-    reactor_run(s->name, f) ;
+    uint8_t kind ;
+    if (f->kind == EVENT_KIND_TRANSITION) kind = EVENT_SOURCE_SERVICE ;
+    else if (f->kind == EVENT_KIND_SIGNAL) kind = EVENT_SOURCE_SIGNAL ;
+    else return ; // lifecycle: no reactor kind listens for it
+
+    reactor_run(kind, s->name, f) ;
     eventd_drain_emits() ;
 }
 
@@ -249,9 +254,10 @@ static void source_ref(char const *name, size_t len, uint8_t type)
 {
     log_flow() ;
 
-    // a tick source (timer/inotify/schedule) is armed by its own start, not by a
-    // reactor referencing it in From: nothing to wire here
-    if (source_is_tick(type))
+    // a tick source (timer/inotify/schedule) is armed by its own start, and a user
+    // event is not a source at all (no subscription, driven by emit): neither is
+    // reactor-refcounted here, so they never enter the sources table
+    if (source_is_tick(type) || type == EVENT_SOURCE_USER)
         return ;
 
     eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
@@ -305,8 +311,8 @@ static void source_unref(char const *name, size_t len, uint8_t type)
 {
     log_flow() ;
 
-    // tick sources are not reactor-refcounted (see source_ref)
-    if (source_is_tick(type))
+    // tick sources and user events are not reactor-refcounted (see source_ref)
+    if (source_is_tick(type) || type == EVENT_SOURCE_USER)
         return ;
 
     eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
@@ -364,8 +370,11 @@ static void reactor_wire(eventd_reactor_t *re, int arm)
     }
 }
 
-static int reactor_listens_to(eventd_reactor_t const *re, char const *source)
+static int reactor_listens_to(eventd_reactor_t const *re, uint8_t kind, char const *source)
 {
+    if (re->rule.type != kind)
+        return 0 ; // a reactor only listens to events of its own kind
+
     uint32_t n ;
     char const *p = reactor_source_list(&re->rule, &n) ;
     size_t slen = strlen(source) ;
@@ -620,7 +629,7 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     resolve_free(wres) ;
 }
 
-static void reactor_run(char const *source, event_frame_t const *f)
+static void reactor_run(uint8_t kind, char const *source, event_frame_t const *f)
 {
     log_flow() ;
 
@@ -628,7 +637,7 @@ static void reactor_run(char const *source, event_frame_t const *f)
 
     HASH_FOREACH(&eventd.reactors, re, tmp) {
 
-        if (reactor_listens_to(re, source))
+        if (reactor_listens_to(re, kind, source))
             reactor_evaluate(re, source, f) ;
     }
 }
@@ -683,7 +692,7 @@ static void eventd_drain_emits(void)
 
         // copy out: reactor_run may append (and reallocate) the list
         auto_strings(nm, q) ;
-        reactor_run(nm, 0) ;
+        reactor_run(EVENT_SOURCE_USER, nm, 0) ;
     }
 
     eventd.emitq.len = 0 ;
@@ -809,13 +818,21 @@ static void eventd_emit(char const *name)
 {
     log_flow() ;
 
-    eventd_source_t *s = hash_find(&eventd.sources, name, strlen(name)) ;
-    if (!s || s->type != EVENT_SOURCE_USER) {
+    eventd_reactor_t *re, *tmp ;
+    int armed = 0 ;
+    HASH_FOREACH(&eventd.reactors, re, tmp) {
+        if (reactor_listens_to(re, EVENT_SOURCE_USER, name)) {
+            armed = 1 ;
+            break ;
+        }
+    }
+
+    if (!armed) {
         log_warn("no reactor armed for user event: ", name) ;
         return ;
     }
 
-    reactor_run(name, 0) ;
+    reactor_run(EVENT_SOURCE_USER, name, 0) ;
     eventd_drain_emits() ;
 }
 
@@ -868,7 +885,7 @@ static void source_tick_cb(sse_watcher_t *w, void *cbdata, int revents)
         return ;
     }
 
-    reactor_run(s->name, 0) ;
+    reactor_run(s->type, s->name, 0) ; // timer/schedule tick
     eventd_drain_emits() ;
 }
 
@@ -900,7 +917,7 @@ static void eventd_inotify_cb(sse_watcher_t *w, void *cbdata, int revents)
             lx_inotify_forget(event->wd) ; // kernel already removed it
             dead[ndead++] = s ;
         } else {
-            reactor_run(s->name, 0) ;
+            reactor_run(s->type, s->name, 0) ;
             eventd_drain_emits() ;
         }
     }
