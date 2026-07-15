@@ -40,6 +40,7 @@
 #include <oblibs/string.h>
 #include <oblibs/clock.h>
 #include <oblibs/process.h>
+#include <oblibs/linux.h>
 
 #include <66/event.h>
 #include <66/event_rule.h>
@@ -77,14 +78,16 @@ typedef struct eventd_source_s eventd_source_t ;
 struct eventd_source_s
 {
     char name[SS_MAX_SERVICE_NAME] ; // hash key
-    event_fifo_t fifo ; // service/signal fifodir subscription ; address must stay stable
+    event_fifo_t fifo ; // service/signal fifodir subscription
     event_aggregator_t ag ;
-    sse_watcher_t watcher ; // tick (timer/inotify/schedule) watcher ; address must stay stable
+    sse_watcher_t watcher ; // timer/schedule watcher
     cron_t cron ; // schedule expression ; the watcher keeps a pointer to it, so it must outlive the watcher
+    int wd ; // inotify watch descriptor
     uint8_t type ; // event_source_t
     uint8_t subscribed ; // fifodir subscribed (service/signal) or watcher armed (tick)
     uint32_t refcount ; // number of armed reactors referencing this source (service/signal/user)
-    hash_node_t node ;
+    hash_node_t node ; // eventd.sources, keyed by name
+    hash_node_t wd_node ; // eventd.inotify_wd, keyed by wd (inotify sources only)
 } ;
 
 typedef struct eventd_client_s eventd_client_t ;
@@ -103,10 +106,12 @@ struct eventd_s
     sse_epoll_t epoll ;
     sse_watcher_t wsignal ;
     sse_watcher_t wserver ; // control socket accept watcher
+    sse_watcher_t inotify ; // single shared inotify watcher for all inotify sources
     int sfd ;               // control socket listening fd ; owned by wserver
     int lockfd ;            // bind lock fd of the control socket ; owned by us
     uid_t owner ;           // scandir owner ; only it may talk to the socket
-    hash_t sources ;        // eventd_source_t*
+    hash_t sources ;        // eventd_source_t*, by name
+    hash_t inotify_wd ;     // eventd_source_t*, by inotify wd (routing)
     hash_t reactors ;       // eventd_reactor_t*
     hash_t clients ;          // eventd_client_t*
     strbuf emitq ;          // sbl of pending emit names (flattened emit recursion)
@@ -116,10 +121,12 @@ static eventd_t eventd = {
     .epoll = SSE_EPOLL_ZERO,
     .wsignal = SSE_WATCHER_ZERO,
     .wserver = SSE_WATCHER_ZERO,
+    .inotify = SSE_WATCHER_ZERO,
     .sfd = -1,
     .lockfd = -1,
     .owner = -1,
     .sources = HASH_ZERO,
+    .inotify_wd = HASH_ZERO,
     .reactors = HASH_ZERO,
     .clients = HASH_ZERO,
     .emitq = SBL_ZERO
@@ -182,7 +189,17 @@ static void source_destroy(eventd_source_t *s)
                 sse_free_timer(&s->watcher) ;
                 break ;
             case EVENT_SOURCE_INOTIFY :
-                sse_free_inotify(&s->watcher) ;
+
+                if (hash_find(&eventd.inotify_wd, &s->wd, sizeof s->wd)) {
+                    lx_inotify_wd_t *wd = lx_inotify_get_wd(s->wd) ;
+                    if (wd)
+                        sse_detach_inotify(&eventd.inotify, wd->path) ;
+
+                    hash_del(&eventd.inotify_wd, s) ;
+                }
+
+                if (hash_count(&eventd.inotify_wd) == 0)
+                    sse_free_inotify(&eventd.inotify) ;
                 break ;
             case EVENT_SOURCE_SCHEDULE :
                 sse_free_schedule(&s->watcher) ;
@@ -822,16 +839,75 @@ static void source_write_status(resolve_service_t *res, uint32_t state, uint8_t 
         log_warnusys("write source status of: ", res->sa.s + res->name) ;
 }
 
-static void source_tick_cb(sse_watcher_t *w, void *cbdata, int event)
+static void source_fail(eventd_source_t *s)
 {
     log_flow() ;
 
-    (void)w ; (void)event ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    if (resolve_read(wres, sysdir, s->name) == 1)
+        source_write_status(&res, STATUS_STATE_FAILED, STATUS_WHO_SELF) ;
+    else
+        log_warnu("read resolve to fail event source: ", s->name) ;
+
+    resolve_free(wres) ;
+
+    log_warn("event source watcher died, marking failed: ", s->name) ;
+    source_destroy(s) ; // frees the watcher and removes the source
+}
+
+static void source_tick_cb(sse_watcher_t *w, void *cbdata, int revents)
+{
+    log_flow() ;
+
+    (void)revents ;
 
     eventd_source_t *s = cbdata ;
 
+    if (w->api_errno) {
+        source_fail(s) ;
+        return ;
+    }
+
     reactor_run(s->name, 0) ;
     eventd_drain_emits() ;
+}
+
+static void eventd_inotify_cb(sse_watcher_t *w, void *cbdata, int revents)
+{
+    log_flow() ;
+
+    (void)cbdata ; (void)revents ;
+
+    // the whole inotify instance died (EBADF): fail every inotify source.
+    if (w->api_errno) {
+        eventd_source_t *s, *ts ;
+        HASH_FOREACH(&eventd.inotify_wd, s, ts)
+            source_fail(s) ;
+        return ;
+    }
+
+    uint32_t nsrc = hash_count(&eventd.inotify_wd) ;
+    eventd_source_t *dead[nsrc + 1] ;
+    uint32_t ndead = 0 ;
+
+    FOREACH_INOTIFY() {
+
+        eventd_source_t *s = hash_find(&eventd.inotify_wd, &event->wd, sizeof event->wd) ;
+        if (!s)
+            continue ; // unknown wd (racing disarm) or not ours
+
+        if (event->mask & IN_IGNORED) {
+            lx_inotify_forget(event->wd) ; // kernel already removed it
+            dead[ndead++] = s ;
+        } else {
+            reactor_run(s->name, 0) ;
+            eventd_drain_emits() ;
+        }
+    }
+
+    for (uint32_t i = 0 ; i < ndead ; i++)
+        source_fail(dead[i]) ;
 }
 
 static void eventd_arm_source(resolve_service_t *res, uint8_t who)
@@ -866,6 +942,7 @@ static void eventd_arm_source(resolve_service_t *res, uint8_t who)
         s->ag.len = 0 ;
         s->watcher = (sse_watcher_t)SSE_WATCHER_ZERO ;
         s->cron = (cron_t)CRON_EXPR_ZERO ;
+        s->wd = -1 ;
         s->type = (uint8_t)cfg.type ;
         s->subscribed = 0 ;
         s->refcount = 0 ;
@@ -889,17 +966,42 @@ static void eventd_arm_source(resolve_service_t *res, uint8_t who)
             break ;
 
         case EVENT_SOURCE_INOTIFY :
-            if (!sse_start_inotify(&eventd.epoll, &s->watcher, source_tick_cb, s, 0)) {
-                log_warnusys("start inotify for source: ", name) ;
+            {
+                int first = hash_count(&eventd.inotify_wd) == 0 ;
+                if (first && !sse_start_inotify(&eventd.epoll, &eventd.inotify, eventd_inotify_cb, NULL, 0)) {
+                    log_warnusys("start inotify watcher") ;
+                    break ;
+                }
+
+                char const *watch = cfg.sa.s + cfg.watch ;
+                if (!sse_attach_inotify(&eventd.inotify, watch, inotify_mask_from_on(cfg.sa.s + cfg.on, cfg.non))) {
+                    log_warnusys("watch path for source: ", name) ;
+                    if (first)
+                        sse_free_inotify(&eventd.inotify) ;
+                    break ;
+                }
+
+                lx_inotify_wd_t *iwd = 0 ;
+                if (!lx_inotify_search(&iwd, watch) || !iwd) {
+                    log_warnusys("resolve inotify wd for source: ", name) ;
+                    sse_detach_inotify(&eventd.inotify, watch) ;
+                    if (first)
+                        sse_free_inotify(&eventd.inotify) ;
+                    break ;
+                }
+                s->wd = iwd->wd ;
+
+                if (!hash_add(&eventd.inotify_wd, &s->wd, sizeof s->wd, s)) {
+                    log_warnusys("register inotify wd for source: ", name) ;
+                    sse_detach_inotify(&eventd.inotify, watch) ;
+                    if (first)
+                        sse_free_inotify(&eventd.inotify) ;
+                    break ;
+                }
+
+                s->subscribed = 1 ;
                 break ;
             }
-            if (!sse_attach_inotify(&s->watcher, cfg.sa.s + cfg.watch, inotify_mask_from_on(cfg.sa.s + cfg.on, cfg.non))) {
-                log_warnusys("watch path for source: ", name) ;
-                sse_free_inotify(&s->watcher) ;
-                break ;
-            }
-            s->subscribed = 1 ;
-            break ;
 
         case EVENT_SOURCE_SCHEDULE :
             {
@@ -1260,11 +1362,12 @@ static void eventd_cleanup(void)
 
     eventd_source_t *s, *ts ;
     HASH_FOREACH(&eventd.sources, s, ts)
-        source_destroy(s) ;
+        source_destroy(s) ; // the last inotify source frees eventd.inotify (free-if-empty)
 
     hash_free(&eventd.clients) ;
     hash_free(&eventd.reactors) ;
     hash_free(&eventd.sources) ;
+    hash_free(&eventd.inotify_wd) ;
     strbuf_free(&eventd.emitq) ;
 
     sse_free_io(&eventd.wserver) ; // closes eventd.sfd
@@ -1337,6 +1440,7 @@ int main(int argc, char const *const *argv)
         log_dieusys(LOG_EXIT_SYS, "create daemon directory: ", SS_EVENTD) ;
 
     if (!hash_init(&eventd.sources, 0, offsetof(eventd_source_t, node)) ||
+        !hash_init(&eventd.inotify_wd, 0, offsetof(eventd_source_t, wd_node)) ||
         !hash_init(&eventd.reactors, 0, offsetof(eventd_reactor_t, node)) ||
         !hash_init(&eventd.clients, 0, offsetof(eventd_client_t, node)))
         log_dieusys(LOG_EXIT_SYS, "initialize runtime tables") ;
