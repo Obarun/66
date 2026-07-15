@@ -54,6 +54,7 @@ The frontend service file allows the following section names:
 - [[Environment]](#section-environment)
 - [[Regex]](#section-regex)
 - [[Execute]](#section-execute)
+- [[Event]](#section-event)
 
 Although a section can be mandatory not all of its key fields must be necessarily so.
 
@@ -281,6 +282,7 @@ Defines the service type. Determines how **66** orchestrates startup and supervi
     * classic : Standard supervised service. Runs continuously and is automatically restarted if it crashes.
     * oneshot : Executes once and does not restart. Suitable for initialization tasks.
     * module : Configurable set of different type of service; integrates with the [`[Regex]`](#section-regex) section for file and directory transformations.
+    * event : A non-supervised **event source** for the [event system](66-event.html). It runs no process and has no `[Start]` section; its whole configuration lives in `[Main]` and is selected by [`EventType`](#eventtype). A `classic`/`oneshot`/`module` service becomes an event **reactor** instead by adding an [`[Event]`](#section-event) section — it does not use this value.
 
 #### Version
 
@@ -696,6 +698,132 @@ Defines one or more services that cannot run or be enabled simultaneously with t
 * valid values:
 
     * Any valid service name.
+
+The following keys are valid **only** when [`Type`](#type) is `event` — they configure an event **source**. See [66-event](66-event.html) for what each family does at runtime.
+
+#### EventType
+
+**Source Snippet**:
+```ini
+EventType = inotify
+```
+
+Selects the family of a `Type = event` source. It is distinct from [`Type`](#type); on a **reactor** the same key lives in the [`[Event]`](#section-event) section instead.
+
+* mandatory: yes for a `Type = event` source; not valid otherwise.
+
+* syntax: [inline](#inline)
+
+* valid values:
+
+    * inotify : watch a filesystem path — pair with [`Watch`](#watch) and [`On`](#on).
+    * schedule : fire on a cron/calendar [`Expression`](#expression), optionally in a [`Timezone`](#timezone).
+    * timer : fire on a relative interval [`Every`](#every).
+
+#### Watch
+
+**Source Snippet**:
+```ini
+Watch = /etc/resolv.conf
+```
+
+The filesystem path an `inotify` source watches, paired with [`On`](#on).
+
+* mandatory: yes for an `inotify` source; not valid otherwise.
+
+* syntax: [inline](#inline)
+
+* valid values:
+
+    * Any absolute path to an existing file or directory.
+
+* notes:
+
+    `IN_CREATE`/`IN_DELETE`/`IN_MOVED_*` only fire for entries **inside** a watched directory, not for a watched file. A tool that replaces a file atomically (write-temp then rename — dhcpcd, certbot, most editors) does **not** raise `IN_MODIFY` on it; watch the directory (`IN_CREATE`/`IN_MOVED_TO`) or the file itself with `IN_MOVE_SELF`/`IN_DELETE_SELF`.
+
+#### On
+
+**Source Snippet**:
+```ini
+On = ( IN_CLOSE_WRITE IN_MOVE_SELF )
+```
+
+The [inotify(7)](https://man7.org/linux/man-pages/man7/inotify.7.html) event(s) an `inotify` source reacts to on its [`Watch`](#watch) path. (The reactor key [`On`](#on--onall) in the [`[Event]`](#section-event) section is a different vocabulary.)
+
+* mandatory: yes for an `inotify` source; not valid otherwise.
+
+* syntax: [brackets](#brackets) — parentheses required, even for a single value.
+
+* valid values:
+
+    * One or more kernel `inotify` constants: `IN_ACCESS`, `IN_MODIFY`, `IN_ATTRIB`, `IN_CLOSE_WRITE`, `IN_CLOSE_NOWRITE`, `IN_OPEN`, `IN_MOVED_FROM`, `IN_MOVED_TO`, `IN_CREATE`, `IN_DELETE`, `IN_DELETE_SELF`, `IN_MOVE_SELF`, plus the shorthands `IN_MOVE` (`IN_MOVED_FROM`+`IN_MOVED_TO`), `IN_CLOSE` (`IN_CLOSE_WRITE`+`IN_CLOSE_NOWRITE`) and `IN_ALL_EVENTS`. They map straight to the watch mask.
+
+#### Expression
+
+**Source Snippet**:
+```ini
+Expression = "0 0 3 * * ?"
+```
+
+The cron expression of a `schedule` source. The engine is a **Quartz-style** scheduler — **not** classic 5-field Vixie cron.
+
+* mandatory: yes for a `schedule` source; not valid otherwise.
+
+* syntax: [quotes](#quotes)
+
+* valid values — a cron expression of **5, 6 or 7 space-separated fields**:
+
+    ````
+    [seconds] minutes hours day-of-month month day-of-week [year]
+    ````
+
+    | Fields | Layout |
+    |---|---|
+    | 5 | `min hour dom month dow` (seconds default to `0`) |
+    | 6 | `sec min hour dom month dow` |
+    | 7 | `sec min hour dom month dow year` |
+
+    Ranges `0-59`/`0-59`/`0-23`/`1-31`/`1-12`/`0-7`/`1970-2200`. Months accept `JAN`..`DEC`, days accept `SUN`..`SAT` (case-insensitive, `0` = Sunday). Operators: `*` `,` `-` `/` plus Quartz `?` (no specific value), `L` (last), `L-<n>`, `LW` (last weekday), `<n>W` (nearest weekday), `<n>L` (last weekday-n), `<n>#<m>` (m-th weekday-n, `6#3` = 3rd Friday). Macros: `@yearly`/`@annually`, `@monthly`, `@weekly`, `@daily`/`@midnight`, `@hourly`, `@minutely`, `@secondly`.
+
+* notes:
+
+    * You **must** put `?` on either day-of-month or day-of-week — they cannot both carry a value. Even in 5 fields, `"0 3 * * *"` is **rejected**; write `"0 3 * * ?"`.
+    * There is **no `@reboot`** macro.
+    * The expression is validated at [66 parse](66-parse.html) time; an invalid one fails with a clear error rather than silently at runtime.
+
+#### Timezone
+
+**Source Snippet**:
+```ini
+Timezone = Europe/Paris
+```
+
+The timezone the [`Expression`](#expression) of a `schedule` source is evaluated in.
+
+* mandatory: no; valid only for a `schedule` source.
+
+* syntax: [inline](#inline)
+
+* valid values:
+
+    * Any IANA timezone name (`UTC`, `Europe/Paris`, …), up to 255 characters. When omitted, the schedule is evaluated in **UTC**.
+
+#### Every
+
+**Source Snippet**:
+```ini
+Every = 30s
+```
+
+The period of a `timer` source: a relative, monotonic interval that fires again and again, unaffected by wall-clock changes.
+
+* mandatory: yes for a `timer` source; not valid otherwise.
+
+* syntax: [inline](#inline)
+
+* valid values:
+
+    * A positive whole number with an optional unit suffix — `s` (or none) for seconds, `m` minutes, `h` hours, `d` days. Examples: `30s`, `5m`, `1h`, `90`. The value must be at least one second.
 
 ### Section [Start]
 
@@ -1576,6 +1704,110 @@ Specifies Linux capabilities that a service and its child processes automaticall
 
     Requires Linux kernel version `5.6` or later.
 
+### Section [Event]
+
+This section is *optional*. It turns an ordinary `classic`, `oneshot` or `module` service into an event **reactor**: when its trigger fires, the service runs a `66` command **on itself** ([`Do`](#do)) and/or raises a named event ([`Emit`](#emit)). A frontend carries **at most one** rule — a service is either a reactor *or* a `Type = event` source, never both. See [66-event](66-event.html) for the full model and the runtime behaviour, and [66-eventd](66-eventd.html) for the daemon that runs the rules.
+
+#### EventType
+
+**Source Snippet**:
+```ini
+EventType = service
+```
+
+Selects which family of trigger the reactor subscribes to, and therefore which [`On`](#on--onall) vocabulary applies. Same key, same values as the source [`EventType`](#eventtype) in `[Main]`, but placed here for a reactor.
+
+* mandatory: yes for a reactor.
+
+* syntax: [inline](#inline)
+
+* valid values: `service`, `signal`, `user`, `inotify`, `schedule`, `timer`.
+
+    * service : react to the status transitions (up/down/crash/…) of a supervised service named in [`From`](#from).
+    * signal : react to a signal routed by `66` to a supervised service named in [`From`](#from).
+    * user : react to a name raised by [66 emit](66-emit.html) or by another reactor's [`Emit`](#emit). A `user` reactor is **sourceless** — no [`From`](#from).
+    * inotify / schedule / timer : react to the `Type = event` source named in [`From`](#from). The condition lives in the source, so these carry **no** [`On`](#on--onall).
+
+#### From
+
+**Source Snippet**:
+```ini
+From = ( rabbitmq )
+```
+
+The source(s) the reactor subscribes to. **Always explicit** — sources are never inferred from [`On`](#on--onall).
+
+* mandatory: yes for every reactor **except** `user` (which is sourceless).
+
+* syntax: [brackets](#brackets)
+
+* valid values:
+
+    * The name of a service. For `service`/`signal` it is a supervised service; for `inotify`/`schedule`/`timer` it is the name of the `Type = event` source.
+
+* notes:
+
+    Each `From` source also becomes a **dependency** of the reactor, so `66` starts (or arms) the source before it arms the reactor. Consequently `66-eventd` reads the source's current state at arm time: a reactor whose source is already in the awaited state **fires immediately**, instead of waiting for the next transition. Likewise, `66 free <source>` disarms the reactors that depend on it.
+
+#### On / OnAll
+
+**Source Snippet**:
+```ini
+On    = ( down )
+OnAll = ( auth:up db:up )
+```
+
+The trigger condition(s) of a `service`, `signal` or `user` reactor. Use **exactly one** of the two keys:
+
+* `On` — a single condition, or a bracketed list treated as **OR** (fires if any listed condition matches).
+* `OnAll` — an **AND** over the *current* states: fires only when all listed conditions hold at once. Valid only for `service` and `signal` reactors; a `user` reactor (whose conditions are momentary names, not states) uses `On` only.
+
+* mandatory: yes for `service`, `signal` and `user` reactors; **forbidden** for `inotify`/`schedule`/`timer` reactors (the condition is the source's own [`On`](#on)).
+
+* syntax: [brackets](#brackets) — parentheses required, even for a single value.
+
+* valid values — depend on [`EventType`](#eventtype-1):
+
+    * service : a status **state** word — `down`, `starting`, `up`, `stopping`, `finishing`, `restarting`, `done`, `failed` — or a status **result** word — `success`, `exited`, `signaled`, `timeout-start`, `timeout-stop`, `crash-limit`, `exec-failed`. Two results take an argument: `exited:<code>` and `signaled:<SIG>` (e.g. `signaled:SIGKILL`). These are exactly the words [66 status](66-status.html) prints. (`signaled` means *the process died from a signal*, unlike a `signal` reactor which means *a routed signal was received*.)
+    * signal : a signal name, e.g. `SIGHUP`.
+    * user : the emitted name, e.g. `backend-down`.
+
+* per-source form: in a list, a bare token (`up`) applies to **all** sources of [`From`](#from); a `service:condition` token (`auth:up`) scopes the condition to one named source, which must be a member of `From`.
+
+#### Do
+
+**Source Snippet**:
+```ini
+Do = restart
+```
+
+The `66` command the reactor runs **on itself** when the trigger fires.
+
+* mandatory: no on its own, but a reactor must define at least one of `Do` / [`Emit`](#emit).
+
+* syntax: [inline](#inline)
+
+* valid values: exactly one of `start`, `stop`, `restart`, `reload`, `reconfigure`, `free` — the matching `66` command. Bare command only, no argument.
+
+* notes:
+
+    The command is gated by the reactor's current state (see [66-event](66-event.html#runtime-behaviour)): `Do = start` is a no-op on an already-up service; `stop`/`restart`/`reload` act only on an up service; `reconfigure`/`free` always act.
+
+#### Emit
+
+**Source Snippet**:
+```ini
+Emit = backend-down
+```
+
+Raises a `user` event of the given name when the trigger fires, **independently** of [`Do`](#do). This is how reactions chain: another reactor with `EventType = user` and `On = ( <name> )` fires in turn (as would `66 emit <name>`). A reactor may carry `Do`, `Emit`, or both.
+
+* mandatory: no on its own, but a reactor must define at least one of [`Do`](#do) / `Emit`.
+
+* syntax: [inline](#inline)
+
+* valid values: any name. It matches the [`On`](#on--onall) of a `user` reactor.
+
 ## A word about the Execute key
 
 As described above the `Execute` key can be written in any language as long as you define the key `Build` as `custom`. For example if you want to write your `Execute` field with bash:
@@ -1754,6 +1986,12 @@ StdOut =
 StdErr =
 Provide = ()
 Conflict = ()
+EventType =
+Watch =
+On = ()
+Expression = ""
+Timezone =
+Every =
 
 [Start]
 Build =
@@ -1809,4 +2047,14 @@ UMask =
 ChangeDirectory = /directory/path
 CapsBound = ()
 CapsAmbient = ()
+
+[Event]
+EventType =
+From = ()
+On = ()
+OnAll = ()
+Do =
+Emit =
 ```
+
+The `[Main]` event keys (`EventType`, `Watch`, `On`, `Expression`, `Timezone`, `Every`) apply only to a `Type = event` **source**; the `[Event]` section applies only to a **reactor**. A frontend never holds both.
