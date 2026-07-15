@@ -277,21 +277,27 @@ static int launch_tree(uint32_t id)
     if (!tree->tres->ncontents) {
 
         log_info("Empty tree: ", sinfo.treename.s, " -- nothing to do") ;
-
-    } else {
-
-        _alloc_sbl_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
-
-        if (!sbl_clean_string(&stk, tree->tres->sa.s + tree->tres->contents))
-            log_warn_return(LOG_EXIT_ONE, "clean string") ;
-
-        int r = ssexec_callback(tree, id, &stk, &sinfo) ;
         ssexec_free(&sinfo) ;
-        return r ;
+        npid-- ;
+        announce(id, true) ;
+        return 1 ;
     }
 
+    _alloc_sbl_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
+
+    if (!sbl_clean_string(&stk, tree->tres->sa.s + tree->tres->contents))
+        log_warn_return(LOG_EXIT_ONE, "clean string") ;
+
+    r = ssexec_callback(tree, id, &stk, &sinfo) ;
     ssexec_free(&sinfo) ;
-    return 1 ;
+
+    if (!r) {
+        npid-- ;
+        announce(id, true) ;
+        return 1 ;
+    }
+
+    return r ;
 }
 
 // callback
