@@ -35,11 +35,11 @@ sed_args = [
   '-e', 's|%%user_log%%|@0@|g'.format(get_option('user-log-dir')),
 ]
 
-# 56 pages — HTML output (strict mirror of make-html.sh)
+# 58 pages — HTML output (strict mirror of make-html.sh)
 html_pages = [
   '66', '66-boot', '66-cheatsheet', '66-configure', '66-deeper',
   '66-dependencies', '66-disable',
-  '66-echo', '66-emit', '66-enable', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
+  '66-echo', '66-emit', '66-enable', '66-event', '66-eventd', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',
   '66-identifier', '66-instantiated-service', '66-log', '66-module-creation',
   '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
@@ -63,16 +63,16 @@ man1_pages = [
   '66-version', '66-wall', 'execl-envfile', 'execl-runas',
 ]
 
-# 9 pages — man section 5 (strict mirror of make-man.sh)
+# 10 pages — man section 5 (strict mirror of make-man.sh)
 man5_pages = [
-  '66-deeper', '66-frontend', '66-identifier', '66-instantiated-service',
+  '66-deeper', '66-event', '66-frontend', '66-identifier', '66-instantiated-service',
   '66-module-creation', '66-module-usage', '66-service-configuration-file',
   '66-standard-io-redirection', '66-upgrade-process',
 ]
 
-# 6 pages — man section 8 (strict mirror of make-man.sh)
+# 7 pages — man section 8 (strict mirror of make-man.sh)
 man8_pages = [
-  '66-boot', '66-hpr', '66-shutdown', '66-shutdownd', '66-supervise', '66-svctl', '66-umountall',
+  '66-boot', '66-eventd', '66-hpr', '66-shutdown', '66-shutdownd', '66-supervise', '66-svctl', '66-umountall',
 ]
 
 # Mkdocs uses the same set as HTML.
