@@ -285,7 +285,8 @@ static inline void prepare_stage4 (char what)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
             || !ostream_puts(&b, SS_BINPREFIX "66 -l ")
             || !ostream_puts(&b, live)
-            || !ostream_puts(&b, " scandir abort\n}\n"))
+            || !ostream_puts(&b, " scandir abort\n}")
+            || !ostream_putflush(&b, "\n", 1))
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     else
