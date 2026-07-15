@@ -38,7 +38,7 @@ int svc_send(char const *const *argv, int argc, ssexec_t *info, char const *sign
 
     if (signal[1] == 'r')
         cmdmsg = "restart" ;
-    else if (signal[1] == 'h')
+    else if (signal[1] == 'l')
         cmdmsg = "reload" ;
 
     if (propagate) {
