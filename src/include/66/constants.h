@@ -120,14 +120,11 @@
 #define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
 #define SS_BOOT_TREE "boot"
 #define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
-#define SS_BOOT_RCINIT "rc.init"
-#define SS_BOOT_RCINIT_LEN (sizeof SS_BOOT_RCINIT - 1)
 #define SS_BOOT_RCSHUTDOWN "rc.shutdown"
 #define SS_BOOT_RCSHUTDOWN_LEN (sizeof SS_BOOT_RCSHUTDOWN - 1)
 #define SS_BOOT_RCSHUTDOWNFINAL "rc.shutdown.final"
 #define SS_BOOT_RCSHUTDOWNFINAL_LEN (sizeof SS_BOOT_RCSHUTDOWNFINAL -1)
 #define SS_BOOT_UMASK 0022
-#define SS_BOOT_RESCAN 0
 #define SS_BOOT_CATCH_LOG 1
 #define SS_BOOT_LOG "scandir/0/scandir-log"
 #define SS_BOOT_LOG_LEN (sizeof SS_BOOT_LOG - 1)

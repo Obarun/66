@@ -44,7 +44,6 @@
 #include <66/utils.h>
 
 static unsigned int mask = SS_BOOT_UMASK ;
-static unsigned int rescan = SS_BOOT_RESCAN ;
 static unsigned int container = SS_BOOT_CONTAINER ;
 static unsigned int catch_log = SS_BOOT_CATCH_LOG ;
 
@@ -61,7 +60,6 @@ static char const *cver = 0 ;
 static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
 static char live[SS_MAX_PATH_LEN + 1] = SS_LIVE ;
 static char tree[SS_MAX_PATH_LEN + 1] = SS_BOOT_TREE ;
-static char rcinit[SS_MAX_PATH_LEN + 1] = SS_SKEL_DIR SS_BOOT_RCINIT ;
 static char rcinit_container[SS_MAX_PATH_LEN + 1] = SS_SKEL_DIR SS_BOOT_RCINIT_CONTAINER ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
@@ -188,9 +186,7 @@ static void parse_conf(const char *conf)
         { "PATH",             CONF_STR,  path,             0 },
         { "LIVE",             CONF_STR,  live,             1 },
         { "TREE",             CONF_STR,  tree,             0 },
-        { "RCINIT",           CONF_STR,  rcinit,           1 },
         { "UMASK",            CONF_UINT, &mask,            0 },
-        { "RESCAN",           CONF_UINT, &rescan,          0 },
         { "CONTAINER",        CONF_UINT, &container,       0 },
         { "CATCHLOG",         CONF_UINT, &catch_log,       0 },
         { "RCINIT_CONTAINER", CONF_STR,  rcinit_container, 1 },
@@ -323,24 +319,6 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 {
     log_flow() ;
 
-    char const *newargv[3] ;
-
-    if (container) {
-
-        newargv[0]= rcinit_container ;
-
-    } else {
-
-        newargv[0] = rcinit ;
-    }
-
-    newargv[1] = confile ;
-    newargv[2] = 0 ;
-
-    set_env(env, "VERBOSITY", cver) ;
-    set_env(env, "TREE", tree) ;
-    set_env(env, "LIVE", live) ;
-
     if (setsid() < 0)
         sulogin("setsid to run stage2", "") ;
 
@@ -367,8 +345,16 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
             sulogin("copy stderr to stdout","") ;
     }
 
-    if (container)
+    if (container) {
+
+        char const *newargv[3] = { rcinit_container, confile, 0 } ;
+
+        set_env(env, "VERBOSITY", cver) ;
+        set_env(env, "TREE", tree) ;
+        set_env(env, "LIVE", live) ;
+
         exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env->s, env->len) ;
+    }
 
     info->live.len = 0 ;
     if (!auto_strbuf(&info->live, live) || set_livedir(&info->live) <= 0) {
@@ -392,13 +378,23 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 
     int rc = tree_send(0, tree, 0, info) ;
 
-    if (rc)
+    if (rc) {
+
         log_warnu("start services of tree: ", tree) ;
 
-    /* End-of-boot event is emitted here -- boot-done on success, boot-failed
-     * otherwise -- once the eventd EMIT client exists. Tracked separately. */
+    } else {
 
-    _exit(rc) ;
+        log_info("Starting enabled trees") ;
+
+        rc = tree_send(0, 0, 0, info) ;
+
+        if (rc)
+            log_warnu("start enabled trees") ;
+    }
+
+    /* TODO: End-of-boot event is emitted here -- boot-done on success, boot-failed otherwise */
+
+    _exit(rc ? LOG_EXIT_SYS : 0) ;
 }
 
 static inline void make_cmdline(char const *prog,char const **add,int len,char const *msg,char const *arg, strbuf *env)
@@ -741,7 +737,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         pid = fork() ;
 
         if (pid == -1)
-            sulogin("fork: ",container ? rcinit_container : rcinit) ;
+            sulogin("fork: ",container ? rcinit_container : "stage2") ;
 
         if (!pid)
             run_stage2(&env, tty, info) ;
