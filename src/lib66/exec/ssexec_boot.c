@@ -657,7 +657,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     // create scandir
     {
         size_t ncatch = !catch_log ? 1 : 0 ;
-        size_t nargc = 6 + ncatch ;
+        size_t nargc = 4 + ncatch ;
         unsigned int m = 0 ;
 
         char const *t[nargc] ;
@@ -672,8 +672,6 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         if (!catch_log)
             t[m++] = "-c" ;
 
-        t[m++] = "-s" ;
-        t[m++] = skel ;
         t[m++] = "-L" ;
         t[m++] = log_user ;
 

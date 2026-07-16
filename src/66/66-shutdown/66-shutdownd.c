@@ -27,13 +27,11 @@
 #include <dirent.h>
 #include <sys/wait.h>
 
-#include <oblibs/environ.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/sbl.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
 #include <oblibs/fd.h>
@@ -46,6 +44,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/hpr.h>
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/tree.h>
@@ -57,7 +56,6 @@
 #define DOTSUFFIX ":XXXXXX"
 #define DOTSUFFIXLEN (sizeof(DOTSUFFIX) - 1)
 #define SHUTDOWND_FIFO "fifo"
-static char const *conf = SS_SKEL_DIR ;
 static char const *live = 0 ;
 static int inns = 0 ;
 static int nologger = 0 ;
@@ -73,7 +71,6 @@ typedef struct shutdownd_ctx_s
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
     { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "path",         .help = "live directory" },
-    { .id = 's',         .shortname = 's', .longname = "skeleton",  .arg = OPT_REQUIRED, .argname = "path",         .help = "skeleton directory" },
     { .id = 'g',         .shortname = 'g', .longname = "grace-time",.arg = OPT_REQUIRED, .argname = "milliseconds", .help = "grace time between the SIGTERM and the SIGKILL" },
     { .id = 'B',         .shortname = 'B', .longname = "container", .arg = OPT_NONE,                                .help = "the system is running inside a container" },
     { .id = 'c',         .shortname = 'c', .longname = "no-logger", .arg = OPT_NONE,                                .help = "the catch-all logger do not exist" },
@@ -94,41 +91,6 @@ static void restore_console (void)
         log_warnusys("open /dev/console for writing") ;
     else if (copy_fd(2, 1) < 0)
         log_warnusys("copy_fd") ;
-}
-
-ssize_t file_get_size(const char* filename)
-{
-    log_flow() ;
-
-    struct stat st;
-    errno = 0 ;
-    if (stat(filename, &st) == -1) return -1 ;
-    return st.st_size;
-}
-
-static inline void auto_conf(char *confile,size_t conflen)
-{
-    log_flow() ;
-
-    memcpy(confile,conf,conflen) ;
-    confile[conflen] = '/' ;
-    memcpy(confile + conflen + 1, SS_BOOT_CONF, SS_BOOT_CONF_LEN) ;
-    confile[conflen + 1 + SS_BOOT_CONF_LEN] = 0 ;
-}
-
-static void parse_conf(char const *confile,char *rcshut,char const *key)
-{
-    log_flow() ;
-
-    size_t filesize = file_get_size(confile) ;
-    _alloc_strbuf_(stk, filesize + 1) ;
-    _alloc_sbl_(val, filesize + 1) ;
-    if (!strbuf_read_file(&stk, confile))
-        log_dieusys(LOG_EXIT_SYS,"read file: ",confile) ;
-    if (environ_search_value(&val, stk.s, key)) {
-        memcpy(rcshut,val.s,val.len) ;
-        rcshut[val.len] = 0 ;
-    }
 }
 
 static inline void stop_trees (void)
@@ -183,19 +145,32 @@ static inline void prepare_shutdown (istream *b, sse_watcher_t *timer, unsigned 
     log_flow() ;
 
     uint32_t u ;
+    int64_t ms ;
+    struct timespec rel ;
     char pack[CLOCK_PACK + 4] ;
     size_t w = 0 ;
     int r = istream_getall(b, pack, CLOCK_PACK + 4, &w) ;
-    if (r < 0 && errno != EPIPE) log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
-    if (r != 1) log_dieusys(LOG_EXIT_SYS, "bad shutdown protocol") ;
-    struct timespec rel ;
+
+    if (r < 0 && errno != EPIPE)
+        log_dieusys(LOG_EXIT_SYS, "read from pipe") ;
+
+    if (r != 1)
+        log_dieusys(LOG_EXIT_SYS, "bad shutdown protocol") ;
+
     clock_unpack(pack, &rel) ;
-    int64_t ms = (int64_t)rel.tv_sec * 1000 + rel.tv_nsec / 1000000 ;   /* relative delay -> ms */
-    if (ms < 0) ms = 0 ;
-    if (ms > INT_MAX) ms = INT_MAX ;
+
+    ms = (int64_t)rel.tv_sec * 1000 + rel.tv_nsec / 1000000 ; /* relative delay -> ms */
+    if (ms < 0)
+        ms = 0 ;
+
+    if (ms > INT_MAX)
+        ms = INT_MAX ;
+
     schedule_deadline(timer, (int)ms) ;
     u32_unpack_big(pack + CLOCK_PACK, &u) ;
-    if (u && u <= 300000) *grace_time = u ;
+
+    if (u && u <= 300000)
+        *grace_time = u ;
 }
 
 static inline void handle_fifo (istream *b, char *what, sse_watcher_t *timer, unsigned int *grace_time)
@@ -241,16 +216,11 @@ static inline void prepare_stage4 (char what)
 
     ostream b ;
     int fd ;
-    char buf[512] ;
-    char shutfinal[4096] ; //huge path allowed
-    size_t conflen = strlen(conf) ;
-    char confile[conflen + 1 + SS_BOOT_CONF_LEN] ;
-    auto_conf(confile,conflen) ;
-    parse_conf(confile,shutfinal,"RCSHUTDOWNFINAL") ;
+    char buf[SS_MAX_PATH] ;
 
     if (inns) {
 
-        char s[2] = { what, '\n' } ;
+        char whatstr[2] = { what, 0 } ;
         char stk[30] ;
         char ownerstr[UID_FMT] ;
         size_t olen = uid_format(ownerstr, getuid()), livelen = strlen(live) ;
@@ -259,9 +229,9 @@ static inline void prepare_stage4 (char what)
 
         auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
 
-        auto_strings(stk, "HALTCODE=", s, "\nEXITCODE=0\n") ;
+        auto_strings(stk, "HALTCODE=", whatstr, "\nEXITCODE=0\n") ;
 
-        if (!file_write(tmp, stk, 22))
+        if (!file_write(tmp, stk, strlen(stk)))
             log_dieusys(LOG_EXIT_SYS, "write file: ", tmp) ;
     }
 
@@ -280,7 +250,7 @@ static inline void prepare_stage4 (char what)
 
             || (!nologger && !ostream_puts(&b,
             SS_EXECLINE_EXTBINPREFIX "foreground { "
-            SS_LIBEXECPREFIX "66-svctl -Oxc -- ")
+            SS_LIBEXECPREFIX "66-svctl -DxH -- ")
             || !ostream_puts(&b,live)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
             || !ostream_puts(&b, SS_BINPREFIX "66 -l ")
@@ -291,16 +261,8 @@ static inline void prepare_stage4 (char what)
     }
     else
     {
-        if (!ostream_puts(&b,
-            "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n\n"
-            SS_EXECLINE_EXTBINPREFIX "foreground { "
-            SS_BINPREFIX "66-umountall }\n"
-            SS_EXECLINE_EXTBINPREFIX "foreground { tryexec { ")
-            || !ostream_put(&b,shutfinal,strlen(shutfinal))
-            || !ostream_puts(&b," } }\n"
-            SS_BINPREFIX "66-hpr -f -")
-            || !ostream_put(&b, &what, 1)
-            || !ostream_putflush(&b, "\n", 1)) log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
+        if (!ostream_putflush(&b, &what, 1))
+            log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
     if (fchmod(fd, S_IRWXU) == -1) log_dieusys(LOG_EXIT_SYS, "fchmod ", STAGE4_FILE ".new") ;
     close_fd(fd) ;
@@ -312,14 +274,9 @@ static inline void unsupervise_tree (void)
 {
     log_flow() ;
 
-    /* the conditional entry stays last: a NULL in the middle would terminate the
-     * match loop early and stop excepting the daemons listed after it */
-    char const *except[6] =
+    char const *except[3] =
     {
         SS_BOOT_SHUTDOWND,
-        SS_ONESHOTD,
-        SS_FDHOLDER,
-        SS_EVENTD,
         nologger ? 0 : SS_SCANDIR "-" SS_LOG,
         0
     } ;
@@ -419,7 +376,6 @@ int main (int argc, char const *const *argv)
             {
                 case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
                 case 'l' : live = st.arg ; break ;
-                case 's' : conf = st.arg ; break ;
                 case 'g' :
                     if (!u32_scan_strict(st.arg, &grace_time))
                         return opt_emit_usage(cmd.name, &cmd) ;
@@ -431,55 +387,61 @@ int main (int argc, char const *const *argv)
         }
         argc -= st.ind ; argv += st.ind ;
     }
-    if (conf[0] != '/') log_dieusys(LOG_EXIT_USER, "skeleton: ",conf," must be an absolute path") ;
     if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
     else live = SS_LIVE ;
     if (grace_time > 300000) grace_time = 300000 ;
 
-    /* if we're in stage 4, exec it immediately */
-    {
+    /* if we're in stage 4, run it immediately; otherwise fall through to the daemon */
+    if (inns) {
+
+        /* the container stage 4 is a generated execline script */
         char const *stage4_argv[2] = { "./" STAGE4_FILE, 0 } ;
+        execv(stage4_argv[0], (char **)stage4_argv) ;
+        if (errno != ENOENT)
+            log_warnusys("exec ", stage4_argv[0]) ;
 
-        if (!inns && !nologger) {
+    } else {
 
-            int fd[2] ;
-            int e ;
-            fd[0] = fcntl(1, F_DUPFD_CLOEXEC, 0) ;
-
-            if (fd[0] < 0)
-                log_dieusys(LOG_EXIT_SYS, "dup stdout") ;
-
-            fd[1] = fcntl(2, F_DUPFD_CLOEXEC, 0) ;
-
-            if (fd[1] < 0)
-                log_dieusys(LOG_EXIT_SYS, "dup stderr") ;
-
-            restore_console() ;
-
-            execv(stage4_argv[0], (char **)stage4_argv) ;
-
-            e = errno ;
-            if (remap_fds(1, fd[0], 2, fd[1]) < 0)
-                log_warnusys("restore fds") ;
-            errno = e ;
-
-        } else {
-
-            execv(stage4_argv[0], (char **)stage4_argv) ;
+        /* the bare-metal stage 4 is a one-byte marker carrying <what>: run the
+         * final stage here. The marker persists until 66-hpr reboots the kernel,
+         * so a crash mid-stage simply relaunches us and retries. */
+        int mfd = io_open(STAGE4_FILE, O_RDONLY) ;
+        if (mfd < 0) {
             if (errno != ENOENT)
-                log_warnusys("exec ", stage4_argv[0]) ;
+                log_warnusys("open ", STAGE4_FILE) ;
+        } else {
+            char marker ;
+            ssize_t r = io_read(mfd, &marker, 1) ;
+
+            close_fd(mfd) ;
+            if (r != 1)
+                log_dieusys(LOG_EXIT_SYS, "read ", STAGE4_FILE) ;
+
+            if (!nologger)
+                restore_console() ;
+
+            umountall() ;
+
+            char opt[3] = { '-', marker, 0 } ;
+            char const *hpr_argv[4] = { SS_BINPREFIX "66-hpr", "-f", opt, 0 } ;
+
+            exec_path_die(hpr_argv[0], hpr_argv, (char const *const *)environ) ;
         }
     }
 
     fdr = io_open(SHUTDOWND_FIFO, O_RDONLY|O_NONBLOCK) ;
     if (fdr == -1 || cloexec_fd(fdr) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for reading") ;
+
     fdw = io_open(SHUTDOWND_FIFO, O_WRONLY|O_NONBLOCK) ;
     if (fdw == -1 || cloexec_fd(fdw) == -1)
         log_dieusys(LOG_EXIT_SYS, "open ", SHUTDOWND_FIFO, " for writing") ;
+
     struct sigaction sa = { .sa_handler = SIG_IGN } ;   /* sa_mask/flags zero-init = empty mask */
+
     if (sigaction(SIGPIPE, &sa, 0) == -1)
         log_dieusys(LOG_EXIT_SYS, "ignore SIGPIPE") ;
+
     istream_init(&b, fdr, buf, 64) ;
 
     {

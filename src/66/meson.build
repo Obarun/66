@@ -37,10 +37,6 @@ exe_configs = {
     'sources': ['66-oneshotd.c'],
     'deps': [lib66_dep]
   },
-  '66-shutdown': {
-    'sources': ['66-shutdown.c'],
-    'deps': [lib66_dep]
-  },
   '66-shutdownd': {
     'sources': ['66-shutdownd.c'],
     'deps': [lib66_dep]

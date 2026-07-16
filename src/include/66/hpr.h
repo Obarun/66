@@ -37,5 +37,6 @@
 extern int hpr_shutdown (char const *live, unsigned int, struct timespec const *, unsigned int) ;
 extern void hpr_wall (char const *s) ;
 extern void hpr_wallv (struct iovec const *v, unsigned int n) ;
+extern int umountall (void) ;
 
 #endif

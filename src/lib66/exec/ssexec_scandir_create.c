@@ -56,7 +56,6 @@ static char *OWNERSTR ;
 static gid_t GIDOWNER ;
 static char GIDSTR[GID_FMT] ;
 
-static char const *skel = SS_SKEL_DIR ;
 static char const *log_user = SS_LOGGER_RUNNER ;
 static unsigned int BOOT = 0 ;
 static unsigned int CONTAINER = SS_BOOT_CONTAINER ;
@@ -215,18 +214,18 @@ inline static void shebang(strbuf *b, char const *opts)
         log_die_nomem("strbuf") ;
 }
 
-void append_shutdown(strbuf *b, char const *live, char const *opts)
+void append_shutdown(strbuf *b, char const *live, char const *verb)
 {
     log_flow() ;
 
-    if (!auto_strbuf(b,SS_BINPREFIX "66-shutdown ",opts))
+    if (!auto_strbuf(b,SS_BINPREFIX "66 -l ",live," ",verb))
         log_die_nomem("strbuf") ;
 
     if (!CONTAINER)
         if (!auto_strbuf(b," -a"))
             log_die_nomem("strbuf") ;
 
-    if (!auto_strbuf(b," -l ",live," -- now\n"))
+    if (!auto_strbuf(b," -- now\n"))
         log_die_nomem("strbuf") ;
 
 }
@@ -272,7 +271,7 @@ void write_shutdownd(char const *live, char const *scandir)
     shebang(&b, "-P") ;
     if (!auto_strbuf(&b,
         SS_LIBEXECPREFIX "66-shutdownd -l ",
-        live," -s ",skel," -g 3000"))
+        live," -g 3000"))
             log_die_nomem("strbuf") ;
 
     if (CONTAINER)
@@ -476,13 +475,13 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         case USR1:
 
             if (BOOT)
-                append_shutdown(&b,live,"-p") ;
+                append_shutdown(&b,live,"poweroff") ;
 
             break ;
         case USR2:
 
             if (BOOT)
-                append_shutdown(&b,live,"-h") ;
+                append_shutdown(&b,live,"halt") ;
 
             break ;
         case TERM:
@@ -492,7 +491,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         case INT:
 
             if (BOOT)
-                append_shutdown(&b,live,"-r") ;
+                append_shutdown(&b,live,"reboot") ;
 
             break ;
 
@@ -642,11 +641,6 @@ int on_scandir_create(int id, char const *arg, void *data)
             BOOT = 1 ;
             break ;
 
-        case 's' :
-
-            skel = arg ;
-            break ;
-
         case 'c' :
 
             CATCH_LOG = 0 ;
@@ -683,9 +677,6 @@ int ssexec_scandir_create(int argc, char const *const *argv, void *data)
         log_dieusys(LOG_EXIT_SYS, "set gid of: ", OWNERSTR) ;
 
     GIDSTR[gid_format(GIDSTR,GIDOWNER)] = 0 ;
-
-    if (BOOT && skel[0] != '/')
-        log_die(LOG_EXIT_USER, "rc.shutdown: ", skel, " must be an absolute path") ;
 
     r = scan_mode(info->scandir.s, S_IFDIR) ;
     if (r < 0) log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " exist with unkown mode") ;

@@ -2,8 +2,7 @@ fs = import('fs')
 
 file_modes = {
   'init': 'rwxr-xr-x',
-  'init.conf': 'rw-r--r--',
-  'rc.shutdown.final': 'rwxr-xr-x'
+  'init.conf': 'rw-r--r--'
 }
 
 skel_dir = meson.current_source_dir()

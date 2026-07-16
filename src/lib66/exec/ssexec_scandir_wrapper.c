@@ -126,7 +126,6 @@ static opt_t const opts_scandir_create[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE,                            .help = "print this help" },
     { .id = 'b', .shortname = 'b', .longname = "boot",         .arg = OPT_NONE,                            .help = "create scandir for a boot process" },
     { .id = 'B', .shortname = 'B', .longname = "container",    .arg = OPT_NONE,                            .help = "create scandir for a boot process inside a container" },
-    { .id = 's', .shortname = 's', .longname = "skeleton",     .arg = OPT_REQUIRED, .argname = "path",.help = "use directory as skeleton directory" },
     { .id = 'c', .shortname = 'c', .longname = "no-logger",    .arg = OPT_NONE,                            .help = "do not catch logs" },
     { .id = 'L', .shortname = 'L', .longname = "log-user",     .arg = OPT_REQUIRED, .argname = "username", .help = "run catch-all logger as username user" },
 } ;
