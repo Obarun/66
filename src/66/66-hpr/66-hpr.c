@@ -24,6 +24,7 @@
 #include <sys/reboot.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/opt.h>
 #include <oblibs/clock.h>
 #include <oblibs/io.h>
@@ -145,9 +146,8 @@ int main (int argc, char const *const *argv)
 
     size_t livelen = strlen(live) ;
     char tlive[livelen + INITCTL_LEN + 1] ;
-    memcpy(tlive,live,livelen) ;
-    memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
-    tlive[livelen + INITCTL_LEN] = 0 ;
+
+    auto_strings(tlive, live, INITCTL) ;
 
     if (!hpr_send(tlive, "", 0)) {
         errno = EPERM ;
@@ -191,9 +191,9 @@ int main (int argc, char const *const *argv)
     {
         size_t livelen = strlen(live) ;
         char tlive[livelen + INITCTL_LEN + 1] ;
-        memcpy(tlive,live,livelen) ;
-        memcpy(tlive + livelen,INITCTL,INITCTL_LEN) ;
-        tlive[livelen + INITCTL_LEN] = 0 ;
+
+        auto_strings(tlive, live, INITCTL) ;
+
         if (!hpr_shutdown(tlive,what, &(struct timespec){0,0}, 0))
             log_dieusys(LOG_EXIT_SYS, "notify 66-shutdownd") ;
     }

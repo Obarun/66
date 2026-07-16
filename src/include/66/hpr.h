@@ -27,7 +27,7 @@
 
 #include <66/constants.h>
 
-#define INITCTL "/" SS_SCANDIR "/0/66-shutdownd/fifo"
+#define INITCTL SS_SCANDIR "/0/66-shutdownd/fifo"
 #define INITCTL_LEN (sizeof INITCTL - 1)
 
 #define HPR_WALL_BANNER "\n\n*** WARNING ***\nThe system is going down NOW!\n"
