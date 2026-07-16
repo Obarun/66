@@ -96,6 +96,7 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
             case E_PARSER_SECTION_MAIN_NOTIFY:
 
                 parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+                log_1_warn("key Notify at section [Main] is deprecated -- declare it at section [Start] instead") ;
 
                 if (!u32_scan_strict(v, &ex->notify))
                     parse_error_return(0, 3, table) ;
@@ -125,6 +126,7 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
             case E_PARSER_SECTION_MAIN_SIGNAL:
                 {
                     parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+                    log_1_warn("key DownSignal at section [Main] is deprecated -- declare it at section [Stop] instead") ;
                     int t = 0 ;
 
                     if (!sig_parse(v, &t))
@@ -161,7 +163,7 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
             case E_PARSER_SECTION_MAIN_TIMESTART:
 
                 parse_error_type(res->type, enum_list_parser_section_main, kid) ;
-                log_1_warn("key TimeoutStart at section [Main] is deprecated -- declare it at section [Start] instead") ;
+                log_1_warn("key TimeoutStart at section [Main] is deprecated -- declare key Timeout at section [Start] instead") ;
 
                 if (!u32_scan_strict(v, &ex->timeout.start))
                     parse_error_return(0, 3, table) ;
@@ -170,8 +172,8 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
             case E_PARSER_SECTION_MAIN_TIMESTOP:
 
                 parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+                log_1_warn("key TimeoutStop at section [Main] is deprecated -- declare key Timeout at section [Stop] instead") ;
 
-                log_1_warn("key TimeoutStop at section [Main] is deprecated -- declare it at section [Stop] instead") ;
                 if (!u32_scan_strict(v, &ex->timeout.stop))
                     parse_error_return(0, 3, table) ;
                 break ;
@@ -341,10 +343,19 @@ static int parse_execute_startstop(parse_store_t *st, resolve_service_t *res, re
                 script->run_user = resolve_add_string(wres, v) ;
                 break ;
 
+            case E_PARSER_SECTION_STARTSTOP_TIMEOUT:
+
+                if (!u32_scan_strict(v, sid == E_PARSER_SECTION_START ? &ex->timeout.start : &ex->timeout.stop))
+                    parse_error_return(0, 3, table) ;
+
+                break ;
+
             case E_PARSER_SECTION_STARTSTOP_TIMESTART:
 
                 if (sid != E_PARSER_SECTION_START)
                     log_warn_return(LOG_EXIT_ZERO, "key TimeoutStart is only valid at section [Start]") ;
+
+                log_1_warn("key TimeoutStart is deprecated -- use key Timeout instead") ;
 
                 if (!u32_scan_strict(v, &ex->timeout.start))
                     parse_error_return(0, 3, table) ;
@@ -356,9 +367,38 @@ static int parse_execute_startstop(parse_store_t *st, resolve_service_t *res, re
                 if (sid != E_PARSER_SECTION_STOP)
                     log_warn_return(LOG_EXIT_ZERO, "key TimeoutStop is only valid at section [Stop]") ;
 
+                log_1_warn("key TimeoutStop is deprecated -- use key Timeout instead") ;
+
                 if (!u32_scan_strict(v, &ex->timeout.stop))
                     parse_error_return(0, 3, table) ;
 
+                break ;
+
+            case E_PARSER_SECTION_STARTSTOP_NOTIFY:
+
+                if (sid != E_PARSER_SECTION_START)
+                    log_warn_return(LOG_EXIT_ZERO, "key Notify is only valid at section [Start]") ;
+
+                if (!u32_scan_strict(v, &ex->notify))
+                    parse_error_return(0, 3, table) ;
+
+                if (ex->notify < 3)
+                    parse_error_return(0, 0, table) ;
+
+                break ;
+
+            case E_PARSER_SECTION_STARTSTOP_SIGNAL:
+                {
+                    if (sid != E_PARSER_SECTION_STOP)
+                        log_warn_return(LOG_EXIT_ZERO, "key DownSignal is only valid at section [Stop]") ;
+
+                    int t = 0 ;
+
+                    if (!sig_parse(v, &t))
+                        parse_error_return(0, 3, table) ;
+
+                    ex->downsignal = (uint32_t)t ;
+                }
                 break ;
 
             default: break ;

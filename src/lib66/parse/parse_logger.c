@@ -123,13 +123,14 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                 lg->execute.run.run_user = resolve_add_string(wres, v) ;
                 break ;
 
-            case E_PARSER_SECTION_LOGGER_TIMESTART :
+            case E_PARSER_SECTION_LOGGER_TIMEOUT :
                 if (!u32_scan_strict(v, &lg->execute.timeout.start))
                     parse_error_return(0, 3, t) ;
                 break ;
 
-            case E_PARSER_SECTION_LOGGER_TIMESTOP :
-                if (!u32_scan_strict(v, &lg->execute.timeout.stop))
+            case E_PARSER_SECTION_LOGGER_TIMESTART :
+                log_1_warn("key TimeoutStart is deprecated -- use key Timeout instead") ;
+                if (!u32_scan_strict(v, &lg->execute.timeout.start))
                     parse_error_return(0, 3, t) ;
                 break ;
 

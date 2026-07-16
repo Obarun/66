@@ -28,7 +28,7 @@
 #include <66/constants.h>
 #include <66/ssexec.h>
 
-static void io_compute_stdin(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info, char const *line, uint32_t type)
+static void io_compute_stdin(resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info, char const *line, uint32_t type)
 {
     log_flow() ;
 
@@ -177,7 +177,7 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
             log_warn("the 's6log' io type is deprecated -- use '66log' instead; converting it automatically") ;
             type = E_PARSER_IO_TYPE_66LOG ;
         } else {
-            log_warn("invalid type for ", *table.u.parser.list[table.u.parser.id].name, " key in section main -- applying default") ;
+            log_warn("invalid type for key ", *table.u.parser.list[table.u.parser.id].name, " at section ", enum_str_parser_section[table.u.parser.sid], " -- applying default") ;
             return 1 ;
         }
     }
@@ -192,18 +192,43 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
             log_die_nomem("strbuf") ;
     }
 
-    switch(table.u.parser.id) {
+    switch(table.u.parser.sid) {
 
-        case E_PARSER_SECTION_MAIN_STDIN:
-            io_compute_stdin(res, io, w, info, stk.s, (uint32_t)type) ;
+        case E_PARSER_SECTION_MAIN:
+            switch(table.u.parser.id) {
+                case E_PARSER_SECTION_MAIN_STDIN:
+                    io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
+                    break ;
+
+                case E_PARSER_SECTION_MAIN_STDOUT:
+                    io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
+                    break ;
+
+                case E_PARSER_SECTION_MAIN_STDERR:
+                    io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
+                    break ;
+
+                default: break ;
+            }
             break ;
 
-        case E_PARSER_SECTION_MAIN_STDOUT:
-            io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
-            break ;
+        case E_PARSER_SECTION_EXECUTE:
+            switch(table.u.parser.id) {
 
-        case E_PARSER_SECTION_MAIN_STDERR:
-            io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
+                case E_PARSER_SECTION_EXECUTE_STDIN:
+                    io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
+                    break ;
+
+                case E_PARSER_SECTION_EXECUTE_STDOUT:
+                    io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
+                    break ;
+
+                case E_PARSER_SECTION_EXECUTE_STDERR:
+                    io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
+                    break ;
+
+                default: break ;
+            }
             break ;
 
         default:
@@ -382,25 +407,38 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, io) ;
     resolve_init(w) ; // offset 0 = "" convention
 
-    uint32_t const keys[3] = {
+    static uint32_t const main_keys[3] = {
         E_PARSER_SECTION_MAIN_STDIN,
         E_PARSER_SECTION_MAIN_STDOUT,
         E_PARSER_SECTION_MAIN_STDERR,
     } ;
+    static uint32_t const keys[3] = {
+        E_PARSER_SECTION_EXECUTE_STDIN,
+        E_PARSER_SECTION_EXECUTE_STDOUT,
+        E_PARSER_SECTION_EXECUTE_STDERR,
+    } ;
+    static char const *const names[3] = { "StdIn", "StdOut", "StdErr" } ;
 
     for (unsigned int i = 0 ; i < 3 ; i++) {
 
-        if (!parse_store_present(st, E_PARSER_SECTION_MAIN, keys[i]))
-            continue ;
+        if (parse_store_present(st, E_PARSER_SECTION_MAIN, main_keys[i])) {
 
-        char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, keys[i], 0) ;
+            log_1_warn("key ", names[i], " at section [Main] is deprecated -- declare it at section [Execute] instead") ;
 
-        resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
-        table.u.parser.id = keys[i] ;
+            char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, main_keys[i], 0) ;
+            resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
+            table.u.parser.id = main_keys[i] ;
 
-        if (!io_parse_one(res, io, w, info, table, v)) {
-            free(w) ;
-            return 0 ;
+            if (!io_parse_one(res, io, w, info, table, v)) { free(w) ; return 0 ; }
+        }
+
+        if (parse_store_present(st, E_PARSER_SECTION_EXECUTE, keys[i])) {
+
+            char const *v = parse_store_get(st, E_PARSER_SECTION_EXECUTE, keys[i], 0) ;
+            resolve_enum_table_t table = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;
+            table.u.parser.id = keys[i] ;
+
+            if (!io_parse_one(res, io, w, info, table, v)) { free(w) ; return 0 ; }
         }
     }
 

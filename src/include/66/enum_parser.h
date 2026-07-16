@@ -111,7 +111,10 @@ typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main
     macro(RUNAS,     "RunAs",        E_PARSER_EXPECT_LINE), \
     macro(EXEC,      "Execute",      E_PARSER_EXPECT_BRACKET), \
     macro(TIMESTART, "TimeoutStart", E_PARSER_EXPECT_UINT), \
-    macro(TIMESTOP,  "TimeoutStop",  E_PARSER_EXPECT_UINT)
+    macro(TIMESTOP,  "TimeoutStop",  E_PARSER_EXPECT_UINT), \
+    macro(TIMEOUT,   "Timeout",      E_PARSER_EXPECT_UINT), \
+    macro(NOTIFY,    "Notify",       E_PARSER_EXPECT_UINT), \
+    macro(SIGNAL,    "DownSignal",   E_PARSER_EXPECT_UINT)
 
 enum resolve_parser_enum_section_startstop_e
 {
@@ -132,7 +135,7 @@ typedef enum resolve_parser_enum_section_startstop_e resolve_parser_enum_section
     macro(MAXSIZE,       "MaxSize",         E_PARSER_EXPECT_UINT), \
     macro(TIMESTAMP,     "Timestamp",       E_PARSER_EXPECT_LINE), \
     macro(TIMESTART,     "TimeoutStart",    E_PARSER_EXPECT_UINT), \
-    macro(TIMESTOP,      "TimeoutStop",     E_PARSER_EXPECT_UINT)
+    macro(TIMEOUT,       "Timeout",         E_PARSER_EXPECT_UINT)
 
 enum resolve_parser_enum_section_logger_e
 {
@@ -199,7 +202,10 @@ typedef enum resolve_parser_enum_section_regex_e resolve_parser_enum_section_reg
     macro(NICE,             "Nice",             E_PARSER_EXPECT_UINT), \
     macro(CHDIR,            "ChangeDirectory",  E_PARSER_EXPECT_LINE), \
     macro(CAPS_BOUND,       "CapsBound",        E_PARSER_EXPECT_BRACKET), \
-    macro(CAPS_AMBIENT,     "CapsAmbient",      E_PARSER_EXPECT_BRACKET)
+    macro(CAPS_AMBIENT,     "CapsAmbient",      E_PARSER_EXPECT_BRACKET), \
+    macro(STDIN,            "StdIn",            E_PARSER_EXPECT_LINE), \
+    macro(STDOUT,           "StdOut",           E_PARSER_EXPECT_LINE), \
+    macro(STDERR,           "StdErr",           E_PARSER_EXPECT_LINE)
 
 enum resolve_parser_enum_section_execute_e
 {
