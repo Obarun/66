@@ -94,7 +94,6 @@ See [changes](66-upgrade.html) between versions.
 - [66-svctl](66-svctl.html)
 - [66-hpr](66-hpr.html)
 - [66-shutdownd](66-shutdownd.html)
-- [66-shutdown](66-shutdown.html)
 
 ### Others documentation
 

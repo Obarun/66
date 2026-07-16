@@ -138,7 +138,7 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66-intree` | `66 tree status`|
 | `66-inservice` | `66 status`|
 | `66-env` | `66 configure`|
-| `66-shutdown` | `66-shutdown`. This command should not be used directly. Prefer using `66 poweroff`, `66 reboot`, `66 halt` to power off, reboot and halt the machine respectively |
+| `66-shutdown` | `66 poweroff`, `66 reboot`, `66 halt` to power off, reboot and halt the machine respectively |
 
 ## Extra tools
 

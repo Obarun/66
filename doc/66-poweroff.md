@@ -5,7 +5,7 @@ This command triggers the poweroff procedure.
 ## Interface
 
 ```
-poweroff [ -h ] [ -a ] [ -f|F ] [ -m message ] [ -t time ] [ -W ] when
+poweroff [ -h ] [ -a ] [ -c ] [ -f|F ] [ -m message ] [ -t time ] [ -W ] when
 ```
 
 This command triggers the poweroff procedure immediately if *when* is omitted.
@@ -20,6 +20,7 @@ The *when* provided **must be** on these formats:
 
 - **-h, --help**: print this help.
 - **-a, --access**: use access control. The poweroff sequence will only be launched if one of the users listed in `/etc/66/shutdown.allow` is currently logged in (as tracked by utmp). `/etc/66/shutdown.allow` is a text file which accepts one user per line. Lines starting with # are commented out.
+- **-c, --cancel**: cancel a planned poweroff. Any *when* argument is ignored.
 - **-f, --force**: do not trigger a clean shutdown procedure; it will just sync the filesystems then tell the kernel to immediately poweroff. This should be the last step in the lifetime of the machine.
 - **-F, --force-nosync**: same as `-f` but do not sync the filesystems.
 - **-m, --message** *message*: replace the default message by message. message is broadcast to all logged in users (as tracked by utmp).

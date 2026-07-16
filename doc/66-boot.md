@@ -5,18 +5,20 @@ Meant to be run as pid 1 as a *stage1* init. Performs the necessary early system
 ## Interface
 
 ```
-boot [ -h ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
+boot [ -h ] [ -c ] [ -m ] [ -s skel ] [ -l log_user ] [ -e environment ] [ -d dev ] [ -b banner ]
 ```
 
-This program performs some early preparations, spawns a process that will run the `rc.init` script and then execs into [scandir start](66-scandir.html).
+This program performs some early preparations, forks a *stage2* process that brings up the enabled trees and then execs into [scandir start](66-scandir.html).
 
 ## Exit codes
 
-Command *boot* never exits. It spawns the `rc.init` script and execs into [scandir start](66-scandir.html) which runs forever until the machine stops or reboots.
+Command *boot* never exits. It forks *stage2* and execs into [scandir start](66-scandir.html) which runs forever until the machine stops or reboots.
 
 ## Options
 
 - **-h, --help**: prints this help.
+
+- **-c, --container**: boot inside a container instead of on real hardware. Container mode is selected **only** by this option. The boot then follows the same path as a hardware boot — it brings up the services of the enabled trees — so a container runs as a full supervised system, not a single command. Leaving the container differs from rebooting a machine: pid 1 exits with a code instead of handing the machine over to the kernel. Use [66 halt](66-halt.html) to make pid 1 exit with the code held in the `%%livedir%%/container/<owner>/halt` file (`EXITCODE`, default `0`); [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) make it report a `SIGINT` and a `SIGHUP` respectively. If the boot itself fails, pid 1 exits with `111`. See the container behaviour under [66 scandir -B](66-scandir.html).
 
 - **-m, --mount**: umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
 
@@ -24,7 +26,7 @@ Command *boot* never exits. It spawns the `rc.init` script and execs into [scand
 
 - **-l, --log-user** *log_user*: the `catch-all` logger will run as *log_user*. Default is `%%66log_user%%`. The default can also be changed at compile-time by passing the `-D 66-log-user=user` option to `meson setup`.
 
-- **-e, --environment** *environment*: an absolute path. *stage 1 init* empties its environment except the *PATH* variable before spawning the `rc.init` skeleton file and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. Then, it import environment from files found at the %%environment_adm%% directory (See [Environment importation](#environment-importation)). If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
+- **-e, --environment** *environment*: an absolute path. *stage 1 init* empties its environment except the *PATH* variable before forking *stage2* and executing into [scandir start](66-scandir.html) in order to prevent kernel environment variables from leaking into the process tree. Then, it import environment from files found at the %%environment_adm%% directory (See [Environment importation](#environment-importation)). If you want to define additional environment variables then use this option. Behaves the same as [scandir start -e](66-scandir.html).
 
 - **-d, --dev** *dev*: mounts a devtmpfs on *dev*. By default, no such mount is performed - it is assumed that a devtmpfs is automounted on `/dev` at boot time by the kernel or an initramfs.
 
@@ -53,7 +55,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It checks if the *LIVE* basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
 
-- It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir  -b -c -s skel create](66-scandir.html) plus **-L user_log** if requested.
+- It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
 
 - It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-tree.html#init).
 
@@ -73,13 +75,13 @@ When booting a system, command *boot* performs the following operations:
 
     * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
-    * The child then execs into `rc.init`
+    * The child then brings up the services of every enabled tree.
 
 In the unusual event that any of the above processes fail, command *boot* will try to launch a single-user login namely *sulogin* to provide the means to repair the system.
 
 ## Skeleton files
 
-Skeleton files are mandatory and must exist on your system to be able to boot and shutdown the machine properly. By default those files are installed at `%%skel%%`. Use the `-D skeleton-dir=DIR` option at compile time to change it.
+Skeleton files are mandatory and must exist on your system to be able to boot the machine properly. By default those files are installed at `%%skel%%`. Use the `-D skeleton-dir=DIR` option at compile time to change it.
 
 - `init` : the command *boot* binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the `init` skeleton file is used to pass any options to command *boot*. By default command *boot* is launched without options. This file is installed at `%%bindir%%/init`.
 
@@ -93,33 +95,9 @@ Skeleton files are mandatory and must exist on your system to be able to boot an
 
     * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
 
-    * `RCINIT=%%skel%%/rc.init` : an absolute path. This file is launched at the end of *stage1* and run as *stage2*. It invokes the [66 tree start](66-tree.html) command to initiate and bring up all enabled services inside of *TREE* (the earlier ones were already initiated by *stage1*).
-
-    * `RCSHUTDOWN=%%skel%%/rc.shutdown` : an absolute path. This is launched when a shutdown is requested also called *stage3*. It invokes [66 tree stop](66-tree.html) command to bring down all services of *TREE*.
-
-    * `RCSHUTDOWNFINAL=%%skel%%/rc.shutdown.final` : an absolute path. This file will be run at the very end of the shutdown procedure, after all processes have been killed and all filesystems have been unmounted, just before the system is rebooted or the power turned off.
-
     * `UMASK=0022` : sets the value of the initial file umask for all starting processes in octal.
 
-    * `RESCAN=0` : forces [66-scandir](66-scandir.html) to perform a scan every *RESCAN* milliseconds. This is an overload function mostly for debugging. It should be 0 during *stage1*. It is strongly discouraged to set *RESCAN* to a positive value smaller than 500.
-
-    * `CONTAINER=0` : accepted value are `0` or `1` where `0` ask to boot on a hardware system and `1` ask to boot inside a container. Default `0`. If set to `1`, the `rc.init.container` file is used instead of the `rc.init` file.
-
-    * `RCINIT_CONTAINER=%%skel%%/rc.init.container` : an absolute path. This is launched when a boot inside a container is asked. It as the same behavior of the `rc.init` file but allows to implement a command to run inside this container and retrieves the exit code of that command. The exit code of the command is automatically written at the `%%skel%%/container/<owner>/halt` file modifying the `EXITCODE=` variable.
-
     * `CATCHLOG=1` : accepted value are `0` or `1` where `0` ask to not redirects its stdout to the `catch-all` logger's fifo and `1` ask to redirects its stdout to the `catch-all` logger's fifo. Default `1`.
-
-- `rc.init` : this file is called by the child of *boot* command to process *stage2*. It invokes the commands:
-
-    * `66 -v${VERBOSITY} -l ${LIVE} tree start ${TREE}` will initiate and bring up all services marked enabled inside of *TREE*
-
-    * If this commands fail a warning message is sent to sdtout.
-
-- `rc.init.container` : this file replace the `rc.init` when a boot inside a container is asked. It has the same behavior than the `rc.init` file. However, this file is especially designed to be used for a boot inside a container. It allow to easily define a command(see comment on that file) to launch inside the container and to retrieve the exit code of that command.
-
-- `rc.shutdown` : this file is called at shutdown when the administrator requests the `halt`, `poweroff` or `reboot` command. It invokes a single command:
-
-    * `66 -v${VERBOSITY} -l ${LIVE} tree stop -f ${TREE}` to bring down all *services* for all *trees* marked as enabled.
 
 ## Kernel command line
 

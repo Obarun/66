@@ -7,24 +7,22 @@ This program is a modified copy of [s6-linux-init-shutdownd](https://skarnet.org
 ## Interface
 
 ```
-66-shutdownd [ -h ] [ -l live ] [ -s skel ] [ -g gracetime ] [ -B ] [ -c ]
+66-shutdownd [ -h ] [ -l live ] [ -g gracetime ] [ -B ] [ -c ]
 ```
 
-- 66-shutdownd opens the `%%livedir%%/scandir/0/shutdownd/fifo` pipe and listens to it. Programs such as [66-shutdown](66-shutdown.html) send their commands to this pipe when they are told to trigger the shutdown procedure.
+- 66-shutdownd opens the `%%livedir%%/scandir/0/shutdownd/fifo` pipe and listens to it. The [66 poweroff](66-poweroff.html), [66 reboot](66-reboot.html) and [66 halt](66-halt.html) commands send their request to this pipe when they trigger the shutdown procedure.
 
-- When it receives a command to shut down *66-shutdownd* parses the skel file `init.conf`—found by default in the `%%skel%%` directory— and reads the value of `RCSHUTDOWN` to be able to spawn the `rc.shutdown` script.
+- When it receives a request to shut down, *66-shutdownd* brings the service trees down itself: it frees the enabled trees, then the `boot` tree, all marked as `shutdown`.
 
-- When said script exits *66-shutdownd* kills all processes first with a `SIGTERM` then, after the grace time specified by the shutdown command, with a `SIGKILL`.
+- It then kills the remaining processes, first with a `SIGTERM`, then—after the grace time specified by the shutdown command—with a `SIGKILL`.
 
-- It then runs an automatically generated script called `stage4` which unmounts all file systems and halts, powers off or reboots the machine.
+- Finally it runs *stage 4*. On a real machine this unmounts every file system and hands the kernel over to [66-hpr](66-hpr.html) to halt, power off or reboot; in a container it runs an automatically generated script instead. A persistent marker drives this last stage, so a crash in the middle simply restarts it.
 
 ## Options
 
 - **-h, --help**: prints this help.
 
 - **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
-
-- **-s, --skeleton** *skel*: an absolute path; directory holding the skeleton file `init.conf`. Default is `%%skel%%`.
 
 - **-g, --grace-time** *gracetime*: specify a grace time between the `SIGTERM` and the `SIGKILL` in milliseconds if the shutdown command does not provide one. Defaults to `3000`.
 

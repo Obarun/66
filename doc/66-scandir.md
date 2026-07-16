@@ -71,7 +71,7 @@ This subcommand create a *scandir*.
 #### Interface
 
 ```
-scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ] [ -s skel ]
+scandir create [ -h ] [ -b|B ] [ -c ] [ -L log_user ]
 ```
 
 This command create the necessary directory at `%%livedir%%`. If the *scandir* already exist for the given user it will prevent its creation. You *must* remove it first if you don't want to keep it.
@@ -86,14 +86,12 @@ Various files and directories are created at `%%livedir%%`. Refer to the [deeper
 
     The ultimate output fallback (i.e. the place where error messages go when nothing catches them, e.g. the error messages from the catch-all logger and the 66-supervise process managing the catch-all logger) is not `/dev/console`, but the descriptor that was init's standard error.
     Stopping the container with reboot will make the container's init program report being killed by a `SIGHUP`. Stopping it with [66 poweroff](66-poweroff.html) will make it report being killed by a `SIGINT`. This is according to the reboot(2) specification.
-    Stopping the container with [66 halt](66-halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/<UID>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) This means that in order to run a command in a container managed by [66 boot](66-boot.html) and exit the container when the command dies while reporting the exit code to its parent, [66 boot](66-boot.html) use the `/etc/66/rc.init.container` file instead of the `/etc/66/rc.init` file. This file should be modified to launch the command that you want to start inside this container. Then you need to stop that container calling [66 halt](66-halt.html).
+    Stopping the container with [66 halt](66-halt.html), however, is different. It will make the container's pid 1 read a number in the `/run/66/container/<UID>/halt` file which contents the variable `EXITCODE`, and exit with the code it has read. (Default is 0.) A container is booted with [66 boot -c](66-boot.html): it brings up the enabled trees as a full supervised system rather than launching a single command. Define whatever the container should run as ordinary services in those trees, then stop it with [66 halt](66-halt.html).
     All the running services will be killed, all the zombies will be reaped, and the container will exit with the required exit code.
 
 - **-c, --no-logger**: do not catch logs. On a non-containerized system, that means that all the logs from the *scandir* will go to `/dev/console`, and that `/dev/console` will also be the default `stdout` and `stderr` for services running under the supervision tree: use of this option is discouraged. On a containerized system (when paired with the `-B` option), it simply means that these outputs go to the default `stdout` and `stderr` given to the container's init - this should generally not be the default, but might be useful in some cases.
 
 - **-L, --log-user** *log_user*: run catch-all logger as *log_user* user. Default is `%%66log_user%%`. The default can also be changed at compile-time by passing the `-D 66-log-user=user` option to `meson setup`.
-
-- **-s, --skeleton** *skel*: use *skel* as skeleton directory. Directory containing *skeleton* files. This option is not meant to be used directly even with root. [66 boot](66-boot.html) calls it during the boot process. Default is `%%skel%%`.
 
 #### Usage examples
 
@@ -410,7 +408,7 @@ Removes zombies from a *scandir* for the owner `owner`
 
 ## Boot specification
 
-The **-b**, **-B**, **-c** and **-s** option are called by [66 boot](66-boot.html). **-b** and **-B** will create `.66-scandir` control files (see the [Interface](#interface) section) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location. Further this specific task needs to read the skeleton file `init.conf` containing the *live* directory location which is the purpose of the **-s** option.
+The **-b**, **-B** and **-c** option are called by [66 boot](66-boot.html). **-b** and **-B** will create `.66-scandir` control files (see the [Interface](#interface) section) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location.
 
 The *live* directory for the boot process requires writable directories and an executable filesystem. In order to accommodate for read-only root filesystems there needs to be a tmpfs mounted before `66-scandir` can be run.
 
