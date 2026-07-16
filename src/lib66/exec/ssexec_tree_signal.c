@@ -90,5 +90,5 @@ int ssexec_tree_signal(int argc, char const *const *argv, void *data)
     uint8_t operation = parse_signal(signame) ;
     char const *treename = argc >= 1 ? argv[0] : 0 ;
 
-    return tree_send(operation, treename, dofork, info) ;
+    return tree_send(operation, treename, 0, dofork, info) ;
 }

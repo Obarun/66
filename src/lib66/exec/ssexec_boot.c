@@ -60,7 +60,7 @@ static char const *cver = 0 ;
  * are never empty even when the key is absent from the configuration */
 static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
 static char live[SS_MAX_PATH_LEN + 1] = SS_LIVE ;
-static char tree[SS_MAX_PATH_LEN + 1] = SS_BOOT_TREE ;
+static char tree[SS_MAX_PATH_LEN + 1] = "" ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
 
@@ -377,19 +377,28 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
     environ_merge(merged, elen + modn + 1, (char const *const *)environ, elen, env->s, env->len) ;
     environ = (char **)merged ;
 
-    log_info("Starting services of tree: ", tree) ;
+    int rc ;
 
-    int rc = tree_send(0, tree, 0, info) ;
+    if (tree[0]) {
+
+        log_info("Starting services of tree: ", tree) ;
+        rc = tree_send(0, tree, 0, 0, info) ;
+
+    } else {
+
+        log_info("Starting services of trees in group: ", TREE_GROUPS_BOOT) ;
+        rc = tree_send(0, TREE_GROUPS_BOOT, 1, 0, info) ;
+    }
 
     if (rc) {
 
-        log_warnu("start services of tree: ", tree, " -- see log with '66 log system'") ;
+        log_warnu("start boot services -- see log with '66 log system'") ;
 
     } else {
 
         log_info("Starting enabled trees") ;
 
-        rc = tree_send(0, 0, 0, info) ;
+        rc = tree_send(0, 0, 0, 0, info) ;
 
         if (rc)
             log_warnu("start enabled trees -- see log with '66 log system'") ;
@@ -685,10 +694,17 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     }
 
     // initiate earlier service
-    {
+    if (tree[0]) {
+
         char const *t[] = { "init", tree } ;
-        log_info("Initiate earlier service of tree: ",tree) ;
+        log_info("Initiate earlier service of tree: ", tree) ;
         make_cmdline("tree", t, 2, "initiate earlier service of tree: ", tree, &env) ;
+
+    } else {
+
+        char const *t[] = { "init", "--group", TREE_GROUPS_BOOT } ;
+        log_info("Initiate earlier service of group: ", TREE_GROUPS_BOOT) ;
+        make_cmdline("tree", t, 3, "initiate earlier service of group: ", TREE_GROUPS_BOOT, &env) ;
     }
 
     if (catch_log)

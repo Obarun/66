@@ -118,8 +118,6 @@
 #define SS_BOOT_CONF_LEN (sizeof SS_BOOT_CONF - 1)
 #define SS_BOOT_PATH "/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin"
 #define SS_BOOT_PATH_LEN (sizeof SS_BOOT_PATH - 1)
-#define SS_BOOT_TREE "boot"
-#define SS_BOOT_TREE_LEN (sizeof SS_BOOT_TREE - 1)
 #define SS_BOOT_UMASK 0022
 #define SS_BOOT_CATCH_LOG 1
 #define SS_BOOT_LOG "scandir/0/scandir-log"

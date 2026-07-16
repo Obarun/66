@@ -444,4 +444,28 @@ extern uint32_t tree_graph_build_name(tree_graph_t *g, const char *name, ssexec_
 
 extern uint32_t tree_graph_build_master(tree_graph_t *g, ssexec_t *info, uint32_t flag) ;
 
+/**
+ * @brief Builds a tree graph from the trees belonging to a group.
+ *
+ * Behaves like tree_graph_build_master but restricts the selection to the trees
+ * whose group matches the one carried by info->treename. Enabled status is not
+ * considered: group membership alone selects a tree.
+ *
+ * @param g
+ * Pointer to the tree graph structure.
+ *
+ * @param info
+ * Pointer to the execution context; info->treename holds the wanted group name.
+ *
+ * @param flag
+ * Flags indicating the conditions for graph construction.
+ *
+ * @return The number of trees successfully added to the graph.
+ *
+ * @return 0
+ * If no tree belongs to the group (a no-op for the caller), or on error
+ * (`errno` is set to `EINVAL`).
+ */
+extern uint32_t tree_graph_build_groups(tree_graph_t *g, ssexec_t *info, uint32_t flag) ;
+
 #endif

@@ -62,7 +62,7 @@ static void all_redir_fd(void)
     umask(022);
 }
 
-int tree_send(uint8_t operation, char const *treename, uint8_t dofork, ssexec_t *info)
+int tree_send(uint8_t operation, char const *treename, uint8_t bygroup, uint8_t dofork, ssexec_t *info)
 {
     log_flow() ;
 
@@ -93,9 +93,22 @@ int tree_send(uint8_t operation, char const *treename, uint8_t dofork, ssexec_t 
     if (!tree_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
-    /** only one tree */
+    if (bygroup) {
 
-    if (info->treename.len) {
+        ntree = tree_graph_build_groups(&graph, info, flag) ;
+        if (!ntree) {
+
+            if (errno == EINVAL)
+                log_dieusys(LOG_EXIT_USER, "build the graph") ;
+
+            // no tree in the group -- nothing to do
+            tree_graph_destroy(&graph) ;
+            return 0 ;
+        }
+
+    } else if (info->treename.len) {
+
+        /** only one tree */
 
         ntree = tree_graph_build_name(&graph, info->treename.s, info, flag) ;
         if (!ntree) {

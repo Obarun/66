@@ -27,6 +27,7 @@ extern opt_on_option_fn on_tree_admin ;
 extern opt_on_option_fn on_tree_signal ;
 extern opt_on_option_fn on_tree_status ;
 extern opt_on_option_fn on_tree_resolve ;
+extern opt_on_option_fn on_tree_init ;
 
 extern opt_cmd_fn do_tree_start ;
 extern opt_cmd_fn do_tree_stop ;
@@ -80,6 +81,11 @@ static opt_t const opts_tree_signal[] = {
     { .id = 'f',         .shortname = 'f', .longname = "fork", .arg = OPT_NONE, .help = "fork the process" },
 } ;
 
+static opt_t const opts_tree_init[] = {
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE,                            .help = "print this help" },
+    { .id = 'g',         .shortname = 'g', .longname = "group", .arg = OPT_REQUIRED, .argname = "group",    .help = "initiate every tree of this group instead of a single tree" },
+} ;
+
 static opt_t const opts_tree_status[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",     .arg = OPT_NONE,                             .help = "print this help" },
     { .id = 'n',         .shortname = 'n', .longname = "no-name",  .arg = OPT_NONE,                             .help = "do not display the names of fields" },
@@ -124,7 +130,7 @@ static opt_cmd_t const tree_sub[] = {
     { .name = "current", .help = "mark a tree as the current one", .operands = "tree", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_tree_current },
     { .name = "resolve", .help = "display the resolve files contents of tree", .operands = "tree", .opts = opts_tree_resolve, .nopts = OPT_COUNT(opts_tree_resolve), .on_option = &on_tree_resolve, .fn = &ssexec_tree_resolve, .epilog = tree_resolve_epilog },
     { .name = "status",  .help = "display information about tree", .operands = "tree", .opts = opts_tree_status, .nopts = OPT_COUNT(opts_tree_status), .on_option = &on_tree_status, .fn = &ssexec_tree_status, .epilog = tree_status_epilog },
-    { .name = "init",    .help = "initiate all enabled services of a tree to a scandir", .operands = "tree", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &ssexec_tree_init },
+    { .name = "init",    .help = "initiate all enabled services of a tree(s) to a scandir", .operands = "tree", .opts = opts_tree_init, .nopts = OPT_COUNT(opts_tree_init), .on_option = &on_tree_init, .fn = &ssexec_tree_init },
     { .name = "start",   .help = "bring up all services of a tree", .operands = "tree", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_tree_start },
     { .name = "stop",    .help = "bring down all services of a tree", .operands = "tree", .opts = opts_tree_signal, .nopts = OPT_COUNT(opts_tree_signal), .on_option = &on_tree_signal, .fn = &do_tree_stop },
     { .name = "free",    .help = "bring down all services of a tree and unsupervise them", .operands = "tree", .opts = opts_tree_signal, .nopts = OPT_COUNT(opts_tree_signal), .on_option = &on_tree_signal, .fn = &do_tree_free },

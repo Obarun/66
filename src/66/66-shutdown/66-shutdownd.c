@@ -114,8 +114,8 @@ static inline void stop_trees (void)
         || set_livescan(&info.scandir, info.owner) <= 0)
         log_dieusys(LOG_EXIT_SYS, "set scandir directory") ;
 
-    tree_send(2, 0, 0, &info) ; // 2 = free
-    tree_send(2, SS_BOOT_TREE, 0, &info) ;
+    tree_send(2, 0, 0, 0, &info) ; // 2 = free, master (every enabled tree)
+    tree_send(2, TREE_GROUPS_BOOT, 1, 0, &info) ; // free every tree of the boot group
 
     ssexec_free(&info) ;
 }
