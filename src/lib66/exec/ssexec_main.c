@@ -15,6 +15,7 @@
 #include <66/constants.h>
 #include <string.h>
 #include <unistd.h> // getuid, isatty, access
+#include <errno.h>
 
 
 #include <oblibs/log.h>
@@ -285,19 +286,28 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
             // migration process
             char dst[info->base.len + SS_SYSTEM_LEN + 9 + 1] ;
             auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
-            int r = access(dst, F_OK) ;
-            if (r < 0)
-                log_dieusys(LOG_EXIT_SYS, "access system version file: ", dst) ;
 
-            ssize_t len = file_get_size(dst) ;
-            _alloc_strbuf_(file, len + 1) ;
-            if (!strbuf_read_file(&file, dst))
-                log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
+            if (access(dst, F_OK) < 0) {
 
-            if (sanitize_migrate(info, file.s)) {
-                log_trace("write system version file with version: ", SS_VERSION) ;
+                if (errno != ENOENT)
+                    log_dieusys(LOG_EXIT_SYS, "access system version file: ", dst) ;
+
+                log_trace("initialize system version file with version: ", SS_VERSION) ;
                 if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
                     log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+
+            } else {
+
+                ssize_t len = file_get_size(dst) ;
+                _alloc_strbuf_(file, len + 1) ;
+                if (!strbuf_read_file(&file, dst))
+                    log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
+
+                if (sanitize_migrate(info, file.s)) {
+                    log_trace("write system version file with version: ", SS_VERSION) ;
+                    if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
+                        log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+                }
             }
         }
 
