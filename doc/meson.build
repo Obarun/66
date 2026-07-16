@@ -45,7 +45,7 @@ html_pages = [
   '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
   '66-reconfigure', '66-reload', '66-remove', '66-resolve', '66-restart',
   '66-rosetta', '66-runstate', '66-scandir', '66-service-configuration-file',
-  '66-shutdown', '66-shutdownd', '66-signal', '66-snapshot', '66-supervise', '66-svctl',
+  '66-shutdownd', '66-signal', '66-snapshot', '66-supervise', '66-svctl',
   '66-standard-io-redirection', '66-start', '66-state', '66-status',
   '66-stop', '66-suspend', '66-hibernate', '66-tree', '66-umountall',
   '66-upgrade', '66-upgrade-process', '66-version', '66-wall',
@@ -72,7 +72,7 @@ man5_pages = [
 
 # 7 pages — man section 8 (strict mirror of make-man.sh)
 man8_pages = [
-  '66-boot', '66-eventd', '66-hpr', '66-shutdown', '66-shutdownd', '66-supervise', '66-svctl', '66-umountall',
+  '66-boot', '66-eventd', '66-hpr', '66-shutdownd', '66-supervise', '66-svctl', '66-umountall',
 ]
 
 # Mkdocs uses the same set as HTML.
