@@ -57,7 +57,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
 
-- It initiates the early services of *TREE* invocating [66 -v VERBOSITY -l LIVE tree init TREE](66-tree.html#init).
+- It initiates the early services of every tree of the `boot` group invocating [66 -v VERBOSITY -l LIVE tree init --group boot](66-tree.html#init) — or of *TREE* alone when that key is set.
 
 - It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](66-scandir.html) is executed).
 
@@ -65,7 +65,7 @@ When booting a system, command *boot* performs the following operations:
 
     * The child is blocked until the `catch-all` logger runs.
 
-    * The child starts any service of tree *TREE*.
+    * The child starts the services of every tree of the `boot` group (or of *TREE* when pinned).
 
     * The child becomes a session leader.
 
@@ -73,7 +73,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It execs into [66 -v VERBOSITY -l LIVE scandir start](66-scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
 
-    * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services that are defined in *TREE* where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
+    * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services of the `boot` group (or of *TREE* when pinned), where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
     * The child then brings up the services of every enabled tree.
 
@@ -85,7 +85,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot th
 
 - `init` : the command *boot* binary is not meant to be called directly or be linked to the binary directory because it takes command line options. Therefore the `init` skeleton file is used to pass any options to command *boot*. By default command *boot* is launched without options. This file is installed at `%%bindir%%/init`.
 
-- `init.conf` : this file contains a set of `key=value` pairs. ***All*** keys are mandatory where the name of the key ***must not*** be changed. This is the file available to a user to configure the boot process. By default:
+- `init.conf` : this file contains a set of `key=value` pairs available to a user to configure the boot process. A key that is absent keeps its built-in default, so every key is optional; the name of a key ***must not*** be changed. By default:
 
     * `VERBOSITY=1` : increases/decreases the verbosity of the *stage1* process.
 
@@ -93,7 +93,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot th
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
-    * `TREE=boot` : name of the *tree* to start. This *tree* should contain a sane set of services to bring up the machine into an operating system. Service marked `earlier` will start early at the invocation of [tree init](66-tree.html#init) command. *stage2* will then start any other service type. It is the responsibility of the system administrator to build this tree without errors.
+    * `TREE=` : ***optional***, and empty by default. When set, it pins boot to a single *tree* of that name: *stage1* initiates its `earlier` services and *stage2* starts the rest. When left empty (the default), boot instead brings up **every tree of the `boot` group**, whatever their names — and it is a no-op if no tree is in that group. A tree is put in the boot group with [66 tree create -o groups=boot](66-tree.html) (such a tree cannot be enabled, which keeps it out of the enabled-trees wave). It is the responsibility of the system administrator to build these trees without errors.
 
     * `UMASK=0022` : sets the value of the initial file umask for all starting processes in octal.
 

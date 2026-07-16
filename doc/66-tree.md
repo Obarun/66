@@ -437,16 +437,20 @@ This command initiate services of a tree to a scandir directory
 #### Interface
 
 ```
-66 tree init [ -h ] tree
+66 tree init [ -h ] [ -g group ] tree
 ```
 
-The behavior of this subcommand depends on the state of the [scandir](66-scandir.html). If the scandir is not running, this command will initiate earlier services of *tree*; otherwise it initiates all *enabled* services within *tree*.
+The behavior of this subcommand depends on the state of the [scandir](66-scandir.html). If the scandir is not running, this command will initiate earlier services; otherwise it initiates all *enabled* services.
 
-Users, even system administrator, should not need to directly invoke this command. This subcommand is primarily used internally by `66 boot` command to initiate earlier services of *tree*. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command if services were not initiated previously.
+Without **-g**, it acts on the single *tree* given as operand. With **-g** *group*, *tree* is omitted and the command acts on every tree of that *group* at once, aggregating their services.
+
+Users, even system administrator, should not need to directly invoke this command. This subcommand is primarily used internally by `66 boot` command, which calls it as `66 tree init --group boot` to initiate the earlier services of the boot group. Initiation of services is made automatically at each invocation of `66 start` or `66 tree start` command if services were not initiated previously.
 
 #### Options
 
 - **-h, --help**: prints this help.
+
+- **-g, --group** *group*: initiate every tree of *group* instead of a single named tree. The *tree* operand must be omitted.
 
 #### Initialization process
 
