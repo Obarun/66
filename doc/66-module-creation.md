@@ -71,13 +71,19 @@ User = ( root )
 WEBAPP_WORKER=yes
 
 [Regex]
-Configure = @I
-InFiles = ( :server:LISTENADDR=0.0.0.0:8080 )
+Configure = "@I"
+InFiles = ( :server:LISTENADDR=0.0.0.0:8080 ::INSTANCE=@I )
 ```
 
 `@I` is an [identifier](66-identifier.html): for `webapp@blog` it expands to the instance
-name, **`blog`** (the part after the `@`). Identifiers are substituted **first**, before
-anything else in the module, so `Description` above becomes `"web application instance blog"`.
+name, **`blog`** (the part after the `@`). In the **module frontend itself** (`webapp@`,
+parsed as `webapp@blog`), identifiers are substituted directly, so `Description` above becomes
+`"web application instance blog"`, and the `InFiles` value `@I` becomes `blog`. `Configure`
+takes a [quoted](66-frontend.html#quote) value, so `@I` must be written `"@I"`.
+
+Inside services are different: an identifier there is **not** the instance (see
+[Step 2](#step-2-the-inside-services)). That is why the instance is carried into them through
+the `::INSTANCE=@I` `InFiles` rule above.
 
 `[Environment]` holds the module's tunables. `WEBAPP_WORKER` is the knob the admin flips per
 instance with [66 configure](66-configure.html); we read it from the
@@ -95,46 +101,55 @@ those same local names.
 # frontend/server
 [Main]
 Type = classic
-Description = "web server for @I"
+Description = "web server for INSTANCE"
 
 [Start]
-Execute = ( httpd -listen LISTENADDR -name @I )
+Execute = ( httpd -listen LISTENADDR -name INSTANCE )
 ```
 
 ```ini
 # frontend/worker
 [Main]
 Type = classic
-Description = "background worker for @I"
+Description = "background worker for INSTANCE"
 Depends = ( server )
 
 [Start]
-Execute = ( webapp-worker --app @I )
+Execute = ( webapp-worker --app INSTANCE )
 ```
 
 `worker` depends on `server`: a dependency **inside** the module. It resolves to the module's
 own `server` because `66` looks the name up in `frontend/` only — this is the isolation rule.
 A `Depends = ( something-outside )` here would fail at parse: an inside service cannot reach
-out. Both `@I` occurrences will become `blog`; `LISTENADDR` is handled next.
+out.
+
+**Careful with `@I` inside a member:** it does **not** expand to the instance here. Each inside
+service is parsed as its own frontend named after its local name, so `@I` in `frontend/server`
+would become `server`, not `blog`. To use the instance name inside a member, carry it in with an
+[`InFiles`](#step-3-the-regex-transformations) rule — that is what `INSTANCE` is above: the
+module's `::INSTANCE=@I` rule replaces it with `blog`. `LISTENADDR` is filled the same way, next.
 
 ## Step 3 — the `[Regex]` transformations
 
 When `66` parses `webapp@blog` it copies the whole `webapp@` directory to a working
 `webapp@blog` and rewrites the copy through the [`[Regex]`](66-frontend.html#section-regex)
-keys, in this fixed order: **identifiers (`@I`) → `InFiles` → `Directories` → `Files` →
-`configure`**. The four regex keys:
+keys, in this fixed order: **`InFiles` → `Directories` → `Files` → `configure`**. Identifiers
+such as `@I` are already resolved when the module frontend is read — in its own keys and in
+these regex *values* — they are **not** re-applied to the inside frontends, which resolve their
+own identifiers against their local names. The four regex keys:
 
 - **`InFiles`** — replace text *inside* the `frontend/` files. `:name:regex=value` targets one
-  file; `::regex=value` targets all. Our module uses it to inject the listening address into
-  `server`:
+  file; `::regex=value` targets all. Our module uses it to set the listening address on
+  `server` and to carry the instance name into every inside service:
 
   ```ini
-  InFiles = ( :server:LISTENADDR=0.0.0.0:8080 )
+  InFiles = ( :server:LISTENADDR=0.0.0.0:8080 ::INSTANCE=@I )
   ```
 
-  turns `httpd -listen LISTENADDR -name blog` into `httpd -listen 0.0.0.0:8080 -name blog`.
-  (The replacement value may itself contain identifiers — `@I` is expanded before the regex
-  runs — so `::SOCK=/run/@I.sock` would inject `/run/blog.sock`.)
+  turns `httpd -listen LISTENADDR -name INSTANCE` into `httpd -listen 0.0.0.0:8080 -name blog`.
+  The replacement value may itself contain identifiers — `@I` is expanded (against the *module*
+  frontend, so it is the instance) before the regex runs — so `::SOCK=/run/@I.sock` would inject
+  `/run/blog.sock`.
 
 - **`Directories`** — rename sub-directories of `frontend/`. `Directories = ( DM=sddm )`
   renames `use-DM/` to `use-sddm/`.
@@ -143,7 +158,7 @@ keys, in this fixed order: **identifiers (`@I`) → `InFiles` → `Directories` 
   file `GENERIC` to `blog`.
 
 - **`Configure`** — the value passed as `$1` to the [configure script](#step-4-the-configure-script).
-  We pass `@I`, so the script receives `blog`.
+  It takes a [quoted](66-frontend.html#quote) value; we pass `"@I"`, so the script receives `blog`.
 
 `webapp@` needs only `InFiles` and `Configure`; `Directories`/`Files` are shown for
 completeness. Keys you do not use may be omitted.
