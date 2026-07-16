@@ -19,7 +19,7 @@ Unless `-w` is given, `66-svctl` writes the commands and exits immediately witho
 ## Options
 
 - **-h, --help**: print this help.
-- **-w, --wait** *uUdDrR*: do not exit until the *service* reaches the wanted state. The accepted values are the same as [66 signal](66-signal.html): `u` up, `U` up and ready (notified), `d` down, `D` down and ready to be brought up, `r` (re)started, `R` (re)started and ready. The wait is performed through the native event mechanism on `servicedir/event` and stays resolve-independent. If the *service* has no `notification-fd`, a readiness wait (`U`/`D`/`R`) is downgraded to its non-ready equivalent (`u`/`d`/`r`).
+- **-w, --wait** *uUdDrR*: do not exit until the *service* reaches the wanted state. The accepted values are the same as [66 signal](66-signal.html): `u` up, `U` up and ready (notified), `d` down, `D` down and ready to be brought up, `r` (re)started, `R` (re)started and ready. The wait is performed through the native event mechanism on `servicedir/event` and stays resolve-independent. If the *service* declares no readiness notification (no `Notify` set), a readiness wait (`U`/`D`/`R`) is downgraded to its non-ready equivalent (`u`/`d`/`r`).
 - **-T, --timeout** *milliseconds*: with `-w`, fail after this delay if the wanted state has not been reached. `0` (the default) waits forever.
 - **-s, --signal** *signal*: send a signal to the supervised process by signal name or number, restricted to the user-available signals listed below.
 - **-a, --alarm**: send a SIGALRM signal.

@@ -1,6 +1,6 @@
 # Standard IO Redirection
 
-The control of IO (Input/Output) redirection can be managed using the keys `StdIn`, `StdOut`, and `StdErr` within the [[Main]](66-frontend.html#section-main) section.
+The control of IO (Input/Output) redirection can be managed using the keys `StdIn`, `StdOut`, and `StdErr` within the [[Execute]](66-frontend.html#section-execute) section.
 
 If none of the `StdIn`, `StdOut`, and `StdErr` keys are defined, the default behavior is to use the `66-log` program. In this case, you can use the [[Logger]](66-frontend.html#section-logger) section to modify the behavior of `66-log` (see the [[Logger]](66-frontend.html#section-logger) section documentation) such as log file rotation.
 
@@ -10,7 +10,7 @@ Depending on the definition and combination of these keys, the behavior will be 
 
 ## StdIn
 
-This key allows redirection of the Standard Input (file descriptor 0) of the service. As indicated in the documentation for the [[Main]](66-frontend.html#section-main) section, this key accepts several values.
+This key allows redirection of the Standard Input (file descriptor 0) of the service. As indicated in the documentation for the [[Execute]](66-frontend.html#section-execute) section, this key accepts several values.
 
 If the key is not defined, it will take the value of StdOut if StdOut is set to 66log or if StdOut is not defined at all.
 
@@ -28,7 +28,7 @@ If the key is not defined, it will take the value of StdOut if StdOut is set to 
 
 ## StdOut
 
-This key allows redirection of the Standard Output (file descriptor 1) of the service. As indicated in the documentation for the [[Main]](66-frontend.html#section-main) section, it accepts several values.
+This key allows redirection of the Standard Output (file descriptor 1) of the service. As indicated in the documentation for the [[Execute]](66-frontend.html#section-execute) section, it accepts several values.
 
 If the key is not defined, it will take the value of StdIn as follows:
 
@@ -52,7 +52,7 @@ This key takes precedence over StdErr depending on the chosen value.
 
 ## StdErr
 
-This key allows redirection of the Standard Error (file descriptor 2) of the service. As indicated in the documentation for the [[Main]](66-frontend.html#section-main) section, it accepts several values.
+This key allows redirection of the Standard Error (file descriptor 2) of the service. As indicated in the documentation for the [[Execute]](66-frontend.html#section-execute) section, it accepts several values.
 
 If the key is not defined, it will be set to inherit.
 
@@ -87,12 +87,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = 66log
-    StdOut = 66log
-    StdErr = inherit
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = 66log
+    StdOut = 66log
+    StdErr = inherit
     ```
 
 - A frontend file with
@@ -103,10 +105,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = 66log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = 66log
     ```
 
     is strictly equal to
@@ -117,12 +121,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = 66log
-    StdOut = 66log
-    StdErr = inherit
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = 66log
+    StdOut = 66log
+    StdErr = inherit
     ```
 
 - A frontend file with
@@ -133,10 +139,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdOut = 66log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdOut = 66log
     ```
 
     is strictly equal to
@@ -147,12 +155,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = 66log
-    StdOut = 66log
-    StdErr = inherit
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = 66log
+    StdOut = 66log
+    StdErr = inherit
     ```
 
 - A frontend file with
@@ -163,10 +173,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = tty:/dev/tty1
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
     is strictly equal to
@@ -177,12 +189,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = tty:/dev/tty1
     StdOut = tty:/dev/tty1
     StdErr = inherit
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -193,11 +207,13 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = tty:/dev/tty1
     StdOut = syslog
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
     is strictly equal to
@@ -208,12 +224,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = tty:/dev/tty1
-    StdOut = tty:/dev/tty1
-    StdErr = inherit
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = tty:/dev/tty1
+    StdOut = tty:/dev/tty1
+    StdErr = inherit
     ```
 
 - A frontend file with
@@ -224,11 +242,13 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = null
     StdOut = syslog
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
     is strictly equal to
@@ -239,12 +259,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = null
     StdOut = syslog
     StdErr = syslog
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -255,10 +277,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = null
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = null
     ```
 
     is strictly equal to
@@ -269,12 +293,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = null
     StdOut = inherit
     StdErr = inherit
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -285,10 +311,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdIn = close
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = close
     ```
 
     is strictly equal to
@@ -299,12 +327,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = close
     StdOut = parent
     StdErr = inherit
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -315,10 +345,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdOut = syslog
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdOut = syslog
     ```
 
     is strictly equal to
@@ -329,12 +361,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = parent
     StdOut = syslog
     StdErr = syslog
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -345,10 +379,12 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdOut = tty:/dev/tty1
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdOut = tty:/dev/tty1
     ```
 
     is strictly equal to
@@ -359,12 +395,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = parent
     StdOut = tty:/dev/tty1
     StdErr = inherit
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -375,11 +413,13 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
-    StdOut = tty:/dev/tty1
-    StdErr = file:/var/log/connman.log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdOut = tty:/dev/tty1
+    StdErr = file:/var/log/connman.log
     ```
 
     is strictly equal to
@@ -390,12 +430,14 @@ Let's take some examples:
     Description = "connman daemon"
     Version = 0.0.1
     User = ( root )
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = parent
     StdOut = tty:/dev/tty1
     StdErr = file:/var/log/connman.log
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -421,12 +463,14 @@ Let's take some examples:
     Version = 0.0.1
     User = ( root )
     Options = (!log)
+
+    [Start]
+    Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
     StdIn = parent
     StdOut = parent
     StdErr = parent
-
-    [Start]
-    Execute = ( connmand -n --nobacktrace --nodnsproxy )
     ```
 
 - A frontend file with
@@ -438,11 +482,13 @@ Let's take some examples:
     Version = 0.0.1
     User = ( root )
     Options = (!log)
-    StdOut = 66log
-    StdErr = file:/var/log/connmand.log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdOut = 66log
+    StdErr = file:/var/log/connmand.log
     ```
 
     is strictly equal to
@@ -454,10 +500,12 @@ Let's take some examples:
     Version = 0.0.1
     User = ( root )
     Options = (!log)
-    StdIn = parent
-    StdOut = parent
-    StdErr = file:/var/log/connmand.log
 
     [Start]
     Execute = ( connmand -n --nobacktrace --nodnsproxy )
+
+    [Execute]
+    StdIn = parent
+    StdOut = parent
+    StdErr = file:/var/log/connmand.log
     ```

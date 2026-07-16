@@ -75,13 +75,13 @@ and for the event system.
 
 | Section | Required | Purpose |
 |---|---|---|
-| [`[Main]`](#section-main) | **yes** | Identity, dependencies, supervision policy, permissions, I/O. |
-| [`[Start]`](#section-start) | **yes** | The command that starts the service, and how it is built. |
+| [`[Main]`](#section-main) | **yes** | Identity, dependencies, supervision policy, permissions. |
+| [`[Start]`](#section-start) | **yes** | The command that starts the service, its start timeout and readiness. |
 | [`[Stop]`](#section-stop) | no | A custom stop sequence (defaults to signalling the process). |
 | [`[Logger]`](#section-logger) | no | Behaviour of the native `66-log` logger. |
 | [`[Environment]`](#section-environment) | no | Environment variables for the service. |
 | [`[Regex]`](#section-regex) | no | Substitution rules — `module` services only. |
-| [`[Execute]`](#section-execute) | no | Resource limits, capabilities and process attributes. |
+| [`[Execute]`](#section-execute) | no | Resource limits, capabilities, process attributes and I/O redirection. |
 | [`[Event]`](#section-event) | no | Turn service into an event reactor. |
 
 `[Main]` **must be declared first**. Beyond that, order does not matter.
@@ -110,8 +110,8 @@ the formats themselves are described once in
 # Section [Main]
 
 This section is *mandatory* and **must be declared first**. Its keys fall into
-five groups: identity, dependencies, supervision policy, permissions & files, and
-standard I/O. A sixth group — the event *source* keys — applies only when
+four groups: identity, dependencies, supervision policy, and permissions & files.
+A fifth group — the event *source* keys — applies only when
 [`Type = event`](#type).
 
 ## Identity
@@ -299,16 +299,16 @@ Defines one or more services that cannot run or be enabled simultaneously with t
 ## Supervision & restart policy
 
 These keys control what the supervisor does with the process: whether it starts
-on boot, how readiness is signalled, and how crash-looping is handled.
+on boot, and how crash-looping is handled. (Readiness signalling and the stop
+signal live in [[Start]](#section-start) / [[Stop]](#section-stop) — see
+[`Notify`](#notify) and [`DownSignal`](#downsignal).)
 
 | Key | Syntax | Required | Default | Role |
 |---|---|---|---|---|
 | [`Options`](#options) | brackets | no | `log` on | opt-in/out behaviours (currently: the logger) |
 | [`Flags`](#flags) | brackets | no | — | `down` (start manually) / `earlier` (start with the scandir) |
-| [`Notify`](#notify) | uint | no | — | readiness-notification file descriptor |
 | [`MaxDeath`](#maxdeath) | uint | no | `5` | crash budget before *failed* (`0` = never fail) |
 | [`MaxDeathInterval`](#maxdeathinterval) | uint | no | `30000` | crash-counting window, in ms |
-| [`DownSignal`](#downsignal) | inline | no | `SIGTERM` | signal used to stop/restart the process |
 
 ### Options
 
@@ -346,24 +346,6 @@ Flags = (down earlier)
 
     * down: This will create the *down* file used by the supervisor. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
     * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
-
-### Notify
-
-```ini
-Notify = 3
-```
-
-Enables readiness notification. Creates `notification-fd` containing the specified file descriptor number.
-
-* mandatory: no
-
-* syntax: [uint](#uint)
-
-* valid values:
-
-    * Any valid number.
-
-    This will create the file *notification-fd*. Once this file is created the service supports readiness notification. The value equals the number of the file descriptor that the service writes its readiness notification to — usually a dedicated descriptor such as `3` (or higher), matching the option your daemon uses to announce its readiness. Standard output (descriptor `1`) is normally unsuitable here, as it is redirected to the logger. When the service receives a signal and this file is present containing a valid descriptor number, [66](66.html) command will wait for the notification from the service and broadcast its readiness.
 
 ### MaxDeath
 
@@ -403,31 +385,21 @@ The length, in milliseconds, of the time window over which [MaxDeath](#maxdeath)
 
     The window is measured on a monotonic clock and starts at the first counted death. If the service reaches `MaxDeath` deaths before the window elapses, it is declared *failed*. Otherwise — the window expires with fewer deaths — the window is re-armed: the next death starts a fresh window with the count reset to one. The measurement lives in volatile runtime state and is cleared on reboot. Because restarts are throttled to roughly one per second, exhausting the budget takes on the order of `MaxDeath` seconds; setting `MaxDeathInterval` much below that makes the *failed* state effectively unreachable through crash-looping alone.
 
-### DownSignal
+### Deprecated `[Main]` keys (moved)
 
-```ini
-DownSignal = SIGTERM
-```
+Several keys that describe a *transition* or the process *execution* used to live in
+`[Main]`; each now belongs to the section of its domain. They are **still accepted in
+`[Main]` for backward compatibility**, but emit a deprecation warning at parse time and
+will be removed from `[Main]` in a future release. When a key is declared both in
+`[Main]` and in its canonical section, the **canonical section wins**.
 
-Specifies which signal to send when stopping or reloading the service.
-
-* mandatory: no
-
-* syntax: [inline](#inline)
-
-* valid value:
-
-    * The name or number of a signal.
-
-    This will create the file *down-signal* which is used to kill the supervised process when a [reload](66-reload.html), [restart](66-restart.html) or [stop](66-stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
-
-### TimeoutStart / TimeoutStop (deprecated in [Main])
-
-These keys have moved to the [[Start]](#section-start) and [[Stop]](#section-stop)
-sections respectively. They are still accepted here for backward compatibility, but
-emit a deprecation warning at parse time and will be removed from `[Main]` in a
-future release — declare `TimeoutStart` in [[Start]](#section-start) and
-`TimeoutStop` in [[Stop]](#section-stop) instead.
+| Deprecated in `[Main]` | Declare instead |
+|---|---|
+| `Notify` | [`Notify`](#notify) in [[Start]](#section-start) |
+| `DownSignal` | [`DownSignal`](#downsignal) in [[Stop]](#section-stop) |
+| `StdIn` / `StdOut` / `StdErr` | [`StdIn`](#stdin) / [`StdOut`](#stdout) / [`StdErr`](#stderr) in [[Execute]](#section-execute) |
+| `TimeoutStart` | [`Timeout`](#timeout-start) in [[Start]](#section-start) |
+| `TimeoutStop` | [`Timeout`](#timeout-stop) in [[Stop]](#section-stop) |
 
 ## Permissions & files
 
@@ -498,84 +470,6 @@ Automatically activate the service within a named service tree. If a correspondi
     The service will automatically be activated at the tree name set in the *InTree* key value.
 
     **Note**: If a corresponding [seed](66-tree.html#seed-files) file exist on your system, its will be used to create and configure the tree.
-
-## Standard I/O redirection
-
-`StdIn`, `StdOut` and `StdErr` control where the service's three standard streams
-go. They accept a plain keyword or, for some, a `type:/path` form ([simple-colon](#simple-colon)).
-See [Standard IO redirection](66-standard-io-redirection.html) for the full model.
-
-| Key | Default | Common values |
-|---|---|---|
-| [`StdIn`](#stdin) | `66log` | `66log` · `null` · `close` · `parent` · `tty:/path` |
-| [`StdOut`](#stdout) | `66log` | `66log` · `file:/path` · `syslog` · `console` · `null` · `close` · `parent` · `tty:/path` |
-| [`StdErr`](#stderr) | `inherit` | `inherit` · `file:/path` · `syslog` · `console` · `null` · `close` · `parent` · `tty:/path` |
-
-### StdIn
-
-```ini
-StdIn = null
-```
-
-Controls standard I/O redirection for the standard input entries.
-
-* mandatory: no
-
-* syntax: [inline](#inline),[simple-colon](#simple-colon)
-
-* valid values:
-
-    * tty:/path/to/tty: Redirects Standard Input to the given tty specified by the path and try to become the controlling process of the terminal. The path must be absolute and exist. If the terminal is already being controlled by another process and the operation returns an EPERM failure, 66 will warn the user and continue its execution. If the failure is other than EPERM, it will terminate.
-    * 66log: Redirects Standard Input to the socket of the `66-log` program. This is the default.
-    * null: Redirects Standard Input to `/dev/null`
-    * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the [66-supervise](66-supervise.html) program.
-    * close: Close the Standard Input.
-
-### StdOut
-
-```ini
-StdOut = 66log
-```
-
-Controls standard I/O redirection for the standard output entries.
-
-* mandatory: no
-
-* syntax: [inline](#inline),[simple-colon](#simple-colon)
-
-* valid values:
-
-    * tty:/path/to/tty: Redirects Standard Output to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
-    * file:/path/to/file: Redirects Standard Output to the given file specified by the path. The path must be absolute. If the directory of the file and the file itself do not exist, *66* will create it. In that case, the directory will get `0755` permissions and the file will be set with `0666` permissions.
-    * console: Redirects Standard Output to the active console. It does not try to take control of the console.
-    * 66log: Redirects Standard Output to the socket of the `66-log` program. This is the default.
-    * syslog: Redirects Standard Output to the `/dev/log` socket.
-    * null: Redirects Standard Output to `/dev/null`.
-    * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `66-supervise` program.
-    * close: Closes the Standard Output.
-
-### StdErr
-
-```ini
-StdErr = inherit
-```
-
-Controls standard I/O redirection for the standard error entries.
-
-* mandatory: no
-
-* syntax: [inline](#inline),[simple-colon](#simple-colon)
-
-* valid values:
-
-    * tty:/path/to/tty: Redirects Standard Error to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
-    * file:/path/to/file: Redirects Standard Error to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
-    * console: Redirects Standard Error to the active console. It does not try to take control of the console.
-    * syslog: Redirects Standard Error to the `/dev/log` socket.
-    * null: Redirects Standard Error to `/dev/null`.
-    * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `66-supervise` program.
-    * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
-    * close: Closes the Standard Error.
 
 ## Event source keys — `Type = event` only
 
@@ -720,7 +614,8 @@ This section is *mandatory*. It defines how the service is started.
 |---|---|---|---|---|
 | [`Execute`](#execute) | brackets | **yes** | — | the command(s) that start the service |
 | [`RunAs`](#runas) | inline/simple-colon | no | service owner | drop privileges to a user before exec |
-| [`TimeoutStart`](#timeoutstart) | uint | no | `0` (no timeout) | max time for the start transition, in ms |
+| [`Timeout`](#timeout-start) | uint | no | `0` (no timeout) | max time for the start transition, in ms |
+| [`Notify`](#notify) | uint | no | — | readiness-notification file descriptor |
 
 ### Build (deprecated)
 
@@ -780,10 +675,10 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 
     **Note**: The field will be used as is. No changes will be applied at all except in `custom` case (see [Appendix B](#appendix-b-the-execute-key-in-depth)). It's the responsibility of the author to make sure that the content of this field is correct.
 
-### TimeoutStart
+### Timeout (Start)
 
 ```ini
-TimeoutStart = 2000
+Timeout = 2000
 ```
 Specifies the maximum time (in milliseconds) the service may take to **start**. If
 the start transition does not complete within this time, `66` kills the service
@@ -798,18 +693,46 @@ and reports the transition as failed.
     * Any valid number, in milliseconds. The default is `0`, which means no start
       timeout — the service may take as long as it needs to come up.
 
+    The former name `TimeoutStart` is still accepted here as a deprecated alias of
+    `Timeout`; it emits a deprecation warning and will be removed in a future release.
+
+### Notify
+
+```ini
+Notify = 3
+```
+
+Enables readiness notification: declares the file descriptor on which the service announces it is ready.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid values:
+
+    * A file descriptor number of `3` or higher (values below `3` are rejected).
+
+    The value is the number of the file descriptor the service writes its readiness notification to — usually a dedicated descriptor such as `3`, matching the option your daemon uses to announce its readiness. Standard output (descriptor `1`) is normally unsuitable here, as it is redirected to the logger. The value is stored in the service's resolve. When the service is started, [66-supervise](66-supervise.html) hands the process a pipe on that descriptor and waits for the service to write to it before reporting the service *up and ready*.
+
 # Section [Stop]
 
 This section is *optional*. It handles the stop process of the service.
 
 It shares the [`RunAs`](#runas) and [`Execute`](#execute) keys
 with [[Start]](#section-start) — they behave identically — plus its own
-`TimeoutStop` key.
+[`Timeout`](#timeout-stop) and [`DownSignal`](#downsignal) keys.
 
-### TimeoutStop
+| Key | Syntax | Required | Default | Role |
+|---|---|---|---|---|
+| [`Execute`](#execute) | brackets | no | signal the process | the command(s) that stop the service |
+| [`RunAs`](#runas) | inline/simple-colon | no | service owner | drop privileges to a user before exec |
+| [`Timeout`](#timeout-stop) | uint | no | `0` (no timeout) | max time for the stop transition, in ms |
+| [`DownSignal`](#downsignal) | inline | no | `SIGTERM` | signal used to stop/restart the process |
+
+### Timeout (Stop)
 
 ```ini
-TimeoutStop = 5000
+Timeout = 5000
 ```
 
 Specifies the maximum time (in milliseconds) the service's **stop** sequence may
@@ -825,17 +748,41 @@ this time, `66` kills the service.
     * Any valid number, in milliseconds. The default is `0`, which means no stop
       timeout — the stop script may run as long as it needs.
 
+    The former name `TimeoutStop` is still accepted here as a deprecated alias of
+    `Timeout`; it emits a deprecation warning and will be removed in a future release.
+
+### DownSignal
+
+```ini
+DownSignal = SIGTERM
+```
+
+Specifies which signal to send when stopping or reloading the service.
+
+* mandatory: no
+
+* syntax: [inline](#inline)
+
+* valid value:
+
+    * The name or number of a signal.
+
+    This will create the file *down-signal* which is used to kill the supervised process when a [reload](66-reload.html), [restart](66-restart.html) or [stop](66-stop.html) command is used. If the file does not exist `SIGTERM` will be used by default.
+
 # Section [Logger]
 
 This section is optional and controls the behavior of the default logging system used by *66*, which is handled by its native `66-log` program.
 
-It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Main]](#section-main) **must be set** to `66log`, or these keys **must not** be defined at all.
+It will only have effects if value *log* was **not** prefixed by an exclamation mark to the [`Options`](#options) key in the [[Main]](#section-main) section. Additionally, the `StdIn` or `StdOut` keys from the [[Execute]](#section-execute) section **must be set** to `66log`, or these keys **must not** be defined at all.
 
 This section also accepts the [`RunAs`](#runas) and
-[`Execute`](#execute) keys from [[Start]](#section-start), and the
-[`TimeoutStart`](#timeoutstart) / [`TimeoutStop`](#timeoutstop) keys from
-[[Start]](#section-start) and [[Stop]](#section-stop). They behave the same way
-here, and none of them is mandatory — when omitted, the default behaviour applies.
+[`Execute`](#execute) keys (behaving as in [[Start]](#section-start)), plus a single
+`Timeout` key giving the logger's start timeout. The logger has **no stop
+transition** — it runs a single script and is brought down by a signal — so there is
+no stop timeout, even if an `Execute` is declared. `Timeout` is not mandatory; when
+omitted, the default behaviour applies. The former name `TimeoutStart` is still
+accepted as a deprecated alias of `Timeout` (it warns and will be removed in a future
+release); `TimeoutStop` is no longer a valid logger key.
 
 The keys specific to the logger:
 
@@ -910,7 +857,7 @@ Two possible examples for the [[Logger]](#section-logger) section:
 ````
 [Logger]
 RunAs = user
-TimeoutStop = 10000
+Timeout = 10000
 Backup = 10
 Timestamp = iso
 ````
@@ -1100,8 +1047,8 @@ In-file regex replacements for module files. Use `:filename:regex=replacement` o
 # Section [Execute]
 
 This section is *optional*. It configures tasks executed just **before** `exec` for
-the service’s start and stop processes: resource limits, process attributes and
-Linux capabilities.
+the service’s start and stop processes: resource limits, process attributes,
+Linux capabilities and standard I/O redirection.
 
 **How resource limits are applied.** Each `LimitXXX` key sets both the soft
 (`rlim_cur`) and hard (`rlim_max`) limit: `66` reads the current limits with
@@ -1309,6 +1256,84 @@ Specifies Linux capabilities that a service and its child processes automaticall
     For root-owned services, if `CapsBound` is not set, the service checks the system’s current set of allowed permissions to decide which capabilities can be used. If `CapsBound` is set, only the capabilities listed in `CapsBound` are considered. For example, if `CapsBound = (CAP_SYS_NICE)` and `CapsAmbient = (CAP_DAC_OVERRIDE)`, the `CAP_DAC_OVERRIDE` capability will be skipped because it is not in the `CapsBound` list, and a warning will be logged.
 
     Requires Linux kernel version `5.6` or later.
+
+## Standard I/O redirection
+
+`StdIn`, `StdOut` and `StdErr` control where the service's three standard streams
+go. They accept a plain keyword or, for some, a `type:/path` form ([simple-colon](#simple-colon)).
+See [Standard IO redirection](66-standard-io-redirection.html) for the full model.
+
+| Key | Default | Common values |
+|---|---|---|
+| [`StdIn`](#stdin) | `66log` | `66log` · `null` · `close` · `parent` · `tty:/path` |
+| [`StdOut`](#stdout) | `66log` | `66log` · `file:/path` · `syslog` · `console` · `null` · `close` · `parent` · `tty:/path` |
+| [`StdErr`](#stderr) | `inherit` | `inherit` · `file:/path` · `syslog` · `console` · `null` · `close` · `parent` · `tty:/path` |
+
+### StdIn
+
+```ini
+StdIn = null
+```
+
+Controls standard I/O redirection for the standard input entries.
+
+* mandatory: no
+
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+* valid values:
+
+    * tty:/path/to/tty: Redirects Standard Input to the given tty specified by the path and try to become the controlling process of the terminal. The path must be absolute and exist. If the terminal is already being controlled by another process and the operation returns an EPERM failure, 66 will warn the user and continue its execution. If the failure is other than EPERM, it will terminate.
+    * 66log: Redirects Standard Input to the socket of the `66-log` program. This is the default.
+    * null: Redirects Standard Input to `/dev/null`
+    * parent: This is a no-op redirection. The Standard Input is inherited from the parent process, meaning the [66-supervise](66-supervise.html) program.
+    * close: Close the Standard Input.
+
+### StdOut
+
+```ini
+StdOut = 66log
+```
+
+Controls standard I/O redirection for the standard output entries.
+
+* mandatory: no
+
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+* valid values:
+
+    * tty:/path/to/tty: Redirects Standard Output to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
+    * file:/path/to/file: Redirects Standard Output to the given file specified by the path. The path must be absolute. If the directory of the file and the file itself do not exist, *66* will create it. In that case, the directory will get `0755` permissions and the file will be set with `0666` permissions.
+    * console: Redirects Standard Output to the active console. It does not try to take control of the console.
+    * 66log: Redirects Standard Output to the socket of the `66-log` program. This is the default.
+    * syslog: Redirects Standard Output to the `/dev/log` socket.
+    * null: Redirects Standard Output to `/dev/null`.
+    * parent: This is a no-op redirection. The Standard Output is inherited from the parent process, meaning the `66-supervise` program.
+    * close: Closes the Standard Output.
+
+### StdErr
+
+```ini
+StdErr = inherit
+```
+
+Controls standard I/O redirection for the standard error entries.
+
+* mandatory: no
+
+* syntax: [inline](#inline),[simple-colon](#simple-colon)
+
+* valid values:
+
+    * tty:/path/to/tty: Redirects Standard Error to the given tty specified by the path. The path must be absolute and exist. It does not try to take control of the terminal.
+    * file:/path/to/file: Redirects Standard Error to the given file specified by path. Path must be absolute. If the directory of file and the file itself doesn't exist, *66* create it. In that case, the directory get `0755` as permissions and the file is set with `0666` as permissions.
+    * console: Redirects Standard Error to the active console. It does not try to take control of the console.
+    * syslog: Redirects Standard Error to the `/dev/log` socket.
+    * null: Redirects Standard Error to `/dev/null`.
+    * parent: This is a no-op redirection. The Standard Error is inherited from the parent process, meaning the `66-supervise` program.
+    * inherit: Duplicates the Standard Error to the Standard Output. This is the default.
+    * close: Closes the Standard Error.
 
 # Section [Event]
 
@@ -1789,16 +1814,11 @@ RequiredBy = ()
 OptsDepends = ()
 Options = ()
 Flags = ()
-Notify =
 User = ()
 MaxDeath =
 MaxDeathInterval =
-DownSignal =
 CopyFrom = ()
 InTree =
-StdIn =
-StdOut =
-StdErr =
 Provide = ()
 Conflict = ()
 EventType =
@@ -1811,20 +1831,21 @@ Every =
 [Start]
 RunAs =
 Execute = ()
-TimeoutStart =
+Timeout =
+Notify =
 
 [Stop]
 RunAs =
 Execute = ()
-TimeoutStop =
+Timeout =
+DownSignal =
 
 [Logger]
 RunAs =
 Backup =
 MaxSize =
 Timestamp =
-TimeoutStart =
-TimeoutStop =
+Timeout =
 Execute = ()
 
 [Environment]
@@ -1859,6 +1880,9 @@ UMask =
 ChangeDirectory = /directory/path
 CapsBound = ()
 CapsAmbient = ()
+StdIn =
+StdOut =
+StdErr =
 
 [Event]
 EventType =

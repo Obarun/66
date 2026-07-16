@@ -28,10 +28,10 @@ By understanding these identifiers and their replacements, you can effectively c
     Description = "dbus session daemon for @U user"
     User = ( user )
     MaxDeath = 3
-    Notify = 4
-    TimeoutStart = 3000
 
     [Start]
+    Timeout = 3000
+    Notify = 4
     Execute = (
         /usr/bin/execl-cmdline -s { /usr/bin/dbus-daemon ${Args} }
     )
@@ -55,10 +55,10 @@ By understanding these identifiers and their replacements, you can effectively c
     Description = "dbus session daemon for oblive user"
     User = ( user )
     MaxDeath = 3
-    Notify = 4
-    TimeoutStart = 3000
 
     [Start]
+    Timeout = 3000
+    Notify = 4
     Execute = (
         /usr/bin/execl-cmdline -s { /usr/bin/dbus-daemon ${Args} }
     )

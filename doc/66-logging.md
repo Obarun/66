@@ -6,8 +6,8 @@ the service writes and stores it, rotated and optionally timestamped, in a
 human-readable file. This guide explains how that wiring works and how to tune
 or disable it.
 
-The pieces live in two places of the [frontend file](66-frontend.html): the
-`Options` and `StdOut`/`StdErr` keys in `[Main]`, and the whole `[Logger]`
+The pieces live in the [frontend file](66-frontend.html): the `Options` key in
+`[Main]`, the `StdOut`/`StdErr` keys in `[Execute]`, and the whole `[Logger]`
 section.
 
 ## How a service's log is wired
@@ -54,8 +54,8 @@ tail -F %%system_log%%/foo/current
 ## Tuning: the [Logger] section
 
 Optional. It controls rotation and timestamping. It also accepts `RunAs`,
-`Execute`, `TimeoutStart` and `TimeoutStop`, which behave as in
-[[Start]](66-frontend.html#section-start) and [[Main]](66-frontend.html#section-main).
+`Execute` and a single `Timeout` (the logger's start timeout — it has no stop
+transition), behaving as in [[Start]](66-frontend.html#section-start).
 
 ```
 [Logger]

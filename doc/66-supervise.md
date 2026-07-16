@@ -25,10 +25,10 @@ One `66-supervise` process supervises exactly one service:
 
 Unlike a classic supervisor that reads a set of per-service files, `66-supervise` takes its configuration directly from the service's resolve database, compiled by [66 parse](66-parse.html) from the [frontend](66-frontend.html) file. The relevant frontend keys are:
 
-- `Notify`: the file descriptor on which the service announces its readiness.
-- `TimeoutStart` / `TimeoutStop`: the maximum duration of the start / stop transition.
-- `MaxDeath` / `MaxDeathInterval`: the crash budget (see [Crash budget](#crash-budget)).
-- `DownSignal`: the signal sent to the service to bring it down.
+- `Notify` (in `[Start]`): the file descriptor on which the service announces its readiness.
+- `Timeout` (in `[Start]` / `[Stop]`): the maximum duration of the start / stop transition.
+- `MaxDeath` / `MaxDeathInterval` (in `[Main]`): the crash budget (see [Crash budget](#crash-budget)).
+- `DownSignal` (in `[Stop]`): the signal sent to the service to bring it down.
 
 The only configuration kept as a runtime file is `down`: its presence means *keep the service down*. [66 start](66-start.html) and [66 stop](66-stop.html) create and remove it.
 
