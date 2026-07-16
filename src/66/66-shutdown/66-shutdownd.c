@@ -38,6 +38,7 @@
 #include <oblibs/stream.h>
 #include <oblibs/io.h>
 #include <oblibs/spawn.h>
+#include <oblibs/exec.h>
 #include <oblibs/sse.h>
 #include <oblibs/process.h>
 #include <oblibs/directory.h>
