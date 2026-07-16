@@ -211,6 +211,10 @@ static void parse_conf(const char *conf)
     if (!environ_untrim(&text, &env))
         sulogin("rebuild environment", "") ;
 
+    // make sure it is NUL-terminated at len
+    if (!strbuf_uncounted(&text))
+        sulogin("terminate rebuilt environment", "") ;
+
     for (conf_entry_t const *e = conf_table ; e->key ; e++) {
 
         if (!get_value(&val, text.s, e->key))
