@@ -446,7 +446,7 @@ static int client_create(int fd)
     }
 
     hash_add(&osd.conns, &conn->key, sizeof conn->key, conn) ;
-    flog_info("client connected on fd %d", fd) ;
+    flog_trace("client connected on fd %d", fd) ;
 
     return 1 ;
 }

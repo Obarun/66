@@ -194,7 +194,7 @@ static void expiry_timer_cb(sse_watcher_t *w, void *data, int revents)
     fdholder_entry_t *e, *t ;
     HASH_FOREACH(&fdh.entries, e, t) {
         if (e->expire_abs && e->expire_abs <= now) {
-            flog_info("'%s' (fd %d) expired", e->name, e->fd) ;
+            flog_trace("'%s' (fd %d) expired", e->name, e->fd) ;
             close_fd(e->fd) ;
             hash_del(&fdh.entries, e) ;
             free(e) ;
@@ -455,12 +455,12 @@ static void handle_pipe(fdholder_clientcom_t *conn, char const *pl, size_t pll, 
         fp->wfd = p[1] ;
         memcpy(fp->name, name, nl + 1) ;
         hash_add(&fdh.pipes, fp->name, strlen(fp->name), fp) ;
-        flog_info("created pipe flow '%s'", name) ;
+        flog_trace("created pipe flow '%s'", name) ;
     }
 
     /* kernel dups the end at send time ; the daemon keeps its own copy */
     respond(conn, FDHOLDER_OK, NULL, 0, end == FDHOLDER_END_READ ? fp->rfd : fp->wfd) ;
-    flog_info("handed %s end of '%s'", end == FDHOLDER_END_READ ? "read" : "write", name) ;
+    flog_trace("handed %s end of '%s'", end == FDHOLDER_END_READ ? "read" : "write", name) ;
 }
 
 static void handle_pipe_delete(fdholder_clientcom_t *conn, char const *pl, size_t pll, int const *afd, int nfd)
@@ -667,7 +667,7 @@ static int client_create(int fd)
     }
 
     hash_add(&fdh.conns, &conn->key, sizeof conn->key, conn) ;
-    flog_info("client connected on fd %d", fd) ;
+    flog_trace("client connected on fd %d", fd) ;
 
     return 1 ;
 }
