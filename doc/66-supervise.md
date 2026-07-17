@@ -27,7 +27,7 @@ Unlike a classic supervisor that reads a set of per-service files, `66-supervise
 
 - `Notify` (in `[Start]`): the file descriptor on which the service announces its readiness.
 - `Timeout` (in `[Start]` / `[Stop]`): the maximum duration of the start / stop transition.
-- `MaxDeath` / `MaxDeathInterval` (in `[Main]`): the crash budget (see [Crash budget](#crash-budget)).
+- `MaxDeath` / `MaxDeathInterval` (in `[Start]`): the crash budget (see [Crash budget](#crash-budget)).
 - `DownSignal` (in `[Stop]`): the signal sent to the service to bring it down.
 
 The only configuration kept as a runtime file is `down`: its presence means *keep the service down*. [66 start](66-start.html) and [66 stop](66-stop.html) create and remove it.

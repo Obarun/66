@@ -76,7 +76,7 @@ and for the event system.
 | Section | Required | Purpose |
 |---|---|---|
 | [`[Main]`](#section-main) | **yes** | Identity, dependencies, supervision policy, permissions. |
-| [`[Start]`](#section-start) | **yes** | The command that starts the service, its start timeout and readiness. |
+| [`[Start]`](#section-start) | **yes** | The command that starts the service, its start timeout, readiness and crash budget. |
 | [`[Stop]`](#section-stop) | no | A custom stop sequence (defaults to signalling the process). |
 | [`[Logger]`](#section-logger) | no | Behaviour of the native `66-log` logger. |
 | [`[Environment]`](#section-environment) | no | Environment variables for the service. |
@@ -296,19 +296,17 @@ Defines one or more services that cannot run or be enabled simultaneously with t
 
     * Any valid service name.
 
-## Supervision & restart policy
+## Supervision policy
 
 These keys control what the supervisor does with the process: whether it starts
-on boot, and how crash-looping is handled. (Readiness signalling and the stop
-signal live in [[Start]](#section-start) / [[Stop]](#section-stop) — see
-[`Notify`](#notify) and [`DownSignal`](#downsignal).)
+on boot, and whether it gets a logger. (Readiness signalling, the crash budget and
+the stop signal live in [[Start]](#section-start) / [[Stop]](#section-stop) — see
+[`Notify`](#notify), [`MaxDeath`](#maxdeath) and [`DownSignal`](#downsignal).)
 
 | Key | Syntax | Required | Default | Role |
 |---|---|---|---|---|
 | [`Options`](#options) | brackets | no | `log` on | opt-in/out behaviours (currently: the logger) |
 | [`Flags`](#flags) | brackets | no | — | `down` (start manually) / `earlier` (start with the scandir) |
-| [`MaxDeath`](#maxdeath) | uint | no | `5` | crash budget before *failed* (`0` = never fail) |
-| [`MaxDeathInterval`](#maxdeathinterval) | uint | no | `30000` | crash-counting window, in ms |
 
 ### Options
 
@@ -347,44 +345,6 @@ Flags = (down earlier)
     * down: This will create the *down* file used by the supervisor. Once this file was created the default state of the service will be considered down, not up: the service will not automatically be started until it receives a [66 start](66-start.html) command. Without this file the default state of the service will be up and started automatically.
     * earlier: This set the service as an *earlier* service meaning starts the service as soon as the [scandir](66-scandir.html) is up.
 
-### MaxDeath
-
-```ini
-MaxDeath = 5
-```
-
-Sets the crash budget: the number of times the service may die within a [MaxDeathInterval](#maxdeathinterval) window before the supervisor gives up and declares it *failed*, stopping any further automatic restart.
-
-* mandatory: no
-
-* syntax: [uint](#uint)
-
-* valid value:
-
-    * Any number from `0` to `16`. The default is `5`. A value of `0` disables the budget: the service is restarted indefinitely and is never declared *failed* for crash-looping.
-
-    Only an actual *run-then-die* counts against the budget — the service did execute its `run` script, then exited or was signalled while still wanted up. A commanded [stop](66-stop.html) never counts, and a service that never managed to exec its `run` script (missing interpreter, unmounted filesystem, …) is reported as *exec failed* and retried with a progressive backoff without ever consuming the budget. Once the budget is exhausted the service stays *failed* until a new [start](66-start.html) resets the counter and relaunches it.
-
-    Each automatic restart is throttled by a minimum delay of one second, so a crash-looping service consumes its budget at a rate of at most one death per second.
-
-### MaxDeathInterval
-
-```ini
-MaxDeathInterval = 30000
-```
-
-The length, in milliseconds, of the time window over which [MaxDeath](#maxdeath) crashes are counted.
-
-* mandatory: no
-
-* syntax: [uint](#uint)
-
-* valid value:
-
-    * Any valid number, in milliseconds. The default is `30000` (30 seconds).
-
-    The window is measured on a monotonic clock and starts at the first counted death. If the service reaches `MaxDeath` deaths before the window elapses, it is declared *failed*. Otherwise — the window expires with fewer deaths — the window is re-armed: the next death starts a fresh window with the count reset to one. The measurement lives in volatile runtime state and is cleared on reboot. Because restarts are throttled to roughly one per second, exhausting the budget takes on the order of `MaxDeath` seconds; setting `MaxDeathInterval` much below that makes the *failed* state effectively unreachable through crash-looping alone.
-
 ### Deprecated `[Main]` keys (moved)
 
 Several keys that describe a *transition* or the process *execution* used to live in
@@ -396,6 +356,7 @@ will be removed from `[Main]` in a future release. When a key is declared both i
 | Deprecated in `[Main]` | Declare instead |
 |---|---|
 | `Notify` | [`Notify`](#notify) in [[Start]](#section-start) |
+| `MaxDeath` / `MaxDeathInterval` | [`MaxDeath`](#maxdeath) / [`MaxDeathInterval`](#maxdeathinterval) in [[Start]](#section-start) |
 | `DownSignal` | [`DownSignal`](#downsignal) in [[Stop]](#section-stop) |
 | `StdIn` / `StdOut` / `StdErr` | [`StdIn`](#stdin) / [`StdOut`](#stdout) / [`StdErr`](#stderr) in [[Execute]](#section-execute) |
 | `TimeoutStart` | [`Timeout`](#timeout-start) in [[Start]](#section-start) |
@@ -616,6 +577,8 @@ This section is *mandatory*. It defines how the service is started.
 | [`RunAs`](#runas) | inline/simple-colon | no | service owner | drop privileges to a user before exec |
 | [`Timeout`](#timeout-start) | uint | no | `0` (no timeout) | max time for the start transition, in ms |
 | [`Notify`](#notify) | uint | no | — | readiness-notification file descriptor |
+| [`MaxDeath`](#maxdeath) | uint | no | `5` | crash budget before *failed* (`0` = never fail) |
+| [`MaxDeathInterval`](#maxdeathinterval) | uint | no | `30000` | crash-counting window, in ms |
 
 ### Build (deprecated)
 
@@ -713,6 +676,44 @@ Enables readiness notification: declares the file descriptor on which the servic
     * A file descriptor number of `3` or higher (values below `3` are rejected).
 
     The value is the number of the file descriptor the service writes its readiness notification to — usually a dedicated descriptor such as `3`, matching the option your daemon uses to announce its readiness. Standard output (descriptor `1`) is normally unsuitable here, as it is redirected to the logger. The value is stored in the service's resolve. When the service is started, [66-supervise](66-supervise.html) hands the process a pipe on that descriptor and waits for the service to write to it before reporting the service *up and ready*.
+
+### MaxDeath
+
+```ini
+MaxDeath = 5
+```
+
+Sets the crash budget: the number of times the service may die within a [MaxDeathInterval](#maxdeathinterval) window before the supervisor gives up and declares it *failed*, stopping any further automatic restart.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid value:
+
+    * Any number from `0` to `16`. The default is `5`. A value of `0` disables the budget: the service is restarted indefinitely and is never declared *failed* for crash-looping.
+
+    Only an actual *run-then-die* counts against the budget — the service did execute its `run` script, then exited or was signalled while still wanted up. A commanded [stop](66-stop.html) never counts, and a service that never managed to exec its `run` script (missing interpreter, unmounted filesystem, …) is reported as *exec failed* and retried with a progressive backoff without ever consuming the budget. Once the budget is exhausted the service stays *failed* until a new [start](66-start.html) resets the counter and relaunches it.
+
+    Each automatic restart is throttled by a minimum delay of one second, so a crash-looping service consumes its budget at a rate of at most one death per second.
+
+### MaxDeathInterval
+
+```ini
+MaxDeathInterval = 30000
+```
+
+The length, in milliseconds, of the time window over which [MaxDeath](#maxdeath) crashes are counted.
+
+* mandatory: no
+
+* syntax: [uint](#uint)
+
+* valid value:
+
+    * Any valid number, in milliseconds. The default is `30000` (30 seconds).
+
+    The window is measured on a monotonic clock and starts at the first counted death. If the service reaches `MaxDeath` deaths before the window elapses, it is declared *failed*. Otherwise — the window expires with fewer deaths — the window is re-armed: the next death starts a fresh window with the count reset to one. The measurement lives in volatile runtime state and is cleared on reboot. Because restarts are throttled to roughly one per second, exhausting the budget takes on the order of `MaxDeath` seconds; setting `MaxDeathInterval` much below that makes the *failed* state effectively unreachable through crash-looping alone.
 
 # Section [Stop]
 
@@ -1815,8 +1816,6 @@ OptsDepends = ()
 Options = ()
 Flags = ()
 User = ()
-MaxDeath =
-MaxDeathInterval =
 CopyFrom = ()
 InTree =
 Provide = ()
@@ -1833,6 +1832,8 @@ RunAs =
 Execute = ()
 Timeout =
 Notify =
+MaxDeath =
+MaxDeathInterval =
 
 [Stop]
 RunAs =
