@@ -1,0 +1,13 @@
+# Ignore file for dockerfile.dev, whose build context is the parent directory
+# holding oblibs/, 66/ and 66-tools/. Keep only those three source trees, minus
+# their build outputs, VCS and editor state. Patterns are relative to the context.
+*
+!oblibs
+!66
+!66-tools
+**/.git
+**/.vscode
+**/builddir*
+**/buildvm*
+**/.vmdrop
+**/doc/mkdocs/docs

@@ -37,7 +37,7 @@ sed_args = [
 
 # 58 pages — HTML output (strict mirror of make-html.sh)
 html_pages = [
-  '66', '66-boot', '66-cheatsheet', '66-configure', '66-deeper',
+  '66', '66-boot', '66-cheatsheet', '66-container', '66-configure', '66-deeper',
   '66-dependencies', '66-disable',
   '66-echo', '66-emit', '66-enable', '66-event', '66-eventd', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',

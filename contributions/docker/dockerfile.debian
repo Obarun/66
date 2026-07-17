@@ -1,0 +1,63 @@
+# 66 as an init inside a container, built on Debian.
+#
+#   docker build -f contributions/docker/dockerfile.debian -t 66-debian .
+#   docker run -d --name my66 --cap-add SYS_ADMIN 66-debian
+#   docker exec my66 66 tree status          # inspect the running system
+#   docker exec my66 66 halt                 # pid 1 exits with the halt file's EXITCODE
+#
+# Debian packages execline but not oblibs/66/66-tools, so those are built from
+# source. 66 does NOT need the skarnet -dev packages: it builds against oblibs
+# only and, at run time, needs just the execline binaries -- which is why the
+# execline version Debian ships is irrelevant to 66.
+#
+# See doc/66-container.html for the full walkthrough.
+
+FROM debian:stable
+
+LABEL maintainer="Eric Vidal <eric@obarun.org>"
+
+# Build toolchain, plus execline: the only skarnet runtime dependency of 66.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential meson ninja-build pkg-config git ca-certificates execline \
+ && rm -rf /var/lib/apt/lists/*
+
+# oblibs is 66's sole build dependency (self-contained, only libc).
+RUN git clone -b dev https://git.obarun.org/obarun/oblibs.git \
+ && meson setup oblibs/builddir oblibs --prefix=/usr --libdir=lib \
+ && meson compile -C oblibs/builddir \
+ && meson install -C oblibs/builddir
+
+# 66 itself.
+#
+# -D execline-bindir is REQUIRED on Debian: it keeps the execline commands
+# (fdmove, redirfd, ...) out of /usr/bin, where their generic names would clash,
+# and ships them in /usr/lib/execline/bin -- only execlineb itself lands in
+# /usr/bin (so the default -D shebangdir is already right). 66 bakes these paths
+# into the scripts it generates; without this option the generated run scripts
+# call a /usr/bin/fdmove that does not exist, the catch-all logger never starts
+# and the boot hangs waiting for it.
+#
+# -D 66-log-user runs the loggers as an unprivileged user (root by default); we
+# harden that here. -D 66-log-timestamp=iso keeps ISO timestamps.
+RUN git clone -b dev https://git.obarun.org/obarun/66.git \
+ && meson setup 66/builddir 66 --prefix=/usr --libdir=lib \
+      -D execline-bindir=/usr/lib/execline/bin \
+      -D 66-log-user=66log -D 66-log-timestamp=iso \
+ && meson compile -C 66/builddir \
+ && meson install -C 66/builddir
+
+# 66-tools: optional companion commands (66-ns, execl-cmdline, execl-toc).
+RUN git clone -b dev https://git.obarun.org/obarun/66-tools.git \
+ && meson setup 66-tools/builddir 66-tools --prefix=/usr --libdir=lib \
+ && meson compile -C 66-tools/builddir \
+ && meson install -C 66-tools/builddir
+
+# The unprivileged logger user: the only thing 66 cannot create for itself. 66
+# creates the rest of its own state by itself on the first boot, best-effort --
+# see the docs if you mount /var/lib read-only.
+RUN groupadd -r 66log \
+ && useradd -r -g 66log -s /usr/sbin/nologin -d /dev/null 66log
+
+# pid 1: boot the container as a fully supervised 66 system.
+CMD ["/usr/bin/66", "boot", "-c"]

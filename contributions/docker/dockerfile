@@ -1,0 +1,21 @@
+# 66 as an init inside a container, on Obarun's base image.
+#
+# obarun/base already ships 66 and its unprivileged logger user, so there is
+# nothing to install here: the only difference from the base image is the CMD,
+# which turns the container into a fully supervised 66 system instead of a shell.
+#
+#   docker build -f contributions/docker/dockerfile -t 66-container .
+#   docker run -d --name my66 --cap-add SYS_ADMIN 66-container
+#   docker exec my66 66 tree status          # inspect the running system
+#   docker exec my66 66 halt                 # pid 1 exits with the halt file's EXITCODE
+#
+# To build 66 from source instead -- only useful when developing 66 itself --
+# use dockerfile.dev. See doc/66-container.html for the full walkthrough.
+
+FROM obarun/base
+
+LABEL maintainer="Eric Vidal <eric@obarun.org>"
+
+# pid 1: boot the container as a fully supervised 66 system. 66 creates its own
+# state (directories, version marker, default "global" tree) on the first boot.
+CMD ["/usr/bin/66", "boot", "-c"]

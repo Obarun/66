@@ -1,0 +1,54 @@
+# Development image: builds oblibs, 66 AND 66-tools from their LOCAL working
+# trees instead of cloning them from git, so uncommitted or unpushed changes
+# across all three are testable in a container before they are pushed.
+#
+# The build context MUST be the parent directory that holds the three
+# repositories side by side (oblibs/, 66/, 66-tools/) -- not the 66 repository
+# itself, which cannot reach its siblings. Run it one of these ways:
+#
+#   # from the parent directory (the natural "." context):
+#   cd .. && docker build -f 66/contributions/docker/dockerfile.dev -t 66-dev .
+#
+#   # or from inside the 66 repository, pointing the context at the parent:
+#   docker build -f contributions/docker/dockerfile.dev -t 66-dev ..
+#
+# then:
+#   docker run -d --name my66 --cap-add SYS_ADMIN 66-dev
+#   docker exec my66 66 tree status
+#   docker exec my66 66 halt
+#
+# dockerfile.dev.dockerignore trims that context down to the three sources.
+
+FROM obarun/base
+
+LABEL maintainer="Eric Vidal <eric@obarun.org>"
+
+# Build toolchain, plus execline (66's only skarnet runtime dependency).
+RUN pacman -Sy --noconfirm --needed base-devel meson ninja git pkgconf execline
+
+# oblibs from the local working tree (66's sole build dependency).
+COPY oblibs /oblibs
+RUN meson setup oblibs/builddir oblibs --prefix=/usr --libdir=lib \
+ && meson compile -C oblibs/builddir \
+ && meson install -C oblibs/builddir
+
+# 66 from the local working tree.
+COPY 66 /66
+RUN meson setup 66/builddir 66 --prefix=/usr --libdir=lib \
+      -D 66-log-user=66log -D 66-log-timestamp=iso \
+ && meson compile -C 66/builddir \
+ && meson install -C 66/builddir
+
+# 66-tools from the local working tree.
+COPY 66-tools /66-tools
+RUN meson setup 66-tools/builddir 66-tools --prefix=/usr --libdir=lib \
+ && meson compile -C 66-tools/builddir \
+ && meson install -C 66-tools/builddir
+
+# Create the unprivileged logger user (66 cannot create a system account for
+# you); 66 creates the rest of its own state on the first boot, best-effort.
+RUN groupadd -r 66log \
+ && useradd -r -g 66log -s /usr/bin/nologin -d /dev/null 66log
+
+# pid 1: boot the container as a fully supervised 66 system.
+CMD ["/usr/bin/66", "boot", "-c"]

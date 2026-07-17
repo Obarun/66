@@ -44,7 +44,7 @@ Then dig in as your needs grow:
 - **Organising services** — [tree](66-tree.html), [module service usage](66-module-usage.html)
 - **Coming from another init** — [systemd, OpenRC or runit](66-migration.html)
 - **When something breaks** — [troubleshooting & FAQ](66-troubleshooting.html)
-- **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [upgrade and migration](66-upgrade-process.html)
+- **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [running in a container](66-container.html), [upgrade and migration](66-upgrade-process.html)
 - **Going deeper** — [deeper understanding](66-deeper.html), [standard I/O redirection](66-standard-io-redirection.html), [service configuration file](66-service-configuration-file.html)
 
 ## Installation
@@ -75,6 +75,7 @@ See [changes](66-upgrade.html) between versions.
 - [Logging](66-logging.html)
 - [Troubleshooting & FAQ](66-troubleshooting.html)
 - [Coming from systemd, OpenRC or runit](66-migration.html)
+- [Running 66 inside a container](66-container.html)
 
 ### Main command
 
