@@ -206,7 +206,7 @@ static uint8_t cmd_skips_sanitize(char const *cmd)
 
 static uint8_t cmd_skips_tree(char const *cmd)
 {
-    static char const *const skip[] = { "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", 0 } ;
+    static char const *const skip[] = { "boot", "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", 0 } ;
     for (size_t i = 0 ; skip[i] ; i++)
         if (!strcmp(cmd, skip[i]))
             return 1 ;
@@ -292,9 +292,13 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
                 if (errno != ENOENT)
                     log_dieusys(LOG_EXIT_SYS, "access system version file: ", dst) ;
 
+                /* Best-effort: a container boot skips sanitize, so the system
+                 * directory may not exist yet (it is created a bit later by the
+                 * spawned scandir/tree commands, or was never writable). Do not
+                 * abort here -- the marker is written once the state is set up. */
                 log_trace("initialize system version file with version: ", SS_VERSION) ;
                 if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-                    log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+                    log_1_warnusys("write system version file: ", dst) ;
 
             } else {
 
