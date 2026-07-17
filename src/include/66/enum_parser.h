@@ -114,7 +114,9 @@ typedef enum resolve_parser_enum_section_main_e resolve_parser_enum_section_main
     macro(TIMESTOP,  "TimeoutStop",  E_PARSER_EXPECT_UINT), \
     macro(TIMEOUT,   "Timeout",      E_PARSER_EXPECT_UINT), \
     macro(NOTIFY,    "Notify",       E_PARSER_EXPECT_UINT), \
-    macro(SIGNAL,    "DownSignal",   E_PARSER_EXPECT_UINT)
+    macro(SIGNAL,    "DownSignal",   E_PARSER_EXPECT_UINT), \
+    macro(DEATH,     "MaxDeath",     E_PARSER_EXPECT_UINT), \
+    macro(DEATHTIME, "MaxDeathInterval", E_PARSER_EXPECT_UINT)
 
 enum resolve_parser_enum_section_startstop_e
 {

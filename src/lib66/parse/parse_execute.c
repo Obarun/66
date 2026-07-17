@@ -108,6 +108,9 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
 
             case E_PARSER_SECTION_MAIN_DEATH:
 
+                parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+                log_1_warn("key MaxDeath at section [Main] is deprecated -- declare it at section [Start] instead") ;
+
                 if (!u32_scan_strict(v, &ex->maxdeath))
                     parse_error_return(0, 3, table) ;
 
@@ -117,6 +120,9 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
                 break ;
 
             case E_PARSER_SECTION_MAIN_DEATHTIME:
+
+                parse_error_type(res->type, enum_list_parser_section_main, kid) ;
+                log_1_warn("key MaxDeathInterval at section [Main] is deprecated -- declare it at section [Start] instead") ;
 
                 if (!u32_scan_strict(v, &ex->maxdeathtime))
                     parse_error_return(0, 3, table) ;
@@ -399,6 +405,29 @@ static int parse_execute_startstop(parse_store_t *st, resolve_service_t *res, re
 
                     ex->downsignal = (uint32_t)t ;
                 }
+                break ;
+
+            case E_PARSER_SECTION_STARTSTOP_DEATH:
+
+                if (sid != E_PARSER_SECTION_START)
+                    log_warn_return(LOG_EXIT_ZERO, "key MaxDeath is only valid at section [Start]") ;
+
+                if (!u32_scan_strict(v, &ex->maxdeath))
+                    parse_error_return(0, 3, table) ;
+
+                if (ex->maxdeath > 16)
+                    parse_error_return(0, 0, table) ;
+
+                break ;
+
+            case E_PARSER_SECTION_STARTSTOP_DEATHTIME:
+
+                if (sid != E_PARSER_SECTION_START)
+                    log_warn_return(LOG_EXIT_ZERO, "key MaxDeathInterval is only valid at section [Start]") ;
+
+                if (!u32_scan_strict(v, &ex->maxdeathtime))
+                    parse_error_return(0, 3, table) ;
+
                 break ;
 
             default: break ;

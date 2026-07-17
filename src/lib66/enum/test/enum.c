@@ -396,6 +396,8 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_STARTSTOP_TIMEOUT == (m)++);
     assert(E_PARSER_SECTION_STARTSTOP_NOTIFY == (m)++);
     assert(E_PARSER_SECTION_STARTSTOP_SIGNAL == (m)++);
+    assert(E_PARSER_SECTION_STARTSTOP_DEATH == (m)++);
+    assert(E_PARSER_SECTION_STARTSTOP_DEATHTIME == (m)++);
     assert(E_PARSER_SECTION_STARTSTOP_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -777,7 +779,7 @@ void test_parser_lists(void) {
     for (size_t i = 0; i < E_PARSER_SECTION_STARTSTOP_ENDOFKEY; i++) {
         assert(enum_list_parser_section_startstop[i].id == (int)i);
         assert(strcmp(*enum_list_parser_section_startstop[i].name, enum_str_parser_section_startstop[i]) == 0);
-        int expected_values[] = { E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT };
+        int expected_values[] = { E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT, E_PARSER_EXPECT_UINT };
         assert(enum_list_parser_section_startstop[i].expected == expected_values[i]);
     }
 
