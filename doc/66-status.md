@@ -1,28 +1,36 @@
 # status
 
-This command displays information about service.
+This command displays the state of a service.
+
+`66 status` answers one question: what is this service doing right now. It is not
+a dump of everything known about it. The parsed configuration of a service — its
+run script, environment, standard io redirections, frontend location — belongs to
+[66 resolve](66-resolve.html), and its full log to [66 log](66-log.html).
+`status` shows the state, the dependency links, and the last few log lines for a
+quick glance.
 
 ## Interface
 
 ```
-status [ -h ] [ -n ] [ -f name,intree,status,... ] [ -g ] [ -d depth ] [ -r ] [ -p nline ] service
+status [ -h ] [ -n ] [ -f field,... ] [ -g ] [ -d depth ] [ -r ] service
 ```
 
 By default the dependency graph is rendered in the [start](66-start.html) order of execution. You can reverse the rendered order, meaning the [stop](66-stop.html) execution, with the `-r` option.
 
-Without specifying `-f`, all fields are displayed.
+Without specifying `-f`, all fields are displayed. The `contents` field only
+means something for a [module](66-module-usage.html), so it is left out of the
+default display for any other service type; asking for it explicitly with `-f`
+stays valid.
 
-If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be used but `-p`, `-f` and `-n` options have no effect.
+If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be used but `-f` and `-n` options have no effect.
 
 ## Options
 
 - **-h, --help**: prints this help.
 
-- **-n, --no-name**: do not display the field name(s) specified. Combining this option with `-f` facilitates scripting usage.
+- **-n, --no-name**: do not display the field name(s) specified. Combining this option with `-f` facilitates scripting usage. Durations are printed as raw seconds in that mode, which is the form a script wants.
 
 - **-f, --field** *field,...*: comma separated list of fields to display.
-
-- **-o, --options** *field,...*: deprecated alias for `-f`; use `-f` instead.
 
 - **-g, --graph**: shows the dependency list of the *service* as a hierarchical graph instead of a list.
 
@@ -30,57 +38,81 @@ If no *service* is specified, it displays all services from all trees. This is a
 
 - **-r, --reverse**: shows the dependency list of *services* in reverse mode.
 
-- **-p, --print** *nline*: prints the *nline* last lines from the log file of the *service*. Default is 10.
+- **-o, --options** *field,...*: deprecated alias for `-f`; use `-f` instead.
 
 ## Valid fields for -f option
 
 - **name**: displays the name.
-- **version**: displays the version of the service.
-- **intree**: displays the service's tree name.
-- **status**: displays the status.
-- **type**: displays the service type.
+- **status**: displays the run state. See *Reading the status field* below.
 - **description**: displays the description.
-- **partof**: displays the module name for services part of that module.
-- **notify**: displays the number of the fd for readiness notification.
-- **maxdeath**: displays the number of maximum death.
-- **maxdeathtime**: displays the maximum death interval.
-- **earlier**: displays if service is an earlier one.
-- **source**: displays the source of the service's [frontend](66-frontend.html) file.
-- **live**: displays the service's live directory.
+- **type**: displays the service type.
+- **source**: displays the path of the service's [frontend](66-frontend.html) file.
+- **tree**: displays the service's tree name.
+- **enabled**: `yes` if the service comes up at boot, `no` if it does not.
+- **pid**: the pid of the running process, `0` when there is none. Always a number, so a script never has to special-case a word.
 - **depends**: displays the service's dependencies.
 - **requiredby**: displays the service(s) which depends on service.
 - **contents**: displays services within module.
-- **optsdepends**: displays the service's optional dependencies. Also displays the name of the associated *tree* of the optional dependencies after the `colon(:)` mark if any.
-- **start**: displays the service's start script.
-- **stop**: displays the service's stop script.
-- **envat**: displays the source of the environment file.
-- **envfile**: displays the contents of the environment file.
-- **importfile**: displays the environment import file.
-- **stdin**: displays the Standard Input type and destination separated by a `(colon(:)`.
-- **stdout**: displays the Standard Output type and destination separated by a `(colon(:)`.
-- **stderr**: displays the Standard Error type and destination separated by a `(colon(:)`.
-- **logname**: displays the logger's name.
-- **logfile**: displays the contents of the log file.
+- **log**: displays the last five lines of the service's log. Use [66 log](66-log.html) to read the whole log, filter it or follow it.
 
 ## Reading the status field
 
-The `status` field combines two independent states:
-
-- **enable state** — `enabled` (the service comes up at boot) or `disabled` (it does not).
-- **run state** — `up` (running) or `down` (stopped).
-
-For a running service it also shows the live `pid`, how long it has been up,
-and — if the service uses [readiness notification](66-frontend.html#notify) —
-how long it has been `ready`:
+The `status` field combines two **independent** states, the **enable state** and
+the **run state**, and tells how long the service has been in the latter:
 
 ```
-Status : enabled, up (pid 731) 34829 seconds, ready 34829 seconds
+Status : enabled, up (pid 620) since 8h 59min by boot
 ```
 
-The two axes are independent: a service can be `disabled, up` (started by hand,
-it will not return after a reboot) or `enabled, down` (it will come up next
-boot). For the granular internal flags behind these states, see
-[66 state](66-state.html).
+The **enable state** is `enabled` (the service comes up at boot) or `disabled`
+(it does not). It states an intent for the next boot and says nothing about the
+running process: a service can be `disabled, up` (started by hand, it will not
+return after a reboot) or `enabled, down` (it will come up next boot).
+
+The **run state** is one of `up`, `down`, `starting`, `stopping`, `finishing`,
+`restarting`, `done`, `failed` or `waiting`.
+
+What last happened to the process follows in parentheses — `exited` with its
+code, `signaled` with its signal, `timeout-start`, `timeout-stop`,
+`crash-limit` or `exec-failed`. Nothing is shown there when the last thing that
+happened was a clean success.
+
+The origin of the transition is always appended as `by <who>`:
+
+```
+Status : enabled, down (exited 1) since 2min 5s by user
+```
+
+`who` answers *who wanted this state*, not who last poked the process:
+
+- **`user`** — a state you asked for, with [start](66-start.html) or [stop](66-stop.html).
+- **`boot`** — the boot procedure brought it up.
+- **`shutdown`** — the shutdown procedure brought it down.
+- **`event`** — an [event](66-eventd.html) reactor triggered the transition.
+- **`self`** — the supervisor acted on its own.
+
+A service killed with [66 signal](66-signal.html) reports `self`: a signal does
+not ask the service to go down, so the death is intrinsic and the supervisor
+respawns it on its own initiative. Only a command that flips the *wanted* state
+owns the transition.
+
+Everything the line glues together also stands alone as its own field, which is
+what a script wants: `-f enabled` yields `yes` or `no`, `-f pid` the bare pid,
+`-f type` the type that otherwise rides with the name. Under `-n` every field
+yields its own value, unglued and with raw seconds:
+
+```
+$ 66 status -nf enabled dbus
+yes
+$ 66 status -nf pid dbus
+620
+$ 66 status -nf status dbus
+up (pid 620) since 32340 by boot
+```
+
+For the raw runtime record behind these states — the exact timestamps, the exit
+code and the crash budget — see [66 runstate](66-runstate.html). For the granular
+internal flags, see [66 state](66-state.html).
 
 ## Usage examples
 
@@ -102,16 +134,16 @@ Also, do not display the name of the field `name` and `status` of service `foo`
 66 status -nf name,status foo
 ```
 
-Only displays the contents of the log file of the service `foo`
+Displays the state of `foo` without its log
 
 ```
-66 status -f logfile foo
+66 status -f name,status,enabled foo
 ```
 
-Also, displays the last 100 lines of the log file of the service `foo`
+Reads the whole log of the service `foo` — `status` only ever shows its last few lines
 
 ```
-66 status -f logfile -p100 foo
+66 log foo
 ```
 
 In a script you can do
@@ -136,74 +168,19 @@ Displays information of the service using the graph mode
 ```
 66 status -g dbus
 
-Name                  : dbus
-Version               : 0.0.1
-In tree               : global
-Status                : enabled, up (pid 731) 34829 seconds, ready 34829 seconds
-Type                  : classic
-Description           : dbus system daemon
-Part of               : None
-Notify                : 4
-Max death             : 3
-Earlier               : 0
-Source                : /etc/66/service/dbus
-Live                  : /run/66/scandir/0/dbus
-Dependencies          : \
-                        └─dbus-log (pid=723, state=Enabled, type=classic, tree=global)
-Required by           : \
-                        ├─networkmanager (pid=747, state=Enabled, type=classic, tree=global)
-                        ├─boot-user@oblive (pid=up, state=Enabled, type=module, tree=session)
-                        └─consolekit (pid=746, state=Enabled, type=classic, tree=global)
-Contents              : \
-                        └─None
-Optional dependencies : None
-Start script          :
-                        #!/usr/bin/execlineb -P
-                        fdmove -c 2 1
-                        execl-envfile -v4 /etc/66/conf/dbus/version
-                            execl-toc -S ${socket_name} -m 0755
-                            foreground {
-                                execl-toc -d /var/lib/dbus
-                                dbus-uuidgen --ensure
-                            }
-                            execl-cmdline -s { dbus-daemon ${cmd_args} }
-Stop script           :
-                        #!/usr/bin/execlineb -P
-                        fdmove -c 2 1
-                        execl-envfile -v4 /etc/66/conf/dbus/version
-                        rm -f ${socket_name}
-Environment source    : /etc/66/conf/dbus/0.0.1
-Environment file      : environment variables from: /etc/66/conf/dbus/0.0.1/.dbus
-                        cmd_args=!--system --print-pid=4 --nofork --nopidfile --address=unix:path=${socket_name}
-                        socket_name=!/run/dbus/system_bus_socket
-
-                        environment variables from: /etc/66/conf/dbus/0.0.1/dbus
-                        cmd_args=!--system --print-pid=4 --nofork --nopidfile --address=unix:path=${socket_name}
-                        socket_name=!/run/dbus/system_bus_socket
-
-StdIn                 : 66log:/run/66/scandir/0/fdholder
-StdOut                : 66log:/var/log/66/dbus
-StdErr                : inherit:/var/log/66/dbus
-Logger name           : dbus-log
-Logger file           :
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
-dbus-daemon[731]: [system] Activating service name='org.freedesktop.nm_dispatcher' requested by ':1.2' (uid=0 pid=747 comm="NetworkManager -d") (using servicehelper)
-dbus-daemon[731]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
+Name         : dbus ( classic )
+Status       : enabled, up (pid 620) since 8h 59min by boot
+Description  : dbus system daemon
+Source       : /usr/share/66/service/dbus
+Tree         : global
+Dependencies : \
+               └─dbus-log (pid=615, state=Enabled, type=classic, tree=global)
+Required by  : \
+               └─consolekit (pid=632, state=Enabled, type=classic, tree=global)
+Log          : dbus-log - '66 log dbus' for more
+2026-07-17 12:27:25.136118430  dbus-daemon[626]: [system] Activating service name='org.freedesktop.PolicyKit1' requested by ':1.0'
+2026-07-17 12:27:25.149366699  dbus-daemon[626]: [system] Successfully activated service 'org.freedesktop.PolicyKit1'
+2026-07-17 12:28:12.083741993  dbus[620]: Unknown username "colord" in message bus configuration file
+2026-07-17 12:28:12.099542827  dbus-daemon[620]: [system] Activating service name='org.freedesktop.PolicyKit1' requested by ':1.0'
+2026-07-17 12:28:12.113367939  dbus-daemon[620]: [system] Successfully activated service 'org.freedesktop.PolicyKit1'
 ```
