@@ -20,6 +20,13 @@
 #include <string.h> // strcmp
 
 #define STATUS_STATE_SIZE 49
+
+/* The position of a value in the tables below is the number that gets serialized,
+ * in the record and on the wire: inserting or removing one makes a record written
+ * by another build read its state, result or who as the next word along. Bump this
+ * whenever that happens once 0.9.0.0 is out, or an upgrade without a reboot leaves
+ * old supervisors writing a layout the new readers misread. Until then no released
+ * 66 writes this record, and the tmpfs holding them is cleared at boot. */
 #define STATUS_VERSION 1
 
 /* The status vocabulary lives here, as a single source of truth: the enums and
@@ -70,7 +77,6 @@ enum status_result_e
     macro(STATUS_WHO_SELF,       "self") \
     macro(STATUS_WHO_USER,       "user") \
     macro(STATUS_WHO_EVENT,      "event") \
-    macro(STATUS_WHO_DEPENDENCY, "dependency") \
     macro(STATUS_WHO_BOOT,       "boot") \
     macro(STATUS_WHO_SHUTDOWN,   "shutdown")
 
