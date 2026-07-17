@@ -105,8 +105,9 @@ static void display_value(service_status_t const *st, status_field_t const *f)
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-static void write_value(void *ctx, size_t index)
+static void write_value(void *ctx, size_t index, char const *label)
 {
+    (void)label ;
     display_value((service_status_t const *)ctx, &fields_status[index]) ;
 }
 
@@ -118,5 +119,5 @@ void info_status_display(service_status_t const *st, char const *select, uint8_t
     for (size_t i = 0 ; i < NFIELDS_STATUS ; i++)
         keys[i] = fields_status[i].key ;
 
-    info_fields_display(keys, NFIELDS_STATUS, select, noname, &write_value, (void *)st) ;
+    info_fields_display(keys, keys, NFIELDS_STATUS, select, noname, &write_value, (void *)st) ;
 }

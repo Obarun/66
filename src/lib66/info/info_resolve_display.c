@@ -93,8 +93,9 @@ static void display_value(void const *base, char const *blob, info_field_t const
         log_dieusys(LOG_EXIT_SYS, "write to stdout") ;
 }
 
-static void write_value(void *ctx, size_t index)
+static void write_value(void *ctx, size_t index, char const *label)
 {
+    (void)label ;
     resolve_ctx_t const *c = ctx ;
     info_field_t const *f = &c->fields[index] ;
     void const *base = c->base ;
@@ -122,5 +123,5 @@ void info_resolve_display(void const *base, char const *blob, info_field_t const
 
     resolve_ctx_t ctx = { base, blob, fields, addons, naddons } ;
 
-    info_fields_display(keys, nfields, select, noname, &write_value, &ctx) ;
+    info_fields_display(keys, keys, nfields, select, noname, &write_value, &ctx) ;
 }

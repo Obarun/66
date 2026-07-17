@@ -103,21 +103,29 @@ struct info_addon_s {
 /* Shared field-listing engine: -f selection, name alignment and the noname
  * branch live here once. A caller passes the field keys and a writer that
  * prints the value (followed by a newline) of the field at a given index;
- * the keys are the only thing the engine knows about the field layout. */
+ * the keys are the only thing the engine knows about the field layout.
+ * The engine owns the alignment, so it hands the writer the padded label it
+ * printed: a value spanning several lines needs that width to indent its
+ * continuations under the first one. */
 
-typedef void info_value_writer(void *ctx, size_t index) ;
+typedef void info_value_writer(void *ctx, size_t index, char const *label) ;
 typedef info_value_writer *info_value_writer_t_ref ;
 
 /**
  * @brief Select, align and display a set of named fields.
  * @param[in] keys     Field keys, one per field, in display order; what -f matches.
+ * @param[in] labels   Printed field names, one per key, same order. A debug dump
+ *                     passes @keys here; a human-facing command passes its own
+ *                     wording. Never 0.
  * @param[in] nfields  Number of keys.
  * @param[in] select   Comma-separated list of keys to show, or 0 for all.
  * @param[in] noname   If non-zero, print only the values, not the field names.
- * @param[in] write    Writer printing the value of field @index, newline included.
+ * @param[in] write    Writer printing the value of field @index, newline
+ *                     included. Receives the padded label already printed for
+ *                     that field, or 0 when @noname is set.
  * @param[in] ctx      Opaque context handed back to @write.
  */
-extern void info_fields_display(char const *const *keys, size_t nfields, char const *select, uint8_t noname, info_value_writer *write, void *ctx) ;
+extern void info_fields_display(char const *const *keys, char const *const *labels, size_t nfields, char const *select, uint8_t noname, info_value_writer *write, void *ctx) ;
 
 /**
  * @brief Display the fields of a resolve struct from a declarative table.

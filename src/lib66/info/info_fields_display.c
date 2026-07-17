@@ -25,7 +25,7 @@
 
 static wchar_t const field_suffix[] = L" :" ;
 
-void info_fields_display(char const *const *keys, size_t nfields, char const *select, uint8_t noname, info_value_writer *write, void *ctx)
+void info_fields_display(char const *const *keys, char const *const *labels, size_t nfields, char const *select, uint8_t noname, info_value_writer *write, void *ctx)
 {
     log_flow() ;
 
@@ -65,7 +65,7 @@ void info_fields_display(char const *const *keys, size_t nfields, char const *se
     if (noname) {
 
         for (size_t i = 0 ; i < n ; i++)
-            write(ctx, idx[i]) ;
+            write(ctx, idx[i], 0) ;
 
     } else {
 
@@ -73,14 +73,14 @@ void info_fields_display(char const *const *keys, size_t nfields, char const *se
         char aligned[nfields][INFO_FIELD_MAXLEN] ;
 
         for (size_t i = 0 ; i < n ; i++)
-            memcpy(buf[i], keys[idx[i]], strlen(keys[idx[i]]) + 1) ;
+            memcpy(buf[i], labels[idx[i]], strlen(labels[idx[i]]) + 1) ;
 
         info_field_align(buf, aligned, field_suffix, n) ;
 
         for (size_t i = 0 ; i < n ; i++) {
 
             info_display_field_name(aligned[i]) ;
-            write(ctx, idx[i]) ;
+            write(ctx, idx[i], aligned[i]) ;
         }
     }
 }
