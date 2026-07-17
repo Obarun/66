@@ -57,6 +57,20 @@ extern info_graph_style *STYLE ;
 extern info_graph_style graph_utf8 ;
 extern info_graph_style graph_default ;
 
+/* longest rendering is "<uint64 days> <h>h", the uint64 taking 20 digits */
+#define INFO_DURATION_LEN 31
+
+/**
+ * @brief Render a duration as a human-readable string, two units at most
+ *        ("3s", "2min 5s", "9h 40min", "3 days 4h"); the lesser unit is
+ *        omitted when zero.
+ * @param[out] s     Receives the NUL-terminated rendering; must hold at least
+ *                   INFO_DURATION_LEN + 1 bytes.
+ * @param[in] secs   The duration, in seconds.
+ * @return the length of the rendering, NUL excluded.
+ */
+extern size_t info_fmt_duration(char *s, uint64_t secs) ;
+
 extern int info_getcols_fd(int fd) ;
 extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_FIELD_MAXLEN],wchar_t const field_suffix[],size_t buflen) ;
 extern size_t info_length_from_wchar(char const *str) ;
