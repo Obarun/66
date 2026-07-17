@@ -76,7 +76,6 @@ extern void info_field_align (char buf[][INFO_FIELD_MAXLEN],char fields[][INFO_F
 extern size_t info_length_from_wchar(char const *str) ;
 extern size_t info_display_field_name(char const *field) ;
 extern void info_display_list(char const *field, strbuf *list) ;
-extern void info_display_nline(char const *field,char const *str) ;
 
 /* Generic resolve-file display engine. A resolve struct stores each cdb field
  * inline: a string is a uint32 offset into its blob, an integer is the value
