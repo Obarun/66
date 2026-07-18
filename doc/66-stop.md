@@ -16,6 +16,8 @@ The `66 -t` command option has no effect. `66` will detect automatically the ass
 
 In case of `module` *service* type, all *services* declared within the `module` will stop. The **-P** has no effect on the *services* within the `module` and only affects the module's required-by dependencies.
 
+If the *service* is a [reactor](66-event.html) (it carries an `[Event]` section), `stop` brings it down but **does not disarm** it: its rule stays registered at `66-eventd` and keeps reacting — a `Do = start` reactor comes back up on its next event. Use [66 free](66-free.html) to disarm a reactor.
+
 This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options

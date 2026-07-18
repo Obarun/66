@@ -14,6 +14,8 @@ Multiple *services* can be freed by separating their names with a space.
 
 In case of `module` *service* type, all *services* declared within the `module` will also be unsupervised. The **-P** has no effect on the *services* within the `module` and only affects the module's dependencies.
 
+If the *service* is a [reactor](66-event.html) (it carries an `[Event]` section), `free` is also what **disarms** it at `66-eventd`: unlike a plain [66 stop](66-stop.html), which leaves the rule reacting, `free` removes the reactor from the daemon so it reacts no more. For a `module`, every member reactor is disarmed in the same pass.
+
 This command handles [interdependencies](66.html#handling-dependencies).
 
 ## Options

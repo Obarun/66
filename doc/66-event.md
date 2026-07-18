@@ -342,14 +342,30 @@ authoritative description of them.
 
 For a `Type = event` **source**, [66 start](66-start.html) and [66 stop](66-stop.html) do not
 supervise a process — they **arm** and **disarm** the source at the daemon (open the inotify
-watch, program the timer or schedule). For a **reactor**, its own `66 start` arms it; `66 stop`
-disarms it.
+watch, program the timer or schedule).
 
-A reactor whose action is `Do = start` is a special case: it is **armed, not launched**. The
-parser forces such a service *down*, and starting it only registers the rule — the service
-comes up later, when its event fires. In [66 status](66-status.html) an armed-and-idle
-`oneshot`/`module` reactor shows the **WAITING** state; a `classic` reactor simply shows
-*down*.
+For a **reactor** the two verbs are **not** symmetric, and that asymmetry is the single most
+common point of confusion:
+
+* [66 start](66-start.html) **arms** the reactor — from then on it reacts to its events.
+* [66 stop](66-stop.html) brings the service **down but leaves the reactor armed**. The rule
+  stays registered at `66-eventd` and keeps reacting, so a `Do = start` reactor you stopped
+  **comes back up on its next event**. `stop` acts on the running service, never on the
+  reaction.
+* [66 free](66-free.html) — which stops the service *and* unsupervises it — is what
+  **disarms** the reactor: it leaves the scandir and `66-eventd`, and reacts no more. For a
+  `module`, a single `free` disarms every member reactor in the same pass.
+
+In short, to make a reactor stop reacting you must **`free` it — a plain `stop` is not
+enough**. This is also why *Recovery after `66-eventd` restarts* (below) re-arms a
+merely-stopped reactor: it is still in the scandir, so the daemon picks it up again on the
+next repopulate.
+
+A reactor whose action is `Do = start` is a further special case: on `66 start` it is
+**armed, not launched**. The parser forces such a service *down*, and starting it only
+registers the rule — the service comes up later, when its event fires. In
+[66 status](66-status.html) an armed-and-idle `oneshot`/`module` reactor shows the
+**WAITING** state; a `classic` reactor simply shows *down*.
 
 ### When a reactor actually fires — state gating
 
