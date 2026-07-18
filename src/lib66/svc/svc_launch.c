@@ -404,7 +404,6 @@ static int launch_classic(uint32_t id)
 
         if (!svc->execute->notify) {
             if (wanted == EVENT_UP_READY) wanted = EVENT_UP ;
-            else if (wanted == EVENT_DOWN_READY) wanted = EVENT_DOWN ;
             else if (wanted == EVENT_RESTART_READY) wanted = EVENT_RESTART ;
         }
 
