@@ -72,6 +72,21 @@ Two more reactor families need no configured source at all:
 * **user** — react to a name raised by [66 emit](66-emit.html), or by another reactor's
   `Emit` key.
 
+### One source, many reactors
+
+A source is **fan-out**: any number of reactors may name the same source in their `From` (or,
+for `user`, key on the same name), and each reacts in its own way — its own `Do`, its own
+`Emit`, its own `On` filter. One `timer` can drive a backup *and* a metrics flush *and* a log
+rotation; one `IN_MOVED_TO` on a certificate directory can reload every daemon that serves it;
+one `66 emit cert-renewed` reaches every subscriber at once. The source knows nothing about its
+reactors — you add a subscriber, never touch the source.
+
+This is where the model departs from unit-per-trigger designs. A systemd `.timer` or `.path`
+activates a **single** `Unit=` (defaulting to the same-name `.service`); to drive several
+services from one trigger you must interpose a `.target` that pulls them in, and to give each a
+different action there is no native way at all — the trigger and the acted-upon unit are 1:1.
+In 66 the coupling is 1:N by construction.
+
 ### About the `event` type and arming
 
 An `event` service is **not supervised**: it has no `[Start]` section and no running
@@ -175,7 +190,7 @@ dependencies:
 [Event]
 EventType = service
 From  = ( auth cache db )
-OnAll = ( auth:up cache:up db:up )
+OnAll = ( auth:up cache:down db:up )
 Do    = restart
 ```
 
@@ -317,6 +332,174 @@ ordering constraint (`haproxy` after `nginx`), and each service keeps its own `r
 short. Ordering across the chain is expressed by *who emits what*, so keep the chain shallow
 and acyclic.
 
+## Case studies: reactive control other init systems make hard
+
+Every mainstream init and supervision system expresses a **static dependency graph** — start
+order, "A needs B" — well. The part with no clean native form elsewhere is the **reactive**
+one: *at runtime, react to something that happens to one service by acting on another.* The
+cases below are each reproduced and verified on 66; each closes with an exact note on how other
+systems fare, so the comparison is concrete rather than rhetorical.
+
+### React to a daemon that gives up for good
+
+A daemon exhausts its crash budget — [`MaxDeath`](66-frontend.html#maxdeath) deaths within a
+[`MaxDeathInterval`](66-frontend.html#maxdeathinterval) window (milliseconds) — and the
+supervisor marks it **failed**. You want to record it, or start a standby, once:
+
+```ini
+# frontend: flaky
+[Main]
+Type = classic
+Description = "a daemon that keeps crashing"
+[Start]
+Execute = ( flaky-daemon )
+MaxDeath = 3
+MaxDeathInterval = 30000
+```
+```ini
+# frontend: alerter
+[Main]
+Type = oneshot
+Description = "record the failure, once"
+[Start]
+Execute = ( /usr/local/bin/alert "flaky is down for good" )
+[Event]
+EventType = service
+From = ( flaky )
+On   = ( failed )
+Do   = start
+```
+
+`66 start alerter` arms the reactor and brings `flaky` up (its `From` source). `flaky` dies, is
+retried, dies again; on the third death in the window the supervisor gives up and marks it
+**failed**. `alerter` fires **once** and `flaky` **stays failed** — the reactor *watches*
+`flaky` without depending on it, so its `Do = start` acts on `alerter` alone and never revives
+`flaky` (see [`From` is a watch, not a dependency](#from-is-a-watch-not-a-dependency)).
+
+**Compared with others.** systemd's `OnFailure=` fires only on the terminal `failed` state;
+with `Restart=` set, a crash that is auto-restarted goes `active → activating` and never enters
+`failed`, so recurring-but-restarted crashes fire *nothing* (systemd issues 34023, 8398). Once
+the start limit is reached the unit is not restarted again until a manual `systemctl
+reset-failed` (issue 2416), and `OnFailure=` de-duplicates on the failed edge, so on a flapping
+unit the handler runs only the first time (issue 35635). s6 and runit have no failure-to-action
+mechanism at all — the default is to restart forever; any cross-service reaction is a
+hand-written wrapper. 66 exposes both the terminal `failed` and every intermediate `down`
+transition as reactable events, and a reactor **re-fires** each time.
+
+### Restart a client to reconnect when its backend restarts
+
+When a shared backend — dbus, a database, a message broker — restarts, clients hold dead
+connections and must be bounced to reconnect:
+
+```ini
+# frontend: client
+[Main]
+Type = classic
+Description = "reconnects when the backend restarts"
+[Start]
+Execute = ( the-client )
+[Event]
+EventType = service
+From = ( backend )
+On   = ( up )
+Do   = restart
+```
+
+Whenever `backend` reaches `up` — an operator restart, or the backend recovering on its own —
+`client` restarts to reconnect. The two are decoupled in the dependency graph (`66 restart
+backend` does not touch `client`, and `client`'s restart does not drag `backend` back up); the
+coupling is purely the event rule.
+
+**Compared with others.** systemd couples units by *pre-declared propagation*, not by reaction.
+`PartOf=` restarts a dependent when an operator restarts the named unit — you must wire it in
+advance — and `BindsTo=` stops a dependent when its bound unit stops but does **not** bring it
+back when the unit returns (issue 2824). Restarting a shared bus such as
+`dbus` is documented as leaving clients broken, with upstream advising a reboot rather than a
+restart. runit has no mechanism — you script it (`sv hup <dependent>` in the dependency's
+`finish`); s6-rc re-evaluates dependencies only at database-update time. None offers a
+lightweight "when the backend is available again, restart me."
+
+### Reload on an atomic config or certificate swap
+
+Config and certificate tools update a file **atomically**: they write a temporary file in the
+same directory and `rename()` it into place, so a reader never sees a half-written file. You
+want to reload when the real file is replaced:
+
+```ini
+# frontend: cfg-watch  — the source
+[Main]
+Type = event
+Description = "watch a config directory for an atomic replace"
+EventType = inotify
+Watch = /etc/myapp
+On = ( IN_MOVED_TO )
+```
+```ini
+# frontend: myapp  — the reactor
+[Main]
+Type = classic
+Description = "reload on config change"
+[Start]
+Execute = ( myapp )
+[Event]
+EventType = inotify
+From = ( cfg-watch )
+Do = reload
+```
+
+A `rename()` into `/etc/myapp` raises `IN_MOVED_TO`, which fires the reload; because the mask is
+explicit, an unrelated in-place write does **not**. (`rename()` is atomic only within one
+filesystem — which is exactly why the temporary file must live in the same directory as its
+target.)
+
+**Compared with others.** systemd's `.path` unit with `PathChanged=`/`PathModified=` on a file
+does **not** fire on this atomic rename-into-place: it watches the file's own inotify descriptor
+rather than the directory's `IN_MOVED_TO`, so the standard safe-update pattern is missed (issue
+20934; related 19123, 28939). Path units also inherit inotify's limits — e.g. they cannot see a
+change made on a remote NFS mount (systemd.path(5)). s6, runit and OpenRC have **no** built-in
+file watching at all; you bolt an `inotifywait` loop onto a manual `SIGHUP`.
+
+### One event, per-service policy: certificate rotation
+
+The [certificate-rotation cascade](#a-cascading-example-certificate-rotation) above is the
+fourth case: one `66 emit cert-renewed` drives a fan-out where `nginx` **reloads** and `postfix`
+**restarts** — each reactor picking its own verb — with a one-step ordering constraint carried
+by `Emit`.
+
+**Compared with others.** systemd propagates *reload only* (`PropagatesReloadTo=` /
+`ReloadPropagatedFrom=`); there is no `ReloadOrRestartPropagatedFrom`, so a group where some
+daemons reload and others must restart cannot be driven from one trigger (issues 32382, 10638).
+In practice the whole per-service matrix ends up encoded in the renewal tool's deploy hook —
+certbot's `deploy-hook` scripts — and certbot historically even ran only the *last*
+`--renew-hook` given (issues 5076, 8090). 66 keeps each reactor's policy on the consumer, where
+it belongs.
+
+### `From` is a watch, not a dependency
+
+The first two cases rely on a single property, worth stating on its own. For a
+`service`/`signal` reactor, **`From` is a subscription, not a runtime dependency**:
+
+* At *arm* time it behaves like an ordering edge — 66 supervises the source before it arms the
+  reactor, so the daemon exists for the reactor to read its current state (this is what lets a
+  condition that already holds fire at once; see [firing immediately on
+  arm](#firing-immediately-on-arm)).
+* At *runtime* it carries **no propagation**: stopping or restarting the source does not tear
+  the reactor down, and a reaction's `Do = start`/`restart` starts the reactor **without**
+  re-pulling the source. That is why the direct rules above act on their source without the
+  reactor ever reviving or dragging it.
+
+A **tick** reactor (`inotify`/`schedule`/`timer`) is different: there the source is a passive
+`Type = event` watch that exists only to serve its reactors, so `From` *is* a dependency — the
+watch is armed with the reactor. A **`user`** reactor has no `From` at all; it keys on an
+`Emit`ted or [`66 emit`](66-emit.html)ted name, which is the way to react to a source you must
+not couple to.
+
+One more timing note, independent of all this: a reactor's `Execute` runs when the reactor is
+**armed**, not when its condition fires — except for a `Do = start` reactor, which is
+[armed idle](#arming-and-disarming) and runs its `Execute` only when the event arrives (see
+[`Emit` timing](#emit-timing)). Put the work that must happen *at* the event in a `Do = start`
+reactor, not in the `Execute` of a plain source-watcher.
+
 ## Synthesis: keys per EventType
 
 | EventType | Source (`[Main]`) | Reactor (`[Event]`) |
@@ -386,10 +569,11 @@ is inhibited.
 
 ### Firing immediately on arm
 
-Because each `From` source is also a **dependency** of the reactor, `66` brings the source
-up before it arms the reactor. `66-eventd` therefore reads the source's *current* state at
-arm time: a `service` reactor whose awaited condition **already holds** fires at once,
-instead of waiting for the source's next transition. You do not have to arrange for the
+Because 66 **supervises each `From` source before it arms the reactor** — as an establishment
+edge for a `service`/`signal` reactor, or as a dependency for a tick reactor (see [`From` is a
+watch, not a dependency](#from-is-a-watch-not-a-dependency)) — `66-eventd` reads the source's
+*current* state at arm time: a `service` reactor whose awaited condition **already holds** fires
+at once, instead of waiting for the source's next transition. You do not have to arrange for the
 event to happen strictly after the reactor is armed.
 
 ### `On` versus `OnAll`
@@ -445,11 +629,16 @@ drops the watch), or a timer/schedule watcher errors, **that one source** goes *
 every other source keeps ticking. Re-create the path and `66 start` it again to re-arm — the
 death is not permanent.
 
-### Cascading a disarm
+### Freeing a source
 
-Since a reactor **depends** on its `From` sources, `66 free <source>` (without `-P`)
-propagates to the reactors that require it and **disarms them in cascade**. You free the
-source, and the rules that fed on it go away with it.
+For a **tick** source (`inotify`/`schedule`/`timer`), which its reactors depend on, `66 free
+<source>` (without `-P`) propagates to the reactors that require it and **disarms them in
+cascade** — you free the source, and the rules that fed on it go away with it.
+
+A **`service`/`signal`** reactor only *watches* its `From` service (see [`From` is a watch, not
+a dependency](#from-is-a-watch-not-a-dependency)), so freeing that service does **not** disarm
+the reactor: the rule stays armed on a now-absent source — it simply never fires again — until
+you [`66 free`](66-free.html) the **reactor** itself. Disarming is always done on the reactor.
 
 ### Recovery after `66-eventd` restarts
 
