@@ -1,0 +1,738 @@
+#compdef 66
+
+# zsh completion for 66.
+#
+# Never invoke the 66 binary from here: a 66 command goes through ssexec_main,
+# which migrates the live state to the binary's version before running. Every
+# candidate list below is therefore either static (mirroring the opt_t tables)
+# or read straight from the filesystem.
+
+## helpers
+
+(( $+functions[_66_basedir] )) || _66_basedir() {
+    # SS_SYSTEM_DIR for root, SS_USER_DIR under the home otherwise.
+    if (( EUID == 0 )); then
+        print -r -- /var/lib/66
+    else
+        print -r -- ${HOME}/.66
+    fi
+}
+
+# Candidate names are added with compadd, never with _describe: a module member
+# is named module:member (scandir@oblive:setenv@oblive) and _describe reads the
+# colon as its completion:description separator, which truncates the name and
+# collapses every member of a module onto the module itself.
+
+# Frontends: what a command that accepts a not-yet-parsed service takes.
+# Those are the commands carrying GRAPH_COLLECT_PARSE (they parse the frontend
+# on the fly), plus 66 parse itself.
+(( $+functions[_66_frontends] )) || _66_frontends() {
+    local -a dirs frontends
+    local -aU names
+    local expl
+
+    # Same search directories, in the same order, as service_frontend_path().
+    if (( EUID == 0 )); then
+        dirs=( /etc/66/service /usr/share/66/service )
+    else
+        dirs=( ${HOME}/.66/service /etc/66/service/user /usr/share/66/service/user )
+    fi
+
+    # A frontend is a regular file, a symlink to one, or a directory (a module),
+    # searched recursively: a module kept as a directory holds its own frontend
+    # one level down (service/scandir/scandir@).
+    frontends=( ${^dirs}/**/*(N-.,N-/) )
+
+    # A module's reserved sub-directories hold its internals, not services a
+    # user can name; 66's own module parser excludes the same three.
+    frontends=( ${frontends:#*/(activated|configure|frontend)(|/*)} )
+
+    # For root, 66 excludes the `user' entry at any depth.
+    if (( EUID == 0 )); then
+        frontends=( ${frontends:#*/user} )
+        frontends=( ${frontends:#*/user/*} )
+    fi
+
+    names=( ${frontends:t} )
+    (( $#names )) || return 1
+    _wanted services expl 'frontend' compadd -a names
+}
+
+# Parsed services: every other command either dies on a service that is not
+# parsed, or silently ignores it. resolve_check() builds
+# <base>/system/.resolve/service/<name> and resolves it through
+# service_resolve_symlink(), so an entry that resolves there is exactly what
+# "parsed" means -- no need to run 66 to find out. The entries are symlinks to
+# the service's resolve directory, hence the symlink-following qualifiers: a
+# dangling one would not resolve for 66 either.
+(( $+functions[_66_parsed_services] )) || _66_parsed_services() {
+    local -aU names
+    local expl base=$(_66_basedir)
+    names=( ${base}/system/.resolve/service/*(N-.,N-/:t) )
+    (( $#names )) || return 1
+    _wanted services expl 'service' compadd -a names
+}
+
+(( $+functions[_66_trees] )) || _66_trees() {
+    local -aU names
+    local expl base=$(_66_basedir)
+    # A tree is a resolve file sitting next to the Master, which is not a tree.
+    names=( ${base}/system/.resolve/*(N.:t) )
+    names=( ${names:#Master} )
+    (( $#names )) || return 1
+    _wanted trees expl 'tree' compadd -a names
+}
+
+(( $+functions[_66_snapshots] )) || _66_snapshots() {
+    local -aU names
+    local expl base=$(_66_basedir)
+    names=( ${base}/.snapshot/*(N/:t) )
+    (( $#names )) || return 1
+    _wanted snapshots expl 'snapshot' compadd -a names
+}
+
+(( $+functions[_66_log_operand] )) || _66_log_operand() {
+    _alternative \
+        'catch-all:catch-all logger:((system\:"the boot/scandir catch-all logger"))' \
+        'services:service:_66_parsed_services'
+}
+
+## value lists, mirrored from the C tables
+
+(( $+functions[_66_status_fields] )) || _66_status_fields() {
+    # fields_sv[] in ssexec_status.c
+    _values -s , 'field' \
+        'name[the service name]' \
+        'status[the status]' \
+        'description[the description]' \
+        'type[the service type]' \
+        'source[the frontend file location]' \
+        'tree[the associated tree name]' \
+        'enabled[whether the service is enabled]' \
+        'pid[the pid of the running process, 0 if none]' \
+        'depends[its dependencies]' \
+        'requiredby[the services depending on it]' \
+        'contents[the services within a module]' \
+        'log[the log]'
+}
+
+(( $+functions[_66_state_fields] )) || _66_state_fields() {
+    # fields_state[] in ssexec_state.c
+    _values -s , 'field' toinit toreload torestart tounsupervise toparse isparsed issupervised
+}
+
+(( $+functions[_66_runstate_fields] )) || _66_runstate_fields() {
+    # fields_status[] in info_status_display.c
+    _values -s , 'field' state result who pid code stamp readystamp window_start ndeaths
+}
+
+(( $+functions[_66_resolve_fields] )) || _66_resolve_fields() {
+    # fields[] in ssexec_resolve.c
+    _values -s , 'field' \
+        name description version type earlier copyfrom intree ownerstr owner treename \
+        user inns enabled islog logger has_limit has_environ has_io has_execute \
+        has_dependencies has_regex has_event \
+        home frontend src_servicedir \
+        depends requiredby optsdeps contents provide conflict \
+        ndepends nrequiredby noptsdeps ncontents nprovide nconflict \
+        run run_user run_build run_runas finish finish_user finish_build finish_runas \
+        timeoutstart timeoutstop down downsignal blockprivileges umask want_umask \
+        nice want_nice chdir capsbound capsambient ncapsbound ncapsambient notify \
+        maxdeath maxdeathtime \
+        livedir status live_servicedir scandir statedir eventdir supervisedir \
+        fdholderdir oneshotddir eventddir \
+        env envdir env_overwrite importfile nimportfile \
+        configure directories files infiles ndirectories nfiles ninfiles \
+        stdintype stdindest stdouttype stdoutdest stderrtype stderrdest \
+        limitas limitcore limitcpu limitdata limitfsize limitlocks limitmemlock \
+        limitmsgqueue limitnice limitnofile limitnproc limitrtprio limitrttime \
+        limitsigpending limitstack \
+        eventtype eventfrom neventfrom eventon neventon eventcombine eventdo \
+        eventemit eventwatch eventexpression eventtimezone eventinterval \
+        rversion
+}
+
+(( $+functions[_66_tree_resolve_fields] )) || _66_tree_resolve_fields() {
+    # fields_tree[] plus fields_master[] in ssexec_tree_resolve.c
+    _values -s , 'field' \
+        name enabled depends requiredby allow groups contents \
+        ndepends nrequiredby nallow ngroups ncontents rversion current
+}
+
+(( $+functions[_66_tree_status_fields] )) || _66_tree_status_fields() {
+    # fields_tree[] in ssexec_tree_status.c
+    _values -s , 'field' name current enabled allowed groups depends requiredby contents
+}
+
+(( $+functions[_66_tree_groups] )) || _66_tree_groups() {
+    _values 'group' \
+        'boot[the boot group]' \
+        'admin[the admin group]' \
+        'user[the user group]' \
+        'none[clear the groups]'
+}
+
+(( $+functions[_66_tree_options] )) || _66_tree_options() {
+    # tree_opts_table[] in ssexec_tree_admin.c; `enable' and `noseed' are bare
+    # keys, the others take a value.
+    _values -s : 'tree option' \
+        'enable[enable the tree]' \
+        'noseed[do not apply a seed file]' \
+        'clone[clone an existing tree]:tree:_66_trees' \
+        'depends[trees this one depends on]:tree,...:_66_trees' \
+        'requiredby[trees required by this one]:tree,...:_66_trees' \
+        'groups[boot, admin, user or none]:group:_66_tree_groups' \
+        'allow[accounts allowed to use the tree]:user,...:_users' \
+        'deny[accounts denied]:user,...:_users'
+}
+
+(( $+functions[_66_signals] )) || _66_signals() {
+    # sig_parse() also takes a number or a SIG-prefixed name, but only the
+    # signals of SVC_SIGNAL_MAP (svc.h) pass the cmdsig[] filter.
+    _values 'signal' ALRM ABRT QUIT HUP KILL TERM INT USR1 USR2 STOP CONT WINCH
+}
+
+(( $+functions[_66_wait_states] )) || _66_wait_states() {
+    _values 'state' \
+        'u[the service is up]' \
+        'U[the service is up and ready and has notified readiness]' \
+        'd[the service is down]' \
+        'D[the service is down and ready to be brought up and has notified readiness]' \
+        'r[the service has been started or restarted]' \
+        'R[the service has been started or restarted and has notified readiness]'
+}
+
+## leaf commands
+
+(( $+functions[_66_cmd_boot] )) || _66_cmd_boot() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-m --mount)'{-m,--mount}'[mount parent live directory]' \
+        '(-s --skeleton)'{-s,--skeleton}'[skeleton directory to use]:path:_files -/' \
+        '(-e --environment)'{-e,--environment}'[environment directory or file to use]:path:_files' \
+        '(-d --dev)'{-d,--dev}'[mount dev directory]:path:_files -/' \
+        '(-b --banner)'{-b,--banner}'[print banner at the beginning of the init process]:message:' \
+        '(-l --log-user)'{-l,--log-user}'[run catch-all logger as log_user user]:username:_users' \
+        '(-c --container)'{-c,--container}'[boot a container]'
+}
+
+(( $+functions[_66_cmd_enable] )) || _66_cmd_enable() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-S --start)'{-S,--start}'[also start the service immediately]' \
+        '*:service:_66_frontends'
+}
+
+(( $+functions[_66_cmd_disable] )) || _66_cmd_disable() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-S --stop)'{-S,--stop}'[also stop the service immediately]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_start] )) || _66_cmd_start() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '*:service:_66_frontends'
+}
+
+(( $+functions[_66_cmd_stop] )) || _66_cmd_stop() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its requiredby]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_free] )) || _66_cmd_free() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_configure] )) || _66_cmd_configure() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-c --current)'{-c,--current}'[set version to use as default]:number:' \
+        '(-s --specific)'{-s,--specific}'[specifies the version to handle]:number:' \
+        '(-V --versions)'{-V,--versions}'[lists available versioned configuration directories of the service]' \
+        '(-L --list)'{-L,--list}'[lists the environment variables of the service]' \
+        '(-r --replace)'{-r,--replace}'[replace the value of the key]:key=value:' \
+        '(-e --editor)'{-e,--editor}'[edit the file with editor]:editor:_command_names -e' \
+        '(-i --import)'{-i,--import}'[import configuration files from src version to dst version]:src,dst:' \
+        ':service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_parse] )) || _66_cmd_parse() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-f --force)'{-f,--force}'[force to overwrite existing destination]' \
+        '(-I --no-import)'{-I,--no-import}'[do not import modified configuration files from previous version]' \
+        '*:service:_66_frontends'
+}
+
+(( $+functions[_66_cmd_reconfigure] )) || _66_cmd_reconfigure() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '*:service:_66_frontends'
+}
+
+(( $+functions[_66_cmd_reload] )) || _66_cmd_reload() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_restart] )) || _66_cmd_restart() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_signal] )) || _66_cmd_signal() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '(-a --alarm)'{-a,--alarm}'[send a SIGALRM signal]' \
+        '(-b --abort)'{-b,--abort}'[send a SIGABRT signal]' \
+        '(-q --quit)'{-q,--quit}'[send a SIGQUIT signal]' \
+        '(-H --hangup)'{-H,--hangup}'[send a SIGHUP signal]' \
+        '(-k --kill)'{-k,--kill}'[send a SIGKILL signal]' \
+        '(-t --term)'{-t,--term}'[send a SIGTERM signal]' \
+        '(-i --interrupt)'{-i,--interrupt}'[send a SIGINT signal]' \
+        '(-1 --usr1)'{-1,--usr1}'[send a SIGUSR1 signal]' \
+        '(-2 --usr2)'{-2,--usr2}'[send a SIGUSR2 signal]' \
+        '(-p --stop)'{-p,--stop}'[send a SIGSTOP signal]' \
+        '(-c --cont)'{-c,--cont}'[send a SIGCONT signal]' \
+        '(-y --winch)'{-y,--winch}'[send a SIGWINCH signal]' \
+        '--stop-group[send a SIGSTOP to the process group]' \
+        '--cont-group[send a SIGCONT to the process group]' \
+        '--kill-group[send a SIGKILL to the process group]' \
+        '(-s --signal)'{-s,--signal}'[send signal to the supervised process by signal name or its number]:signal:_66_signals' \
+        '(-r --restart)'{-r,--restart}'[restart service by sending it a signal (default SIGTERM)]' \
+        '(-o --once)'{-o,--once}"[once. Equivalent to '-uO']" \
+        '(-d --down)'{-d,--down}'[send a SIGTERM signal then a SIGCONT signal]' \
+        '(-D --down-keep)'{-D,--down-keep}'[bring down service and avoid to be bring it up automatically]' \
+        '(-u --up)'{-u,--up}'[bring up service]' \
+        '(-U --up-restart)'{-U,--up-restart}'[bring up service and ensure that service can be restarted automatically]' \
+        '(-x --exit)'{-x,--exit}'[bring down the service and propagate to its supervisor]' \
+        '(-O --once-at-most)'{-O,--once-at-most}'[mark the service to run once at most]' \
+        '(-w --wait)'{-w,--wait}'[do not exit until the service reaches the wanted state]:uUdDrR:_66_wait_states' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_emit] )) || _66_cmd_emit() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        ':name:'
+}
+
+(( $+functions[_66_cmd_status] )) || _66_cmd_status() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-n --no-name)'{-n,--no-name}'[do not display the field name]' \
+        '(-f --field)'{-f,--field}'[comma separated list of options]:field,...:_66_status_fields' \
+        '(-g --graph)'{-g,--graph}'[displays interdependences as graph]' \
+        '(-r --reverse)'{-r,--reverse}'[reverse the interdependence graph]' \
+        '(-d --depth)'{-d,--depth}'[limit the depth of interdependence graph recursion by depth]:number:' \
+        ':service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_log] )) || _66_cmd_log() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-s --since)'{-s,--since}'[only show lines at or after time]:time:' \
+        '(-u --until)'{-u,--until}'[only show lines at or before time]:time:' \
+        '(-g --grep)'{-g,--grep}'[only show lines matching the POSIX extended regex]:regex:' \
+        '(-f --follow)'{-f,--follow}'[follow new log lines in real time (system or a service)]' \
+        ':service|system:_66_log_operand'
+}
+
+(( $+functions[_66_cmd_resolve] )) || _66_cmd_resolve() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-f --field)'{-f,--field}'[display only these comma-separated fields]:field,...:_66_resolve_fields' \
+        '(-n --no-name)'{-n,--no-name}'[display only the value, not the field name]' \
+        ':service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_state] )) || _66_cmd_state() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-f --field)'{-f,--field}'[display only these comma-separated fields]:field,...:_66_state_fields' \
+        '(-n --no-name)'{-n,--no-name}'[display only the value, not the field name]' \
+        ':service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_runstate] )) || _66_cmd_runstate() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-f --field)'{-f,--field}'[display only these comma-separated fields]:field,...:_66_runstate_fields' \
+        '(-n --no-name)'{-n,--no-name}'[display only the value, not the field name]' \
+        ':service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_remove] )) || _66_cmd_remove() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies at stop process]' \
+        '*:service:_66_parsed_services'
+}
+
+(( $+functions[_66_cmd_wall] )) || _66_cmd_wall() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        ':message:'
+}
+
+(( $+functions[_66_cmd_version] )) || _66_cmd_version() {
+    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+}
+
+(( $+functions[_66_cmd_suspend] )) || _66_cmd_suspend() {
+    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+}
+
+(( $+functions[_66_cmd_hibernate] )) || _66_cmd_hibernate() {
+    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+}
+
+# poweroff, reboot and halt share opts_shutdown in ssexec_shutdown_wrapper.c.
+(( $+functions[_66_shutdown_args] )) || _66_shutdown_args() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-a --access)'{-a,--access}'[use access control]' \
+        '(-c --cancel)'{-c,--cancel}'[cancel a planned shutdown]' \
+        '(-f --force)'{-f,--force}'[sync filesytem and immediately stop the system]' \
+        '(-F --force-nosync)'{-F,--force-nosync}'[do not sync filesytem and immediately stop the system]' \
+        '(-m --message)'{-m,--message}'[replace the default message by message]:message:' \
+        '(-t --timeout)'{-t,--timeout}'[grace time between the SIGTERM and the SIGKILL]:seconds:' \
+        '(-W --no-wall)'{-W,--no-wall}'[do not send a wall message to users]' \
+        ':when:'
+}
+
+(( $+functions[_66_cmd_poweroff] )) || _66_cmd_poweroff() { _66_shutdown_args }
+(( $+functions[_66_cmd_reboot] ))   || _66_cmd_reboot()   { _66_shutdown_args }
+(( $+functions[_66_cmd_halt] ))     || _66_cmd_halt()     { _66_shutdown_args }
+
+## tree
+
+(( $+functions[_66_tree_admin_args] )) || _66_tree_admin_args() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-o --options)'{-o,--options}'[colon-separated tree options (see below)]:option\:...:_66_tree_options' \
+        ':tree:_66_trees'
+}
+
+(( $+functions[_66_tree_signal_args] )) || _66_tree_signal_args() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-f --fork)'{-f,--fork}'[fork the process]' \
+        ':tree:_66_trees'
+}
+
+(( $+functions[_66_tree_only_args] )) || _66_tree_only_args() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        ':tree:_66_trees'
+}
+
+(( $+functions[_66_cmd_tree] )) || _66_cmd_tree() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # tree_sub[] in ssexec_tree_wrapper.c
+    subcommands=(
+        'create:create a tree'
+        'admin:administrate an existing tree'
+        'remove:remove an existing tree'
+        'enable:enable a tree'
+        'disable:disable a tree'
+        'current:mark a tree as the current one'
+        'resolve:display the resolve files contents of tree'
+        'status:display information about tree'
+        'init:initiate all enabled services of a tree(s) to a scandir'
+        'start:bring up all services of a tree'
+        'stop:bring down all services of a tree'
+        'free:bring down all services of a tree and unsupervise them'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t tree-subcommands 'tree subcommand' subcommands
+            ;;
+        (args)
+            case $line[1] in
+                (create|admin)
+                    _66_tree_admin_args
+                    ;;
+                (remove|enable|disable|current|start)
+                    _66_tree_only_args
+                    ;;
+                (stop|free)
+                    _66_tree_signal_args
+                    ;;
+                (resolve)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-f --field)'{-f,--field}'[display only these comma-separated fields]:field,...:_66_tree_resolve_fields' \
+                        '(-n --no-name)'{-n,--no-name}'[display only the value, not the field name]' \
+                        ':tree:_66_trees'
+                    ;;
+                (status)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-n --no-name)'{-n,--no-name}'[do not display the names of fields]' \
+                        '(-f --field)'{-f,--field}'[display only these comma-separated fields]:field,...:_66_tree_status_fields' \
+                        '(-g --graph)'{-g,--graph}'[displays the contents field as graph]' \
+                        '(-r --reverse)'{-r,--reverse}'[reverse the contents field]' \
+                        '(-d --depth)'{-d,--depth}'[limit the depth of the contents field recursion by depth]:number:' \
+                        ':tree:_66_trees'
+                    ;;
+                (init)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-g --group)'{-g,--group}'[initiate every tree of this group instead of a single tree]:group:_66_tree_groups' \
+                        ':tree:_66_trees'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+## scandir
+
+(( $+functions[_66_cmd_scandir] )) || _66_cmd_scandir() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # scandir_sub[] in ssexec_scandir_wrapper.c; no sub-command takes an operand.
+    subcommands=(
+        'create:create a scandir'
+        'remove:remove a scandir'
+        'start:start a scandir'
+        'stop:stop a running scandir'
+        'reconfigure:reconfigure a running scandir'
+        'check:check a running scandir'
+        'quit:quit a running scandir'
+        'abort:abort a running scandir'
+        'nuke:nuke a running scandir'
+        'annihilate:annihilate a running scandir'
+        'zombies:destroy zombies from a running scandir'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-o --owner)'{-o,--owner}'[handles scandir of owner]:owner:_users' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t scandir-subcommands 'scandir subcommand' subcommands
+            ;;
+        (args)
+            case $line[1] in
+                (create)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-b --boot)'{-b,--boot}'[create scandir for a boot process]' \
+                        '(-B --container)'{-B,--container}'[create scandir for a boot process inside a container]' \
+                        '(-c --no-logger)'{-c,--no-logger}'[do not catch logs]' \
+                        '(-L --log-user)'{-L,--log-user}'[run catch-all logger as username user]:username:_users'
+                    ;;
+                (start)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-d --notify)'{-d,--notify}'[notify readiness on file descriptor number]:number:' \
+                        '(-s --rescan)'{-s,--rescan}'[scan scandir every milliseconds milliseconds]:milliseconds:' \
+                        '(-e --environment)'{-e,--environment}'[use path as environment directory]:path:_files -/' \
+                        '(-b --boot)'{-b,--boot}"[create scandir (if it doesn't exist yet) for a boot process]" \
+                        '(-B --container)'{-B,--container}"[create scandir (if it doesn't exist yet) for a boot process inside a container]"
+                    ;;
+                (*)
+                    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+## snapshot
+
+(( $+functions[_66_cmd_snapshot] )) || _66_cmd_snapshot() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # snapshot_sub[] in ssexec_snapshot_wrapper.c
+    subcommands=(
+        'create:create a snapshot of the entire 66 system'
+        'restore:restore a snapshot'
+        'remove:remove a snapshot'
+        'list:list available snapshots'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t snapshot-subcommands 'snapshot subcommand' subcommands
+            ;;
+        (args)
+            case $line[1] in
+                (create)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        ':name:'
+                    ;;
+                (restore|remove)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        ':name:_66_snapshots'
+                    ;;
+                (list)
+                    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+## fdholder
+
+(( $+functions[_66_cmd_fdholder] )) || _66_cmd_fdholder() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # fdholder_sub[] in ssexec_fdholder_wrapper.c
+    subcommands=(
+        "start:start the scandir's fdholder daemon"
+        "stop:stop the scandir's fdholder daemon"
+        "restart:restart the scandir's fdholder daemon"
+        'store:store a file descriptor under a name'
+        'retrieve:retrieve a descriptor and exec prog'
+        'list:list stored descriptor names'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-o --owner)'{-o,--owner}'[operate on the fdholder of owner]:owner:_users' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t fdholder-subcommands 'fdholder subcommand' subcommands
+            ;;
+        (args)
+            case $line[1] in
+                (start|stop|restart)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-T --timeout)'{-T,--timeout}'[timeout to wait for the service state]:milliseconds:'
+                    ;;
+                (store)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:' \
+                        '(-d --fd)'{-d,--fd}'[file descriptor to store (default 0)]:number:' \
+                        '(-e --expire)'{-e,--expire}'[expiry in seconds (0 = never)]:seconds:' \
+                        ':id:'
+                    ;;
+                (retrieve)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:' \
+                        '(-D --delete)'{-D,--delete}'[delete the entry after retrieval]' \
+                        ':id:' \
+                        '*:::prog:_normal'
+                    ;;
+                (list)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+## entry point
+
+_66() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # cmd_reg[] in ssexec_main.c, in the same order
+    subcommands=(
+        'boot:boot a system with 66'
+        'enable:activate services at the next boot'
+        'disable:deactivate services at the next boot'
+        'start:bring up services'
+        'stop:bring down services'
+        'configure:manage environment service files and its contents'
+        'parse:parse a frontend service file and install its result to resolve files'
+        'reconfigure:convenient command to bring down, unsupervise, parse again and bring up services in one pass'
+        'reload:convenient command to send a SIGHUP signal to services'
+        'restart:convenient command to bring down then bring up services in one pass'
+        'free:bring down services and remove them from the scandir'
+        'signal:send a signal to services'
+        'emit:emit a user event to the event daemon'
+        'status:display services informations'
+        'log:display service and system logs'
+        'resolve:display the resolve file contents of services'
+        'state:display state files contents of services'
+        'runstate:display runtime status of services'
+        'remove:remove services and cleanup all files belong to it from the system'
+        'tree:main subcommands to manage trees'
+        'snapshot:main subcommands to manage snapshot'
+        'scandir:main subcommands to manage scandir'
+        'fdholder:main subcommands to manage the scandir'\''s fdholder'
+        'poweroff:poweroff the system'
+        'reboot:reboot the system'
+        'halt:halt the system'
+        'suspend:suspend the system to RAM'
+        'hibernate:hibernate the system to disk'
+        'wall:send a message to all logged-in users'
+        'version:display the 66 version'
+    )
+
+    # opts_main[] in ssexec_main.c. opt_scan is POSIX-ordered, so these are only
+    # accepted before the sub-command.
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-v --verbosity)'{-v,--verbosity}'[increase/decrease verbosity]:number:(0 1 2 3 4 5)' \
+        '(-l --live)'{-l,--live}'[an absolute path to the live directory]:path:_files -/' \
+        '(-t --tree)'{-t,--tree}'[the tree to use]:treename:_66_trees' \
+        '(-T --timeout)'{-T,--timeout}'[a timeout in milliseconds]:milliseconds:' \
+        '(-z --color)'{-z,--color}'[enable colorization of the output]' \
+        '1:command:->command' \
+        '*::arg:->args'
+
+    case $state in
+        (command)
+            _describe -t 66-commands '66 command' subcommands
+            ;;
+        (args)
+            curcontext="${curcontext%:*:*}:66-$line[1]:"
+            if (( $+functions[_66_cmd_$line[1]] )); then
+                _66_cmd_$line[1]
+            else
+                _default
+            fi
+            ;;
+    esac
+}
+
+_66 "$@"
