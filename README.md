@@ -21,6 +21,7 @@ Sixty-six (66) is an independent Linux service manager with its own native proce
 - **Automatic Dependency Chains**: Automatically handles and maintains service dependencies, ensuring smooth and reliable service operations.
 - **Service Order Dependencies**: Guarantees reliable, stable, and reproducible service order dependencies to maintain consistent service behavior.
 - **Snapshot Management**: Allows the creation and management of snapshots of your service system, enabling easy backup, recovery, and sharing of service states across multiple hosts.
+- **Event-Driven Reactions**: Services can react to what happens elsewhere on the system — another service going up, down or crashing, a routed signal, a filesystem change, a timer, a cron schedule, or an event raised by hand or by another service — and respond by running a `66` command on themselves or by emitting further events. A dedicated `66-eventd` daemon evaluates these rules, so services start, stop or reconfigure dynamically instead of every condition being hard-coded into the service manager.
 
 ## Behavior Benefits:
 
@@ -82,6 +83,10 @@ Some are specific to `execline` where other can be used on classic shell.
 
 This Roadmap for the next releases is not written in stone. Feel free to make a merge request to this roadmap.
 
+* [x] Replacement of s6:
+
+  66 was historically built around the [s6](https://skarnet.org/software/s6) supervision suite. It now ships its own native programs — `66-scandir`, `66-supervise`, `66-log` and `66-svctl` — replacing `s6-svscan`, `s6-supervise`, `s6-log` and `s6-svc`. The build no longer depends on `skalibs` or `s6`: 66 is now a fully independent service manager, relying only on `oblibs` and, at runtime, `execline`.
+
 * [x] Revise the frontend file's keyword field by excluding the `@` symbol:
 
   For instance, `@depends` will be `Depends`. That will allow for a file that's closer to the original INI format and less confusing for users.
@@ -102,7 +107,7 @@ This Roadmap for the next releases is not written in stone. Feel free to make a 
 
   Certain repetitive tasks can be more efficiently managed directly by `66` in C rather than scripting them in the `Execute` field. For example, utilizing a `ChangeDirectory` keyword can facilitate moving to the declared WorkDir value before executing the script.
 
-* [ ] Reacts on event:
+* [x] Reacts on event:
 
   Implementation of a daemon for event response to allow users to define services that dynamically start and stop when certain conditions are met, without needing to encode every possible condition in the service manager configuration.
 
