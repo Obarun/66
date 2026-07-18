@@ -25,6 +25,15 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_parser.h>
+#include <66/event_rule.h>
+
+static int event_from_is_supervised(char const *type)
+{
+    if (!type)
+        return 0 ;
+    int src = event_src_from_string(type) ;
+    return src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL ;
+}
 
 int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep)
 {
@@ -84,12 +93,15 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
         dep->ndepends += dep->noptsdeps ;
     }
 
-    /* a reactor depends on its From sources so the graph starts them before it
-     * arms: a service/signal source is supervised before eventd subscribes to its
-     * fifodir, a tick source (inotify/timer/schedule) is armed before its reactor
-     * wants it. A user reactor is sourceless (no From) and never reaches this fold. */
+    /* a tick reactor (inotify/timer/schedule) depends on its From source so the
+     * graph arms the passive watch before the reactor wants it: fold From into
+     * depends. A service/signal reactor's From is an *establishment* edge instead
+     * -- read from the event addon at graph build (GRAPH_WANT_EVENTDEPS), never a
+     * depend, so a Do=start reaction never re-pulls (and revives) its source. A
+     * user reactor is sourceless (no From) and never reaches this fold. */
     if (parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE) &&
-        parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM)) {
+        parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM) &&
+        !event_from_is_supervised(parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE, 0))) {
 
         size_t flen = 0 ;
         char const *fv = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, &flen) ;

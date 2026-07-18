@@ -525,6 +525,7 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
 
         set_info(&info) ;
         info.who = STATUS_WHO_EVENT ;
+        info.opt_react = 1 ; // a reaction acts on the reactor, never re-pulls its From sources
 
         // call the subcommand handler directly: argv is its operands (argv[0] is
         // the first positional), no options to parse -- no need for opt_dispatch

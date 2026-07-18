@@ -48,6 +48,7 @@ struct ssexec_s
     // skip option definition 0->no,1-yes
     uint8_t skip_opt_tree ; // tree,treename, treeallow will not be set. Also, trees permissions is not checked.
     uint8_t who ; // status_who_e: provenance of the command
+    uint8_t opt_react ; // set by 66-eventd on a fire-time start: do not pull a reactor's From establishment sources
 } ;
 
 #define SSEXEC_ZERO {   .base = STRBUF_ZERO, \
@@ -66,7 +67,8 @@ struct ssexec_s
                         .opt_timeout = 0, \
                         .opt_color = 0, \
                         .skip_opt_tree = 0, \
-                        .who = STATUS_WHO_SELF }
+                        .who = STATUS_WHO_SELF, \
+                        .opt_react = 0 }
 
 extern void ssexec_free(ssexec_t *info) ;
 extern void ssexec_copy(ssexec_t *dest, ssexec_t *src) ;

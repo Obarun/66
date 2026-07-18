@@ -34,6 +34,11 @@
 #define GRAPH_COLLECT_PARSE (1 << 8)
 // tree flag
 #define GRAPH_WANT_ENABLED (1 << 9)
+/* pull a service/signal reactor's From sources as establishment edges (source
+ * before reactor at arm), read from the event addon -- not from depends. Left
+ * unset by eventd's fire-time start (opt_react) so a reaction never re-pulls its
+ * source, and by sanitize_graph so depends/requiredby stay pure. */
+#define GRAPH_WANT_EVENTDEPS (1 << 10)
 
 /**
  * @struct service_graph_s

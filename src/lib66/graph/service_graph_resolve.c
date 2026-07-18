@@ -28,9 +28,11 @@
 #include <66/constants.h>
 #include <66/state.h>
 #include <66/enum_parser.h>
+#include <66/event_rule.h>
 
 static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
 static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint32_t flag) ;
+static int graph_action_eventdeps(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag) ;
 static int graph_build_module(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag) ;
 
 static bool issupervised(resolve_service_t *res)
@@ -247,6 +249,47 @@ static int graph_action_requiredby(service_graph_t *g, struct resolve_hash_s *c,
     return 1 ;
 }
 
+static int graph_action_eventdeps(service_graph_t *g, struct resolve_hash_s *c, uint32_t flag)
+{
+    log_flow() ;
+
+    size_t pos = 0 ;
+    struct resolve_hash_s *h = NULL ;
+
+    if (FLAGS_ISSET(flag, GRAPH_WANT_EVENTDEPS) && c->res.has_event &&
+        (c->event.type == EVENT_SOURCE_SERVICE || c->event.type == EVENT_SOURCE_SIGNAL) && c->event.nfrom) {
+
+        _alloc_sbl_(stk, strlen(c->event.sa.s + c->event.from) + 1) ;
+
+        if (!sbl_clean_string(&stk, c->event.sa.s + c->event.from))
+            log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
+
+        if (!graph_add_depends(g, c->res.sa.s + c->res.name, &stk, flag, false)) {
+            if (errno == EINVAL)
+                return 0 ;
+
+            return 1 ;
+        }
+
+        // do it recursively
+        FOREACH_SBL(&stk, pos) {
+
+            h = resolve_hash_search(&g->hres, stk.s + pos) ;
+            if (h == NULL)
+                log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
+
+            if (FLAGS_ISSET(flag, GRAPH_WANT_LOGGER))
+                if (!graph_action_logger(g, &h->res, flag))
+                    return 0 ;
+
+            if (!graph_action(g, &h->res, flag))
+                return 0 ;
+        }
+    }
+
+    return 1 ;
+}
+
 static int graph_action_logger(service_graph_t *g, resolve_service_t *res, uint32_t flag)
 {
     log_flow() ;
@@ -334,6 +377,12 @@ static int graph_action(service_graph_t *g, resolve_service_t *res, uint32_t fla
         log_trace("compute dependencies of service: ", name) ;
         if (!graph_action_depends(g, h, flag))
             log_warnu_return(LOG_EXIT_ZERO, "include dependencies of service: ", name, " in graph selection") ;
+    }
+
+    if (FLAGS_ISSET(flag, GRAPH_WANT_EVENTDEPS)) {
+        log_trace("compute From establishment sources of service: ", name) ;
+        if (!graph_action_eventdeps(g, h, flag))
+            log_warnu_return(LOG_EXIT_ZERO, "include From sources of service: ", name, " in graph selection") ;
     }
 
     if (FLAGS_ISSET(flag, GRAPH_WANT_REQUIREDBY)) {

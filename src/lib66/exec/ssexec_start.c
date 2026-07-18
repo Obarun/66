@@ -107,6 +107,12 @@ int ssexec_start(int argc, char const *const *argv, void *data)
     if (nopropagate)
         FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
 
+    /* an arm pulls a service/signal reactor's From sources (establishment); a
+     * fire-time start from 66-eventd (opt_react) must not, or the reaction would
+     * re-pull and revive its own trigger. */
+    if (!info->opt_react)
+        FLAGS_SET(flag, GRAPH_WANT_EVENTDEPS) ;
+
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 

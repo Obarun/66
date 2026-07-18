@@ -28,6 +28,7 @@
 #include <66/state.h>
 #include <66/service.h>
 #include <66/resolve.h>
+#include <66/event_rule.h>
 #include <66/sanitize.h>
 #include <66/enum_parser.h>
 
@@ -156,6 +157,30 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+        }
+
+        /* a service/signal reactor's From sources are establishment edges: pull
+         * them into the selection so the arm supervises them before eventd
+         * subscribes. Read from the event addon (single source of truth), gated on
+         * GRAPH_WANT_EVENTDEPS so a fire-time start (opt_react) never re-pulls. */
+        if (FLAGS_ISSET(flag, GRAPH_WANT_EVENTDEPS) && res.has_event) {
+
+            resolve_service_addon_event_t *ev = &added->event ;
+            resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+            if (resolve_read(wev, info->base.s, name) <= 0)
+                log_dieu(LOG_EXIT_SYS, "read event addon of: ", name) ;
+            free(wev) ;
+
+            if ((ev->type == EVENT_SOURCE_SERVICE || ev->type == EVENT_SOURCE_SIGNAL) && ev->nfrom) {
+
+                size_t len = strlen(ev->sa.s + ev->from) ;
+                _alloc_sbl_(stk, len + 1) ;
+
+                if (!sbl_clean_string(&stk, ev->sa.s + ev->from))
+                    log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+                n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+            }
         }
     }
 
