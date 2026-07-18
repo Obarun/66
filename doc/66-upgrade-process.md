@@ -23,23 +23,24 @@ If a migration is required, the following general tasks will be performed, with 
 
 # Upgrade Path
 
-Some versions may require specific intermediary versions for migration. The following table outlines the target version and any mandatory versions that must be installed along the way.
+`0.9.0.0` is the current target and a **mandatory** migration point: every supported system must ultimately reach it. Each release binary migrates the resolve database in a **single pass** — it carries its own migration chain and walks every intermediate step on its own, so you install the target version directly and no in-between release has to be installed by hand.
 
-| current version                   | target version    | mandatory version path|
+`0.9.0.0` migrates any `0.8.x` system in one step, but it no longer understands the `0.7.x` format. A system on `0.7.2.1` must therefore go through `0.8.2.2` first — which migrates every release from `0.7.2.1` up to `0.8.2.2` — and then install `0.9.0.0`.
+
+| current version                   | target version    | mandatory version path |
 | ---                               | ---               | ---            |
-| between `0.7.0.0` and `0.7.1.1`   | `0.8.2.2`         | `0.7.2.0` -> `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0` -> `0.8.1.1` -> `0.8.2.0` -> `0.8.2.2`  |
-| `0.7.2.0`                         | `0.8.2.2`         | `0.8.0.0` -> `0.8.0.2` -> `0.8.1.0` -> `0.8.1.1` -> `0.8.2.0` -> `0.8.2.2`   |
-| between `0.8.0.0` and `0.8.1.0`   | `0.8.2.2`         | `0.8.1.0` -> `0.8.1.1` -> `0.8.2.0` -> `0.8.2.2`  |
-| between `0.8.1.0` and `0.8.1.1`   | `0.8.2.2`         | `0.8.2.0` -> `0.8.2.2`  |
-| between `0.8.2.0` and `0.8.2.1`   | `0.8.2.2`         | `0.8.2.2`  |
+| between `0.7.2.1` and `0.8.2.1`   | `0.8.2.2`         | `0.8.2.2`  |
+| between `0.8.0.0` and `0.8.2.2`   | `0.9.0.0`         | `0.9.0.0`  |
 
-The automatic migration process adheres to predefined paths. For instance, when upgrading from version `0.7.2.0` to `0.8.2.2`, it will first migrate to `0.8.0.0` and follow the path all along ago before proceeding and reaching for `0.8.2.2`.
+Releases **older than `0.7.2.1` are not supported**: neither `0.8.2.2` nor `0.9.0.0` knows their resolve format, and 66 aborts with a fatal error instead of migrating them. There is no migration path into `0.9.0.0` from any release below `0.7.2.1`.
 
 
 # Version E.O.L.
 
-Releases under `0.8.0.0` are no longer supported.
+Releases under `0.8.0.0` are no longer maintained — they receive no further fixes. The `0.8.2.2` binary can still migrate a `0.7.2.1` resolve as a stepping stone to `0.9.0.0`; anything older than `0.7.2.1` has no migration path at all.
 
 | Version | E.O.L. |
 | --- | --- |
 | `0.8.0.0` | january 2026 |
+| `0.8.1.x` to `0.8.2.2` | january 2027 |
+| `0.9.0.0` | january 2028 |
