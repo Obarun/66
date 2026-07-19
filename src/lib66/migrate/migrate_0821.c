@@ -13,6 +13,7 @@
  */
 
 #include <stdlib.h>//free
+#include <string.h>//strcmp
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -80,6 +81,21 @@ static void migrate_service_0821(void)
     FOREACH_SBL(&sa, pos) {
 
         char *name = sa.s + pos ;
+
+        /** A provide alias is a relative symlink to another service; it owns no
+         * resolve file of its own and is migrated under its target's real name.
+         * Skip it here -- otherwise opening <alias>/.resolve/<alias> fails with
+         * ENOENT and aborts the whole migration. */
+        char lnk[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
+        char rname[SS_MAX_SERVICE_NAME + 1] ;
+        auto_strings(lnk, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+        auto_strings(rname, name) ;
+
+        if (!service_resolve_symlink(info.base.s, lnk, rname))
+            log_dieusys(LOG_EXIT_SYS, "resolve symlink of service: ", name) ;
+
+        if (strcmp(rname, name))
+            continue ;
 
         auto_strings(path + len, name, SS_RESOLVE, "/") ;
 
