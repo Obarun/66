@@ -24,6 +24,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
+#include <oblibs/directory.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
@@ -683,30 +684,45 @@ static void migrate_scandir_resolve(const char *rdir, const char *dir, const cha
     resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
 
     int r = resolve_open_cdb(&fd, &c, rdir, name) ;
-    if (r <= 0) {
-        /* r == 0: no resolve here (service absent from this scandir) -- skip.
-         * r < 0: present but unreadable -- fatal. */
+    if (r < 0) {
         resolve_free(wres) ;
         resolve_free(wex) ;
-        if (r < 0)
-            log_warnusys("open resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+
+        // present but unreadable -- warn and skip
+        log_warnusys("open resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
         return ;
     }
 
-    if (!service_resolve_read_cdb_0821(&c, &old)) {
+    if (r > 0 && !service_resolve_read_cdb_0821(&c, &old)) {
         log_warnusys("read resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
         resolve_free(wres) ;
         resolve_free(wex) ;
         return ;
     }
 
+    /** r == 0: Write a minimal resolve, exactly as write_min_resolve() does at
+     * boot, so 66-supervise can relaunch it at shutdown stage 4; otherwise it
+     * dies reading the missing resolve and the system never reaches the reboot. */
+
     resolve_init(wres) ;
     resolve_init(wex) ;
 
     new.name = old.name ? resolve_add_string(wres, old.sa.s + old.name) : resolve_add_string(wres, name) ;
-    new.type = old.type ;
+    new.type = r > 0 ? old.type : E_PARSER_TYPE_CLASSIC ;
     new.has_execute = 1 ;
     ex.notify = old.notify ;
+
+    if (!r) {
+
+        char mrdir[strlen(dir) + SS_RESOLVE_LEN + 1] ;
+        auto_strings(mrdir, dir, SS_RESOLVE) ;
+        if (!dir_create_parent(mrdir, 0755)) {
+            log_warnusys("create resolve directory of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
+            resolve_free(wres) ;
+            resolve_free(wex) ;
+            return ;
+        }
+    }
 
     if (!resolve_write_at(wres, dir, name)) {
         log_warnusys("write resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
@@ -763,6 +779,11 @@ static void migrate_scandir_0822(void)
         /* <scandir>/<name> -- the base write_min_resolve() wrote to. */
         char dir[scandirlen + 1 + namelen + 1] ;
         auto_strings(dir, info.scandir.s, "/", name) ;
+
+        /* only a daemon actually supervised in this scandir gets a resolve --
+         * never fabricate one for a daemon absent from the live scandir. */
+        if (access(dir, F_OK))
+            continue ;
 
         /* the split execute addon marks a resolve already converted: skip it
          * so a re-run (or a fresh scandir) never feeds a split cdb to the
