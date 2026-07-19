@@ -1,10 +1,11 @@
 # Using a module
 
 A **module** is a service that expands into a whole set of services, brought up as an
-[instance](66-instantiated-service.html). This page is the user's side — how to run,
-configure and manage one. To build your own, see [creating a module](66-module-creation.html).
-The running example is `webapp@`, the module built there: a web application instance made of
-a `server` and an optional `worker`.
+[instance](66-instantiated-service.html). For **what** a module is for and when to reach for
+one, see [module services](66-module.html); to build your own, see
+[creating a module](66-module-creation.html). This page is the user's side — how to run,
+configure and manage one. The running example is `webapp@`, the module built there: a web
+application instance made of a `server` and an optional `worker`.
 
 ## Starting an instance
 

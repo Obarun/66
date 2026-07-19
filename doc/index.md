@@ -41,7 +41,7 @@ New to 66? Follow these two, in order:
 Then dig in as your needs grow:
 
 - **Writing service files** — [frontend service file](66-frontend.html), [dependencies and ordering](66-dependencies.html), [logging](66-logging.html), [identifier interpretation](66-identifier.html), [instantiated service](66-instantiated-service.html)
-- **Organising services** — [tree](66-tree.html), [module service usage](66-module-usage.html)
+- **Organising services** — [tree](66-tree.html), [module services](66-module.html), [module service usage](66-module-usage.html)
 - **Coming from another init** — [systemd, OpenRC or runit](66-migration.html)
 - **When something breaks** — [troubleshooting & FAQ](66-troubleshooting.html)
 - **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [running in a container](66-container.html), [upgrade and migration](66-upgrade-process.html)
@@ -100,6 +100,7 @@ See [changes](66-upgrade.html) between versions.
 
 - [frontend service file](66-frontend.html)
 - [instantiated service file](66-instantiated-service.html)
+- [module services](66-module.html)
 - [module service usage](66-module-usage.html)
 - [module service creation](66-module-creation.html)
 - [Service configuration file](66-service-configuration-file.html)

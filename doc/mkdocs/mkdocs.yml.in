@@ -107,6 +107,7 @@ nav:
   - Reference:
     - Frontend service file: 66-frontend.md
     - Instantiated service file: 66-instantiated-service.md
+    - Module services: 66-module.md
     - Module service usage: 66-module-usage.md
     - Module service creation: 66-module-creation.md
     - Service configuration file: 66-service-configuration-file.md

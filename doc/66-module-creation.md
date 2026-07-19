@@ -6,16 +6,12 @@ It is an [instantiated service](66-instantiated-service.html): you write it once
 `webapp@` and the admin brings up as many independent instances as needed — `webapp@blog`,
 `webapp@shop`, … — each parsed from the same template with its instance name substituted in.
 
-Reach for a module when you ship *several services that belong together* and must be
-**instantiated** and **configured** as a unit: a per-site web stack, a per-interface network
-bundle, the boot sequence of a machine. The services inside a module are **isolated**: an
-inside service may depend on another inside service, but never on a service outside the
-module, and nothing outside may depend on an inside one. (The module *as a whole* may still
-depend on outside services — see [Depending on outside services](#depending-on-outside-services).)
-
-This page builds one module from scratch — `webapp@`, a web application instance made of a
-**server** and an optional **worker** — and explains each moving part as we add it. To use a
-module once it exists, see [module usage](66-module-usage.html).
+For **what** a module is for — the problems it solves and the properties that make it a real
+unit of composition (isolation, one-artifact packaging, per-instance configuration) — see
+[module services](66-module.html). This page is the author's side: it builds one module from
+scratch — `webapp@`, a web application instance made of a **server** and an optional
+**worker** — and explains each moving part as we add it. To use a module once it exists, see
+[module usage](66-module-usage.html).
 
 ## The module we will build
 
