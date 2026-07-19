@@ -1,5 +1,80 @@
 This documentation explains the differences in options and interface changes between versions.
 
+# Changes between `0.8.2.2` and `0.9.0.0`
+
+66 no longer builds against `skalibs`, `s6` or `execline`: the scanner, the supervisor, the logger, the fd holder and the privilege dropper are now native programs of the suite. Most of the ecosystem conversion is automatic -- see the [upgrade](66-upgrade.html) and [upgrade process](66-upgrade-process.html) pages.
+
+## Programs renamed
+
+The borrowed s6/skarnet programs are now native to the suite.
+
+| 0.8.2.2 | 0.9.0.0 |
+| --- | --- |
+| `s6-svscan` | `66-scandir` |
+| `s6-supervise` | `66-supervise` |
+| `s6-log` | `66-log` |
+| `s6-svc` | `66-svctl` |
+| `s6-fdholder-*` | `66-fdholderd` |
+| `s6-setuidgid` | `execl-runas` |
+| `66-oneshot` | removed -- handled by `66-oneshotd` |
+| `66-fdholder-filler` | removed -- handled by `66-fdholderd` |
+| `66-shutdown` | removed -- folded into `66 halt`, `66 poweroff`, `66 reboot` |
+
+`66-shutdownd` moves from `bindir` to `libexecdir` and should not be called directly.
+
+## Frontend keyword table conversion
+
+Several keys move to the section of their domain, and the `TimeoutStart` / `TimeoutStop` names merge into a single `Timeout` disambiguated by the section. The old placements and names still parse with a deprecation warning; if a key is declared both at its deprecated location and at its canonical section, the canonical section wins. Swapping a `[Start]` key into `[Stop]` or the reverse is now a parse error.
+
+| 0.8.2.2 | 0.9.0.0 |
+| --- | --- |
+| `[Main] Notify` | `[Start] Notify` |
+| `[Main] DownSignal` | `[Stop] DownSignal` |
+| `[Main] StdIn` / `StdOut` / `StdErr` | `[Execute] StdIn` / `StdOut` / `StdErr` |
+| `[Main] TimeoutStart` | `[Start] Timeout` |
+| `[Main] TimeoutStop` | `[Stop] Timeout` |
+| `[Main] MaxDeath` | `[Start] MaxDeath` |
+| `[Logger] TimeoutStart` | `[Logger] Timeout` |
+| `[Logger] TimeoutStop` | removed |
+| `[Logger] Destination` | removed -- use `[Execute] StdOut = 66log:/path` |
+| `Build` | deprecated and ignored -- the shebang decides the build type |
+| `s6log` (`StdIn` / `StdOut` / `StdErr` value) | `66log` |
+
+`MaxDeath` now means a crash budget and accepts `0`-`16` (`0` = infinite restart). The new `[Start] MaxDeathInterval` key sets the budget window in milliseconds (default `30000`).
+
+## Command and option changes
+
+| 0.8.2.2 | 0.9.0.0 |
+| --- | --- |
+| `66 scandir reload` | `66 scandir reconfigure` |
+| `66 scandir create -s` / `--skeleton` | removed -- boot reads `init.conf` itself |
+| `66 tree start -f` | removed |
+| `66 tree create` / `admin` `-o rename=` | removed -- now an error |
+| `66 status -o` / `66 tree status -o` | `-f` / `--field` (`-o` deprecated) |
+| `66-shutdown` | `66 halt` / `66 poweroff` / `66 reboot` (with `-c` / `--cancel`) |
+
+Every command and subcommand now accepts long options too (`--help`, `--verbosity`, `--live`, `--tree`, `--timeout`, `--color`, and per-command forms). Short options are unchanged, so existing scripts keep working.
+
+## New commands
+
+| Command | Action |
+| --- | --- |
+| `66 log` | read the logs of a service, of the system, or of everything interleaved |
+| `66 emit` | raise a user event by name |
+| `66 runstate` | dump a service's runtime record |
+| `66 fdholder` | manage the scandir's fd holder daemon |
+
+## `init.conf`
+
+| Key | Change |
+| --- | --- |
+| `VERBOSITY` | default `1` -> `2` |
+| `TREE` | removed from the skeleton, still honored, empty by default (group mode) |
+| `CONTAINER` | removed -- use `66 boot -c` |
+| `RCINIT` / `RCINIT_CONTAINER` / `RCSHUTDOWN` / `RCSHUTDOWNFINAL` / `RESCAN` | removed |
+
+The `rc.init`, `rc.init.container`, `rc.shutdown` and `rc.shutdown.final` skeleton scripts are gone; boot and shutdown now run in C.
+
 # Changes between `0.7.2.1` and `0.8.0.0`
 
 Further information can be found on the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
