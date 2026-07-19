@@ -26,7 +26,7 @@ The command is fire-and-forget: it delivers the event and returns immediately. I
 
 ## Usage examples
 
-Raise the `cert-renewed` event from a certificate-renewal hook, so every service subscribed to that name reloads or restarts itself:
+Raise the `cert-renewed` event from a certificate-renewal hook, so every service subscribed to that name reacts on itself:
 
 ```
 66 emit cert-renewed
