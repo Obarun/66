@@ -9,8 +9,10 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
+
+#include <stdint.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
@@ -19,16 +21,43 @@
 
 #include <66/ssexec.h>
 #include <66/config.h>
+#include <66/shutdown.h>
 
 static opt_t const opts_sleep[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",   .arg = OPT_NONE, .help = "print this help" },
+    { .id = 'a',         .shortname = 'a', .longname = "access", .arg = OPT_NONE, .help = "use access control" },
 } ;
+
+static uint8_t opt_acl = 0 ;
+
+static int on_sleep(int id, char const *arg, void *data)
+{
+    (void)arg ;
+    (void)data ;
+
+    if (id == 'a')
+        opt_acl++ ;
+
+    return 0 ;
+}
 
 static int sleep_run(char const *action, void *data)
 {
     log_flow() ;
 
     ssexec_t *info = data ;
+
+    /* drain option state into a local, then reset the static for re-entrancy. */
+    uint8_t acl = opt_acl ;
+    opt_acl = 0 ;
+
+    if (acl) {
+        int r = shutdown_isallowed() ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "check shutdown access control") ;
+        if (!r)
+            log_die(LOG_EXIT_ONE, "no authorized users logged in") ;
+    }
 
     char const *newargv[5] ;
     unsigned int m = 0 ;
@@ -60,6 +89,7 @@ opt_cmd_t const cmd_suspend = {
     .help = "suspend the system to RAM",
     .opts = opts_sleep,
     .nopts = OPT_COUNT(opts_sleep),
+    .on_option = &on_sleep,
     .fn = &do_suspend,
 } ;
 
@@ -68,5 +98,6 @@ opt_cmd_t const cmd_hibernate = {
     .help = "hibernate the system to disk",
     .opts = opts_sleep,
     .nopts = OPT_COUNT(opts_sleep),
+    .on_option = &on_sleep,
     .fn = &do_hibernate,
 } ;

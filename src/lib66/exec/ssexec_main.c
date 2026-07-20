@@ -29,7 +29,7 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 #include <66/sanitize.h>
-#include <66/hpr.h>
+#include <66/shutdown.h>
 #include <66/config.h>
 
 static opt_t const opts_main[] = {

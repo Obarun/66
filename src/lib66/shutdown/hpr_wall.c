@@ -19,7 +19,7 @@
 #include <string.h>
 #include <sys/uio.h>
 
-#include <66/hpr.h>
+#include <66/shutdown.h>
 
 void hpr_wall (char const *s)
 {

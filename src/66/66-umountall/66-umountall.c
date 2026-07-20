@@ -13,7 +13,7 @@
  */
 #include <oblibs/log.h>
 
-#include <66/hpr.h>
+#include <66/shutdown.h>
 
 int main (int argc, char const *const *argv)
 {

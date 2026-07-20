@@ -45,7 +45,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
-#include <66/hpr.h>
+#include <66/shutdown.h>
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/tree.h>

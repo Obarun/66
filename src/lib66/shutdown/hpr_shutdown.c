@@ -22,7 +22,7 @@
 #include <oblibs/clock.h>
 #include <oblibs/types.h>
 
-#include <66/hpr.h>
+#include <66/shutdown.h>
 
 int hpr_shutdown (char const *live, unsigned int what, struct timespec const *when, unsigned int grace)
 {

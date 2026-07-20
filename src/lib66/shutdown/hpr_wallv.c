@@ -24,7 +24,7 @@
 #include <oblibs/fd.h>
 #include <oblibs/io.h>
 
-#include <66/hpr.h>
+#include <66/shutdown.h>
 
 #ifndef UT_LINESIZE
 #define UT_LINESIZE 32

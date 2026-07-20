@@ -16,14 +16,11 @@
  * https://skarnet.org/software/s6-linux-init.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <time.h>
-#include <utmpx.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -32,20 +29,10 @@
 #include <oblibs/environ.h>
 #include <oblibs/types.h>
 #include <oblibs/clock.h>
-#include <oblibs/fd.h>
-#include <oblibs/io.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
-#include <66/hpr.h>
-
-#ifndef UT_NAMESIZE
-#define UT_NAMESIZE 32
-#endif
-
-#define AC_FILE SS_SKEL_DIR "shutdown.allow"
-#define AC_BUFSIZE 4096
-#define AC_MAX 64
+#include <66/shutdown.h>
 
 static opt_t const opts_shutdown[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE,                           .help = "print this help" },
@@ -162,104 +149,6 @@ static inline void parse_time(struct timespec *when, struct timespec const *now,
     else parse_mins(when, now, s) ;
 }
 
-static inline unsigned char cclass(unsigned char c)
-{
-    switch (c) {
-        case 0 : return 0 ;
-        case '\n' : return 1 ;
-        case '#' : return 2 ;
-        default : return 3 ;
-    }
-}
-
-static inline unsigned int parse_authorized_users(char *buf, char const **users, unsigned int max)
-{
-    static unsigned char const table[3][4] =
-    {
-        { 0x03, 0x00, 0x01, 0x12 },
-        { 0x03, 0x00, 0x01, 0x01 },
-        { 0x23, 0x20, 0x02, 0x02 }
-    } ;
-    size_t mark = 0 ;
-    unsigned int n = 0 ;
-    unsigned int state = 0 ;
-    for (size_t pos = 0 ; state < 3 ; pos++) {
-        unsigned char what = table[state][cclass(buf[pos])] ;
-        state = what & 3 ;
-        if (what & 0x10) mark = pos ;
-        if (what & 0x20) {
-            if (n >= max) {
-                flog_warn(AC_FILE " lists more than %d authorized users - ignoring the extra ones", AC_MAX) ;
-                break ;
-            }
-            buf[pos] = 0 ;
-            users[n++] = buf + mark ;
-        }
-    }
-    return n ;
-}
-
-static inline int match_users_with_utmp(char const *const *users, unsigned int n)
-{
-    setutxent() ;
-    for (;;) {
-        struct utmpx *utx ;
-        errno = 0 ;
-        utx = getutxent() ;
-        if (!utx)
-            break ;
-        if (utx->ut_type != USER_PROCESS)
-            continue ;
-        for (unsigned int i = 0 ; i < n ; i++) {
-
-            if (!strncmp(utx->ut_user, users[i], UT_NAMESIZE)) {
-                endutxent() ;
-                return 1 ;
-            }
-        }
-    }
-    endutxent() ;
-    return 0 ;
-}
-
-static inline void access_control(void)
-{
-    char buf[AC_BUFSIZE] ;
-    char const *users[AC_MAX] ;
-    unsigned int n ;
-    struct stat st ;
-
-    int fd = io_open(AC_FILE, O_RDONLY | O_NONBLOCK) ;
-
-    if (fd >= 0 && !io_set_block(fd)) {
-        close_fd(fd) ;
-        fd = -1 ;
-    }
-
-    if (fd == -1) {
-        if (errno == ENOENT)
-            return ;
-        log_dieusys(LOG_EXIT_SYS, "open ", AC_FILE) ;
-    }
-
-    if (fstat(fd, &st) == -1)
-        log_dieusys(LOG_EXIT_SYS, "stat ", AC_FILE) ;
-
-    if (st.st_size >= AC_BUFSIZE)
-        flog_die(LOG_EXIT_ONE, "%s is too big: it needs to be %d bytes or less", AC_FILE, AC_BUFSIZE) ;
-
-    if (io_allread(fd, buf, st.st_size) < (size_t)st.st_size)
-        log_dieusys(LOG_EXIT_SYS, "read ", AC_FILE) ;
-
-    close_fd(fd) ;
-
-    buf[st.st_size] = 0 ;
-    n = parse_authorized_users(buf, users, AC_MAX) ;
-
-    if (!n || !match_users_with_utmp(users, n))
-        log_die(LOG_EXIT_ONE, "no authorized users logged in") ;
-}
-
 static void wall_message(char const *msg)
 {
     size_t len = strlen(msg) ;
@@ -320,8 +209,13 @@ static int shutdown_run(int argc, char const *const *argv, void *data)
         log_dieusys(LOG_EXIT_SYS, "shutdown") ;
     }
 
-    if (acl)
-        access_control() ;
+    if (acl) {
+        int r = shutdown_isallowed() ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "check shutdown access control") ;
+        if (!r)
+            log_die(LOG_EXIT_ONE, "no authorized users logged in") ;
+    }
 
     if (cancel) {
         // planned shutdown / cancel: talk to the 66-shutdownd fifo in-process

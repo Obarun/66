@@ -30,7 +30,7 @@
 #include <oblibs/io.h>
 #include <oblibs/files.h> // macro hpr_send
 
-#include <66/hpr.h>
+#include <66/shutdown.h>
 #include <66/config.h>
 
 #define HPR_POWER_STATE "/sys/power/state"

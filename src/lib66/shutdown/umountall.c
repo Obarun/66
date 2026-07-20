@@ -27,7 +27,7 @@
 #include <oblibs/strbuf.h>
 
 #include <66/config.h>
-#include <66/hpr.h>
+#include <66/shutdown.h>
 
 #define MAXLINES 99
 #define EXCLUDEN 3
