@@ -495,10 +495,10 @@ watch is armed with the reactor. A **`user`** reactor has no `From` at all; it k
 not couple to.
 
 One more timing note, independent of all this: a reactor's `Execute` runs when the reactor is
-**armed**, not when its condition fires — except for a `Do = start` reactor, which is
-[armed idle](#arming-and-disarming) and runs its `Execute` only when the event arrives (see
-[`Emit` timing](#emit-timing)). Put the work that must happen *at* the event in a `Do = start`
-reactor, not in the `Execute` of a plain source-watcher.
+**armed** (`66 start`), not when its condition fires — except for a `Do = start`/`restart`
+reactor, which is [armed idle](#arming-and-disarming) and runs its `Execute` only when the event
+arrives (see [`Emit` timing](#emit-timing)). Put the work that must happen *at* the event in a
+`Do = start`/`restart` reactor, not in the `Execute` of a plain source-watcher.
 
 ## Synthesis: keys per EventType
 
@@ -544,28 +544,41 @@ enough**. This is also why *Recovery after `66-eventd` restarts* (below) re-arms
 merely-stopped reactor: it is still in the scandir, so the daemon picks it up again on the
 next repopulate.
 
-A reactor whose action is `Do = start` is a further special case: on `66 start` it is
-**armed, not launched**. The parser forces such a service *down*, and starting it only
-registers the rule — the service comes up later, when its event fires. In
-[66 status](66-status.html) an armed-and-idle `oneshot`/`module` reactor shows the
-**WAITING** state; a `classic` reactor simply shows *down*.
+A reactor whose action is `Do = start` or `Do = restart` is a further special case: on
+`66 start` it is **armed, not launched**. Both verbs *bring the service up* when the event
+fires, so the parser forces such a service *down* and starting it only registers the rule —
+the service comes up later, when its event fires. Every other verb is the opposite: `stop`,
+`reload`, `reconfigure` and `free` act on a *running* service, so `66 start` launches the
+reactor normally and it reacts from **up**. In [66 status](66-status.html) an armed-and-idle
+reactor shows the **WAITING** state.
 
 ### When a reactor actually fires — state gating
 
 When the trigger matches, `66-eventd` still checks the reactor's **current state** before
 running its `Do`. The command is only issued when it would do something:
 
-| `Do` | Fires only if the service is… |
+| `Do` | Fires only when the service is… |
 |---|---|
-| `start` | `down`, `done`, `failed` or `waiting` |
-| `stop`, `restart`, `reload` | `up` |
+| `start` | anything **except** `up` or `done` |
+| `stop`, `reload` | anything **except** `down` or `failed` |
+| `restart` | *(any state — always fires)* |
 | `reconfigure`, `free` | *(any state — always fires)* |
 
-The most common surprise follows from the first row: **`Do = start` does not restart a
-service that is already up** — it is a silent no-op (logged as *inhibited*). That is by
-design: `start` means “bring it up”, and a healthy up service is already there. If the
-reactor's own status cannot be read at that moment, every `Do` except `reconfigure`/`free`
-is inhibited.
+The gate is built from two sets: a service is **active** when it is `up` or `done`, and
+**inert** when it is `down` or `failed`; the five transitional states (`starting`,
+`stopping`, `finishing`, `restarting`, `waiting`) are neither. `start` fires only on a
+**non-active** service, `stop`/`reload` only on a **non-inert** one, and `restart` fires
+unconditionally — it is the verb to use when the action must run on *every* matching event
+regardless of where the service currently sits.
+
+The most common surprise follows from the `start` row: **`Do = start` does not run on a
+service that is already `up` or `done`** — it is a silent no-op (logged as *inhibited*),
+because `start` means “bring it up” and an already-active service is there. This does
+**not** keep a `oneshot`/`module` reactor from reacting repeatedly: such a reactor
+**re-arms to `waiting` after each firing** — it never parks in `done` — so a `Do = start`
+or `Do = restart` reactor fires again on every matching event, running its `Execute` exactly
+once per event. If the reactor's own status cannot be read at that moment, every `Do` except
+`reconfigure`/`free` is inhibited.
 
 ### Firing immediately on arm
 
@@ -656,7 +669,10 @@ do not need to re-`start` your rules by hand after the daemon bounces.
   `66`. They are opposite directions.
 * **`reload` does not wake a `signal` reactor.** See [`reload` is not a
   signal](#reload-is-not-a-signal) above — the single most common source of confusion.
-* **`Do = start` on an up service is a no-op.** See [state gating](#when-a-reactor-actually-fires-state-gating).
+* **`Do = start` on an already-active (`up` or `done`) service is a no-op.** But an armed
+  `oneshot`/`module` reactor re-arms to `waiting` between events, so this does *not* stop it
+  firing again — it runs its `Execute` once per event. See [state
+  gating](#when-a-reactor-actually-fires-state-gating).
 * **Quartz `?`.** A `schedule` expression must carry `?` on day-of-month or day-of-week; it
   has no `@reboot`.
 * **`Emit` chains can loop.** `Emit = a` triggering a rule whose `Emit = b` triggering a rule
