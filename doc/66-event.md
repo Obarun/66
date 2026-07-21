@@ -221,8 +221,9 @@ Do   = reload
 | reactor | `[Event]` | `EventType`, `On`, `Do`/`Emit` | — |
 
 A `user` reactor has **no `From`** — it listens for a *name*, wherever that name comes from.
-A name is raised in two ways: by hand with `66 emit <name>`, or by another reactor's `Emit`
-key. That second form is how reactions chain. In the pair below, `backend` reacts to
+A name is raised in three ways: by hand with `66 emit <name>`, by another reactor's `Emit`
+key, or by 66 itself at a system milestone (see [Lifecycle events raised by
+66](#lifecycle-events-raised-by-66) below). The second form is how reactions chain. In the pair below, `backend` reacts to
 `rabbitmq` going down by stopping itself **and** raising `backend-down`; `alerter` listens
 for that name:
 
@@ -255,6 +256,52 @@ Do = start
 
 The same `alerter` also fires if an operator runs `66 emit backend-down` from a script — the
 `user` family is the general-purpose entry point into the event system.
+
+### Lifecycle events raised by 66
+
+66 raises a few `user` events on its own, at the moments in the system's life that a service
+most often needs to hang off. You subscribe to them exactly like any other `user` name — an
+`[Event]` section with `EventType = user` and `On = ( <name> )`. You never emit them
+yourself; 66 does, from inside `66 boot` and the shutdown daemon.
+
+These names all carry a **dot**. The dotted form is reserved for events 66 raises itself; the
+names you raise with `66 emit` or `Emit` are bare (`cert-renewed`, `backend-down`). The two
+namespaces never collide, and a dot in an `On` line tells you at a glance the event comes from
+the system, not from another service.
+
+| Event | Raised when | Typical use |
+|---|---|---|
+| `boot.done` | boot has finished — every enabled tree is started | bring up something that must wait for a fully-booted system |
+| `boot.failed` | boot could not start every enabled tree | raise an alert, open an emergency shell |
+| `shutdown.begin` | a shutdown or reboot has been scheduled, **before** any service is stopped | flush state, notify a peer, quiesce a daemon cleanly |
+
+`boot.done` fires **after** the last enabled tree is up, which is exactly the hook a getty
+wants — a login prompt should appear only once the machine has finished booting. Instead of
+wiring the getty into the boot dependency graph, you subscribe it to the event:
+
+```ini
+# frontend: tty1
+[Main]
+Type = classic
+Description = "getty on tty1"
+[Start]
+Execute = ( execl-cmdline -s { agetty 38400 tty1 } )
+[Event]
+EventType = user
+On = ( boot.done )
+Do = start
+```
+
+At boot the getty is **armed but not started** — a `Do = start` reactor is [armed
+idle](#arming-and-disarming): it waits at rest and runs its `Execute` only when its event
+arrives. When `boot.done` fires, 66 starts it. Because a source is fan-out, every getty and
+every other "wait for boot" service subscribes to the same `boot.done` without boot having to
+know they exist.
+
+`shutdown.begin` is the mirror image, and its timing matters: it fires while services are
+still up, during the shutdown grace period, so a reactor still has a live system to act on.
+That window is short — keep the reaction quick (a flush, a signal), not a long job that would
+be cut off when the teardown proceeds.
 
 ### EventType = inotify / schedule / timer (reactor)
 

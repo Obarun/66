@@ -172,6 +172,12 @@ static inline void prepare_shutdown (istream *b, sse_watcher_t *timer, unsigned 
 
     if (u && u <= 300000)
         *grace_time = u ;
+
+    char eventddir[strlen(live) + 1 + SS_SCANDIR_LEN + 3 + SS_EVENTD_LEN + 1] ;
+    auto_strings(eventddir, live, "/", SS_SCANDIR, "/0/", SS_EVENTD) ;
+
+    if (!svcd_notify(eventddir, 'e', STATUS_WHO_SHUTDOWN, "shutdown.begin"))
+        log_warnusys("emit shutdown event") ;
 }
 
 static inline void handle_fifo (istream *b, char *what, sse_watcher_t *timer, unsigned int *grace_time)

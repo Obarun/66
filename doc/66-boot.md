@@ -115,3 +115,7 @@ The environment variables used to launch all commands during the boot process ar
 - Variables imported from the %%environment_adm%% directory.
 - Variables imported from the directory specified with the -e option, if provided.
 - Variables imported from the kernel command line.
+
+## See also
+
+- [the event system](66-event.html#lifecycle-events-raised-by-66): once every enabled tree is started, *boot* raises the `boot.done` event — or `boot.failed` if a tree could not start. Any service can react to it, for example to bring up a getty only after the system has finished booting.

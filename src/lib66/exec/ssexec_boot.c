@@ -40,6 +40,7 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/ssexec.h>
+#include <66/svc.h>
 #include <66/tree.h>
 #include <66/utils.h>
 
@@ -407,7 +408,11 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
     if (container && rc)
         set_container_exitcode(LOG_EXIT_SYS) ;
 
-    /* TODO: End-of-boot event is emitted here -- boot-done on success, boot-failed otherwise */
+    char eventddir[info->scandir.len + 1 + SS_EVENTD_LEN + 1] ;
+    auto_strings(eventddir, info->scandir.s, "/", SS_EVENTD) ;
+
+    if (!svcd_notify(eventddir, 'e', info->who, rc ? "boot.failed" : "boot.done"))
+        log_warnusys("emit boot event") ;
 
     _exit(rc ? LOG_EXIT_SYS : 0) ;
 }

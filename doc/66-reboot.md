@@ -52,3 +52,7 @@ Sends a "system will be rebooted in 10 minutes" message to connected accounts an
 ```
 66 reboot -m "system will be rebooted in 10 minutes" 10
 ```
+
+## See also
+
+- [the event system](66-event.html#lifecycle-events-raised-by-66): when the reboot is scheduled — before any service is stopped — 66 raises the `shutdown.begin` event, which a service can react to in order to flush or quiesce cleanly during the grace period.
