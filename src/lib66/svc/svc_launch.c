@@ -73,7 +73,7 @@ static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, voi
 static void complete(uint32_t id, bool success) ;
 static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat) ;
 static void svc_oneshot_teardown(void *data) ;
-static uint32_t reactor_readdo(resolve_service_t *res) ;
+static int reactor_armed_idle(resolve_service_t *res) ;
 
 // helpers
 static uint32_t get_asvc_id(vertex_t *v)
@@ -200,13 +200,13 @@ static void announce(uint32_t id, bool success)
 
     auto_strings(file, scandir, "/down") ;
 
-    /* an event-armed Do=start reactor at rest is waiting, not up: the event layer
+    /* an armed-idle reactor at rest is waiting, not up: the event layer
      * owns this, so svc_launch records it for a oneshot/module reactor (a classic's
      * waiting is derived from its down state, 66-supervise stays binary). Outside a
      * reactor, only a module's status is svc_launch's to write (it has no daemon). */
     if (!pmanager->operation && svc->res->has_event
         && (svc->res->type == E_PARSER_TYPE_ONESHOT || svc->res->type == E_PARSER_TYPE_MODULE)
-        && reactor_readdo(svc->res) == EVENT_DO_START)
+        && reactor_armed_idle(svc->res))
         svc->waiting = true ;
 
     if (svc->waiting || svc->res->type == E_PARSER_TYPE_MODULE)
@@ -342,18 +342,18 @@ static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
     complete(id, false) ;
 }
 
-static uint32_t reactor_readdo(resolve_service_t *res)
+static int reactor_armed_idle(resolve_service_t *res)
 {
     if (!res->has_event)
-        return EVENT_DO_NONE ;
+        return 0 ;
 
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
     resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
     int r = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) ;
 
-    uint32_t docmd = r == 1 ? ev.docmd : EVENT_DO_NONE ;
+    int idle = r == 1 && (ev.docmd == EVENT_DO_START || ev.docmd == EVENT_DO_RESTART) ;
     resolve_free(wev) ;
-    return docmd ;
+    return idle ;
 }
 
 static void reactor_arm(uint32_t id)
@@ -381,7 +381,7 @@ static int launch_classic(uint32_t id)
 
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_readdo(svc->res) == EVENT_DO_START) {
+        && reactor_armed_idle(svc->res)) {
         complete(id, true) ;
         return 1 ;
     }
@@ -455,7 +455,7 @@ static int launch_oneshot(uint32_t id)
     char const *name = svc->res->sa.s + svc->res->name ;
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_readdo(svc->res) == EVENT_DO_START) {
+        && reactor_armed_idle(svc->res)) {
         svc->native = true ;
         complete(id, true) ;
         return 1 ;
@@ -510,7 +510,7 @@ static int launch_service(uint32_t id)
     } else if (type == E_PARSER_TYPE_MODULE) {
 
         if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-            && reactor_readdo(svc->res) == EVENT_DO_START) {
+            && reactor_armed_idle(svc->res)) {
             complete(id, true) ;
             return 1 ;
         }

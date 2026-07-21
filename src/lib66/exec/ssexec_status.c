@@ -153,18 +153,18 @@ static void info_display_tree(char const *field,resolve_service_t *res)
     info_display_string(res->sa.s + res->treename) ;
 }
 
-static int reactor_is_start(resolve_service_t *res)
+static int reactor_armed_idle(resolve_service_t *res)
 {
     if (!res->has_event)
         return 0 ;
 
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
     resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-    int start = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) == 1
-             && ev.docmd == EVENT_DO_START ;
+    int idle = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) == 1
+            && (ev.docmd == EVENT_DO_START || ev.docmd == EVENT_DO_RESTART) ;
     resolve_free(wev) ;
 
-    return start ;
+    return idle ;
 }
 
 static uint8_t status_record_load(service_status_t *st, resolve_service_t *res)
@@ -202,7 +202,7 @@ static void info_get_status(resolve_service_t *res)
     /* a down classic event reactor is 'waiting' (armed): 66-supervise keeps its
      * status binary up/down, so the event meaning is derived here. */
     uint8_t estate = st.state ;
-    if (st.state == STATUS_STATE_DOWN && res->type == E_PARSER_TYPE_CLASSIC && reactor_is_start(res))
+    if (st.state == STATUS_STATE_DOWN && res->type == E_PARSER_TYPE_CLASSIC && reactor_armed_idle(res))
         estate = STATUS_STATE_WAITING ;
 
     char const *word = status_state_to_string(estate) ;

@@ -347,9 +347,10 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
             if (!mkdtemp(sa.s))
                 log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
 
-            /* a Do=start reactor is armed, not launched: force it down so
+            /* a start/restart reactor is armed, not launched: force it down so
              * supervision keeps it offline until an event brings it up */
-            if (c->res.has_event && c->event.docmd == EVENT_DO_START)
+            if (c->res.has_event
+                && (c->event.docmd == EVENT_DO_START || c->event.docmd == EVENT_DO_RESTART))
                 c->execute.down = 1 ;
 
             write_services(&c->res, &c->execute, &c->environ, sa.s, rforce) ;
