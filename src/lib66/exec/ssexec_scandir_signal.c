@@ -211,9 +211,58 @@ static unsigned int signal_container = 0 ;
 static unsigned int signal_boot = 0 ;
 static char const *signal_userenv = 0 ;
 
-void scandir_signal_set_name(char const *name)
+int do_scandir_start(int argc, char const *const *argv, void *data)
 {
-    scandir_signal_name = name ;
+    scandir_signal_name = "start" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_stop(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "stop" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_reconfigure(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "reconfigure" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_check(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "check" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_quit(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "quit" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_abort(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "abort" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_nuke(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "nuke" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_annihilate(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "annihilate" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
+}
+
+int do_scandir_zombies(int argc, char const *const *argv, void *data)
+{
+    scandir_signal_name = "zombies" ;
+    return ssexec_scandir_signal(argc, argv, data) ;
 }
 
 int on_scandir_signal(int id, char const *arg, void *data)

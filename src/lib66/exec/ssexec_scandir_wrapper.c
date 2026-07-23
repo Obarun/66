@@ -26,63 +26,21 @@
 /* The dispatch tree lives here: each sub-command's option table is defined in
  * this file (so OPT_COUNT is a constant), while the leaves export only their
  * option applier (on_*) and their handler (ssexec_*). The signal sub-commands
- * all share ssexec_scandir_signal and only differ by the name set with
- * scandir_signal_set_name before the handler runs. */
+ * all share ssexec_scandir_signal through the leaf's do_scandir_* helpers
+ * (which set the signal name). */
 
 extern opt_on_option_fn on_scandir_create ;
 extern opt_on_option_fn on_scandir_signal ;
-extern void scandir_signal_set_name(char const *name) ;
 
-static int do_scandir_signal(char const *name, int argc, char const *const *argv, void *data)
-{
-    scandir_signal_set_name(name) ;
-    return ssexec_scandir_signal(argc, argv, data) ;
-}
-
-static int do_scandir_start(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("start", argc, argv, data) ;
-}
-
-static int do_scandir_stop(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("stop", argc, argv, data) ;
-}
-
-static int do_scandir_reconfigure(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("reconfigure", argc, argv, data) ;
-}
-
-static int do_scandir_check(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("check", argc, argv, data) ;
-}
-
-static int do_scandir_quit(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("quit", argc, argv, data) ;
-}
-
-static int do_scandir_abort(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("abort", argc, argv, data) ;
-}
-
-static int do_scandir_nuke(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("nuke", argc, argv, data) ;
-}
-
-static int do_scandir_annihilate(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("annihilate", argc, argv, data) ;
-}
-
-static int do_scandir_zombies(int argc, char const *const *argv, void *data)
-{
-    return do_scandir_signal("zombies", argc, argv, data) ;
-}
+extern opt_cmd_fn do_scandir_start ;
+extern opt_cmd_fn do_scandir_stop ;
+extern opt_cmd_fn do_scandir_reconfigure ;
+extern opt_cmd_fn do_scandir_check ;
+extern opt_cmd_fn do_scandir_quit ;
+extern opt_cmd_fn do_scandir_abort ;
+extern opt_cmd_fn do_scandir_nuke ;
+extern opt_cmd_fn do_scandir_annihilate ;
+extern opt_cmd_fn do_scandir_zombies ;
 
 static int on_scandir_wrapper(int id, char const *arg, void *data)
 {
