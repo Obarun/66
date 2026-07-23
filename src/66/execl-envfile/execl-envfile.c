@@ -29,6 +29,7 @@
 #include <oblibs/types.h>
 
 #include <66/config.h>
+#include <66/utils.h>
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                          .help = "print this help" },
@@ -127,6 +128,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
         errno = EINVAL ;
         log_diesys(LOG_EXIT_USER, "invalid format for path: ", path) ;
     }
+
+    // expand @identifiers (@H, @U, ...) against the process owner; @I is left
+    // untouched, as there is no instance context at runtime
+    if (!identifier_replace_block(&env, 0))
+        log_warnusys("replace identifiers in environment from: ", path) ;
 
     // substitute variable inside the environment
     if (!environ_substitute(&env, &info))

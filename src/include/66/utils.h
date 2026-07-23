@@ -58,6 +58,13 @@ extern int version_compare(char const  *a, char const *b) ;
  * Identifier
 */
 
+/**
+ * @brief Compute the replacement string for one @identifier.
+ * @param[out] store  Buffer receiving the NUL-terminated replacement value.
+ * @param[in]  data   Context (the service name for @I); may be 0 at runtime.
+ * @return 1 on success (store holds the value), 0 on error,
+ *         2 to decline (identifier not applicable here; leave it untouched).
+ */
 typedef int identifier_func_t(char *store, const char *data) ;
 
 identifier_func_t identifier_replace_instance ;
@@ -78,5 +85,22 @@ struct identifier_table_s
 
 extern identifier_table_t identifier_table[] ;
 extern int identifier_replace(strbuf *sasv, char const *svname) ;
+
+/**
+ * @brief Expand every @identifier in a NUL-delimited value block, in place.
+ *
+ * Unlike identifier_replace, which treats its buffer as newline-delimited text
+ * and returns a single C-string, this operates directly on a block of
+ * NUL-terminated records (KEY=VALUE\0KEY=VALUE\0...), the exec-environment
+ * format consumed by exec_path_merge. The record separators and the total
+ * length are preserved.
+ *
+ * @param[in,out] block  NUL-delimited record block; substitutions applied in place.
+ * @param[in]     svname Service name fed to the @I (instance) substitution;
+ *                       pass 0 at runtime, where @I is not applicable and is left
+ *                       untouched.
+ * @return 1 on success (including an empty block), 0 on failure.
+ */
+extern int identifier_replace_block(strbuf *block, char const *svname) ;
 
 #endif

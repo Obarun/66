@@ -199,6 +199,9 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
 
     }
 
+    if (!identifier_replace_block(env, 0))
+        log_warnusys("replace identifier at scandir environment value") ;
+
     ssexec_free(info) ;
     // it merge char const *const *environ with en->s where env->s take precedence
     exec_path_merge_die(newup[0], newup, (char const *const *)environ, env->s, env->len) ;

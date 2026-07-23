@@ -59,7 +59,7 @@ exe_configs = {
   },
   'execl-envfile': {
     'sources': ['execl-envfile.c'],
-    'deps': [oblibs_dep]
+    'deps': [lib66_dep]
   },
   'execl-runas': {
     'sources': ['execl-runas.c'],

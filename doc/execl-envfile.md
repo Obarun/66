@@ -15,6 +15,8 @@ This program expects to find a regular file or a directory in *src* containing o
 
 - It imports the found `key=value` pair(s).
 
+- It expands the `@` identifiers (`@H`, `@U`, ...) found in the values.
+
 - It substitutes each corresponding *key* with value from that file.
 
 - It unexports the variable(s) if requested.
@@ -86,6 +88,27 @@ A variable calling itself is **only** allowed if the `key` name can be found at 
 ```
 
 will only work if `PATH` is already defined in the current environment. If not the result will literally be `PATH=/usr/local/bin:${PATH}`.
+
+### Identifiers
+
+The `@` identifiers (`@H`, `@U`, `@u`, `@G`, `@g`, `@S`, `@R`) are expanded in the values, resolving against the owner of the current process. See [66-identifier](66-identifier.md) for the full list and their meaning. For instance,
+
+```
+    XDG_CACHE_HOME=@H/.cache
+```
+
+becomes `XDG_CACHE_HOME=/home/<owner>/.cache`.
+
+`@I` (the instance name) is **not** expanded here: it only exists at parse time, and `execl-envfile` runs at runtime with no instance context, so an `@I` is left untouched.
+
+Identifiers are expanded **before** the `${}` substitution, so a `${}` reference sees the already-resolved value:
+
+```
+    HOME_DIR=@H
+    config=${HOME_DIR}/config
+```
+
+yields `config=/home/<owner>/config`.
 
 ### Limits
 

@@ -65,6 +65,12 @@ static int identifier_get_name(char *store)
 
 int identifier_replace_instance(char *store, const char *rid)
 {
+    /* @I resolves an instance name, which only exists at parse time. At runtime
+     * the caller passes rid == 0: decline the substitution (leave @I untouched)
+     * instead of dereferencing a null name. */
+    if (!rid)
+        return 2 ;
+
     size_t len = strlen(rid) ;
     ssize_t r = get_rlen_until(rid,'@', len) ;
     /** identifier are used in any kind
@@ -196,10 +202,8 @@ int identifier_replace(strbuf *sasv, char const *svname)
 
     memset(store, 0, sizeof(char) * SS_MAX_PATH_LEN) ;
 
-    if (!strbuf_copyb(&sa, sasv->s, sasv->len) || !strbuf_terminate(&sa))
+    if (!strbuf_copyb(&sa, sasv->s, sasv->len) || !strbuf_uncounted(&sa))
         return 0 ;
-
-    sa.len-- ;
 
     if (!sbl_split_string_in_nline(&sa))
         return 0 ;
@@ -209,6 +213,11 @@ int identifier_replace(strbuf *sasv, char const *svname)
         r = (*identifier_table[pos].func)(store, svname) ;
         if (!r)
             return 0 ;
+
+        if (r == 2) {
+            pos++ ;
+            continue ;
+        }
 
         log_trace("replacing identifier: ", identifier_table[pos].ident, " by: ", store) ;
         if (!sbl_replace(&sa, identifier_table[pos].ident, store))
@@ -224,4 +233,34 @@ int identifier_replace(strbuf *sasv, char const *svname)
     sasv->len = 0 ;
 
     return auto_strbuf(sasv, sa.s) ;
+}
+
+int identifier_replace_block(strbuf *block, char const *svname)
+{
+    size_t pos = 0 ;
+    char store[SS_MAX_PATH_LEN] ;
+
+    if (!block->len)
+        return 1 ;
+
+    while (identifier_table[pos].ident) {
+
+        int r = (*identifier_table[pos].func)(store, svname) ;
+        if (!r)
+            return 0 ;
+
+        if (r == 2) {
+            // the identifier declined (not applicable here): leave it untouched
+            pos++ ;
+            continue ;
+        }
+
+        log_trace("replacing identifier: ", identifier_table[pos].ident, " by: ", store) ;
+        if (!sbl_replace(block, identifier_table[pos].ident, store))
+            log_warnu_return(LOG_EXIT_ZERO, "replace identifier: ", identifier_table[pos].ident, " by: ", store) ;
+
+        pos++ ;
+    }
+
+    return 1 ;
 }
