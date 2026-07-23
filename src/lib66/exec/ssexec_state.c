@@ -29,13 +29,13 @@
 /* One row per state flag, in display order -- the key is what -f selects. */
 
 static info_field_t const fields_state[] = {
-    { "toinit",        INFO_FIELD_FLAG, offsetof(ss_state_t, toinit) },
-    { "toreload",      INFO_FIELD_FLAG, offsetof(ss_state_t, toreload) },
-    { "torestart",     INFO_FIELD_FLAG, offsetof(ss_state_t, torestart) },
-    { "tounsupervise", INFO_FIELD_FLAG, offsetof(ss_state_t, tounsupervise) },
-    { "toparse",       INFO_FIELD_FLAG, offsetof(ss_state_t, toparse) },
-    { "isparsed",      INFO_FIELD_FLAG, offsetof(ss_state_t, isparsed) },
-    { "issupervised",  INFO_FIELD_FLAG, offsetof(ss_state_t, issupervised) },
+    { "toinit",        INFO_FIELD_FLAG, offsetof(ss_state_t, toinit),        0 },
+    { "toreload",      INFO_FIELD_FLAG, offsetof(ss_state_t, toreload),      0 },
+    { "torestart",     INFO_FIELD_FLAG, offsetof(ss_state_t, torestart),     0 },
+    { "tounsupervise", INFO_FIELD_FLAG, offsetof(ss_state_t, tounsupervise), 0 },
+    { "toparse",       INFO_FIELD_FLAG, offsetof(ss_state_t, toparse),       0 },
+    { "isparsed",      INFO_FIELD_FLAG, offsetof(ss_state_t, isparsed),      0 },
+    { "issupervised",  INFO_FIELD_FLAG, offsetof(ss_state_t, issupervised),  0 },
 } ;
 
 /* option state, set by on_state, drained at the top of ssexec_state */

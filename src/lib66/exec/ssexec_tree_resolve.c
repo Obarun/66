@@ -32,31 +32,31 @@
  * tree_resolve_write_cdb.c (init and supervised are stored but not displayed). */
 
 static info_field_t const fields_tree[] = {
-    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_t, name) },
-    { "enabled",     INFO_FIELD_U32, offsetof(resolve_tree_t, enabled) },
-    { "depends",     INFO_FIELD_STR, offsetof(resolve_tree_t, depends) },
-    { "requiredby",  INFO_FIELD_STR, offsetof(resolve_tree_t, requiredby) },
-    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_t, allow) },
-    { "groups",      INFO_FIELD_STR, offsetof(resolve_tree_t, groups) },
-    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_t, contents) },
-    { "ndepends",    INFO_FIELD_U32, offsetof(resolve_tree_t, ndepends) },
-    { "nrequiredby", INFO_FIELD_U32, offsetof(resolve_tree_t, nrequiredby) },
-    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_t, nallow) },
-    { "ngroups",     INFO_FIELD_U32, offsetof(resolve_tree_t, ngroups) },
-    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_t, ncontents) },
-    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_t, rversion) },
+    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_t, name), 0 },
+    { "enabled",     INFO_FIELD_U32, offsetof(resolve_tree_t, enabled), 0 },
+    { "depends",     INFO_FIELD_STR, offsetof(resolve_tree_t, depends), 0 },
+    { "requiredby",  INFO_FIELD_STR, offsetof(resolve_tree_t, requiredby), 0 },
+    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_t, allow), 0 },
+    { "groups",      INFO_FIELD_STR, offsetof(resolve_tree_t, groups), 0 },
+    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_t, contents), 0 },
+    { "ndepends",    INFO_FIELD_U32, offsetof(resolve_tree_t, ndepends), 0 },
+    { "nrequiredby", INFO_FIELD_U32, offsetof(resolve_tree_t, nrequiredby), 0 },
+    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_t, nallow), 0 },
+    { "ngroups",     INFO_FIELD_U32, offsetof(resolve_tree_t, ngroups), 0 },
+    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_t, ncontents), 0 },
+    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_t, rversion), 0 },
 } ;
 
 /* One row per cdb key, as written by tree_resolve_master_write_cdb.c. */
 
 static info_field_t const fields_master[] = {
-    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_master_t, name) },
-    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_master_t, allow) },
-    { "current",     INFO_FIELD_STR, offsetof(resolve_tree_master_t, current) },
-    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, contents) },
-    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_master_t, nallow) },
-    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_master_t, ncontents) },
-    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, rversion) },
+    { "name",        INFO_FIELD_STR, offsetof(resolve_tree_master_t, name), 0 },
+    { "allow",       INFO_FIELD_STR, offsetof(resolve_tree_master_t, allow), 0 },
+    { "current",     INFO_FIELD_STR, offsetof(resolve_tree_master_t, current), 0 },
+    { "contents",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, contents), 0 },
+    { "nallow",      INFO_FIELD_U32, offsetof(resolve_tree_master_t, nallow), 0 },
+    { "ncontents",   INFO_FIELD_U32, offsetof(resolve_tree_master_t, ncontents), 0 },
+    { "rversion",    INFO_FIELD_STR, offsetof(resolve_tree_master_t, rversion), 0 },
 } ;
 
 /* option state, set by on_tree_resolve, drained at the top of ssexec_tree_resolve */
