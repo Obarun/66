@@ -24,6 +24,8 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
+#include <oblibs/files.h>
+#include <oblibs/account.h>
 #include <oblibs/directory.h>
 
 #include <66/ssexec.h>
@@ -671,94 +673,175 @@ static void migrate_service_0822(void)
     ssexec_free(&info) ;
 }
 
-static void migrate_scandir_resolve(const char *rdir, const char *dir, const char *name)
+/** The live scandir is the one 0.8.2.2 booted: s6-svscan supervises it and its
+ * run scripts still exec the binaries and options of that release, which this
+ * one no longer provides. Nothing rewrites them before the next boot, and the
+ * supervisor does relaunch these daemons -- 66-shutdownd relies on it to run
+ * the final stage of a shutdown. What follows writes what a 0.9.0.0 scandir
+ * carries, frozen here: it belongs to this migration step and dies with it.
+ *
+ * A failure only costs the rewrite: the state on disk is already migrated at
+ * this point, so warn and carry on rather than abort and leave the system
+ * halfway. */
+
+#define MIGRATE_SCANDIR_HINT " -- you may need to force the reboot using 66 reboot -f"
+
+static int migrate_scandir_run(char const *dir, char const *run, size_t runlen)
 {
     log_flow() ;
 
-    int fd ;
-    ocdb c = OCDB_ZERO ;
-    resolve_service_t_0821 old = RESOLVE_SERVICE_ZERO_0821 ;
-    resolve_service_t new = RESOLVE_SERVICE_ZERO ;
+    char dst[strlen(dir) + 5] ;
+    auto_strings(dst, dir, "/run") ;
+
+    log_trace("write run file: ", dst) ;
+
+    if (!file_write(dst, run, runlen) || chmod(dst, 0755) < 0) {
+        log_warnusys("write run file: ", dst, MIGRATE_SCANDIR_HINT) ;
+        return 0 ;
+    }
+
+    return 1 ;
+}
+
+static void migrate_scandir_resolve(char const *dir, char const *name, uint32_t notify)
+{
+    log_flow() ;
+
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &new) ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-
-    int r = resolve_open_cdb(&fd, &c, rdir, name) ;
-    if (r < 0) {
-        resolve_free(wres) ;
-        resolve_free(wex) ;
-
-        // present but unreadable -- warn and skip
-        log_warnusys("open resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
-        return ;
-    }
-
-    if (r > 0 && !service_resolve_read_cdb_0821(&c, &old)) {
-        log_warnusys("read resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
-        resolve_free(wres) ;
-        resolve_free(wex) ;
-        return ;
-    }
-
-    /** r == 0: Write a minimal resolve, exactly as write_min_resolve() does at
-     * boot, so 66-supervise can relaunch it at shutdown stage 4; otherwise it
-     * dies reading the missing resolve and the system never reaches the reboot. */
 
     resolve_init(wres) ;
     resolve_init(wex) ;
 
-    new.name = old.name ? resolve_add_string(wres, old.sa.s + old.name) : resolve_add_string(wres, name) ;
-    new.type = r > 0 ? old.type : E_PARSER_TYPE_CLASSIC ;
-    new.has_execute = 1 ;
-    ex.notify = old.notify ;
+    res.name = resolve_add_string(wres, name) ;
+    res.type = E_PARSER_TYPE_CLASSIC ;
+    res.has_execute = 1 ;
+    ex.notify = notify ;
 
-    if (!r) {
-
-        char mrdir[strlen(dir) + SS_RESOLVE_LEN + 1] ;
-        auto_strings(mrdir, dir, SS_RESOLVE) ;
-        if (!dir_create_parent(mrdir, 0755)) {
-            log_warnusys("create resolve directory of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
-            resolve_free(wres) ;
-            resolve_free(wex) ;
-            return ;
-        }
-    }
-
-    if (!resolve_write_at(wres, dir, name)) {
-        log_warnusys("write resolve file of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
-        resolve_free(wres) ;
-        resolve_free(wex) ;
-        return ;
-    }
-
+    char rdir[strlen(dir) + SS_RESOLVE_LEN + 1] ;
+    auto_strings(rdir, dir, SS_RESOLVE) ;
 
     char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
     auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
-    if (!resolve_write_at(wex, dir, aname)) {
-        log_warnusys("write execute addon of service: ", name, " -- you may need to force the reboot using 66 reboot -f") ;
-        resolve_free(wres) ;
-        resolve_free(wex) ;
-        return ;
-    }
 
-    strbuf_free(&old.sa) ;
+    // resolve_write_at does not create the .resolve directory
+    if (!dir_create_parent(rdir, 0755)
+        || !resolve_write_at(wres, dir, name)
+        || !resolve_write_at(wex, dir, aname))
+            log_warnusys("write resolve file of service: ", name, MIGRATE_SCANDIR_HINT) ;
+
     resolve_free(wres) ;
     resolve_free(wex) ;
+}
+
+static void migrate_scandir_notification(char const *dir)
+{
+    log_flow() ;
+
+    char dst[strlen(dir) + 1 + SS_NOTIFICATION_LEN + 1] ;
+    auto_strings(dst, dir, "/", SS_NOTIFICATION) ;
+
+    if (!file_write(dst, "3\n", 2))
+        log_warnusys("write file: ", dst, MIGRATE_SCANDIR_HINT) ;
+}
+
+/** The daemon that shuts the system down keeps running from memory until the
+ * reboot: it is the 0.8.2.2 one, and it is the right one -- it drives an s6
+ * scandir this release cannot drive. Its last act is to leave a stage4 file
+ * and exit, for the supervisor to relaunch a process that unmounts and calls
+ * 66-hpr. That relaunch is what this run file must serve, and 0.8.2.2 writes
+ * stage4 as an executable script, where this release writes a one byte marker
+ * its own binary reads. So run the script when it is there -- exactly what the
+ * 0.8.2.2 binary did on startup -- and fall back to the daemon otherwise. The
+ * next boot writes a plain run file: this one only has to survive until then. */
+static void migrate_scandir_shutdownd(char const *live, char const *dir, unsigned int container, unsigned int catch_log)
+{
+    log_flow() ;
+
+    strbuf b = STRBUF_ZERO ;
+
+    if (!auto_strbuf(&b,
+        "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
+        SS_EXECLINE_BINPREFIX "foreground { " SS_EXECLINE_BINPREFIX "tryexec { ./stage4 } }\n" \
+        SS_LIBEXECPREFIX "66-shutdownd -l ", live, " -g 3000")
+        || (container && !auto_strbuf(&b, " -B"))
+        || (!catch_log && !auto_strbuf(&b, " -c"))
+        || !auto_strbuf(&b, "\n"))
+            log_die_nomem("strbuf") ;
+
+    if (migrate_scandir_run(dir, b.s, b.len))
+        migrate_scandir_resolve(dir, "66-shutdownd", 0) ;
+
+    strbuf_free(&b) ;
+}
+
+static void migrate_scandir_log(char const *dir, char const *logdir, char const *user, unsigned int container)
+{
+    log_flow() ;
+
+    strbuf b = STRBUF_ZERO ;
+
+    if (!auto_strbuf(&b,
+        "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n",
+        container ? SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n" : SS_EXECLINE_BINPREFIX "redirfd -w 1 /dev/null\n",
+        SS_EXECLINE_BINPREFIX "redirfd -rnb 0 fifo\n" \
+        SS_BINPREFIX "execl-runas ", user,
+        "\n" SS_BINPREFIX "66-log -bpd3 --")
+        || (SS_LOGGER_TIMESTAMP < E_PARSER_TIME_NONE
+            && !auto_strbuf(&b, SS_LOGGER_TIMESTAMP == E_PARSER_TIME_ISO ? " T " : " t "))
+        || !auto_strbuf(&b, logdir, "\n"))
+            log_die_nomem("strbuf") ;
+
+    if (migrate_scandir_run(dir, b.s, b.len)) {
+
+        migrate_scandir_notification(dir) ;
+        migrate_scandir_resolve(dir, "scandir-log", 3) ;
+    }
+
+    strbuf_free(&b) ;
+}
+
+static void migrate_scandir_socket(char const *dir, char const *name, char const *bin, char const *operand)
+{
+    log_flow() ;
+
+    strbuf b = STRBUF_ZERO ;
+    char verbo[U32_FMT] ;
+
+    verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
+
+    if (!auto_strbuf(&b,
+        "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
+        "fdmove -c 2 1\n" \
+        SS_LIBEXECPREFIX, bin, " -v", verbo, " -d 3 -- ", operand, "\n"))
+            log_die_nomem("strbuf") ;
+
+    if (migrate_scandir_run(dir, b.s, b.len)) {
+
+        migrate_scandir_notification(dir) ;
+        migrate_scandir_resolve(dir, name, 3) ;
+    }
+
+    strbuf_free(&b) ;
 }
 
 static void migrate_scandir_0822(void)
 {
     log_flow() ;
 
-    static char const *const internal[] = {
-        SS_BOOT_SHUTDOWND,
-        SS_SCANDIR SS_LOG_SUFFIX,
-        SS_ONESHOTD,
-        SS_FDHOLDER,
-        0
+    // the internal services of a 0.8.2.2 scandir, by the name it gave them
+    static char const *const socketd[][3] = {
+        { "oneshotd", "66-oneshotd", "s" },
+        { "fdholder", "66-fdholderd", "s" },
+        { 0, 0, 0 }
     } ;
 
     ssexec_t info = SSEXEC_ZERO ;
+    struct stat st ;
+    strbuf user = STRBUF_ZERO ;
+    unsigned int container = 0, catch_log = 0 ;
 
     info.owner = getuid() ;
     info.ownerlen = uid_format(info.ownerstr, info.owner) ;
@@ -769,37 +852,57 @@ static void migrate_scandir_0822(void)
 
     set_info(&info) ;
 
-    size_t scandirlen = info.scandir.len ;
+    char const *live = info.live.s ;
+    char const *scandir = info.scandir.s ;
+    size_t livelen = info.live.len, scandirlen = info.scandir.len ;
 
-    for (unsigned int i = 0 ; internal[i] ; i++) {
+    // no live scandir: a fresh /run, the boot creates it with this release
+    if (!access(scandir, F_OK)) {
 
-        char const *name = internal[i] ;
-        size_t namelen = strlen(name) ;
+        char logdir[scandirlen + 1 + SS_SCANDIR_LEN + SS_LOG_SUFFIX_LEN + 1] ;
+        auto_strings(logdir, scandir, "/" SS_SCANDIR SS_LOG_SUFFIX) ;
 
-        /* <scandir>/<name> -- the base write_min_resolve() wrote to. */
-        char dir[scandirlen + 1 + namelen + 1] ;
-        auto_strings(dir, info.scandir.s, "/", name) ;
+        catch_log = !access(logdir, F_OK) ;
 
-        /* only a daemon actually supervised in this scandir gets a resolve --
-         * never fabricate one for a daemon absent from the live scandir. */
-        if (access(dir, F_OK))
-            continue ;
+        {
+            char tmp[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + info.ownerlen + 1] ;
+            auto_strings(tmp, live, SS_BOOT_CONTAINER_DIR, "/", info.ownerstr) ;
 
-        /* the split execute addon marks a resolve already converted: skip it
-         * so a re-run (or a fresh scandir) never feeds a split cdb to the
-         * monolithic reader. */
-        char split[scandirlen + 1 + namelen + SS_RESOLVE_LEN + 1 + namelen + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
-        auto_strings(split, dir, SS_RESOLVE, "/", name, SS_ADDON_EXECUTE_SUFFIX) ;
-        if (!access(split, F_OK))
-            continue ;
+            container = !access(tmp, F_OK) ;
+        }
 
-        /* the monolithic core sits at <dir>/.resolve/<name>. */
-        char rdir[scandirlen + 1 + namelen + SS_RESOLVE_LEN + 1 + 1] ;
-        auto_strings(rdir, dir, SS_RESOLVE, "/") ;
+        {
+            char shut[scandirlen + 1 + SS_BOOT_SHUTDOWND_LEN + 1] ;
+            auto_strings(shut, scandir, "/", "66-shutdownd") ;
 
-        migrate_scandir_resolve(rdir, dir, name) ;
+            if (!access(shut, F_OK))
+                migrate_scandir_shutdownd(live, shut, container, catch_log) ;
+        }
+
+        if (catch_log) {
+
+            char path[livelen + SS_LOG_LEN + 1 + info.ownerlen + 1] ;
+            auto_strings(path, live, SS_LOG, "/", info.ownerstr) ;
+
+            // the log directory belongs to the user the catch-all logger runs as
+            if (stat(path, &st) < 0 || !get_namebyuid(st.st_uid, &user) || !strbuf_uncounted(&user))
+                log_warnusys("get the owner of: ", path, " -- keeping the run file of the catch-all logger untouched") ;
+
+            else
+                migrate_scandir_log(logdir, path, user.s, container) ;
+        }
+
+        for (unsigned int i = 0 ; socketd[i][0] ; i++) {
+
+            char tmp[scandirlen + 1 + strlen(socketd[i][0]) + 1] ;
+            auto_strings(tmp, scandir, "/", socketd[i][0]) ;
+
+            if (!access(tmp, F_OK))
+                migrate_scandir_socket(tmp, socketd[i][0], socketd[i][1], socketd[i][2]) ;
+        }
     }
 
+    strbuf_free(&user) ;
     ssexec_free(&info) ;
 }
 
