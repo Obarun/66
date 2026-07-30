@@ -317,6 +317,11 @@ is redundant for these three families but kept on purpose: every reactor is then
 self-describing — you read the family from the section itself, without having to open the
 source's frontend.
 
+That redundancy is checked, not assumed: `66 parse` refuses a reactor whose `EventType`
+disagrees with the family of the source named in `From`, and refuses a `From` that is not a
+`Type = event` source at all. This is not cosmetic — `EventType` is the runtime dispatch key,
+so a mismatch would arm cleanly and then never fire, silently.
+
 ```ini
 # frontend: backup  — runs every night, driven by the nightly-3am source above
 [Main]

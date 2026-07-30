@@ -185,6 +185,71 @@ static int validate_on_tokens(char const *on, int src, char const *from, int has
     return 1 ;
 }
 
+/** A tick reactor states an EventType that From already implies, and 66-eventd
+ * delivers an event only to a reactor whose type equals the source's own type.
+ * A mismatch parses, arms and then never fires -- silently. Refuse it here.
+ * Only the tick families reach this: their From is folded into depends, which is
+ * what makes the source resolvable at this point. */
+static int validate_from_sources(char const *from, int src, parse_build_ctx_t *ctx, char const *name)
+{
+    _alloc_sbl_(stk, strlen(from) + 1) ;
+
+    if (!sbl_clean_string(&stk, from))
+        log_warnusys_return(LOG_EXIT_ZERO, "clean the From list of service: ", name) ;
+
+    size_t pos = 0 ;
+
+    FOREACH_SBL(&stk, pos) {
+
+        char const *tok = stk.s + pos ;
+
+        int type ;
+        struct resolve_hash_s *h = resolve_hash_search(ctx->hres, tok) ;
+
+        if (h) {
+
+            if (h->res.type != E_PARSER_TYPE_EVENT)
+                log_warn_return(LOG_EXIT_ZERO, "From: ", tok, " is not an event source of service: ", name) ;
+
+            type = (int)h->event.type ;
+
+        } else {
+
+            // the source was parsed by an earlier run: read it back from disk
+            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+            resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &res) ;
+            int r = resolve_read(w, ctx->info->base.s, tok) ;
+            uint32_t rtype = res.type ;
+            resolve_free(w) ;
+
+            if (r <= 0)
+                log_warnu_return(LOG_EXIT_ZERO, "read the resolve file of source: ", tok, " of service: ", name) ;
+
+            // a reactor carries an event addon too, so test the service type first
+            if (rtype != E_PARSER_TYPE_EVENT)
+                log_warn_return(LOG_EXIT_ZERO, "From: ", tok, " is not an event source of service: ", name) ;
+
+            resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+            w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+            r = resolve_read(w, ctx->info->base.s, tok) ;
+            uint32_t etype = ev.type ;
+            resolve_free(w) ;
+
+            if (r <= 0)
+                log_warnu_return(LOG_EXIT_ZERO, "read the event addon of source: ", tok, " of service: ", name) ;
+
+            type = (int)etype ;
+        }
+
+        if (type != src)
+            log_warn_return(LOG_EXIT_ZERO, "EventType: ", event_src_to_string(src),
+                            " does not match its source: ", tok, " which is a ",
+                            event_src_to_string(type), " source, of service: ", name) ;
+    }
+
+    return 1 ;
+}
+
 int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
@@ -299,6 +364,12 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     if ((src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL) &&
         !validate_on_tokens(ev->sa.s + ev->on, src, ev->sa.s + ev->from, has_from, name)) {
+        free(wres) ;
+        return 0 ;
+    }
+
+    if ((src == EVENT_SOURCE_INOTIFY || src == EVENT_SOURCE_SCHEDULE || src == EVENT_SOURCE_TIMER) &&
+        !validate_from_sources(ev->sa.s + ev->from, src, ctx, name)) {
         free(wres) ;
         return 0 ;
     }

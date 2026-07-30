@@ -13,11 +13,14 @@
  */
 
 #include <assert.h>
+#include <stddef.h> // offsetof
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
+#include <oblibs/hash.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/string.h> // auto_strbuf
 
 #include <66/parse.h>
 #include <66/service.h>
@@ -25,15 +28,66 @@
 #include <66/enum_parser.h>
 #include <66/event_rule.h>
 
-static int run(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st)
+// holds no resolve file: the disk branch of the From check must reject, not crash
+#define TEST_BASE "/nonexistent-66-parse-event-base"
+
+/** the environment parse_event reads a tick reactor's From source from: the
+ * batch hash first, the resolve files of an earlier run otherwise. */
+typedef struct { hash_t hres ; ssexec_t info ; } test_env_t ;
+
+static void env_start(test_env_t *e)
+{
+    e->hres = (hash_t)HASH_ZERO ;
+    assert(hash_init(&e->hres, 0, offsetof(struct resolve_hash_s, node)) == 1) ;
+
+    e->info = (ssexec_t)SSEXEC_ZERO ;
+    // auto_strbuf, like set_ownersysdir: base.s must be a NUL-terminated path
+    assert(auto_strbuf(&e->info.base, TEST_BASE) == 1) ;
+}
+
+static void env_free(test_env_t *e)
+{
+    resolve_hash_free(&e->hres) ;
+    strbuf_free(&e->info.base) ;
+}
+
+/** seed the hash with what parse_interdependences leaves behind: the From target,
+ * already built, with its service type and event family set */
+static void env_add(test_env_t *e, char const *name, uint32_t svtype, uint32_t evtype)
+{
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    res.type = svtype ;
+    res.has_event = 1 ;
+
+    assert(resolve_hash_add(&e->hres, name, res) == 1) ;
+
+    struct resolve_hash_s *h = resolve_hash_search(&e->hres, name) ;
+    assert(h != NULL) ;
+
+    h->event.type = evtype ;
+}
+
+static int run_env(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st, test_env_t *e)
 {
     *c = (struct resolve_hash_s){0} ;
     assert(parse_store_build(st, fe) == 1) ;
     *w = resolve_set_struct(DATA_SERVICE, &c->res) ;
     resolve_init(*w) ;
     c->res.name = resolve_add_string(*w, "testsvc") ;
-    parse_build_ctx_t ctx = { .st = st, .conf = 0 } ;
+    parse_build_ctx_t ctx = { .st = st, .conf = 0, .hres = &e->hres, .info = &e->info } ;
     return parse_event(c, &ctx) ;
+}
+
+static int run(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st)
+{
+    test_env_t e ;
+    env_start(&e) ;
+
+    int r = run_env(fe, c, w, st, &e) ;
+
+    env_free(&e) ;
+
+    return r ;
 }
 
 static void cleanup(struct resolve_hash_s *c, resolve_wrapper_t *w, parse_store_t *st)
@@ -150,8 +204,12 @@ static void inotify_from_do(void)
         "From = ( resolv-watch )\n"
         "Do = reload\n" ;
 
+    test_env_t e ;
+    env_start(&e) ;
+    env_add(&e, "resolv-watch", E_PARSER_TYPE_EVENT, EVENT_SOURCE_INOTIFY) ;
+
     struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
-    assert(run(fe, &c, &w, &st) == 1) ;
+    assert(run_env(fe, &c, &w, &st, &e) == 1) ;
 
     assert(c.res.has_event == 1) ;
     assert(c.event.type == EVENT_SOURCE_INOTIFY) ;
@@ -161,6 +219,38 @@ static void inotify_from_do(void)
     assert(c.event.docmd == EVENT_DO_RELOAD) ;
 
     cleanup(&c, w, &st) ;
+    env_free(&e) ;
+}
+
+// a tick reactor accepts several sources of its own family
+static void schedule_from_multi(void)
+{
+    printf("Running test schedule_from_multi...\n") ;
+
+    static char const fe[] =
+        "[Main]\n"
+        "Type = oneshot\n"
+        "[Start]\n"
+        "Execute = ( /bin/true )\n"
+        "[Event]\n"
+        "EventType = schedule\n"
+        "From = ( nightly weekly )\n"
+        "Do = start\n" ;
+
+    test_env_t e ;
+    env_start(&e) ;
+    env_add(&e, "nightly", E_PARSER_TYPE_EVENT, EVENT_SOURCE_SCHEDULE) ;
+    env_add(&e, "weekly", E_PARSER_TYPE_EVENT, EVENT_SOURCE_SCHEDULE) ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_env(fe, &c, &w, &st, &e) == 1) ;
+
+    assert(c.event.type == EVENT_SOURCE_SCHEDULE) ;
+    assert(!strcmp(c.event.sa.s + c.event.from, "nightly weekly")) ;
+    assert(c.event.nfrom == 2) ;
+
+    cleanup(&c, w, &st) ;
+    env_free(&e) ;
 }
 
 /* no [Event] section -> no rule, has_event stays cleared */
@@ -199,6 +289,22 @@ static void rejected(char const *label, char const *fe)
     assert(run(fe, &c, &w, &st) == 0) ;
 
     cleanup(&c, w, &st) ;
+}
+
+// rejections that need a seeded From target in the hash
+static void rejected_from(char const *label, char const *fe, char const *src, uint32_t svtype, uint32_t evtype)
+{
+    printf("Running From rejection test %s...\n", label) ;
+
+    test_env_t e ;
+    env_start(&e) ;
+    env_add(&e, src, svtype, evtype) ;
+
+    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    assert(run_env(fe, &c, &w, &st, &e) == 0) ;
+
+    cleanup(&c, w, &st) ;
+    env_free(&e) ;
 }
 
 /* service On predicates: status state|result words, svc:cond (svc in From),
@@ -344,6 +450,7 @@ int main(void)
     signal_onall_emit() ;
     user_on() ;
     inotify_from_do() ;
+    schedule_from_multi() ;
     without_event() ;
 
     rejected("no source",
@@ -397,6 +504,22 @@ int main(void)
     rejected("bad signal name",
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = signal\nFrom = ( db )\nOn = ( NOTASIGNAL )\nDo = restart\n") ;
+
+    // the From source is neither in the batch nor on disk
+    rejected("unknown tick source",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = timer\nFrom = ( ghost )\nDo = start\n") ;
+
+    rejected_from("EventType against its source family",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = timer\nFrom = ( nightly )\nDo = start\n",
+        "nightly", E_PARSER_TYPE_EVENT, EVENT_SOURCE_SCHEDULE) ;
+
+    // the event family agrees: only the service type tells a reactor from a source
+    rejected_from("From is a reactor, not a source",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = inotify\nFrom = ( peer )\nDo = restart\n",
+        "peer", E_PARSER_TYPE_CLASSIC, EVENT_SOURCE_INOTIFY) ;
 
     source_inotify() ;
     source_schedule() ;
