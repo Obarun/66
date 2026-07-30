@@ -906,12 +906,38 @@ static void migrate_scandir_0822(void)
     ssexec_free(&info) ;
 }
 
+static void migrate_log_owner_0822(void)
+{
+    log_flow() ;
+
+    uid_t uid ;
+    gid_t gid ;
+
+    if (getuid())
+        return ;
+
+    if (access(SS_LOGGER_SYSDIR, F_OK) < 0) {
+        log_warnusys("find logger directory: '" SS_LOGGER_SYSDIR "' -- ignoring it") ;
+        return ;
+    }
+
+    if (!youruid(&uid, SS_LOGGER_RUNNER))
+        log_dieusys(LOG_EXIT_SYS, "get uid of account: ", SS_LOGGER_RUNNER) ;
+
+    if (!yourgid(&gid, uid))
+        log_dieusys(LOG_EXIT_SYS, "get gid") ;
+
+    if (chown(SS_LOGGER_SYSDIR, uid, gid) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chown: ", SS_LOGGER_SYSDIR) ;
+}
+
 void migrate_0822(void)
 {
     log_flow() ;
 
     log_info("Upgrading system from version: 0.8.2.2 to: ", SS_VERSION) ;
 
+    migrate_log_owner_0822() ;
     migrate_service_0822() ;
     migrate_scandir_0822() ;
 
