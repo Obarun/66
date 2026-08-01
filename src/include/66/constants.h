@@ -68,6 +68,12 @@
 
 #define SS_STATE "/state"
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
+#define SS_LIVEENV "environment"
+#define SS_LIVEENV_LEN (sizeof SS_LIVEENV - 1)
+#define SS_LIVEENV_EVENT "env."
+#define SS_LIVEENV_EVENT_LEN (sizeof SS_LIVEENV_EVENT - 1)
+#define SS_LIVEENV_EVENT_GONE "unenv."
+#define SS_LIVEENV_EVENT_GONE_LEN (sizeof SS_LIVEENV_EVENT_GONE - 1)
 #define SS_STATUS "status"
 #define SS_STATUS_LEN (sizeof SS_STATUS - 1)
 

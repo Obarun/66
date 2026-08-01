@@ -34,6 +34,7 @@ extern int yourgid(gid_t *passto,uid_t owner) ;
 extern int set_livedir(strbuf *live) ;
 extern int set_livescan(strbuf *live,uid_t owner) ;
 extern int set_livestate(strbuf *live,uid_t owner) ;
+extern int set_liveenviron(strbuf *live,uid_t owner) ;
 extern int set_ownerhome(strbuf *base,uid_t owner) ;
 extern int set_ownersysdir(strbuf *base,uid_t owner) ;
 extern int set_environment(strbuf *env,uid_t owner) ;

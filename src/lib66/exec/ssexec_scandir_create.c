@@ -616,6 +616,14 @@ void sanitize_live(char const *live)
     /** /run/66/state*/
     auto_strings(tmp + livelen,SS_STATE + 1) ;
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    /** run/66/environment */
+    auto_strings(tmp + livelen,SS_LIVEENV) ;
+    auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    /** run/66/environment/UID */
+    auto_strings(tmp + livelen,SS_LIVEENV,"/",OWNERSTR) ;
+    auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 }
 
 int on_scandir_create(int id, char const *arg, void *data)

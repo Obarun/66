@@ -83,5 +83,11 @@ int ssexec_scandir_remove(int argc, char const *const *argv, void *data)
         log_die_nomem("strbuf") ;
     auto_rm(info->scandir.s) ;
 
+    /** run/66/environment/uid */
+    info->scandir.len = 0 ;
+    if (!auto_strbuf(&info->scandir, info->live.s, SS_LIVEENV, "/", info->ownerstr))
+        log_die_nomem("strbuf") ;
+    auto_rm(info->scandir.s) ;
+
     return 0 ;
 }
