@@ -45,12 +45,13 @@ void tree_service_remove(char const *base, char const *treename, char const *ser
 
         if (stk.len) {
 
+            // count first: rebuilding collapses the list into a single string
+            tres.ncontents = sbl_count(&stk) ;
+
             if (!sbl_rebuild_with_delim(&stk, ' '))
                 log_dieu(LOG_EXIT_SYS, "convert sbl to string") ;
 
             str = stk.s ;
-
-            tres.ncontents = sbl_count(&stk) ;
 
         } else {
 
