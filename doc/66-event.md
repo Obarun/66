@@ -262,7 +262,8 @@ The same `alerter` also fires if an operator runs `66 emit backend-down` from a 
 66 raises a few `user` events on its own, at the moments in the system's life that a service
 most often needs to hang off. You subscribe to them exactly like any other `user` name — an
 `[Event]` section with `EventType = user` and `On = ( <name> )`. You never emit them
-yourself; 66 does, from inside `66 boot` and the shutdown daemon.
+yourself with `66 emit`; 66 does, from inside `66 boot`, the shutdown daemon and
+[`66 env`](66-env.html).
 
 These names all carry a **dot**. The dotted form is reserved for events 66 raises itself; the
 names you raise with `66 emit` or `Emit` are bare (`cert-renewed`, `backend-down`). The two
@@ -274,6 +275,8 @@ the system, not from another service.
 | `boot.done` | boot has finished — every enabled tree is started | bring up something that must wait for a fully-booted system |
 | `boot.failed` | boot could not start every enabled tree | raise an alert, open an emergency shell |
 | `shutdown.begin` | a shutdown or reboot has been scheduled, **before** any service is stopped | flush state, notify a peer, quiesce a daemon cleanly |
+| `env.<variable>` | [`66 env`](66-env.html) published *variable* — `env.DISPLAY`, `env.XAUTHORITY` | start a service the moment the value it needs becomes available |
+| `unenv.<variable>` | [`66 env`](66-env.html) withdrew *variable* | tear a service down when the value it depends on goes away |
 
 `boot.done` fires **after** the last enabled tree is up, which is exactly the hook a getty
 wants — a login prompt should appear only once the machine has finished booting. Instead of

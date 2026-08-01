@@ -39,7 +39,7 @@ sed_args = [
 html_pages = [
   '66', '66-boot', '66-cheatsheet', '66-container', '66-configure', '66-deeper',
   '66-dependencies', '66-disable',
-  '66-echo', '66-emit', '66-enable', '66-event', '66-eventd', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
+  '66-echo', '66-emit', '66-enable', '66-env', '66-event', '66-eventd', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',
   '66-identifier', '66-instantiated-service', '66-log', '66-module',
   '66-module-creation', '66-module-usage', '66-nuke', '66-parse', '66-poweroff', '66-reboot',
@@ -55,7 +55,7 @@ html_pages = [
 
 # 32 pages — man section 1 (strict mirror of make-man.sh)
 man1_pages = [
-  '66', '66-configure', '66-disable', '66-emit', '66-enable', '66-fdholder', '66-free', '66-halt',
+  '66', '66-configure', '66-disable', '66-emit', '66-enable', '66-env', '66-fdholder', '66-free', '66-halt',
   '66-hibernate', '66-parse', '66-poweroff', '66-reboot', '66-reconfigure',
   '66-log', '66-reload', '66-remove', '66-resolve', '66-restart', '66-rosetta',
   '66-runstate', '66-scandir', '66-signal', '66-snapshot', '66-start', '66-state',

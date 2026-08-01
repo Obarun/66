@@ -384,8 +384,9 @@ It is created at [66 scandir create](66-scandir.html#start) invocation if it doe
 │       │   ├── lock
 │       │   └── SIGINT, SIGTERM, finish…   signal and lifecycle scripts
 │       ├── scandir-log                    scandir internal logger (66-log)
-│       ├── fdholder                       fdholder daemon (fdholderdir field)
+│       ├── fdholderd                      fdholder daemon (fdholderdir field)
 │       ├── oneshotd                       oneshot daemon (oneshotddir field)
+│       ├── eventd                         event daemon (eventddir field)
 │       ├── <service> -> ../../state/0/<service>     classic: supervised symlink (scandir field)
 │       ├── .<service> -> ../../state/0/<service>    oneshot/module: hidden symlink, skipped by 66-scandir
 │       └── container                      container mode only (66 scandir create -B)
@@ -399,6 +400,9 @@ It is created at [66 scandir create](66-scandir.html#start) invocation if it doe
 │           ├── supervise
 │           │   └── status                 runtime record, see 66 runstate (supervisedir field)
 │           └── event                      supervision event fifodir (eventdir field)
+├── environment
+│   └── 0                                  one directory per UID
+│       └── <variable>                     one file per published variable, see 66 env
 └── log
     └── 0                                  destination of the scandir-log output
         └── current                        uncaught logs
@@ -424,7 +428,7 @@ Given `66` can run with root or regular account privileges, this directory conta
 
 This directory consists of service symlinks that point to their corresponding `%%livedir%%/state/UID/<service>` directory. A *classic* service is symlinked under its plain name, so `66-scandir` supervises it. A *oneshot* or a *module*, which is not supervised, is symlinked under a name prefixed with a dot (`.<service>`), which `66-scandir` skips.
 
-It also holds the `.66-scandir` control directory of the running [66-scandir](66-scandir.html) process, along with the `scandir-log` logger and the `fdholder` and `oneshotd` daemons.
+It also holds the `.66-scandir` control directory of the running [66-scandir](66-scandir.html) process, along with the `scandir-log` logger and the `fdholderd`, `oneshotd` and `eventd` daemons.
 
 *note*: The `66 scandir create -B` invocation create the directory `%%livedir%%/scandir/UID/container` containing a named file *halt*. See [boot](66-boot.html) for further information.
 
@@ -441,6 +445,22 @@ For instance, the `%%livedir%%/state/0/<service>` contains a verbatim copy of th
 Invocating the `66 free <service>` remove the corresponding `%%livedir%%/state/0/<service>` directory.
 
 At [start](66-start.html) command executed will created the corresponding `%%livedir%%/state/0/<service>` if it doesn't exist yet.
+
+### %%livedir%%/environment
+
+This directory holds the *runtime environment*: the per-session variables published with the [66 env](66-env.html) command. It is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state` and `%%livedir%%/log`, so that every account can own its own subdirectory below it.
+
+It is also where the temporary file of a publication is created, for the time of a `rename` into the subdirectory below. Nothing else lives here.
+
+### %%livedir%%/environment/UID
+
+One directory per account, mode `0755` and owned by that account. It holds **one file per published variable**, named after the variable and containing the single `variable=value` pair — `%%livedir%%/environment/1000/DISPLAY` contains `DISPLAY=:0`.
+
+`66-execute` merges this directory into the environment of **every** service of the scandir at each start, last and verbatim, so a published value overrides the frontend, the service configuration and the `ImportFile` files, and reaches services that declare no `[Environment]` section at all. See [66 env](66-env.html) for the precedence chain and the limits.
+
+The directory lives and dies with the scandir it belongs to: [66 scandir remove](66-scandir.html#remove) destroys it, so nothing published survives it. `66 env` never creates it — it reports its absence rather than publishing into a store no service reads.
+
+Because the whole directory is read by `environ_merge_dir`, it is subject to the limits of an [environment directory](66-scandir.html#environment): at most `20` files, hence at most 20 published variables, and no empty file. This is why a publication never creates its temporary here.
 
 ## %%system_log%%
 

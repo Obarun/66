@@ -67,6 +67,7 @@ nav:
     - configure: 66-configure.md
     - disable: 66-disable.md
     - enable: 66-enable.md
+    - env: 66-env.md
     - fdholder: 66-fdholder.md
     - free: 66-free.md
     - halt: 66-halt.md

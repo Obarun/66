@@ -125,7 +125,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-s, --rescan** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and `66-scandir` will only detect new services by issuing either [scandir reconfigure](#reconfigure) or [scandir check](#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
-- **-e, --environment** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Any file in environment not beginning with a dot and not containing the `=` character will be read and parsed. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `-D sysadmin-environment-dir=DIR `, `-D user-environment-dir=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
+- **-e, --environment** *environment*: an absolute path. Merge the current environment variables with variables found in this directory before starting the *scandir*. Every regular file found in *environment* is read and parsed. Sub-directories are not descended into. Each services started within the *scandir* will inherit of the `key=value` pair define within *environment*. By default, *66* import the %%environment_adm%% environment directory by default for the root user and the %%environment_user%% directory for the regular user. Although this can be changed at compile time by passing the `-D sysadmin-environment-dir=DIR `, `-D user-environment-dir=DIR` for root and regular user respectively. In case of same `key=value` pair, the environment directory define with the `-e` take precedence. Also, see [Environment](#environment) for further information about the syntax and the limitations.
 
 #### Usage examples
 
@@ -179,7 +179,7 @@ scandir remove [ -h ]
 
 The *scandir* **must** first be stopped with [scandir stop](#stop) subcommand or similar subcommand to be able to remove it.
 
-Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, and `%%livedir%%/state` remain intact, whereas all `UID` subdirectories are deleted. Refer to the [deeper understanding](66-deeper.html) for further information.
+Certain directories within the scandir will not be removed. Specifically, `%%livedir%%/log`, `%%livedir%%/scandir`, `%%livedir%%/state` and `%%livedir%%/environment` remain intact, whereas all `UID` subdirectories are deleted. Refer to the [deeper understanding](66-deeper.html) for further information.
 
 #### Options
 
