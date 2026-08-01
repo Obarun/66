@@ -132,9 +132,14 @@ extern opt_cmd_fn ssexec_fdholder_signal ;
 extern opt_cmd_fn ssexec_fdholder_store ;
 extern opt_cmd_fn ssexec_fdholder_retrieve ;
 extern opt_cmd_fn ssexec_fdholder_list ;
+extern opt_cmd_fn ssexec_env_import ;
+extern opt_cmd_fn ssexec_env_set ;
+extern opt_cmd_fn ssexec_env_unset ;
+extern opt_cmd_fn ssexec_env_list ;
 
 /** wrapper command nodes (sub-trees) */
 extern opt_cmd_t const cmd_scandir ;
+extern opt_cmd_t const cmd_env ;
 extern opt_cmd_t const cmd_tree ;
 extern opt_cmd_t const cmd_snapshot ;
 extern opt_cmd_t const cmd_fdholder ;

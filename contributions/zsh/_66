@@ -566,6 +566,54 @@
     esac
 }
 
+## env
+
+(( $+functions[_66_cmd_env] )) || _66_cmd_env() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # env_sub[] in ssexec_env_wrapper.c
+    subcommands=(
+        'import:publish variables from the environment of the caller'
+        'set:publish variables with the given values'
+        'unset:withdraw published variables'
+        'list:list the published variables'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t env-subcommands 'env subcommand' subcommands
+            ;;
+        (args)
+            case $line[1] in
+                (import)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '*:variable:_parameters -g "*export*"'
+                    ;;
+                (set)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '*:variable=value:'
+                    ;;
+                (unset)
+                    _arguments -s \
+                        '(-h --help)'{-h,--help}'[print this help]' \
+                        '*:variable:'
+                    ;;
+                (*)
+                    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
 ## snapshot
 
 (( $+functions[_66_cmd_snapshot] )) || _66_cmd_snapshot() {
@@ -698,6 +746,7 @@ _66() {
         'tree:main subcommands to manage trees'
         'snapshot:main subcommands to manage snapshot'
         'scandir:main subcommands to manage scandir'
+        'env:main subcommands to manage the runtime environment'
         'fdholder:main subcommands to manage the scandir'\''s fdholder'
         'poweroff:poweroff the system'
         'reboot:reboot the system'

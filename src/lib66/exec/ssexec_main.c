@@ -163,6 +163,7 @@ static struct { opt_cmd_t const *node ; char const *name ; } const cmd_reg[] = {
     { &cmd_tree,        "tree" },
     { &cmd_snapshot,    "snapshot" },
     { &cmd_scandir,     "scandir" },
+    { &cmd_env,         "env" },
     { &cmd_fdholder,    "fdholder" },
     { &cmd_poweroff,    "poweroff" },
     { &cmd_reboot,      "reboot" },
@@ -206,7 +207,7 @@ static uint8_t cmd_skips_sanitize(char const *cmd)
 
 static uint8_t cmd_skips_tree(char const *cmd)
 {
-    static char const *const skip[] = { "boot", "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", 0 } ;
+    static char const *const skip[] = { "boot", "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", "env", 0 } ;
     for (size_t i = 0 ; skip[i] ; i++)
         if (!strcmp(cmd, skip[i]))
             return 1 ;
