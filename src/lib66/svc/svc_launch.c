@@ -33,7 +33,6 @@
 
 #include <66/service.h>
 #include <66/resolve.h>
-#include <66/event_rule.h>
 #include <66/state.h>
 #include <66/status.h>
 #include <66/enum_parser.h>
@@ -73,7 +72,6 @@ static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, voi
 static void complete(uint32_t id, bool success) ;
 static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat) ;
 static void svc_oneshot_teardown(void *data) ;
-static int reactor_armed_idle(resolve_service_t *res) ;
 
 // helpers
 static uint32_t get_asvc_id(vertex_t *v)
@@ -161,14 +159,18 @@ static inline int svc_send_event(svc_event_type_t type, uint32_t id)
     return (written == sizeof(msg)) ? 1 : 0 ;
 }
 
-static void svc_runtime_write(svc_ctx_t *svc, bool success)
+static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
 {
     log_flow() ;
 
     service_status_t st = STATUS_ZERO ;
 
+    char const *supervisedir = svc->res->sa.s + svc->res->live.supervisedir ;
+    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
+    auto_strings(file, supervisedir, "/", SS_STATUS) ;
+
     if (success) {
-        st.state = svc->waiting ? STATUS_STATE_WAITING : (pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
+        st.state = armed ? STATUS_STATE_WAITING : (pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
         st.result = STATUS_RESULT_SUCCESS ;
     } else {
         st.state = STATUS_STATE_FAILED ;
@@ -178,9 +180,22 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success)
     st.who = pmanager->info->who ;
     clock_now(&st.stamp) ;
 
-    char const *supervisedir = svc->res->sa.s + svc->res->live.supervisedir ;
-    char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
-    auto_strings(file, supervisedir, "/", SS_STATUS) ;
+    /* readystamp dates the last run. A reactor that was only armed keeps the one of
+     * its previous firing: its state says waiting again, but the fact that its
+     * Execute already ran must survive the re-arm. A stop starts a fresh record. */
+    if (!svc->waiting && success && !pmanager->operation) {
+
+        clock_now(&st.readystamp) ;
+
+    } else if (armed) {
+
+        service_status_t old = STATUS_ZERO ;
+
+        if (status_read(&old, file) < 0)
+            log_warnusys("read runtime status of: ", svc->res->sa.s + svc->res->name) ;
+
+        st.readystamp = old.readystamp ;
+    }
 
     if (!status_write(&st, file))
         log_warnusys("write runtime status of: ", svc->res->sa.s + svc->res->name) ;
@@ -204,13 +219,12 @@ static void announce(uint32_t id, bool success)
      * owns this, so svc_launch records it for a oneshot/module reactor (a classic's
      * waiting is derived from its down state, 66-supervise stays binary). Outside a
      * reactor, only a module's status is svc_launch's to write (it has no daemon). */
-    if (!pmanager->operation && svc->res->has_event
+    bool armed = !pmanager->operation && svc->res->has_event
         && (svc->res->type == E_PARSER_TYPE_ONESHOT || svc->res->type == E_PARSER_TYPE_MODULE)
-        && reactor_armed_idle(svc->res))
-        svc->waiting = true ;
+        && svc_reactor_armed_idle(svc->res) ;
 
-    if (svc->waiting || svc->res->type == E_PARSER_TYPE_MODULE)
-        svc_runtime_write(svc, success) ;
+    if (armed || svc->res->type == E_PARSER_TYPE_MODULE)
+        svc_runtime_write(svc, success, armed) ;
 
     if (success) {
 
@@ -342,20 +356,6 @@ static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
     complete(id, false) ;
 }
 
-static int reactor_armed_idle(resolve_service_t *res)
-{
-    if (!res->has_event)
-        return 0 ;
-
-    resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-    int r = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) ;
-
-    int idle = r == 1 && (ev.docmd == EVENT_DO_START || ev.docmd == EVENT_DO_RESTART) ;
-    resolve_free(wev) ;
-    return idle ;
-}
-
 static void reactor_arm(uint32_t id)
 {
     log_flow() ;
@@ -381,7 +381,8 @@ static int launch_classic(uint32_t id)
 
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_armed_idle(svc->res)) {
+        && svc_reactor_armed_idle(svc->res)) {
+        svc->waiting = true ;
         complete(id, true) ;
         return 1 ;
     }
@@ -455,8 +456,9 @@ static int launch_oneshot(uint32_t id)
     char const *name = svc->res->sa.s + svc->res->name ;
 
     if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && reactor_armed_idle(svc->res)) {
+        && svc_reactor_armed_idle(svc->res)) {
         svc->native = true ;
+        svc->waiting = true ;
         complete(id, true) ;
         return 1 ;
     }
@@ -510,7 +512,8 @@ static int launch_service(uint32_t id)
     } else if (type == E_PARSER_TYPE_MODULE) {
 
         if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-            && reactor_armed_idle(svc->res)) {
+            && svc_reactor_armed_idle(svc->res)) {
+            svc->waiting = true ;
             complete(id, true) ;
             return 1 ;
         }

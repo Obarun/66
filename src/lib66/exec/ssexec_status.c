@@ -39,8 +39,8 @@
 #include <66/tree.h>
 #include <66/enum.h>
 #include <66/enum_parser.h>
-#include <66/event_rule.h>
 #include <66/resolve.h>
+#include <66/svc.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/graph.h>
@@ -153,20 +153,6 @@ static void info_display_tree(char const *field,resolve_service_t *res)
     info_display_string(res->sa.s + res->treename) ;
 }
 
-static int reactor_armed_idle(resolve_service_t *res)
-{
-    if (!res->has_event)
-        return 0 ;
-
-    resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-    int idle = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) == 1
-            && (ev.docmd == EVENT_DO_START || ev.docmd == EVENT_DO_RESTART) ;
-    resolve_free(wev) ;
-
-    return idle ;
-}
-
 static uint8_t status_record_load(service_status_t *st, resolve_service_t *res)
 {
     char const *supervisedir = res->sa.s + res->live.supervisedir ;
@@ -199,11 +185,7 @@ static void info_get_status(resolve_service_t *res)
 
     char const *disen = !NOFIELD ? "" : res->enabled ? "enabled, " : "disabled, " ;
 
-    /* a down classic event reactor is 'waiting' (armed): 66-supervise keeps its
-     * status binary up/down, so the event meaning is derived here. */
-    uint8_t estate = st.state ;
-    if (st.state == STATUS_STATE_DOWN && res->type == E_PARSER_TYPE_CLASSIC && reactor_armed_idle(res))
-        estate = STATUS_STATE_WAITING ;
+    uint8_t estate = svc_status_effective(res, &st) ;
 
     char const *word = status_state_to_string(estate) ;
     switch (estate) {
@@ -243,6 +225,29 @@ static void info_get_status(resolve_service_t *res)
     char whoby[16] = "" ;
     auto_strings(whoby, " by ", status_who_to_string(st.who)) ;
 
+    /* a reactor goes back to waiting after each firing: its state alone never says
+     * whether its Execute already ran, only the date of its last run does. */
+    char lastrun[INFO_DURATION_LEN + 18] = "" ;
+    if (st.state == STATUS_STATE_WAITING) {
+
+        if (!st.readystamp.tv_sec) {
+
+            auto_strings(lastrun, " (never run)") ;
+
+        } else {
+
+            uint64_t ran = now.tv_sec > st.readystamp.tv_sec ? (uint64_t)(now.tv_sec - st.readystamp.tv_sec) : 0 ;
+            char ago[INFO_DURATION_LEN + 1] ;
+
+            if (NOFIELD)
+                info_fmt_duration(ago, ran) ;
+            else
+                ago[u64_fmt(ago, ran)] = 0 ;
+
+            auto_strings(lastrun, " (last run ", ago, " ago)") ;
+        }
+    }
+
     char const *color = warn_color > 1 ? log_color->valid : log_color->error ;
 
     if (st.pid > 0) {
@@ -250,14 +255,14 @@ static void info_get_status(resolve_service_t *res)
         char pid[PID_FMT] ;
         pid[pid_format(pid, st.pid)] = 0 ;
 
-        if (!ostream_fmt(ostream_1, "%s%s%s%s (pid %s)%s since %s%s\n",
-                         disen, color, word, log_color->off, pid, detail, secs, whoby))
+        if (!ostream_fmt(ostream_1, "%s%s%s%s (pid %s)%s since %s%s%s\n",
+                         disen, color, word, log_color->off, pid, detail, secs, whoby, lastrun))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
     } else {
 
-        if (!ostream_fmt(ostream_1, "%s%s%s%s%s since %s%s\n",
-                         disen, color, word, log_color->off, detail, secs, whoby))
+        if (!ostream_fmt(ostream_1, "%s%s%s%s%s since %s%s%s\n",
+                         disen, color, word, log_color->off, detail, secs, whoby, lastrun))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
     }
 }

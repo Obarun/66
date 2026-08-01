@@ -126,6 +126,9 @@ static void oneshotd_write_status(char const *servicedir, uint8_t down, uint8_t 
     if (success) {
         st.state = down ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
         st.result = STATUS_RESULT_SUCCESS ;
+        // a oneshot reaching done is its transition to ready
+        if (!down)
+            clock_now(&st.readystamp) ;
     } else {
         st.state = STATUS_STATE_FAILED ;
         st.result = STATUS_RESULT_EXITED ;

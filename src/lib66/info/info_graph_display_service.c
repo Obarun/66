@@ -66,9 +66,16 @@ int info_graph_display_service(char const *name)
         str_pid[pid_format(str_pid, st.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
-    } else switch (st.state) {
+    } else switch (svc_status_effective(&res, &st)) {
 
-        /* the graph shows a compact state: up/done, failed, everything else as down */
+        /* the graph shows a compact state: up/done/waiting, failed, everything else
+         * as down. An armed reactor that already fired carries the run it did, which
+         * its waiting state alone would hide. */
+        case STATUS_STATE_WAITING :
+            ppid = st.state == STATUS_STATE_WAITING && st.readystamp.tv_sec ?
+                   "waiting(done)" : status_state_to_string(STATUS_STATE_WAITING) ;
+            pid_color = 2 ; break ;
+
         case STATUS_STATE_UP :
         case STATUS_STATE_DONE :   ppid = status_state_to_string(st.state) ; pid_color = 2 ; break ;
         case STATUS_STATE_FAILED : ppid = status_state_to_string(st.state) ; pid_color = 1 ; break ;

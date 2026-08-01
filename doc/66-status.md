@@ -83,6 +83,21 @@ The origin of the transition is always appended as `by <who>`:
 Status : enabled, down (exited 1) since 2min 5s by user
 ```
 
+A `waiting` service is an armed [event](66-event.html) reactor: it is not running
+and not failed, it sits idle until its event fires, and it goes back to `waiting`
+after each firing — it never parks in `done`. Because its state alone can never
+tell whether it already did its work, the date of its last run closes the line:
+
+```
+Status : enabled, waiting since 1h 13min by event (last run 1h 13min ago)
+Status : enabled, waiting since 3min by user (never run)
+```
+
+`never run` means *since it was last armed*: an explicit [stop](66-stop.html)
+clears that memory, and so does a reboot — the runtime record lives in a tmpfs.
+The same run shows up in the service list as `waiting(done)` instead of a bare
+`waiting`.
+
 `who` answers *who wanted this state*, not who last poked the process:
 
 - **`user`** — a state you asked for, with [start](66-start.html) or [stop](66-stop.html).

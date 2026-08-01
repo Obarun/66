@@ -75,7 +75,7 @@ struct svc_ctx_s
     event_state_t match ; // transition interpreter for this service's wait
     bool native ; // uses the native CLASSIC path (no child process)
     bool done ; // completion already emitted (guards event vs timeout)
-    bool waiting ; // Do=start reactor armed-not-launched: report its status down
+    bool waiting ; // armed reactor: it was armed only, its Execute never ran
 
     // State management
     uint16_t state ; // Current state
@@ -156,5 +156,22 @@ extern void svc_send_daemon(char const *dir, char const *control, uint8_t who, e
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 extern int svc_status(resolve_service_t *res, service_status_t *st) ;
 extern int svc_is_up(char const *name) ;
+
+/**
+ * @brief Tell whether @p res is a reactor that stays idle until its event fires.
+ * @param[in] res  Service to inspect; its event addon is read from disk.
+ * @return 1 if the service declares an event rule whose Do is start or restart,
+ * 0 otherwise (no event addon, unreadable addon, or any other Do).
+ */
+extern int svc_reactor_armed_idle(resolve_service_t *res) ;
+
+/**
+ * @brief State to display for @p res, event meaning included.
+ * @param[in] res  Service the status belongs to.
+ * @param[in] st   Runtime record of that service.
+ * @return st->state, or STATUS_STATE_WAITING when a down classic service is an
+ * armed reactor.
+ */
+extern uint8_t svc_status_effective(resolve_service_t *res, service_status_t const *st) ;
 
 #endif

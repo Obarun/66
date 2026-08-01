@@ -57,7 +57,7 @@ death.
 | `pid` | process id of the running service, `0` when no process is alive |
 | `code` | last process outcome, **read according to `result`** (see below) |
 | `stamp` | time the service entered its current state |
-| `readystamp` | time the service became ready (transitioned to `up`) |
+| `readystamp` | time the service became ready — transitioned to `up`, or to `done` for a `oneshot`/`module` |
 | `window_start` | start of the current crash-budget window |
 | `ndeaths` | number of deaths since `window_start` (crash budget) |
 
@@ -99,7 +99,10 @@ in seconds, with no unit conversion:
 - `stamp` and `readystamp` are `CLOCK_REALTIME` values, i.e. **seconds since the
   Unix epoch** (1970-01-01 UTC). They are absolute instants: decode one with
   `date -d @<value>`. `readystamp` equals `stamp` when entering the state and
-  becoming ready coincide (a service without readiness notification).
+  becoming ready coincide (a service without readiness notification). On an armed
+  [event](66-event.html) reactor, whose `state` returns to `waiting` after each
+  firing, `readystamp` is the only field left saying **when its `Execute` last
+  ran** — `0` means it has not run since it was armed.
 
 - `window_start` is a `CLOCK_MONOTONIC` value, i.e. **seconds since boot**, not a
   date. It is only meaningful relative to the monotonic clock, as the anchor of
