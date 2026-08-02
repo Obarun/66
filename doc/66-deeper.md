@@ -130,135 +130,182 @@ Every service possesses its individual directory. At its core, this directory ho
 This directory stores the resolve file for each service, mirroring how `%%system_dir%%/system/.resolve/` houses the resolve file for a tree. Running `66 resolve \<service\>` showcases the content of this file, presenting information similar to the following
 
 ```
-name            : dhcpcd
-description     : dhcpcd daemon
-version         : 0.8.0
-type            : 0
-notify          : 0
-maxdeath        : 5
-maxdeathtime    : 30000
-earlier         : 0
-copyfrom        : None
-intree          : None
-ownerstr        : 0
-owner           : 0
-treename        : global
-user            : root
-inns            : None
-enabled         : 1
-islog           : 0
-home            : /var/lib/66/
-frontend        : /usr/share/66/service/dhcpcd
-src_servicedir  : /var/lib/66/system/service/svc/dhcpcd
-depends         : dhcpcd-log
-requiredby      : None
-optsdeps        : None
-contents        : None
-provide         : None
-conflict        : None
-ndepends        : 1
-nrequiredby     : 0
-noptsdeps       : 0
-ncontents       : 0
-nprovide        : 0
-nconflict       : 0
-run             : #!/usr/bin/execlineb -P
+name             : dhcpcd
+description      : dhcpcd daemon
+version          : 0.8.0
+type             : 0
+earlier          : 0
+copyfrom         : None
+intree           : None
+ownerstr         : 0
+owner            : 0
+treename         : global
+user             : root
+inns             : None
+enabled          : 1
+islog            : 0
+logger           : 1
+has_limit        : 0
+has_environ      : 1
+has_io           : 1
+has_execute      : 1
+has_dependencies : 1
+has_regex        : 0
+has_event        : 0
+home             : /var/lib/66/
+frontend         : /usr/share/66/service/dhcpcd
+src_servicedir   : /var/lib/66/system/service/svc/dhcpcd
+depends          : dhcpcd-log
+requiredby       : None
+optsdeps         : None
+contents         : None
+provide          : None
+conflict         : None
+ndepends         : 1
+nrequiredby      : 0
+noptsdeps        : 0
+ncontents        : 0
+nprovide         : 0
+nconflict        : 0
+run              : #!/usr/bin/execlineb -P
 importas -D2 VERBOSITY VERBOSITY
 /usr/libexec/66-execute -v${VERBOSITY} start dhcpcd
 
-run_user        : #!/usr/bin/execlineb -P
+run_user         : #!/usr/bin/execlineb -P
  /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStart} }
 
-run_build       : None
-run_runas       : None
-finish          : #!/usr/bin/execlineb -S0
+run_build        : None
+run_runas        : None
+finish           : #!/usr/bin/execlineb -S0
 importas -D2 VERBOSITY VERBOSITY
 /usr/libexec/66-execute -v${VERBOSITY} stop dhcpcd $@
 
-finish_user     : #!/usr/bin/execlineb -P
+finish_user      : #!/usr/bin/execlineb -P
  /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStop} }
 
-finish_build    : None
-finish_runas    : None
-timeoutstart    : 0
-timeoutstop     : 0
-down            : 0
-downsignal      : 0
-blockprivileges : 0
-umask           : 0
-want_umask      : 0
-nice            : 0
-want_nice       : 0
-chdir           : None
-capsbound       : None
-capsambient     : None
-ncapsbound      : 0
-ncapsambient    : 0
-livedir         : /run/66/
-status          : /var/lib/66/system/.resolve/service/dhcpcd/state/status
-live_servicedir : /run/66/state/0/dhcpcd
-scandir         : /run/66/scandir/0/dhcpcd
-statedir        : /run/66/state/0/dhcpcd/state
-eventdir        : /run/66/state/0/dhcpcd/event
-notifdir        : /run/66/state/0/dhcpcd/notif
-supervisedir    : /run/66/state/0/dhcpcd/supervise
-fdholderdir     : /run/66/scandir/0/fdholder
-oneshotddir     : /run/66/scandir/0/oneshotd
-logname         : dhcpcd-log
-logbackup       : 3
-logmaxsize      : 1000000
-logwant         : 1
-logtimestamp    : 3
-logrun          : #!/usr/bin/execlineb -P
-/usr/libexec/66-execute start dhcpcd-log
-
-logrun_user     : #!/usr/bin/execlineb -P
-/usr/bin/66-log -d3 n3 s1000000 /var/log/66/dhcpcd
-
-logrun_build    : None
-logrun_runas    : root
-logtimeoutstart : 0
-logtimeoutstop  : 0
-env             : ArgsStart=!-B ${ArgsConfFile}
+finish_build     : None
+finish_runas     : None
+timeoutstart     : 0
+timeoutstop      : 0
+down             : 0
+downsignal       : 0
+blockprivileges  : 0
+umask            : 0
+want_umask       : 0
+nice             : 0
+want_nice        : 0
+chdir            : None
+capsbound        : None
+capsambient      : None
+ncapsbound       : 0
+ncapsambient     : 0
+notify           : 0
+maxdeath         : 5
+maxdeathtime     : 30000
+livedir          : /run/66/
+status           : /var/lib/66/system/.resolve/service/dhcpcd/state/status
+live_servicedir  : /run/66/state/0/dhcpcd
+scandir          : /run/66/scandir/0/dhcpcd
+statedir         : /run/66/state/0/dhcpcd/state
+eventdir         : /run/66/state/0/dhcpcd/event
+supervisedir     : /run/66/state/0/dhcpcd/supervise
+fdholderdir      : /run/66/scandir/0/fdholder
+oneshotddir      : /run/66/scandir/0/oneshotd
+eventddir        : /run/66/scandir/0/eventd
+env              : ArgsStart=!-B ${ArgsConfFile}
 ArgsStop=!-x
 ArgsConfFile=!-f /etc/dhcpcd.conf
 
-envdir          : /etc/66/conf/dhcpcd
-env_overwrite   : 0
-importfile      : None
-nimportfile     : 0
-configure       : None
-directories     : None
-files           : None
-infiles         : None
-ndirectories    : 0
-nfiles          : 0
-ninfiles        : 0
-stdintype       : 3
-stdindest       : /run/66/scandir/0/fdholder
-stdouttype      : 3
-stdoutdest      : /var/log/66/dhcpcd
-stderrtype      : 5
-stderrdest      : /var/log/66/dhcpcd
-limitas         : 0
-limitcore       : 0
-limitcpu        : 0
-limitdata       : 0
-limitfsize      : 0
-limitlocks      : 0
-limitmemlock    : 0
-limitmsgqueue   : 0
-limitnice       : 0
-limitnofile     : 0
-limitnproc      : 0
-limitrtprio     : 0
-limitrttime     : 0
-limitsigpending : 0
-limitstack      : 0
-rversion        : 0.8.2.1
+envdir           : /etc/66/conf/dhcpcd
+env_overwrite    : 0
+importfile       : None
+nimportfile      : 0
+configure        : None
+directories      : None
+files            : None
+infiles          : None
+ndirectories     : 0
+nfiles           : 0
+ninfiles         : 0
+stdintype        : 3
+stdindest        : /run/66/scandir/0/fdholder
+stdouttype       : 3
+stdoutdest       : /var/log/66/dhcpcd
+stderrtype       : 5
+stderrdest       : /var/log/66/dhcpcd
+limitas          : 0
+limitcore        : 0
+limitcpu         : 0
+limitdata        : 0
+limitfsize       : 0
+limitlocks       : 0
+limitmemlock     : 0
+limitmsgqueue    : 0
+limitnice        : 0
+limitnofile      : 0
+limitnproc       : 0
+limitrtprio      : 0
+limitrttime      : 0
+limitsigpending  : 0
+limitstack       : 0
+eventtype        : 0
+eventfrom        : None
+neventfrom       : 0
+eventon          : None
+neventon         : 0
+eventcombine     : 0
+eventdo          : 0
+eventemit        : None
+eventwatch       : None
+eventexpression  : None
+eventtimezone    : None
+eventinterval    : 0
+rversion         : 0.9.0.0
 ```
 
 The resolve file is the full, low-level picture. For day-to-day use, the [66 status](66-status.html) command presents a readable summary drawn from this file and from the service's runtime record, rather than dumping every field.
+
+A service is not stored as one monolithic record. A small *core* record — the fields down to `src_servicedir`, plus the `live*` paths and `rversion` — is always written, and the rest lives in *addons* written only when the frontend needs them: dependencies, execute, environ, regex, io, limit and event. The `has_*` fields say which addon exists on disk. `66 resolve` always prints every field, so a field belonging to an absent addon shows `None` for a string and `0` for a number: `dhcpcd` above declares no `[Event]` section, hence `has_event : 0` and a whole `event*` block reading `None`/`0`.
+
+For a service that *does* carry an [[Event]](66-frontend.html#section-event) section — a [reactor](66-event.html#declaring-a-reactor-the-event-section) — the same block is filled in. A `backend` service declaring
+
+```ini
+[Event]
+EventType = service
+From = ( rabbitmq )
+On = ( down )
+Do = stop
+Emit = backend-down
+```
+
+resolves to
+
+```
+has_event        : 1
+...
+eventtype        : 0
+eventfrom        : rabbitmq
+neventfrom       : 1
+eventon          : down
+neventon         : 1
+eventcombine     : 0
+eventdo          : 2
+eventemit        : backend-down
+eventwatch       : None
+eventexpression  : None
+eventtimezone    : None
+eventinterval    : 0
+```
+
+The numeric fields are enumerations, not flags:
+
+- `eventtype` is the `EventType` key: `0` service, `1` signal, `2` inotify, `3` schedule, `4` user, `5` timer.
+- `eventcombine` records which condition key was used: `0` for `On` (any condition fires), `1` for `OnAll` (every condition must hold at once).
+- `eventdo` is the `Do` key: `0` none, `1` start, `2` stop, `3` restart, `4` reload, `5` reconfigure, `6` free.
+- `eventfrom` and `eventon` hold the lists verbatim, space separated, with `neventfrom` and `neventon` counting them.
+- `eventwatch`, `eventexpression`, `eventtimezone` and `eventinterval` belong to the source families — `Watch` for inotify, `Expression`/`Timezone` for schedule, `Every` for timer — and stay empty on a reactor.
+
+See [the event system](66-event.html) for the grammar these fields come from.
 
 Some precision is needed here:
 
@@ -270,7 +317,7 @@ Some precision is needed here:
 
 - Meanwhile, `run_user`, and `finish_user` fields are derived from the [[Start]](66-frontend.html#section-start) and [[Stop]](66-frontend.html#section-stop) sections in the frontend file. Specifically, `run_user` corresponds to `Execute` in the [[Start]](66-frontend.html#section-start) section, and the others function similarly but for the [[Stop]](66-frontend.html#section-stop) section.
 
-- Other fields like `ownerstr`, `home`, `frontend`, `src_servicedir`, `livedir`, `status`, `live_servicedir`, `scandir`, `statedir`, `eventdir`, `notifdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `logname`, `logwant` and `env_overwrite` are used internally for `66`'s operations.
+- Other fields like `ownerstr`, `home`, `frontend`, `src_servicedir`, `livedir`, `status`, `live_servicedir`, `scandir`, `statedir`, `eventdir`, `supervisedir`, `fdholderdir`, `oneshotddir`, `eventddir`, `logger` and `env_overwrite` are used internally for `66`'s operations.
 
 #### %%system_dir%%/system/service/svc/\<service\>/state
 
