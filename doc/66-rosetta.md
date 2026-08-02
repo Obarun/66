@@ -22,6 +22,17 @@ The borrowed s6/skarnet programs are now native to the suite.
 
 `66-shutdownd` moves from `bindir` to `libexecdir` and should not be called directly.
 
+`66-eventd` is a new daemon of the suite -- the event daemon of a scandir. Like `66-oneshotd` and `66-fdholderd` it is started by the scandir and is not called by hand.
+
+## Live directory renames
+
+Two entries of the live scandir change name. Nothing has to be converted -- `%%livedir%%` is rebuilt from scratch at every boot, and the [upgrade process](66-upgrade-process.html) rewrites the paths held in the resolve files of a running system. But a script that walks these paths by hand must be adjusted.
+
+| 0.8.2.2 | 0.9.0.0 |
+| --- | --- |
+| `%%livedir%%/scandir/<uid>/.s6-svscan` | `%%livedir%%/scandir/<uid>/.66-scandir` |
+| `%%livedir%%/scandir/<uid>/fdholder` | `%%livedir%%/scandir/<uid>/fdholderd` |
+
 ## Frontend keyword table conversion
 
 Several keys move to the section of their domain, and the `TimeoutStart` / `TimeoutStop` names merge into a single `Timeout` disambiguated by the section. The old placements and names still parse with a deprecation warning; if a key is declared both at its deprecated location and at its canonical section, the canonical section wins. Swapping a `[Start]` key into `[Stop]` or the reverse is now a parse error.
@@ -42,6 +53,25 @@ Several keys move to the section of their domain, and the `TimeoutStart` / `Time
 
 `MaxDeath` now means a crash budget and accepts `0`-`16` (`0` = infinite restart). The new `[Start] MaxDeathInterval` key sets the budget window in milliseconds (default `30000`).
 
+`[Execute] UMask` is now read as **octal**, as its notation always implied. It was scanned in base 10, so every value was misread -- `UMask = 022` applied `0026`. The same frontend now applies `0022`. A value with an `8` or a `9` in it is refused instead of silently accepted.
+
+An environment **value** may no longer contain a newline or a NUL byte. `\n`, `\012`, `\x0a` and their NUL counterparts `\0`, `\000`, `\x00` used to decode to the byte itself inside a quoted value; they are now a syntax error, in a frontend `[Environment]` section, in a service configuration file and in any file read by [execl-envfile](execl-envfile.html). Both bytes are separators of the internal layout, so such a value could never survive a round-trip -- the parse now fails loudly instead of corrupting it. This is a deliberate divergence from execline's `envfile`.
+
+[Identifiers](66-identifier.html) (`@U`, `@H`, `@R`…) are no longer resolved at parse time only: an environment directory read at runtime -- the scandir environment, and a service environment loaded through `execl-envfile` -- now has them replaced as well. `@I` stays parse-time, since an instance name exists only there.
+
+## The event system
+
+A service can now react to what happens on the system instead of being wired into the dependency graph. This is new ground, not a renaming: nothing in `0.8.2.2` maps to it.
+
+| What | Where |
+| --- | --- |
+| `[Event]` section | turns any `classic`, `oneshot` or `module` service into a **reactor** -- `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` |
+| `Type = event` | a new service type: a non-supervised **source** (`inotify`, `schedule`, `timer`) that runs no process |
+| `66 emit` | raise a user event by name, by hand or from a script |
+| `66-eventd` | the daemon that routes events to the reactors |
+
+66 also raises a few events itself -- `boot.done`, `boot.failed`, `shutdown.begin`, and `env.<variable>` / `unenv.<variable>` from [`66 env`](66-env.html). See [the event system](66-event.html).
+
 ## Command and option changes
 
 | 0.8.2.2 | 0.9.0.0 |
@@ -51,9 +81,26 @@ Several keys move to the section of their domain, and the `TimeoutStart` / `Time
 | `66 tree start -f` | removed |
 | `66 tree create` / `admin` `-o rename=` | removed -- now an error |
 | `66 status -o` / `66 tree status -o` | `-f` / `--field` (`-o` deprecated) |
+| `66 status -p nline` | removed -- use `66 log` |
+| `66 resolve` / `66 state` / `66 tree resolve` | gain `-f` / `--field` and `-n` / `--no-name` (they took only `-h`) |
+| `66 signal` | gains `--stop-group` / `--cont-group` / `--kill-group`, which signal the whole process group |
 | `66-shutdown` | `66 halt` / `66 poweroff` / `66 reboot` (with `-c` / `--cancel`) |
 
 Every command and subcommand now accepts long options too (`--help`, `--verbosity`, `--live`, `--tree`, `--timeout`, `--color`, and per-command forms). Short options are unchanged, so existing scripts keep working.
+
+### `66 status` fields
+
+`66 status` is rewritten around the state of the service -- durations are printed in human form and the line says who acted on the service -- and its field vocabulary shrinks from 25 names to 12. A script selecting fields with `-o`/`-f` must be adjusted.
+
+| 0.8.2.2 | 0.9.0.0 |
+| --- | --- |
+| `intree` | `tree` |
+| `logfile` | removed -- use `66 log` |
+| `version`, `partof`, `notify`, `maxdeath`, `earlier`, `live`, `optsdepends`, `start`, `stop`, `envat`, `envfile`, `stdin`, `stdout`, `stderr` | removed -- [`66 resolve`](66-resolve.html) reports them, under its own field names (`inns`, `optsdeps`, `envdir`, `run_user`, `stdintype`/`stdindest`…) |
+| `logname` | removed -- a logger is now the boolean `logger` field of the resolve, and its name is always `<service>-log` |
+| -- | `enabled`, `pid` and `log` are new |
+
+The kept names are `name`, `status`, `description`, `type`, `source`, `tree`, `depends`, `requiredby` and `contents`.
 
 ## New commands
 
@@ -61,8 +108,13 @@ Every command and subcommand now accepts long options too (`--help`, `--verbosit
 | --- | --- |
 | `66 log` | read the logs of a service, of the system, or of everything interleaved |
 | `66 emit` | raise a user event by name |
+| `66 env` | publish session variables (`DISPLAY`, `XAUTHORITY`…) to every service of the scandir |
 | `66 runstate` | dump a service's runtime record |
 | `66 fdholder` | manage the scandir's fd holder daemon |
+| `66 suspend` | suspend the system to RAM |
+| `66 hibernate` | hibernate the system to disk |
+
+`66 env` is unrelated to the `66-env` of `0.6.x`, which became [`66 configure`](66-configure.html) back in `0.7.0.0`: `configure` edits the versioned configuration file of **one** service, `env` publishes a value to **every** service at runtime.
 
 ## `init.conf`
 
@@ -196,7 +248,7 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66-init` | `66 init` |
 | `66-svctl` | `66 signal` |
 | `66-dbctl` | removed |
-| `66-hpr` | `66-hpr`. This command should not be used directly. Prefer using `66 poweroff`, `66 reboot`, `66 halt`, `66 suspend`, `66 hibernate` to power off, reboot, halt, suspend and hibernate the machine respectively |
+| `66-hpr` | `66-hpr`. This command should not be used directly. Prefer using `66 poweroff`, `66 reboot`, `66 halt` to power off, reboot and halt the machine respectively |
 | `66-shutdownd` | `66-shutdownd` |
 | `66-update` | removed |
 
@@ -236,8 +288,6 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 | `66 poweroff` | poweroff the system |
 | `66 reboot` | reboot the system |
 | `66 halt` | halt the system |
-| `66 suspend` | suspend the system to RAM |
-| `66 hibernate` | hibernate the system to disk |
 | `66 version` | get the version of 66 |
 
 ## General options changes
