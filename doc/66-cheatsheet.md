@@ -34,6 +34,22 @@ at once: separate names with spaces — `66 start foo bar baz`.
 
 **Golden rule**: `start` = *now*; `enable` = *on every future boot/session*.
 
+## Signals
+
+| Goal | Command |
+| --- | --- |
+| Send SIGHUP (also `--term`, `--kill`, `--cont`…) | `66 signal --hangup foo` |
+| Send any signal, by name or number | `66 signal --signal SIGUSR1 foo` |
+| Leave the dependencies alone | `66 signal --no-propagate --term foo` |
+| Bring down and keep it down | `66 signal --down-keep foo` |
+| Bring up and wait until it is ready | `66 signal --up --wait U foo` |
+
+[66 signal](66-signal.html) is the low-level path every state change goes
+through — `start`, `stop` and `reload` are the ones you normally type. It works
+on an already supervised service, and it propagates to dependencies unless you
+say `--no-propagate`. The letters of `--wait` are `u` up, `U` up and ready, `d`
+down, `D` down and ready, `r` (re)started, `R` (re)started and ready.
+
 ## Inspecting services
 
 | Goal | Command |
@@ -46,7 +62,29 @@ at once: separate names with spaces — `66 start foo bar baz`.
 | Pick fields (scriptable) | `66 status --no-name --field name,status foo` |
 | Compile a frontend without running it | `66 parse foo` |
 | Dump the parsed resolve file (debug) | `66 resolve foo` |
-| Dump the runtime state file (debug) | `66 state foo` |
+| Dump the management flags: parsed, supervised… (debug) | `66 state foo` |
+| Dump the runtime status: up since, result, pid (debug) | `66 runstate foo` |
+| Pick fields from it (scriptable) | `66 runstate --no-name --field state,pid foo` |
+| Print the version of `66` | `66 version` |
+
+`66 state` answers *what does 66 know about this service*, `66 runstate` answers
+*is it running right now, since when, with which result*.
+
+## Logs
+
+| Goal | Command |
+| --- | --- |
+| Every log, all sources merged in time order | `66 log` |
+| Logs of one service | `66 log foo` |
+| The system (boot/scandir) catch-all logger | `66 log system` |
+| Follow new lines, `tail -f` style | `66 log --follow foo` |
+| Only a time window | `66 log --since 2026-08-01 --until 2026-08-02T12:00:00 foo` |
+| Only lines matching a regex | `66 log --grep 'fail' foo` |
+
+[66 log](66-log.html) is a read-only viewer: it never writes or rotates anything.
+Times are ISO 8601 in **local time** — `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SS`.
+Without an operand every source is interleaved and each line is tagged with the
+service it comes from.
 
 ## Supervision (scandir)
 
@@ -85,8 +123,29 @@ Without a chosen tree, services go to the default tree `%%default_treename%%`.
 | List available config versions | `66 configure --versions foo` |
 | Set the current config version | `66 configure --current version foo` |
 | Override one `key=value` | `66 configure --replace 'KEY=value' foo` |
+| Publish a session variable to every service | `66 env import DISPLAY XAUTHORITY` |
+| Publish an explicit value | `66 env set EDITOR=vim` |
+| Withdraw a published variable | `66 env unset DISPLAY` |
+| List the published variables | `66 env list` |
 
 After changing config of a running service, apply it with `66 reconfigure foo`.
+
+[66 env](66-env.html) publishes into the runtime environment of your scandir,
+which is merged **last** — after the frontend, the service configuration file and
+the `ImportFile` files — so a published variable wins over every other source. A
+service picks it up the next time it starts. What is published lives and dies
+with the scandir.
+
+## Events
+
+| Goal | Command |
+| --- | --- |
+| Raise a user event by name | `66 emit cert-renewed` |
+
+[66 emit](66-emit.html) is fire-and-forget: it hands the event to the event
+daemon and returns, whether or not anything listens. Every service declaring an
+`[Event]` section with `EventType = user` and `On = ( cert-renewed )` then runs
+its reaction. See the [event system](66-event.html).
 
 ## Snapshots
 
