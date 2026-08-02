@@ -60,8 +60,8 @@ at once: separate names with spaces — `66 start foo bar baz`.
 
 `66 scandir start` returns at once if a scandir is already running; otherwise it
 launches the supervisor in the **foreground** — background it (`&`) or use a
-dedicated terminal. Normally your `boot-user@<user>` service (system: [66 boot](66-boot.html))
-does this for you, so you rarely type it.
+dedicated terminal. Normally `66-userd` (system: [66 boot](66-boot.html)) does
+this for you, so you rarely type it.
 
 ## Trees
 

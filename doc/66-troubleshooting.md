@@ -22,8 +22,8 @@ whether the service is `up`, `down`, `crashed`, enabled or disabled.
 ## My service won't start
 
 - **Is the scandir running?** `start` needs a live [scandir](66-scandir.html).
-  It is normally brought up by your `boot-user@<user>` service at boot, but if
-  yours is not, run `66 scandir start` (idempotent: it returns at once if one is
+  It is normally brought up by `66-userd` at boot, but if yours is not, run
+  `66 scandir start` (idempotent: it returns at once if one is
   already up, otherwise it launches the supervisor in the foreground — background
   it with `&` or use a dedicated terminal). For root, the boot scandir is
   normally already up.

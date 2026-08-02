@@ -38,12 +38,12 @@ A service can only run inside a **scandir** — the live supervision tree
 depends on how your system was set up, so it is worth knowing where it comes
 from:
 
-- A per-user scandir is normally brought up at boot by that user's
-  `boot-user@<user>` service. (This per-user mechanism is currently moving to a
-  dedicated `66-userd` daemon.) On a machine installed and booted the usual way
-  — the Obarun ISO, for instance — your scandir is therefore **already running**.
-- But you can boot with 66 and still have **no** scandir, if no
-  `boot-user@<user>` is enabled for your user.
+- A per-user scandir is normally brought up at boot by `66-userd`, the daemon
+  that starts and supervises the scandir of each user. On a machine installed
+  and booted the usual way — the Obarun ISO, for instance — your scandir is
+  therefore **already running**.
+- But you can boot with 66 and still have **no** scandir, if `66-userd` does not
+  run on that system.
 - And you can be on a machine that did **not** boot with 66 at all and still use
   66 — you just bring a scandir up yourself.
 
@@ -57,8 +57,8 @@ One command covers every case, because it is idempotent:
   nothing duplicated. (It also creates the scandir first if it does not exist.)
 - If none is running, it launches `66-scandir` and **stays in the foreground**:
   that process *is* your supervisor from now on. In a normal boot this is exactly
-  what the `boot-user@<user>` service does, under supervision — which is why you
-  do not usually type it. When you bring one up by hand (a from-zero or non-66
+  what `66-userd` does for you, under supervision — which is why you do not
+  usually type it. When you bring one up by hand (a from-zero or non-66
   system), run it in a dedicated terminal and leave it there, or start it in the
   background with `&`.
 
