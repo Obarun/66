@@ -113,11 +113,11 @@ rotation; one `IN_MOVED_TO` on a certificate directory can reload every daemon t
 one `66 emit cert-renewed` reaches every subscriber at once. The source knows nothing about its
 reactors — you add a subscriber, never touch the source.
 
-This is where the model departs from unit-per-trigger designs. A systemd `.timer` or `.path`
-activates a **single** `Unit=` (defaulting to the same-name `.service`); to drive several
-services from one trigger you must interpose a `.target` that pulls them in, and to give each a
-different action there is no native way at all — the trigger and the acted-upon unit are 1:1.
-In 66 the coupling is 1:N by construction.
+This is where the model departs from unit-per-trigger designs. Where a trigger file names the
+single service it activates, driving several services from one trigger means interposing a
+group that pulls them all in, and giving each of them a *different* action is not expressible
+at all — the trigger and the acted-upon service are 1:1. In 66 the coupling is 1:N by
+construction, and each reactor keeps its own verb.
 
 ### About the `event` type and arming
 
@@ -463,15 +463,14 @@ retried, dies again; on the third death in the window the supervisor gives up an
 `flaky` without depending on it, so its `Do = start` acts on `alerter` alone and never revives
 `flaky` (see [`From` is a watch, not a dependency](#from-is-a-watch-not-a-dependency)).
 
-**Compared with others.** systemd's `OnFailure=` fires only on the terminal `failed` state;
-with `Restart=` set, a crash that is auto-restarted goes `active → activating` and never enters
-`failed`, so recurring-but-restarted crashes fire *nothing* (systemd issues 34023, 8398). Once
-the start limit is reached the unit is not restarted again until a manual `systemctl
-reset-failed` (issue 2416), and `OnFailure=` de-duplicates on the failed edge, so on a flapping
-unit the handler runs only the first time (issue 35635). s6 and runit have no failure-to-action
-mechanism at all — the default is to restart forever; any cross-service reaction is a
-hand-written wrapper. 66 exposes both the terminal `failed` and every intermediate `down`
-transition as reactable events, and a reactor **re-fires** each time.
+**Compared with others.** A failure hook that only fires on a *terminal* failed state is blind
+to the common case: with automatic restart enabled, a crash that is retried never reaches that
+state, so a service that crashes and is restarted all day long triggers nothing. Hooks of that
+shape also tend to de-duplicate on the failure edge, running once and staying silent while the
+service keeps flapping. s6 and runit have no failure-to-action mechanism at all — the default is
+to restart forever, and any cross-service reaction is a hand-written wrapper. 66 exposes both
+the terminal `failed` and every intermediate `down` transition as reactable events, and a
+reactor **re-fires** each time.
 
 ### Restart a client to reconnect when its backend restarts
 
@@ -497,14 +496,14 @@ Whenever `backend` reaches `up` — an operator restart, or the backend recoveri
 backend` does not touch `client`, and `client`'s restart does not drag `backend` back up); the
 coupling is purely the event rule.
 
-**Compared with others.** systemd couples units by *pre-declared propagation*, not by reaction.
-`PartOf=` restarts a dependent when an operator restarts the named unit — you must wire it in
-advance — and `BindsTo=` stops a dependent when its bound unit stops but does **not** bring it
-back when the unit returns (issue 2824). Restarting a shared bus such as
-`dbus` is documented as leaving clients broken, with upstream advising a reboot rather than a
-restart. runit has no mechanism — you script it (`sv hup <dependent>` in the dependency's
-`finish`); s6-rc re-evaluates dependencies only at database-update time. None offers a
-lightweight "when the backend is available again, restart me."
+**Compared with others.** The usual answer is *pre-declared propagation* rather than reaction:
+a dependent is restarted when an operator restarts the named service, or is stopped when the
+service it is bound to stops — but nothing brings it back when that service returns, which is
+precisely the moment a client needs to reconnect. That is why restarting a shared bus is
+routinely described as leaving its clients broken until they are bounced by hand. runit has no
+mechanism — you script it (`sv hup <dependent>` in the dependency's `finish`); s6-rc
+re-evaluates dependencies only at database-update time. None offers a lightweight "when the
+backend is available again, restart me."
 
 ### Reload on an atomic config or certificate swap
 
@@ -539,12 +538,13 @@ explicit, an unrelated in-place write does **not**. (`rename()` is atomic only w
 filesystem — which is exactly why the temporary file must live in the same directory as its
 target.)
 
-**Compared with others.** systemd's `.path` unit with `PathChanged=`/`PathModified=` on a file
-does **not** fire on this atomic rename-into-place: it watches the file's own inotify descriptor
-rather than the directory's `IN_MOVED_TO`, so the standard safe-update pattern is missed (issue
-20934; related 19123, 28939). Path units also inherit inotify's limits — e.g. they cannot see a
-change made on a remote NFS mount (systemd.path(5)). s6, runit and OpenRC have **no** built-in
-file watching at all; you bolt an `inotifywait` loop onto a manual `SIGHUP`.
+**Compared with others.** A file watcher that binds to the *file's own* inotify descriptor
+instead of its directory's `IN_MOVED_TO` does **not** fire on an atomic rename-into-place — it
+misses the very pattern every safe config update uses, since the new file is a different inode.
+66 lets you name the mask and the directory yourself, so the swap is exactly what you watch.
+Any inotify-based watcher, 66 included, inherits the kernel's limits — a change made on a
+remote NFS mount is not seen. s6, runit and OpenRC have **no** built-in file watching at all;
+you bolt an `inotifywait` loop onto a manual `SIGHUP`.
 
 ### One event, per-service policy: certificate rotation
 
@@ -553,13 +553,11 @@ fourth case: one `66 emit cert-renewed` drives a fan-out where `nginx` **reloads
 **restarts** — each reactor picking its own verb — with a one-step ordering constraint carried
 by `Emit`.
 
-**Compared with others.** systemd propagates *reload only* (`PropagatesReloadTo=` /
-`ReloadPropagatedFrom=`); there is no `ReloadOrRestartPropagatedFrom`, so a group where some
-daemons reload and others must restart cannot be driven from one trigger (issues 32382, 10638).
-In practice the whole per-service matrix ends up encoded in the renewal tool's deploy hook —
-certbot's `deploy-hook` scripts — and certbot historically even ran only the *last*
-`--renew-hook` given (issues 5076, 8090). 66 keeps each reactor's policy on the consumer, where
-it belongs.
+**Compared with others.** Propagation mechanisms carry a *single* verb — typically reload —
+so a group where some daemons reload and others must restart cannot be driven from one trigger.
+In practice the whole per-service matrix ends up encoded in the renewal tool's deploy hook,
+far away from the services it acts on and owned by whoever maintains that hook. 66 keeps each
+reactor's policy on the consumer, where it belongs.
 
 ### `From` is a watch, not a dependency
 
