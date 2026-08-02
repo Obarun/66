@@ -1878,6 +1878,7 @@ LimitSIGPENDING =
 LimitSTACK =
 BlockPrivileges =
 UMask =
+Nice =
 ChangeDirectory = /directory/path
 CapsBound = ()
 CapsAmbient = ()
