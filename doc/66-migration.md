@@ -19,7 +19,8 @@ For migrating between `66` versions, see [upgrade](66-upgrade.html) and the
 | Restart | `systemctl restart foo` | `rc-service foo restart` | `sv restart foo` | `66 restart foo` |
 | Reload (SIGHUP) | `systemctl reload foo` | `rc-service foo reload` | `sv reload foo` | `66 reload foo` |
 | Status & recent log | `systemctl status foo` | `rc-service foo status` | `sv status foo` | `66 status foo` |
-| Read the log | `journalctl -u foo` | log file | log file | `66 status --field logfile --print 1000 foo` |
+| Read the log | `journalctl -u foo` | log file | log file | `66 log foo` |
+| Follow the log | `journalctl -fu foo` | `tail -f` | `tail -f` | `66 log --follow foo` |
 | Apply an edited unit | `systemctl daemon-reload` | — | — | `66 reconfigure foo` |
 
 ## Concepts

@@ -37,12 +37,20 @@ fd-holder daemon, so logs survive a service restart without losing their pipe.
 66 status foo
 ```
 
-The status of a service ends with its most recent log lines. To read more
-without leaving `66`, ask for the `logfile` field and a line count — this is the
-native equivalent of `journalctl`:
+The status of a service ends with its most recent log lines. To read the whole
+log, use [66 log](66-log.html) — this is the native equivalent of `journalctl`:
 
 ```
-66 status --field logfile --print 1000 foo
+66 log foo
+```
+
+It reads one service, the system catch-all (`66 log system`), or every source
+interleaved in time order (`66 log` with no operand). It also follows a log as it
+is written, and narrows by time or by pattern:
+
+```
+66 log --follow foo
+66 log --since 2026-08-01 --grep 'fail' foo
 ```
 
 Or follow the underlying file directly:
@@ -102,4 +110,5 @@ express.
 
 - [frontend service file](66-frontend.html#section-logger) — every `[Logger]` key.
 - [Standard I/O redirection](66-standard-io-redirection.html) — where stdout/stderr can go.
+- [66 log](66-log.html) — read, follow and filter the logs.
 - [66-status](66-status.html) — read a service's recent log inline.

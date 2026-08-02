@@ -91,12 +91,13 @@ A service can be `up` but `disabled` (started by hand, won't survive reboot), or
 
 ## Reading more than the tail of a log
 
-`66 status foo` shows only the last few lines, but the `--print` (`-p`) option
-prints as many as you ask for — pair it with `--field logfile` to show just
-the log:
+`66 status foo` shows only the last few lines; [66 log](66-log.html) reads the
+whole thing:
 
 ```
-66 status --field logfile --print 1000 foo
+66 log foo                       # everything this service logged
+66 log --follow foo              # and keep printing as it runs
+66 log --grep 'fail' foo         # only the lines that match
 ```
 
 The full, rotated history also lives on disk in `%%system_log%%/foo/` (root) or
@@ -105,6 +106,7 @@ through a TAI64N timestamp converter for readable timestamps.
 
 ## Where to go next
 
+- [66 log](66-log.html) — read, follow and filter the logs.
 - [66-status](66-status.html) — every field it can show.
 - [Logging](66-logging.html) — how the per-service logger is wired.
 - [66-parse](66-parse.html) — inspect what the frontend compiled to.
