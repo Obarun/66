@@ -59,13 +59,16 @@ nav:
     - Cheatsheet: 66-cheatsheet.md
     - Dependencies and ordering: 66-dependencies.md
     - Logging: 66-logging.md
+    - The event system: 66-event.md
     - Troubleshooting & FAQ: 66-troubleshooting.md
     - Coming from systemd, OpenRC or runit: 66-migration.md
+    - Running 66 inside a container: 66-container.md
   - 66 commands:
     - 66 commands: 66.md
     - boot: 66-boot.md
     - configure: 66-configure.md
     - disable: 66-disable.md
+    - emit: 66-emit.md
     - enable: 66-enable.md
     - env: 66-env.md
     - fdholder: 66-fdholder.md
@@ -100,9 +103,11 @@ nav:
     - 66-nuke: 66-nuke.md
     - 66-umountall: 66-umountall.md
     - execl-envfile: execl-envfile.md
+    - execl-runas: execl-runas.md
   - Internal tools:
+    - 66-supervise: 66-supervise.md
+    - 66-eventd: 66-eventd.md
     - 66-hpr: 66-hpr.md
-    - 66-shutdown: 66-shutdown.md
     - 66-shutdownd: 66-shutdownd.md
     - 66-svctl: 66-svctl.md
   - Reference:
