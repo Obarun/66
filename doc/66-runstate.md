@@ -53,7 +53,7 @@ death.
 | --- | --- |
 | `state` | current execution state, see table below |
 | `result` | how the service last left its running state, see table below |
-| `who` | what triggered the last transition: `self`, `user`, `event`, `dependency`, `boot` or `shutdown` |
+| `who` | what triggered the last transition: `self`, `user`, `event`, `boot` or `shutdown` |
 | `pid` | process id of the running service, `0` when no process is alive |
 | `code` | last process outcome, **read according to `result`** (see below) |
 | `stamp` | time the service entered its current state |
@@ -73,6 +73,13 @@ death.
 | `restarting` | a restart is in progress |
 | `done` | a oneshot has run to completion |
 | `failed` | the crash budget is exhausted, the service is parked |
+| `waiting` | an armed [event](66-event.html) reactor: it holds no process and waits for its event |
+
+A `oneshot` or `module` reactor records `waiting` itself. A `classic` one cannot
+— its record is kept by [66-supervise](66-supervise.html), which only knows
+`up` and `down` — so `runstate` reports it as `down`, and it is
+[66 status](66-status.html) that derives the `waiting` reading from the resolve.
+Seeing `down` here on a classic reactor does not mean it is disarmed.
 
 ### `result` values
 
