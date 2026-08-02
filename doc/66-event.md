@@ -72,6 +72,38 @@ Two more reactor families need no configured source at all:
 * **user** — react to a name raised by [66 emit](66-emit.html), or by another reactor's
   `Emit` key.
 
+### A reactor acts on itself — and on nothing else
+
+This is the load-bearing rule of the whole model. A reactor's `Do` has **no target**: there
+is no key naming the service to act upon, because the service acted upon is always the one
+declaring the rule. When the event fires, `66-eventd` runs `66 <do> <the reactor>` — the
+reactor's own name, never another's.
+
+Nothing else in 66 can reach into a service this way, and it is the opposite of how reactive
+control is usually built. The common shape is a separate trigger file that names the service
+it must activate, or a hook or dispatcher script that restarts it from the outside; either
+way the rule that acts on a service lives somewhere that service never mentions. In 66 the
+direction is reversed: the service states what happens to it.
+
+Three consequences follow, and they are the reason the model is worth using:
+
+* **No action at a distance.** The frontend of a service lists everything event-driven that
+  can happen to it. You never have to grep the rest of the system to find out what restarts
+  it at 3 a.m.
+* **Subscribing never edits someone else's file.** Adding a reactor touches exactly one
+  frontend — its own. The source is not modified, and neither is any other subscriber. A
+  package can ship a service that reacts to a system event without patching a single file it
+  does not own.
+* **Watching is not acting.** Naming a source in `From` observes it; it never starts, stops
+  or otherwise touches that source — see [`From` is a watch, not a
+  dependency](#from-is-a-watch-not-a-dependency).
+
+The one outward-facing key is [`Emit`](#emit), and it is deliberately indirect: it raises a
+*name*, not a command, and it acts on nobody. Whoever wants to react to that name subscribes
+to it, in their own frontend, with their own `Do`. So even the cascades below are made of
+services that each decided for themselves — no service is ever acted upon by a rule it does
+not carry.
+
 ### One source, many reactors
 
 A source is **fan-out**: any number of reactors may name the same source in their `From` (or,

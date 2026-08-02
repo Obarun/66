@@ -13,6 +13,8 @@ Sixty-six (66) is an independent Linux service manager with its own native proce
 - **Automatic Logger Creation (not mandatory)**: Automatically creates dedicated loggers for each service, covering both classic and oneshot service types.
 - **Help on I/O Redirection**: Provides keywords in frontend files for easy control over standard input, output, and error redirection.
 - **Service Notification**: Ensures services are fully ready before managing their dependency chains, using a readiness notification mechanism.
+- **Event System**: A service can [react to what happens on the system](66-event.html) instead of being wired into the dependency graph — restart when a file changes, start on a schedule or a timer, act when another service goes down, or wait for a named event raised by hand or by 66 itself. Its defining trait: **a service reacts on itself and on nothing else** — the rule has no target, it lives in the frontend of the very service it affects.
+- **Runtime Environment**: A session can [publish variables to every supervised service](66-env.html) after the scandir is up — `DISPLAY`, `XAUTHORITY` and anything else only a session knows — without touching a single frontend file.
 - **Service Organization as a Tree**: Allows quick management and visualization of service groups within a tree structure.
 - **Service Status Overview**: Offers a comprehensive set of tools to monitor the state of services and access detailed information easily.
 - **User Service Declaration**: Users can declare and manage their own services, facilitating personalized service management.
@@ -42,6 +44,8 @@ Then dig in as your needs grow:
 
 - **Writing service files** — [frontend service file](66-frontend.html), [dependencies and ordering](66-dependencies.html), [logging](66-logging.html), [identifier interpretation](66-identifier.html), [instantiated service](66-instantiated-service.html)
 - **Organising services** — [tree](66-tree.html), [module services](66-module.html), [module service usage](66-module-usage.html)
+- **Reacting to events** — [the event system](66-event.html), [66-eventd](66-eventd.html)
+- **Handing a session's environment over** — [66 env](66-env.html)
 - **Coming from another init** — [systemd, OpenRC or runit](66-migration.html)
 - **When something breaks** — [troubleshooting & FAQ](66-troubleshooting.html)
 - **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [running in a container](66-container.html), [upgrade and migration](66-upgrade-process.html)
@@ -73,6 +77,7 @@ See [changes](66-upgrade.html) between versions.
 - [Cheatsheet](66-cheatsheet.html)
 - [Dependencies and ordering](66-dependencies.html)
 - [Logging](66-logging.html)
+- [The event system](66-event.html)
 - [Troubleshooting & FAQ](66-troubleshooting.html)
 - [Coming from systemd, OpenRC or runit](66-migration.html)
 - [Running 66 inside a container](66-container.html)
@@ -92,6 +97,7 @@ See [changes](66-upgrade.html) between versions.
 ### Internal tools
 
 - [66-supervise](66-supervise.html)
+- [66-eventd](66-eventd.html)
 - [66-svctl](66-svctl.html)
 - [66-hpr](66-hpr.html)
 - [66-shutdownd](66-shutdownd.html)

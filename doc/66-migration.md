@@ -35,6 +35,8 @@ For migrating between `66` versions, see [upgrade](66-upgrade.html) and the
 | Drop privileges | `User=` | — | `chpst -u` | `RunAs = user` |
 | Resource limits | `Limit*=` | `rc_ulimit` | `softlimit` | `[Execute]` `Limit*` keys |
 | Environment | `Environment=` / `EnvironmentFile=` | `conf.d` | `./env` | `[Environment]` section |
+| Session variables handed to every service | manager-level environment command | — | — | [`66 env`](66-env.html) |
+| React to a file change / a schedule / another service | separate trigger unit | — | — | [`[Event]`](66-event.html) section, in the reacting service itself |
 
 ## 66-only commands
 
@@ -95,6 +97,39 @@ service attach itself to others without editing their files (systemd's
 `RequiredBy=`/`WantedBy=`). You declare only direct links; `66` resolves the whole
 chain in both directions. See
 [dependencies and ordering](66-dependencies.html).
+
+**A session can hand variables to services after the fact.** A
+[scandir](66-scandir.html) starts long before a session exists, so its
+environment is frozen without `DISPLAY`, `WAYLAND_DISPLAY` or `XAUTHORITY`.
+[`66 env`](66-env.html) is the way in: `66 env import DISPLAY XAUTHORITY`
+copies the variables from the caller's environment, `66 env set KEY=value`
+publishes an explicit value, `66 env unset` withdraws one, `66 env list` shows
+what is published. Every service of that scandir picks it up at its next start,
+without declaring anything in its frontend, and the published value is merged
+**last** — it wins over the frontend, the service configuration and the
+`ImportFile` files.
+
+Where 66 goes further: publishing or withdrawing a variable also raises an event
+(`env.DISPLAY`, `unenv.DISPLAY`), so a service can be *started by the arrival* of
+the value it needs and stopped by its disappearance, rather than being restarted
+by hand afterwards. See [the event system](66-event.html). Nothing published
+survives the scandir; there is no persistent manager environment to clean up.
+
+**Reacting to an event is declared in the service that reacts, not next to it.**
+"Restart `foo` when this file changes" is usually expressed with a second file
+that names `foo` as the thing to activate, so the rule lives outside `foo` and
+`foo` never mentions it. 66 reverses the direction: `foo` carries an
+[`[Event]`](66-event.html) section saying what happens **to itself**, and a
+reaction has no target key at all — `66-eventd` can only run the verb on the
+service that declared it.
+
+The practical difference shows up when you maintain a system rather than write
+one. Everything that can restart `foo` at 3 a.m. is written in `foo`'s own
+frontend, so you read one file instead of searching the whole service tree. And
+subscribing a service to an existing event changes exactly one file — its own —
+never a file belonging to a service you do not own. The only key that reaches
+outward, [`Emit`](66-event.html#emit), raises a *name*, never a command: whoever
+cares subscribes on their side. See [the event system](66-event.html).
 
 **Applying config changes is per-service, not global.** `systemctl daemon-reload`
 re-reads *every* unit file for the whole manager at once — a global operation
