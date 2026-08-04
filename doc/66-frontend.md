@@ -1692,6 +1692,37 @@ the final result will be
 
 ensuring that the very first line of the script is the declaration of the shebang to avoid an ***Exec format error***.
 
+### Substitution in Execute
+
+In the execline format, a `${...}` written in `Execute` is replaced when the service starts, by
+`66-execute`, against the environment that service is about to receive — **not** only against
+the `[Environment]` section of the frontend. Every layer is assembled first, then the whole is
+expanded once:
+
+```
+    environment inherited from the scandir
+ <  the [Environment] section
+ <  the service configuration file (66 configure)
+ <  the ImportFile files
+ <  %%livedir%%/environment/<uid>/                    <- 66 env
+```
+
+A later layer overrides an earlier one (see [Precedence](66-env.html#precedence)), and a
+`${...}` resolves to the value that survives that merge. A frontend may therefore reference a
+variable it never declares — a session variable carried by the supervision tree, or a value
+published with [66 env](66-env.html):
+
+````
+[Start]
+Execute = (
+    gnome-keyring-daemon --foreground --control-directory=${XDG_RUNTIME_DIR}/keyring
+)
+````
+
+A name no layer carries is left **as typed**: `${NOPE}` reaches the command line as those six
+characters, it is not turned into an empty string. Write `\${NOPE}` when that literal form is
+what the program expects.
+
 Note that in a custom (shebang) script, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format.
 
 [identifier](66-identifier.html) is still also **interpreted** even in custom script.

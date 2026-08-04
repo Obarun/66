@@ -52,13 +52,22 @@ environment is merged **last**, so a published variable wins over every other so
  <  %%livedir%%/environment/<uid>/                    <- 66 env
 ```
 
-It is also merged **verbatim**, after the `${...}` expansion and after the leading `!` of an
-unexported value is stripped. A published value reaches the service exactly as it was
-published: a `${HOME}` inside it stays literal, and `env set` refuses a value starting with an
-exclamation mark rather than passing the marker on as part of the value.
+The whole stack is then expanded **once**, when every source has been merged. A published
+value is therefore a first-class part of the environment rather than a late patch on it: a
+`${...}` it contains is resolved like any other, and the variable it defines can itself be
+referenced by a `${...}` written in the `Execute` field of a frontend — see
+[Substitution in Execute](66-frontend.html#substitution-in-execute).
 
-One consequence to keep in mind: a key that a frontend marks as unexported with `!` stays
-removed from the service environment even when the same key is published here.
+Two consequences worth keeping in mind:
+
+* A `${HOME}` typed into a published value is **not** kept literal; it resolves against the
+  environment the service ends up with. `env list` and the stored file still show it as it was
+  typed — the expansion happens when a service starts, not when the value is published.
+* A publication **replaces the whole declaration** of a key, its `!` marker included. A key
+  that a frontend keeps out of the environment with `!` is exported again, with the published
+  value, as soon as it is published here — the last source merged wins, as everywhere else.
+  `env set` still refuses a value starting with an exclamation mark, so a publication can
+  never introduce an unexported key itself.
 
 ## Events
 

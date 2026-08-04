@@ -457,6 +457,9 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
     resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
     uint8_t loaded = res->has_environ && resolve_read(we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
 
+    if (!environ_import_environ(eram, env))
+        log_dieusys(LOG_EXIT_SYS, "import the inherited environment") ;
+
     if (loaded && e.env > 0) {
 
         _alloc_strbuf_(path, strlen(e.sa.s + e.envdir) + SS_SYM_VERSION_LEN + 1) ;
@@ -481,12 +484,6 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
                     log_dieusys(LOG_EXIT_SYS, "merge environment file: ", stk.s + pos) ;
             }
         }
-
-        if (!environ_substitute(eram, info))
-            log_dieusys(LOG_EXIT_SYS, "substitue environment variables") ;
-
-        if (!environ_clean_unexport(eram))
-            log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
     }
 
     resolve_free(we) ;
@@ -503,6 +500,12 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
     if (scan_mode(liveenv, S_IFDIR) > 0)
         if (!environ_merge_dir(eram, liveenv))
             log_dieusys(LOG_EXIT_SYS, "merge runtime environment directory: ", liveenv) ;
+
+    if (!environ_substitute(eram, info))
+        log_dieusys(LOG_EXIT_SYS, "substitute environment variables") ;
+
+    if (!environ_clean_unexport(eram))
+        log_dieusys(LOG_EXIT_SYS, "remove exclamation mark from environment") ;
 
     if (!environ_create_environ(nenvp, env, eram))
         log_dieusys(LOG_EXIT_SYS, "create environment") ;
