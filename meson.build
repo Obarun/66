@@ -59,7 +59,7 @@ if get_option('doc-only')
 endif
 
 # Versioning
-version_oblibs = '>=0.3.4.0'
+version_oblibs = '>=0.4.0.0'
 
 # Compiler setup
 cc = meson.get_compiler('c')
