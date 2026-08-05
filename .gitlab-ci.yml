@@ -28,7 +28,7 @@ build:
   - ./build_toolchain.sh
   - meson setup build -D test=true
   - meson compile -C build
-  - meson test -C build
+  - meson test --print-errorlogs -C build
   - DESTDIR=gitlab-ci meson install -C build
 
   rules:
@@ -42,7 +42,7 @@ test-sanitizers:
   - ./build_toolchain.sh
   - meson setup build-asan -D test=true -D b_sanitize=address,undefined
   - meson compile -C build-asan
-  - ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 meson test -C build-asan
+  - ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 meson test --print-errorlogs -C build-asan
 
   rules:
     - if: $CI_PIPELINE_SOURCE == "web"
@@ -56,7 +56,7 @@ release:
   - ./build_toolchain.sh
   - meson setup build -D test=true -D with-doc=true -D 66-log-user=66log
   - meson compile -C build
-  - meson test -C build
+  - meson test --print-errorlogs -C build
   - DESTDIR=gitlab-ci meson install -C build
 
   only:
