@@ -1,5 +1,698 @@
 # Changelog for 66
 
+# In 0.9.0.0
+
+- Adaptation to `oblibs` `0.4.0.0`
+
+## Overview
+
+This is a ***Major release***. It completes the direction announced at
+`0.7.0.0`: **66 is now an independent service manager**. It no longer builds against
+`skalibs`, `s6` or `execline` — the scanner, the supervisor, the logger, the fd
+holder and the privilege dropper are native programs of the suite. This release
+also brings the **event system** promised on the roadmap, and rewrites the
+**boot and shutdown procedures in C**.
+
+The ecosystem migration is **automatic**: the first `66` command run after the
+upgrade converts your system and takes a snapshot beforehand. **You do not have
+to convert anything by hand.**
+
+What you *do* have to look at is your own files: a few frontend keys moved or
+disappeared, the `init.conf` skeleton lost several keys, the `rc.*` skeleton
+scripts are gone, and **the boot no longer needs to be told which tree to
+start** — which may make one of your own boot services redundant.
+
+This page is organised around that: **what you must do**, then **what happens by
+itself**, then the rest.
+
+---
+
+## What you must do
+
+A short checklist. Everything here is detailed further down. The first four are
+**silent** — nothing errors out, the behaviour simply changes under you.
+
+1. **If your `init.conf` sets `CONTAINER=1`**, the key is gone and is now
+   ignored: your container **boots as bare metal**. Use `66 boot -c` instead.
+2. **If a frontend uses `[Logger] Destination`**, the key is gone and is now
+   ignored: the service **silently logs to the default directory**. Replace it
+   with `[Execute] StdOut = 66log:/path`.
+3. **If you customized `rc.init`, `rc.init.container`, `rc.shutdown` or
+   `rc.shutdown.final`**, those files are gone and are no longer read: your
+   changes have **no effect**. See [Your boot](#your-boot).
+4. **If one of your boot services starts the enabled trees** — anything calling
+   `66 tree start` on trees other than the boot tree — **66 now does that
+   natively at boot**. Remove it, or it runs twice. See
+   [How 66 boots now](#how-66-boots-now).
+5. **Update your frontends** to silence the deprecation warnings: keys that moved
+   section, `Build`, `TimeoutStart`/`TimeoutStop`, `s6log`. All of them still
+   work and warn — this one is not urgent, but the old spellings will be removed
+   in a future release.
+6. **Reboot.** The migration rewrites your on-disk state; a running `0.8.2.x`
+   scandir keeps its old picture until then.
+7. **Packagers**: see [For packagers](#for-packagers) — the build dependencies
+   and several meson options changed.
+
+---
+
+## Your frontend files
+
+### Keys recentered on their section
+
+Several `[Main]` keys that actually describe a *transition* or the process
+*execution* have moved to the section of their domain. The former names
+`TimeoutStart` / `TimeoutStop` merge into a single `Timeout` key, since the
+section now disambiguates the start/stop meaning.
+
+| Key | Was | Now declare in | Rename |
+| --- | --- | --- | --- |
+| `Notify` | `[Main]` | `[Start]` | — |
+| `DownSignal` | `[Main]` | `[Stop]` | — |
+| `StdIn` / `StdOut` / `StdErr` | `[Main]` | `[Execute]` | — |
+| `TimeoutStart` | `[Main]` | `[Start]` | → `Timeout` |
+| `TimeoutStop` | `[Main]` | `[Stop]` | → `Timeout` |
+| `TimeoutStart` | `[Logger]` | `[Logger]` | → `Timeout` |
+
+**Nothing breaks.** The old placements and the old names are still accepted:
+they warn at parse time and will be removed in a future release. If a key is
+declared both at its deprecated location and at its canonical section, the
+**canonical section wins**.
+
+For example, this still parses and warns:
+
+```
+[Main]
+Type = classic
+TimeoutStart = 5000
+Notify = 3
+StdOut = 66log
+```
+
+and becomes:
+
+```
+[Main]
+Type = classic
+
+[Start]
+Timeout = 5000
+Notify = 3
+
+[Execute]
+StdOut = 66log
+```
+
+One thing that *is* now refused: swapping a `[Start]` key into `[Stop]` or the
+reverse. `TimeoutStart` or `Notify` in `[Stop]`, and `TimeoutStop` or
+`DownSignal` in `[Start]`, are a parse error. Their deprecated `[Main]` spelling
+is still accepted (as above); only the Start/Stop mismatch is fatal.
+
+### Keys removed
+
+An unknown key is only **ignored with a warning** — it is not a parse error. So
+a frontend still using these keeps working, minus the behaviour you asked for.
+Check your frontends.
+
+| Key | What now |
+| --- | --- |
+| `[Logger] Destination` | **Gone.** Your custom log directory is silently ignored and the service logs to the default. Use `[Execute] StdOut = 66log:/path`. |
+| `[Logger] TimeoutStop` | **Gone.** A logger has a single run transition; use `[Logger] Timeout`. |
+
+`Destination` was deprecated-but-honored at `0.8.2.0` — it was automatically
+converted for you. That conversion is over.
+
+### `Build` is deprecated and ignored — the shebang decides
+
+`Build` is still parsed in `[Start]`, `[Stop]` and `[Logger]`, but it does
+nothing and warns. The build type is now **auto-detected**: a script is `custom`
+if and only if the first non-blank line of `Execute` starts with a shebang
+(`#!`); otherwise it is built as an execline script.
+
+Two consequences if you relied on `Build`:
+
+- `Build = custom` with an `Execute` carrying **no** shebang used to be a hard
+  error. It is now silently built as **execline**.
+- `Build = auto` (or no `Build` at all) with a shebang in `Execute` used to be
+  built as execline. It is now auto-detected as **custom**.
+
+In both cases, declaring the shebang you actually want is the fix.
+
+### `s6log` becomes `66log`
+
+The `s6log` value of `StdIn` / `StdOut` / `StdErr` is renamed **`66log`**, since
+the logger is now `66-log`. `s6log` is still accepted, converted at parse time
+with a warning, keeping your destination. Frontend files are **not** rewritten on
+disk — edit them yourself to silence the warning.
+
+### `MaxDeath` becomes a crash budget, and `MaxDeathInterval` is new
+
+`MaxDeath` no longer means the number of death events the supervisor remembers.
+Together with the new `MaxDeathInterval` key it now expresses a **crash budget**:
+how many times a service may die within a time window before 66 gives up,
+declares it `failed` and stops restarting it. Both are now declared in `[Start]`
+— still accepted, deprecated, in `[Main]`.
+
+| | `0.8.2.2` | `0.9.0.0` |
+| --- | --- | --- |
+| `MaxDeath` | death events remembered | deaths allowed inside a `MaxDeathInterval` window |
+| accepted range | `0`–`4096` | **`0`–`16`** |
+| default | `5` | `5` |
+| `MaxDeath = 0` | — | **infinite restart, never *failed*** |
+| `MaxDeathInterval` | — | **new**, milliseconds, default **`30000`** |
+
+**If a frontend declares `MaxDeath` above 16, it no longer parses.** Everything
+else keeps its meaning: the default budget is 5 deaths in 30 seconds.
+
+Only an intrinsic *run-then-die* consumes the budget: a commanded stop never
+counts, and a failed `exec` is reported as `exec-failed` with a progressive
+backoff without consuming the budget. An exhausted budget gives state `failed`
+with result `crash-limit`; a new `66 start` resets the counter.
+
+### The logger default timestamp is honored again
+
+A frontend that omits `Timestamp` in `[Logger]` used to produce
+**untimestamped** log lines, ignoring the compile-time default. It now produces
+**ISO** timestamps. `Timestamp = none` still yields no timestamp; `tai` and
+`iso` were always honored — only the unset case was broken. **Expect timestamps
+to appear in logs where you had none**, if you never set the key.
+
+### `execl-envfile` rejects newline and NUL in a value
+
+A value decoding to a newline (`\n`, `\012`, `\x0a`) or a NUL (`\0`, `\000`,
+`\x00`) is now a **syntax error**. The environment is held as a NUL-separated
+list and re-emitted as newline-separated text; neither byte survives the round
+trip, so the parse now fails loudly instead of corrupting the value silently.
+Note this **diverges from execline's `envfile`**, which permits a newline in a
+value.
+
+---
+
+## Your boot
+
+### How 66 boots now
+
+This is the most visible behaviour change of the release, and the one most
+likely to affect services you wrote yourself.
+
+**Before**, the boot exec'd the `rc.init` skeleton script, which started **one
+tree**, the one named by `init.conf`'s `TREE` key, `boot` by default. Starting
+the *other* trees, the enabled ones, was somebody else's job: typically a service
+inside the boot tree that called `66 tree start` on them once the boot tree was
+up.
+
+**Now**, `66 boot` does the whole thing itself, in memory, with no script and no
+intermediate `66` process. Stage 2 brings the system up in two waves:
+
+1. **the boot trees**: every tree belonging to the `boot` *group* (or the single
+   tree named by `TREE`, if you set it — see below);
+2. **then every enabled tree.**
+
+So if you have a service whose job is to start the enabled trees, **it is now
+redundant and does the work a second time**. Look for anything in your boot tree
+that calls `66 tree start` on trees other than the boot tree, and remove it. This
+is worth checking whatever your setup: the service is likely to be provided by
+your distribution rather than written by you.
+
+Two more consequences of the boot running in-process:
+
+- **You no longer name the tree to boot.** Put your trees in the `boot` group
+  (`66 tree admin -o groups=boot <tree>`, or at creation) and 66
+  brings them all up, whatever they are called. No tree in the group is a no-op,
+  not an error.
+- **`66 status` now reports `by boot`** for services started at boot. Before,
+  `rc.init` exec'd a fresh `66`, which lost the context, and boot-started
+  services were recorded as `by user`.
+
+A tree in the `boot` group cannot be enabled, so the two waves never overlap.
+
+### `TREE` is still there and now optional
+
+`TREE` is **not removed**. It is still read from `init.conf` **and from the
+kernel command line**. What changed is that the shipped skeleton no longer sets
+it, so it now **defaults to empty**, and empty means *group mode*.
+
+| `TREE` | Boot starts |
+| --- | --- |
+| unset (the new default) | every tree in the `boot` group, then every enabled tree |
+| `TREE=boot` (or any name) | that one tree, then every enabled tree |
+
+**An existing `init.conf` that still says `TREE=boot` keeps working exactly as
+before.** Nothing forces you to move. But it pins the boot to that single tree
+by name and opts you out of the group mode, so leaving it set is a choice, not
+an oversight. Clear the key to opt in.
+
+Both forms start the enabled trees in the second wave, that part is
+unconditional.
+
+### `init.conf`
+
+| Key | Change |
+| --- | --- |
+| `VERBOSITY` | default **`1` → `2`** |
+| `TREE` | **removed from the skeleton**, still honored, now empty by default |
+| `CONTAINER` | **removed** — use `66 boot -c` |
+| `RCINIT_CONTAINER` | **removed** |
+| `RCINIT` | **removed** |
+| `RCSHUTDOWN` | **removed** |
+| `RCSHUTDOWNFINAL` | **removed** |
+| `RESCAN` | **removed** (it was never wired to anything) |
+| `LIVE`, `PATH`, `UMASK`, `CATCHLOG` | unchanged |
+
+No key was added or renamed.
+
+**A stale `init.conf` still listing the removed keys is not an error — the keys
+are ignored, without a warning.** That is fine for five of them, but **`CONTAINER=1`
+is a trap**: it used to select the container init, it now does nothing at all, so
+the system **silently boots as bare metal**. Pass `66 boot -c` instead.
+
+Every key is now optional, and an absent key keeps its built-in default.
+Previously `PATH`, `TREE` and `LIVE` were exported to stage 2 from buffers that
+stayed **empty** when the key was absent.
+
+The default verbosity moves to `2` so that the warnings the internal daemons
+emit, for instance an event reactor stopped by the anti-loop backstop, are
+visible without reconfiguring anything.
+
+### The `rc.*` skeleton files are gone
+
+| Removed | Replaced by |
+| --- | --- |
+| `rc.init` | `66 boot` stage 2, in memory |
+| `rc.init.container` | the same stage 2; a container is a branch selected by `66 boot -c` |
+| `rc.shutdown` | `66-shutdownd` stage 3, in memory |
+| `rc.shutdown.final` | the final stage, now compiled C |
+
+**If you customized any of these, your changes are silently ignored**. The files
+are no longer read, and nothing warns you.
+
+In practice `rc.init` and `rc.shutdown` only ever ran `66 tree start|stop
+${TREE}`, so there is nothing to carry over. The two that carried real hooks:
+
+- **`rc.init.container`** held the "append the command to launch inside your
+  container here" block and a settable `HALTCODE`. There is **no drop-in
+  replacement**: a container is now a fully supervised system, so that command
+  has to be re-expressed as a 66 service. See the new
+  [container guide](66-container.html).
+- **`rc.shutdown.final`** was the documented last-resort hook for actions after
+  every filesystem is unmounted. The final stage is now compiled C, so **it has
+  no replacement**. The upstream skeleton shipped empty and told admins to leave
+  it empty, so most systems are unaffected. But if you used it, there is
+  nowhere to put that logic today. Please report your use case.
+
+### Containers
+
+Container mode is now selected **only** by `66 boot -c` / `--container`.
+`CONTAINER`, `RCINIT_CONTAINER`, the `CONTAINER_HALTCMD` environment channel and
+the `rc.init.container` skeleton are all gone.
+
+A container now follows the same path as bare metal, which is the real change:
+**a container is a fully supervised system, not a wrapper around a single
+command**. That is why a customized `rc.init.container` has no mechanical
+migration.
+
+The exit-code protocol is unchanged in spirit: pid 1 exits `0` by default, `111`
+if the boot failed; `66 halt` makes pid 1 exit with the `EXITCODE` found in the
+halt file; `66 poweroff` and `66 reboot` report `SIGINT` and `SIGHUP`.
+
+A container built from a bare image now **sets its own state up** instead of
+aborting: initialising the version marker is best-effort, and boot skips a tree
+resolution it never used. Three container-only bugs are also fixed, each of
+which meant a container **never stopped**: the generated final-stage script was
+written empty, that script killed itself before it could stop the scanner, and
+the boot logger echoed every line back into its own fifo and looped forever.
+
+The new [container guide](66-container.html) covers the whole thing, with build
+paths for the Obarun base image, Alpine and Debian. The dockerfiles live in
+`contributions/docker/`.
+
+### The `66-shutdown` program is gone
+
+Its job — planned shutdown time, `/etc/66/shutdown.allow`, the wall message,
+cancelling — is folded into the `66 halt`, `66 poweroff` and `66 reboot` verbs,
+which gain `-c`/`--cancel`. If you called `66-shutdown` directly, call the verb
+instead.
+
+`66-shutdownd` moves from `bindir` to `libexecdir` — it is an internal daemon,
+not a user command. Anything hardcoding `/usr/bin/66-shutdownd` breaks.
+
+### Other boot fixes
+
+- **An enabled empty tree hung the boot forever.**
+- **`CATCHLOG=0` never booted** — the readiness fd was wrong, so the boot never
+  got past stage 2.
+- **A boot could silently drop `TREE` on some machines and not others** — the
+  rebuilt environment was not NUL-terminated, so a key lookup could miss.
+- **`66 reboot -f` crashed** — the shutdown verbs no longer route through the
+  system sanitation.
+- Boot output is no longer interleaved out of order.
+
+---
+
+## What happens by itself
+
+You have nothing to convert by hand, that is the point of this section. But
+*automatic* is not *nothing to do*: once the migration has run you reboot, and
+that is the whole of your part. The rest is here so you know what 66 is doing on
+your behalf, and the one place it can stop.
+
+**The migration is automatic.** 66 detects the version change on the **first
+command you run** after the upgrade and converts the ecosystem. A snapshot named
+**`system@<your current version>`** (for example `system@0.8.2.2`) is taken
+beforehand, so the previous state is always recoverable.
+
+Under the hood, 66 converts every service resolve file to a new internal layout,
+rebuilds your logger run scripts to use `66-log` instead of `s6-log` preserving
+the backup count, timestamp, max size and destination (the notification flag
+takes the `66-log` default), points the scandir at `fdholderd` instead of
+`fdholder`, and gives oneshot and module services a scandir entry that the new
+scanner will not try to supervise.
+
+Supported source versions are `0.8.0.0` through `0.9.0.0`; anything older is a
+hard error, not a silent fallback. From `0.8.2.2` it is a single step.
+
+Three things worth knowing:
+
+- **A reboot is expected.** The migration rewrites your on-disk state, but a
+  running `0.8.2.x` scandir keeps its old in-memory picture until you reboot.
+- **Each base migrates on its own, as whoever runs `66` first.** Root's
+  `/var/lib/66` migrates on root's first command; each user's `~/.66` migrates on
+  that user's first command. There is no "migrate everything" command.
+- **The scandir conversion is best-effort, and only a genuine disk error
+  interrupts it.** If a resolve file cannot be read or written, 66 skips that one
+  service and warns rather than aborting the whole migration; the warning tells
+  you to force the *next* reboot with `66 reboot -f`, which brings `/run` back up
+  clean. On a healthy disk none of this fires. Every record the shutdown needs
+  is written, and the reboot is the ordinary one above.
+
+Migrating a `0.8.0.0`–`0.8.1.1` resolve file now also preserves the logger
+timeout instead of dropping it, and fixes the logger directory ownership by
+honoring the service's own logger `RunAs` instead of forcing the default runner.
+
+---
+
+## New things to explore
+
+Nothing here is required. Your services keep working without touching any of it.
+
+### The event system
+
+A service can now react to something happening elsewhere on the system by
+running a `66` command on itself. It is entirely opt-in: a service that declares
+nothing behaves exactly as before. Two roles:
+
+- A **reactor** is an ordinary `classic`, `oneshot` or `module` service with an
+  `[Event]` section. When its trigger fires, it runs a `66` command on itself
+  (`Do`) and/or raises a named event (`Emit`).
+- A **source** is a service of the new **`Type = event`**. It runs no process and
+  has no `[Start]` section; `66 start` and `66 stop` on a source *arm* and
+  *disarm* it.
+
+A reactor triggers on a service's state or result, on a signal, on a filesystem
+event, on a cron expression, on a timer, or on a user event raised with the new
+`66 emit` command. For instance, restarting a service when its configuration
+file changes on disk:
+
+```
+[Main]
+Type = oneshot
+Description = "A simple proof of event concept"
+
+[Start]
+Execute = ( echo "I restart myself when /etc/my-daemon is edited" )
+
+[Event]
+EventType = inotify
+From = ( my-config-watcher )
+Do = restart
+```
+
+with the source it depends on:
+
+```
+[Main]
+Type = event
+EventType = inotify
+Watch = /etc/my-daemon
+On = ( IN_CLOSE_WRITE )
+```
+
+One `66-eventd` daemon serves the whole scandir; it is created for you at
+`66 scandir create` time. A reactor that feeds itself is caught by an anti-loop
+backstop: more than 10 fires within a sliding 10-second window disarms it, and a
+fresh `66 start` is needed to bring it back.
+
+A `Do = start` reactor of type `oneshot` or `module`, held down until its trigger
+fires, reports the new **`waiting`** state.
+
+The full grammar, the vocabulary of each `EventType`, and the runtime behaviour
+are on the [event system](66-event.html) page — see also
+[66-eventd](66-eventd.html) and [66 emit](66-emit.html), and the `[Event]`
+section of the [frontend](66-frontend.html) reference.
+
+### Per-session variables now reach your services
+
+A scandir is started long before a session exists — a user one at the first
+login, the system one at boot — and its environment is frozen at that point. A
+variable that only a session knows (`DISPLAY`, `WAYLAND_DISPLAY`, `XAUTHORITY`)
+could not reach the services it supervises at all. The new
+[`66 env`](66-env.html) command is the way in:
+
+```
+66 env import DISPLAY XAUTHORITY
+```
+
+`import` copies the values **from the environment of the caller**, verbatim.
+Nothing is computed, guessed or checked — a variable that is not set is skipped
+with a warning. `set`, `unset` and `list` complete the command.
+
+What is published lands in `%%livedir%%/environment/<uid>/`, one file per
+variable, and `66-execute` merges that directory into the environment of
+**every** service of the scandir at each start, no frontend has to declare
+anything. The merge happens **last and verbatim**, so a published value
+overrides the `[Environment]` section, the service configuration and the
+`ImportFile` files, and a `${...}` inside it stays literal.
+
+Each publication raises `env.<variable>`, each withdrawal `unenv.<variable>`, so
+a service can wait for the value it needs rather than be ordered around:
+
+```
+[Main]
+Type = classic
+Description = "Clipit daemon"
+
+[Start]
+Execute = ( clipit )
+
+[Event]
+EventType = user
+On = ( env.DISPLAY )
+Do = start
+```
+
+The directory is created and destroyed with the scandir, so nothing published
+survives a `66 scandir remove` or a reboot. Until you reboot,
+the scandir carried over from `0.8.2.x` has no such directory yet, and `66 env`
+says so rather than publishing into a store no service reads. At most 20
+variables can be published at a time; the twenty-first is refused with an
+explicit error.
+
+### New commands
+
+| Command | What it does |
+| --- | --- |
+| [`66 log`](66-log.html) | read the logs of a service, of the system, or of everything interleaved — with `-f` to follow, `-g` to grep, `-s`/`-u` to bound a time range |
+| [`66 emit`](66-emit.html) | raise a user event by name |
+| [`66 env`](66-env.html) | publish per-session environment variables to every service of the scandir |
+| [`66 runstate`](66-runstate.html) | dump a service's runtime record, the low-level counterpart to `66 state` |
+| [`66 fdholder`](66-fdholder.html) | manage the scandir's fd holder daemon |
+| [`66 suspend`](66-suspend.html) | suspend the system to RAM |
+| [`66 hibernate`](66-hibernate.html) | hibernate the system to disk |
+
+No command was removed.
+
+### Long options everywhere
+
+Until now every 66 program accepted **short options only**. The whole suite now
+accepts long options too — `--help`, `--verbosity`, `--live`, `--tree`,
+`--timeout`, `--color`, and per-command forms such as `--field`, `--no-name`,
+`--follow`, `--graph`. Both `--opt=value` and the glued `-tfoo` form work. Short
+options are unchanged, so **your scripts keep working**.
+
+`66 signal` also gains `--stop-group`, `--cont-group` and `--kill-group` to
+signal a service's whole process group.
+
+### `66 status` tells you more
+
+Every service type now reports the same way; there is no `s6-svstat` fork any
+more, and oneshot, module and event services get the same treatment as classic
+ones:
+
+```
+Status : enabled, up (pid 731) since 9h 40min by user
+```
+
+Durations are now human-readable (`9h 40min`, `40min`, `45s`) instead of a raw
+second count, and there is no separate `ready` figure. A notable last result is
+shown in parentheses after the pid (`(exited 1)`, `(signaled 9)`, `(crash)`)
+and nothing on a clean success, as above.
+
+The new part is **`by <who>`**. who caused the last transition: `user`, `boot`,
+`event`, `shutdown`, or `self` when the service acted on its own.
+`unsupervised` disappears as a status word, `waiting` appears, and a stopped
+service in the graph view (`-g`) now prints `down` instead of a bare `0`.
+
+`66 state` displays 7 lines instead of 8: the `isup` flag is gone, since whether
+a service is up is now read from the runtime record.
+
+### Fields are selectable
+
+`66 status` and `66 tree status` gain `-f`/`--field` to choose the fields to
+display; **`-o` is deprecated** — it still works and warns. The same
+`-f`/`--field` and `-n`/`--no-name` pair is now on `66 state`, `66 resolve`,
+`66 tree resolve` and `66 runstate`, which previously took `-h` only.
+
+### Options that no longer exist
+
+| Gone | Use instead |
+| --- | --- |
+| `66 scandir reload` | `66 scandir reconfigure` |
+| `66 scandir create -s\|--skeleton` | nothing — boot reads `init.conf` itself |
+| `66 tree start -f` | nothing — `-f`/`--fork` is for `tree stop` and `tree free` |
+| `-o rename` on `66 tree create\|admin` | nothing — it parsed but never renamed anything, and now errors instead of doing nothing silently |
+
+`66 tree remove|enable|disable|current` and the `66 scandir` signal subcommands
+now accept `-h` only. They used to advertise administrative options they never
+applied.
+
+---
+
+## Under the hood
+
+You do not have to do anything about this section. It is here because a few of
+these choices surface in places you may touch.
+
+**66 builds against `oblibs` only.** `skalibs`, `s6` and `execline` are gone from
+the build entirely. `execline` remains a **runtime** dependency, and only that:
+the generated service scripts still chainload it.
+
+The programs 66 used to borrow are now its own: `s6-svscan` → **`66-scandir`**,
+`s6-supervise` → **`66-supervise`**, `s6-log` → **`66-log`**, `s6-svc` →
+**`66-svctl`**, the `s6-fdholder` suite → **`66-fdholderd`**, `s6-setuidgid` →
+**`execl-runas`**.
+
+Oneshot services no longer go through `s6-sudo`. They are handled by
+**`66-oneshotd`**, a daemon written for that purpose, not an `s6-sudo`
+equivalent. The `66-oneshot` and `66-fdholder-filler` helpers are gone, absorbed
+by their daemons.
+
+Where that surfaces for you:
+
+- **Your loggers now run `66-log`.** The migration rebuilds their run scripts.
+  `Build = custom` in `[Logger]` remains the escape hatch if you want `s6-log`
+  and its full feature set.
+- **`execl-runas` is not a drop-in `s6-setuidgid`**: it never introduces
+  `UID`/`GID`/`GIDLIST` in the environment, and the `user:group` colon syntax is
+  **not** supported — the account is always a single user name.
+- **The scandir control directory is renamed** `.s6-svscan` → **`.66-scandir`**.
+  Anything of yours reaching into it directly must follow.
+- **`66-scandir` is not `s6-svscan`**: it exposes only `-t` and `-d`. The
+  per-scandir limits are compile-time options, and `66 scandir create -L
+  <log_user>` is unaffected.
+
+The internal **resolve** file is also split into an autonomous core plus addons,
+which lets 66 answer most runtime questions without loading everything. This is
+invisible to you (the migration rewrites it) but it is a **breaking change for
+external users of `lib66`**, such as `66-tools`: `resolve_read_g` / `write_g` /
+`check_g` / `remove_g` are renamed to `resolve_read` / `write` / `check` /
+`remove`, and the raw primitives take an `_at` suffix.
+
+---
+
+## Bug fixes
+
+Beyond the boot, container and migration fixes above, and all of them reachable
+from ordinary use:
+
+- **Parsing any service that has a logger smashed the stack**, the run-script
+  buffer was ~18 bytes too small. The same path also used a pointer that a later
+  allocation could invalidate.
+- **A frontend could crash the parser**: a `[`…`]` run of 20 characters or more
+  inside script context (a shell array index, a glob) overflowed a fixed buffer;
+  a frontend whose very first byte is a key read far outside the buffer; a
+  duplicated section overran the section table (now reported as *too many
+  sections in frontend file*).
+- **Every key value parsed overflowed its allocation by one byte**, as did the
+  fallback `Description` of a service that declares none, and the snapshot name
+  built during an upgrade.
+- **A service name shorter than 6 bytes** (`svc`, `ntpd`) caused an
+  out-of-bounds read at validation, and every non-instanced name read one byte
+  before its buffer.
+- **`66 enable` / `66 disable` used a dangling tree name**, and **`66 configure
+  -V`** read freed memory.
+- **`66-shutdownd` wrote out of bounds on every shutdown or reboot** while
+  generating its final-stage script.
+- **Memory leaks**: `66 tree status` leaked per tree displayed, `66 remove`
+  leaked on every removal of a classic service with a logger, a malformed
+  frontend leaked per parse error, and `66 -h` leaked.
+- **`Nice` was never honored**: a service declaring any `Nice` value ran at
+  nice **19**, while a service declaring none correctly ran at 0.
+- **`CapsBound` and `CapsAmbient` together killed the service** with exit 111
+  and *CAP_SETPCAP is not in the bounding set of the process*. Each key worked
+  alone.
+- **The container scandir crash handler could not find `66-nuke`** on any install
+  where the execline prefix differs from `bindir`.
+- A missing `User` key in `[Main]` no longer warns, it is a defaulted value, not
+  a problem.
+- `66 halt --help` no longer dies with *unable to set the tree name* on a
+  tree-less system, and `66 free -P` works again.
+- The CLI `-T`/`--timeout` override is now a 64-bit millisecond value; it used to
+  be capped at ~49.7 days.
+
+---
+
+## For packagers
+
+- **The only build dependency is `oblibs >= 0.4.0.0`.** `skalibs`, `s6` and
+  `execline` are no longer needed to build. `execline >= 2.9.6.1` is still needed
+  at **runtime** for the generated scripts.
+- **Meson is the only build system.** `configure`, `Makefile`, `package/` and the
+  build helper scripts are removed. The old system is no longer deprecated — it
+  is gone.
+- **Options renamed**: `s6-log-user` → **`66-log-user`**, `s6-log-timestamp` →
+  **`66-log-timestamp`**, `s6-log-notification` → **`66-log-notification`**.
+- **Option removed**: `sysdeps-dir`. Cross-compilation uses `with-include-dir`
+  and `with-dynamiclib-dir`.
+- **Options added**: `execline-bindir` and `execline-extbindir` (default
+  `/usr/bin`) — the path prefixes for execline binaries in generated scripts, now
+  separable from `bindir`; and `doc-only`, which builds the documentation alone,
+  skipping the C sources and the `oblibs` lookup.
+- **Install layout changed**: `66-shutdownd` moves to `libexecdir`; the new
+  `66-scandir`, `66-supervise`, `66-log` and `execl-runas` go to `bindir`;
+  `66-eventd`, `66-fdholderd`, `66-oneshotd` and `66-svctl` to `libexecdir`.
+  `66-shutdown`, `66-oneshot` and `66-fdholder-filler` no longer exist.
+- **Documentation** builds with meson targets instead of configure-time scripts,
+  so a documentation failure now fails the build. `lowdown` is still required
+  when `with-doc=true`. **mkdocs is not needed** — meson only generates the
+  mkdocs sources; the site build runs in CI. `meson compile -C build doc` builds
+  the documentation alone.
+- The test suite grew from 4 to 36 files and runs under **address and undefined
+  sanitizers** in CI, on merge requests as well as master. Enable it with
+  `-D test=true` and run `meson test -C builddir`.
+- Copyright headers are normalized to a single year per file — relevant if you
+  extract copyright years automatically.
+
+## Notes
+
+- New onboarding guides are available: [getting started](66-getting-started.html),
+  a [cheatsheet](66-cheatsheet.html), [dependencies](66-dependencies.html),
+  [logging](66-logging.html), [troubleshooting](66-troubleshooting.html),
+  [coming from systemd, OpenRC or runit](66-migration.html) and
+  [running 66 inside a container](66-container.html).
+- For detailed documentation on new keys and features, refer to the
+  [documentation](https://web.obarun.org/software/66/latest).
+
+---
+
 # In 0.8.2.2
 
 ## Overview
@@ -541,9 +1234,9 @@ Removed flags:
 
 Added flags:
 - `--with-default-tree-name=NAME`
-- `--max-path-size=KB`
-- `--max-service-size=KB`
-- `--max-tree-name-size=KB`
+- `--max-path-size=BYTES`
+- `--max-service-size=BYTES`
+- `--max-tree-name-size=BYTES`
 - `--with-system-seed=DIR`
 - `--with-sysadmin-seed=DIR`
 - `--with-user-seed=DIR`

@@ -26,17 +26,17 @@ description: 'Maximum number of services handled by 66-scandir')
 option('max-path-size',
 type: 'integer',
 value: 1024,
-description: 'Maximum size of a path in KB. Each *-dir option (including the $HOME prefix) can not exceed max-path-size')
+description: 'Maximum size of a path in bytes. Each *-dir option (including the $HOME prefix) can not exceed max-path-size')
 
 option('max-service-size',
 type: 'integer',
 value: 256,
-description: 'Maximum size of a frontend service name in KB (e.g., foo@bar must not exceed this)')
+description: 'Maximum size of a frontend service name in bytes (e.g., foo@bar must not exceed this)')
 
 option('max-tree-name-size',
 type: 'integer',
 value: 256,
-description: 'Maximum size of a tree name in KB')
+description: 'Maximum size of a tree name in bytes')
 
 option('default-tree-name',
 type: 'string',
