@@ -64,7 +64,23 @@ This directory stores trees and services configuration files. You should see thi
                 └── file
 ```
 
-The exact same structure is also available for regular users at the `${HOME}/%%user_dir%%` directory.
+The exact same structure is also available for regular users at the `${HOME}/%%user_dir%%` directory, specified at compile time by using the `-D user-dir=` option to `meson setup`.
+
+Every system or administrator directory documented below has a user counterpart, and each one has its own compile-time option. They mirror each other one for one:
+
+| System / administrator | Regular user | Option | Default |
+| --- | --- | --- | --- |
+| `%%system_dir%%` | `${HOME}/%%user_dir%%` | `-D user-dir=` | `.66` |
+| `%%system_log%%` | `${HOME}/%%user_log%%` | `-D user-log-dir=` | `.66/log` |
+| `%%service_adm%%` | `${HOME}/%%service_user%%` | `-D user-service-dir=` | `.66/service` |
+| `%%service_admconf%%` | `${HOME}/%%service_userconf%%` | `-D user-service-conf-dir=` | `.66/conf` |
+| `%%script_system%%` | `${HOME}/%%script_user%%` | `-D user-script-dir=` | `.66/script` |
+| `%%seed_adm%%` | `${HOME}/%%seed_user%%` | `-D user-seed-dir=` | `.66/seed` |
+| `%%environment_adm%%` | `${HOME}/%%environment_user%%` | `-D user-environment-dir=` | `.66/environment` |
+
+**Never pass an absolute path to a `user-*` option.** The value is relative and `${HOME}` is prepended at runtime for whoever owns the process, which is what lets a single build serve every user on the machine. Setting `user-dir=/home/alice/.66` would point every user at Alice's directory.
+
+The [live directory](#livedir) is not duplicated per user: it is shared, and the per-user parts are keyed by `UID` inside it, as `%%livedir%%/state/UID` and `%%livedir%%/environment/UID`.
 
 The `%%system_dir%%/system/.resolve` directory contains resolve files for trees. Each tree have its own resolve file, while the [Master](#master-resolve-file) resolve file contains information about all trees available on the system.
 
