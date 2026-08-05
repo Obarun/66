@@ -1,37 +1,18 @@
 # What is 66?
 
-Sixty-six (66) is an independent Linux service manager with its own native process supervision (historically inspired by s6), designed to simplify the implementation and management of service files on your machine. It provides a comprehensive toolbox for declaring, implementing, and administering services with minimal code while delivering powerful functionality.
+Sixty-six (66) is a complete Linux service manager: it declares services in a readable INI
+format, compiles them ahead of time, and supervises each one with a dedicated supervisor
+process. It can bring up a whole machine as PID 1 or run alongside another init, on
+hardware or in a container.
 
-## Key Features of 66 (not exhaustive):
+This documentation tries to be complete and self-contained. If you are new to process
+supervision, some concepts may be unfamiliar at first; the pages below introduce them as
+needed.
 
-- **Frontend Service Files Declaration**: Service files are written in an INI format, making them straightforward to read and edit.
-- **Simple Scandir Creation**: Easily create [scandir](66-scandir.html) directories for both the root and regular users, allowing for efficient service management across different user levels.
-- **Nested Scandir Supervision**: Regular users have their own independent [scandir](66-scandir.html) directories, separate from the root, ensuring user-specific supervision without interference.
-- **Instance Service File Creation**: Supports instantiated service.
-- **Identifier Interpretation**: Supports specific identifiers that are replaced at parse time to simplify service file creation.
-- **Service Configuration Changes**: Includes built-in versioning for configuration files, including environment variables, to streamline service updates and changes.
-- **Automatic Logger Creation (not mandatory)**: Automatically creates dedicated loggers for each service, covering both classic and oneshot service types.
-- **Help on I/O Redirection**: Provides keywords in frontend files for easy control over standard input, output, and error redirection.
-- **Service Notification**: Ensures services are fully ready before managing their dependency chains, using a readiness notification mechanism.
-- **Event System**: A service can [react to what happens on the system](66-event.html) instead of being wired into the dependency graph — restart when a file changes, start on a schedule or a timer, act when another service goes down, or wait for a named event raised by hand or by 66 itself. Its defining trait: **a service reacts on itself and on nothing else** — the rule has no target, it lives in the frontend of the very service it affects.
-- **Runtime Environment**: A session can [publish variables to every supervised service](66-env.html) after the scandir is up — `DISPLAY`, `XAUTHORITY` and anything else only a session knows — without touching a single frontend file.
-- **Service Organization as a Tree**: Allows quick management and visualization of service groups within a tree structure.
-- **Service Status Overview**: Offers a comprehensive set of tools to monitor the state of services and access detailed information easily.
-- **User Service Declaration**: Users can declare and manage their own services, facilitating personalized service management.
-- **Automatic Dependency Chains**: Automatically handles and maintains service dependencies, ensuring smooth and reliable service operations.
-- **Service Order Dependencies**: Guarantees reliable, stable, and reproducible service order dependencies to maintain consistent service behavior.
-- **Snapshot Management**: Allows the creation and management of snapshots of your service system, enabling easy backup, recovery, and sharing of service states across multiple hosts.
-
-## Behavior Benefits:
-
-- **No Reboot Required During Upgrades**: Service updates do not require system reboots, ensuring continuous operation.
-- **Independent of Boot Management**: 66 can supervise services independently of the boot process, making it optional to use 66 from startup. It is also fully compatible with virtualization platforms like containerd, Podman, and Docker, allowing for easy monitoring of services within containers.
-- **Readable Logs**: Logs are stored in a human-readable format for easier analysis and debugging.
-- **File Descriptor Holding for Log Pipes**: Utilizes file descriptor holding for efficient log piping, enhancing reliability and performance.
-
-66 focuses on mechanisms, not policies, and can be compiled with either `glibc` or `musl` for flexibility across different systems.
-
-**Note**: This documentation tries to be complete and self-contained. If you are new to process supervision, some concepts may be unfamiliar at first; the rest of this documentation introduces them as needed.
+If you are still deciding whether 66 fits your needs, start with
+[where 66 stands among init systems](66-vs-other-init-systems.html): what it looks like in
+practice, who it suits, and how it compares with runit, the s6 stack, OpenRC, finit, dinit
+and systemd.
 
 ## Where to begin
 
@@ -46,7 +27,7 @@ Then dig in as your needs grow:
 - **Organising services** — [tree](66-tree.html), [module services](66-module.html), [module service usage](66-module-usage.html)
 - **Reacting to events** — [the event system](66-event.html), [66-eventd](66-eventd.html)
 - **Handing a session's environment over** — [66 env](66-env.html)
-- **Coming from another init** — [systemd, OpenRC or runit](66-migration.html)
+- **Coming from another init** — [systemd, OpenRC or runit](66-migration.html), [where 66 stands among them](66-vs-other-init-systems.html)
 - **When something breaks** — [troubleshooting & FAQ](66-troubleshooting.html)
 - **Administration & boot** — [boot](66-boot.html), [scandir](66-scandir.html), [running in a container](66-container.html), [upgrade and migration](66-upgrade-process.html)
 - **Going deeper** — [deeper understanding](66-deeper.html), [standard I/O redirection](66-standard-io-redirection.html), [service configuration file](66-service-configuration-file.html)

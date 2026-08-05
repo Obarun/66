@@ -49,7 +49,7 @@ html_pages = [
   '66-standard-io-redirection', '66-start', '66-state', '66-status',
   '66-stop', '66-suspend', '66-hibernate', '66-tree', '66-umountall',
   '66-upgrade', '66-upgrade-process', '66-version', '66-wall',
-  '66-logging', '66-migration', '66-troubleshooting',
+  '66-logging', '66-migration', '66-troubleshooting', '66-vs-other-init-systems',
   'execl-envfile', 'execl-runas', 'index',
 ]
 

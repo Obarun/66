@@ -62,6 +62,7 @@ nav:
     - The event system: 66-event.md
     - Troubleshooting & FAQ: 66-troubleshooting.md
     - Coming from systemd, OpenRC or runit: 66-migration.md
+    - Where 66 stands among init systems: 66-vs-other-init-systems.md
     - Running 66 inside a container: 66-container.md
   - 66 commands:
     - 66 commands: 66.md
