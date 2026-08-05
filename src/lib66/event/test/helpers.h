@@ -68,8 +68,16 @@ static inline int fanout_frame(char const *dir, char const *buf, size_t len)
 }
 
 /* Open EVERY visible producer-eligible fifo O_WRONLY|O_NONBLOCK and return how
- * many opened without ENXIO. Used to prove the trick: a fifo is never published
- * visibly until its read end exists, so a producer opening it never gets ENXIO. */
+ * many opened. `seen_enxio` counts the fifos that were still on disk after the
+ * open failed with ENXIO, i.e. genuinely published without a read end.
+ *
+ * ENXIO alone does not mean that: a producer's open() is not atomic. The name is
+ * resolved by the path walk, then fifo_open() takes the pipe mutex and only then
+ * tests pipe->readers. A subscriber tearing down in between — unlink first, then
+ * close the read end — hands the producer ENXIO on a name that is already gone,
+ * which is why the entry is re-checked. In that teardown case the unlink is
+ * necessarily complete before the readers test, so a surviving entry can only
+ * come from a fifo published, or left, without a reader. */
 static inline int fanout_open_ok(char const *dir, int *seen_enxio)
 {
     if (seen_enxio) *seen_enxio = 0 ;
@@ -86,7 +94,12 @@ static inline int fanout_open_ok(char const *dir, int *seen_enxio)
         path[dl] = '/' ;
         memcpy(path + dl + 1, e->d_name, EVENT_FIFO_NAMELEN + 1) ;
         int fd = open(path, O_WRONLY | O_NONBLOCK | O_CLOEXEC) ;
-        if (fd < 0) { if (errno == ENXIO && seen_enxio) (*seen_enxio)++ ; continue ; }
+        if (fd < 0) {
+            struct stat st ;
+            if (errno == ENXIO && seen_enxio && !stat(path, &st))
+                (*seen_enxio)++ ;
+            continue ;
+        }
         ok++ ;
         close(fd) ;
     }

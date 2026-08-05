@@ -1214,7 +1214,7 @@ static void test_subscribe_trick_concurrent_smoke(void)
     int wst = 0 ;
     T_ASSERT(waitpid(pid, &wst, 0) == pid, "reap child") ;
 
-    T_ASSERT_EQ(0, (int)sh[1], "producer never hit ENXIO (unlink-before-close)") ;
+    T_ASSERT_EQ(0, (int)sh[1], "no ENXIO on a fifo still on disk (unlink-before-close)") ;
 
     munmap((void *)sh, 2 * sizeof(long)) ;
     rm_rf(ev) ; rm_rf(base) ;
