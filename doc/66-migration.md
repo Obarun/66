@@ -1,8 +1,12 @@
 # Coming from systemd, OpenRC or runit
 
-If you already run services on another init or service manager, most of your
-mental model carries over — only the spelling changes. This page maps the
-commands and concepts you know to their `66` equivalents.
+If you already run services on another init or service manager, the day-to-day
+gestures transpose almost one for one. This page maps the commands and concepts
+you know to their `66` equivalents. The model underneath differs more than the
+spelling does — trees are managed objects, service definitions are compiled
+before anything starts, and a reaction lives in the service it affects — and
+[where 66 stands among init systems](66-vs-other-init-systems.html) covers that
+side.
 
 For migrating between `66` versions, see [upgrade](66-upgrade.html) and the
 [Rosetta stone](66-rosetta.html) instead.
@@ -50,7 +54,7 @@ init, these are the genuinely new tools in your hand:
 | [`66 free`](66-free.html) | Stop a service **and** drop it from the live scandir (unsupervise), keeping it parsed and enabled | — (stopping never unsupervises) |
 | [`66 remove`](66-remove.html) | Erase everything 66 generated for the service (parsed form + state); your frontend file is kept | manual `rm` of the unit + `systemctl daemon-reload` |
 | [`66 reconfigure`](66-reconfigure.html) | Stop, unsupervise, re-parse and restart in one step, to apply an edited frontend | partial: `systemctl daemon-reload` then restart |
-| [`66 scandir`](66-scandir.html) | Create / start / stop your own supervision tree (`66-scandir`) | — (the supervision root is PID 1, not user-managed) |
+| [`66 scandir`](66-scandir.html) | Create / start / stop your own supervision tree (`66-scandir`) | partial: systemd does run a per-user manager, but the system instance spawns and controls it; here the tree is yours to create, start and stop |
 | [`66 tree`](66-tree.html) | Create and manage named **groups** of services as first-class objects, with their own dependencies | systemd `.target` (static config, not a managed object) |
 | [`66 snapshot`](66-snapshot.html) | Capture, restore or transfer the **whole** 66 ecosystem (e.g. to clone it onto another machine) | — |
 | [`66 resolve`](66-resolve.html) | Print the **complete** service as the system resolved it — every field, the generated run/finish scripts, the resolved on-disk and live paths | OpenRC/runit: none; systemd `systemctl show` is nearest but reports runtime properties, not the compiled definition |
