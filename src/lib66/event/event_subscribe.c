@@ -116,10 +116,10 @@ int event_subscribe(event_fifo_t *f, sse_epoll_t *ep, char const *eventdir, even
 
     // hand the read end to the pump; it owns it from here (closed by detach)
     if (!event_reader_attach(&f->reader, ep, rfd, handler, data, priority)) {
-        close_fd(rfd) ;
-        close_fd(f->wfd) ; f->wfd = -1 ;
         file_tryunlink(f->fifopath) ;
         f->fifopath[0] = 0 ;
+        close_fd(rfd) ;
+        close_fd(f->wfd) ; f->wfd = -1 ;
         log_warnusys_return(LOG_EXIT_ZERO, "attach event fifo reader") ;
     }
 
