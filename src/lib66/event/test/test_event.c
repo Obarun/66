@@ -14,7 +14,9 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #include <dirent.h>
+#include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -34,6 +36,13 @@
 
 /* anti-hang: any test that blocks on a fifo dies here, the run is a FAILURE. */
 static void on_alarm(int sig) { (void)sig ; _exit(124) ; }
+
+static void child_dies_with_parent(pid_t parent)
+{
+    prctl(PR_SET_PDEATHSIG, SIGKILL) ;
+    if (getppid() != parent)
+        _exit(1) ;
+}
 
 /* deterministic scratch dir under the sandbox tmpfs */
 static char *mkdir_scratch(char *tmpl)
@@ -1181,9 +1190,11 @@ static void test_subscribe_trick_concurrent_smoke(void)
     sh[0] = 0 ;
     sh[1] = 0 ;
 
+    pid_t parent = getpid() ;
     pid_t pid = fork() ;
     T_ASSERT(pid >= 0, "fork") ;
     if (pid == 0) {
+        child_dies_with_parent(parent) ;
         while (!sh[0]) { int enx = 0 ; fanout_open_ok(ev, &enx) ; sh[1] += enx ; }
         _exit(0) ;
     }
@@ -1573,9 +1584,11 @@ static void test_wait_timeout_zero_blocks(void)
     enum { N = 1 } ;
     char *dirs[N] ; make_dirs(base, N, dirs) ;
 
+    pid_t parent = getpid() ;
     pid_t pid = fork() ;
     T_ASSERT(pid >= 0, "fork") ;
     if (pid == 0) {
+        child_dies_with_parent(parent) ;
         alarm(0) ;
         event_wait_t cw ;
         if (!event_wait_init(&cw, (char const *const *)dirs, N, EVENT_UP_READY)) _exit(2) ;
