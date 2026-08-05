@@ -1040,7 +1040,8 @@ static void test_notify_sweeps_orphan_and_missing_dir(void)
     memset(name, 'a', EVENT_FIFO_NAMELEN) ;
     memcpy(name, EVENT_FIFO_PREFIX, EVENT_FIFO_PREFIXLEN) ;
     name[EVENT_FIFO_NAMELEN] = 0 ;
-    char orphan[1024] ; snprintf(orphan, sizeof(orphan), "%s/%s", ev, name) ;
+    char orphan[sizeof(ev) + EVENT_FIFO_NAMELEN + 1] ;
+    snprintf(orphan, sizeof(orphan), "%s/%s", ev, name) ;
     T_ASSERT_EQ(0, mkfifo(orphan, 0622), "create orphan fifo") ;
     T_ASSERT_EQ(1, fanout_count(ev), "orphan is producer-eligible") ;
 
