@@ -505,16 +505,25 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
 
     HASH_FOREACH(&hres, c, tmp) {
 
+        resolve_service_addon_dependencies_t mdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+        resolve_wrapper_t_ref mdw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &mdep) ;
+
+        /** the addon lives inside the service directory that remove_service()
+         * destroys, so the contents list must be read before it disappears. */
+        if (c->res.type == E_PARSER_TYPE_MODULE && c->res.has_dependencies)
+            if (resolve_read(mdw, info->base.s, c->res.sa.s + c->res.name) <= 0)
+                log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", c->res.sa.s + c->res.name) ;
+
         remove_service(&c->res, info, propagate) ;
 
-        if (c->dependencies.ncontents && c->res.type == E_PARSER_TYPE_MODULE) {
+        if (mdep.ncontents) {
 
             size_t pos = 0 ;
             resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-            _alloc_sbl_(stk, strlen(c->dependencies.sa.s + c->dependencies.contents) + 1) ;
+            _alloc_sbl_(stk, strlen(mdep.sa.s + mdep.contents) + 1) ;
 
-            if (!sbl_clean_string(&stk, c->dependencies.sa.s + c->dependencies.contents))
+            if (!sbl_clean_string(&stk, mdep.sa.s + mdep.contents))
                 log_dieu(LOG_EXIT_SYS, "convert string") ;
 
             FOREACH_SBL(&stk, pos) {
@@ -529,6 +538,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
             }
             resolve_free(dwres) ;
         }
+        resolve_free(mdw) ;
     }
 
     resolve_hash_free(&hres) ;

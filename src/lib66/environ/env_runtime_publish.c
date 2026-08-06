@@ -36,7 +36,7 @@ int env_runtime_publish(char const *dir, char const *key, char const *value)
     if (!value || !*value)
         return (errno = EINVAL, 0) ;
 
-    /** the runtime directory is merged after environ_clean_unexport, so an
+    /** the runtime directory is merged before environ_clean_unexport, so an
      * exclamation mark would reach the service as part of the value instead of
      * unexporting the key. */
     if (*value == SS_VAR_UNEXPORT)
