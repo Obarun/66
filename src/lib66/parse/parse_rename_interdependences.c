@@ -25,39 +25,116 @@
 #include <66/service.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
+#include <66/event_rule.h>
 #include <66/constants.h>
 
 static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
-    size_t pos = 0, mlen = strlen(prefix) ;
+    size_t pos = 0 ;
     struct resolve_hash_s *hash ;
+    char store[SS_MAX_SERVICE_NAME + 1] ;
 
     FOREACH_SBL(stk, pos) {
 
-        hash = resolve_hash_search(hres, stk->s + pos) ;
-        if (hash == NULL) {
+        hash = parse_get_hashname(store, hres, stk->s + pos, prefix) ;
+        if (hash == NULL)
+            log_die(LOG_EXIT_USER, "service: ", stk->s + pos, " not available -- please make a bug report") ;
 
-            /** try with the name of the prefix as prefix */
-            char tmp[mlen + 1 + strlen(stk->s + pos) + 1] ;
-
-            auto_strings(tmp, prefix, ":", stk->s + pos) ;
-
-            hash = resolve_hash_search(hres, tmp) ;
-            if (hash == NULL)
-                log_die(LOG_EXIT_USER, "service: ", stk->s + pos, " not available -- please make a bug report") ;
-        }
-
-        /** check if the dependencies is a external one. In this
-         * case, the service is not considered as part of the ns */
-        if (hash->res.inns && (!strcmp(hash->res.sa.s + hash->res.inns, prefix)) && str_start_with(hash->res.sa.s + hash->res.name, prefix))
-            auto_strings(result + strlen(result), prefix, ":", stk->s + pos, " ") ;
-        else
-            auto_strings(result + strlen(result), hash->res.sa.s + hash->res.name, " ") ;
+        /** a member is always registered namespaced, so the name the selection
+         * knows is already the right one: an external dependency keeps its bare
+         * name, a fellow member gets the prefixed one. */
+        auto_strings(result + strlen(result), hash->res.sa.s + hash->res.name, " ") ;
     }
 
     result[strlen(result) - 1] = 0 ;
+}
+
+static void parse_prefix_event(struct resolve_hash_s *c, hash_t *hres, char const *prefix)
+{
+    log_flow() ;
+
+    size_t pos = 0, mlen = strlen(prefix) ;
+    resolve_service_addon_event_t *ev = &c->event ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+    _alloc_sbl_(from, strlen(ev->sa.s + ev->from) + 1) ;
+    _alloc_sbl_(renamed, (mlen + 1) * ev->nfrom + strlen(ev->sa.s + ev->from) + 1) ;
+
+    if (!sbl_clean_string(&from, ev->sa.s + ev->from))
+        log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
+
+    FOREACH_SBL(&from, pos) {
+
+        char known[SS_MAX_SERVICE_NAME + 1] ;
+        struct resolve_hash_s *hash = parse_get_hashname(known, hres, from.s + pos, prefix) ;
+
+        if (!sbl_add(&renamed, hash ? hash->res.sa.s + hash->res.name : from.s + pos))
+            log_die_nomem("strbuf") ;
+    }
+
+    if (ev->type == EVENT_SOURCE_SERVICE && ev->non) {
+
+        _alloc_sbl_(on, strlen(ev->sa.s + ev->on) + 1) ;
+        _alloc_sbl_(scoped, (mlen + 1) * ev->non + strlen(ev->sa.s + ev->on) + 1) ;
+
+        if (!sbl_clean_string(&on, ev->sa.s + ev->on))
+            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
+
+        pos = 0 ;
+
+        FOREACH_SBL(&on, pos) {
+
+            char const *token = on.s + pos ;
+            size_t slen = event_on_len(token) ;
+            char source[SS_MAX_SERVICE_NAME + 1], known[SS_MAX_SERVICE_NAME + 1] ;
+            struct resolve_hash_s *hash = 0 ;
+
+            if (slen && slen <= SS_MAX_SERVICE_NAME) {
+
+                memcpy(source, token, slen) ;
+                source[slen] = 0 ;
+
+                // a source part that is not a From member makes the token a bare condition
+                if (sbl_search(&from, source) >= 0)
+                    hash = parse_get_hashname(known, hres, source, prefix) ;
+            }
+
+            if (!hash) {
+
+                if (!sbl_add(&scoped, token))
+                    log_die_nomem("strbuf") ;
+
+                continue ;
+            }
+
+            char const *name = hash->res.sa.s + hash->res.name ;
+            char n[strlen(name) + strlen(token + slen) + 1] ;
+
+            auto_strings(n, name, token + slen) ; // token + slen points at the ':'
+
+            if (!sbl_add(&scoped, n))
+                log_die_nomem("strbuf") ;
+        }
+
+        if (!sbl_rebuild_with_delim(&scoped, ' '))
+            log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
+
+        char n[scoped.len + 1] ;
+        auto_strings(n, scoped.s) ;
+
+        ev->on = resolve_add_string(wres, n) ;
+    }
+
+    if (!sbl_rebuild_with_delim(&renamed, ' '))
+        log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
+
+    char n[renamed.len + 1] ;
+    auto_strings(n, renamed.s) ;
+
+    ev->from = resolve_add_string(wres, n) ;
+
+    free(wres) ;
 }
 
 static void parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t *hres, char const *prefix)
@@ -122,6 +199,9 @@ void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon
 
             if (c->dependencies.ndepends || c->dependencies.nrequiredby)
                 parse_prefix_name(&c->dependencies, hres, prefix) ;
+
+            if (c->res.has_event && c->event.nfrom)
+                parse_prefix_event(c, hres, prefix) ;
 
             if (c->res.logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
 

@@ -230,6 +230,55 @@ static void test_per_source(void)
     resolve_free(w) ;
 }
 
+static void test_per_source_namespaced(void)
+{
+    resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(w) ;
+    char const *from[] = { "evt@test:auth", "evt@test:db" } ;
+    char const *on[] = { "evt@test:auth:up", "evt@test:db:down" } ;
+    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.combine = EVENT_COMBINE_ALL ;
+
+    event_frame_t up = tframe(STATUS_STATE_UP, 0, 0) ;
+    event_frame_t down = tframe(STATUS_STATE_DOWN, 0, 0) ;
+
+    T_ASSERT(eventd_rule_match(&r, "evt@test:auth", &up), "evt@test:auth:up applies to evt@test:auth, UP matches") ;
+    T_ASSERT(!eventd_rule_match(&r, "evt@test:auth", &down), "evt@test:auth:up applies to evt@test:auth, DOWN no match") ;
+    T_ASSERT(eventd_rule_match(&r, "evt@test:db", &down), "evt@test:db:down applies to evt@test:db, DOWN matches") ;
+    // the bare member name is not the name the source is registered under
+    T_ASSERT(!eventd_rule_match(&r, "auth", &up), "no applicable token for the bare member name") ;
+
+    resolve_free(w) ;
+}
+
+static void test_per_source_arg(void)
+{
+    resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(w) ;
+    char const *from[] = { "web", "evt@test:web" } ;
+    char const *on[] = { "web:exited:0", "evt@test:web:signaled:SIGKILL" } ;
+    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.combine = EVENT_COMBINE_ANY ;
+
+    event_frame_t e0 = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 0) ;
+    T_ASSERT(eventd_rule_match(&r, "web", &e0), "web:exited:0 applies to web, code 0 matches") ;
+    event_frame_t e1 = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 1) ;
+    T_ASSERT(!eventd_rule_match(&r, "web", &e1), "web:exited:0 does not match code 1") ;
+
+    event_frame_t k = tframe(STATUS_STATE_FINISHING, STATUS_RESULT_SIGNALED, SIGKILL) ;
+    T_ASSERT(eventd_rule_match(&r, "evt@test:web", &k), "evt@test:web:signaled:SIGKILL applies to the namespaced source") ;
+    event_frame_t t = tframe(STATUS_STATE_FINISHING, STATUS_RESULT_SIGNALED, SIGTERM) ;
+    T_ASSERT(!eventd_rule_match(&r, "evt@test:web", &t), "evt@test:web:signaled:SIGKILL does not match SIGTERM") ;
+    // each token stays scoped to its own source
+    T_ASSERT(!eventd_rule_match(&r, "web", &k), "the namespaced token does not apply to web") ;
+
+    resolve_free(w) ;
+}
+
 static void test_arg_token_is_not_per_source(void)
 {
     /* exited:0 has a colon but 'exited' is not a source name: it is a bare arg token */
@@ -430,6 +479,8 @@ T_SUITE("event predicate")
     T_RUN(test_lifecycle_and_unknown) ;
     T_RUN(test_single_any) ;
     T_RUN(test_per_source) ;
+    T_RUN(test_per_source_namespaced) ;
+    T_RUN(test_per_source_arg) ;
     T_RUN(test_arg_token_is_not_per_source) ;
     T_RUN(test_combine_all_multi) ;
     T_RUN(test_empty_on) ;

@@ -25,6 +25,7 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/config.h> // SS_MAX_SERVICE_NAME
 #include <66/enum_parser.h>
 #include <66/event_rule.h>
 #include <66/status.h> // status_state_from_string, status_result_from_string
@@ -129,27 +130,18 @@ static int on_service_predicate_ok(char const *cond)
     }
 }
 
-static int on_service_token_ok(char const *tok, char const *from, int has_from)
+static int on_service_token_ok(char const *token, char const *from, int has_from)
 {
-    char const *colon = strchr(tok, ':') ;
-    if (!colon)
-        return on_service_predicate_ok(tok) ;
+    size_t slen = event_on_len(token) ;
 
-    size_t llen = (size_t)(colon - tok) ;
-    char word[llen + 1] ;
-    memcpy(word, tok, llen) ;
-    word[llen] = 0 ;
+    if (!slen)
+        return on_service_predicate_ok(token) ;
 
-    // an argument predicate (EXITED / SIGNALED result) is not a svc:cond
-    int r = status_result_from_string(word) ;
-    if (r == STATUS_RESULT_EXITED || r == STATUS_RESULT_SIGNALED)
-        return on_service_predicate_ok(tok) ;
-
-    // svc:cond -- svc must be an explicit From member
-    if (!has_from || !token_in_list(from, tok, llen))
+    // <source>:<condition> -- the source must be an explicit From member
+    if (!has_from || !token_in_list(from, token, slen))
         return 0 ;
 
-    return on_service_predicate_ok(colon + 1) ;
+    return on_service_predicate_ok(token + slen + 1) ;
 }
 
 static int validate_on_tokens(char const *on, int src, char const *from, int has_from, char const *name)
@@ -162,21 +154,21 @@ static int validate_on_tokens(char const *on, int src, char const *from, int has
         while (*sp && *sp != ' ') sp++ ;
 
         size_t len = (size_t)(sp - p) ;
-        char tok[len + 1] ;
-        memcpy(tok, p, len) ;
-        tok[len] = 0 ;
+        char token[len + 1] ;
+        memcpy(token, p, len) ;
+        token[len] = 0 ;
 
         int ok = 1 ;
         if (src == EVENT_SOURCE_SERVICE)
-            ok = on_service_token_ok(tok, from, has_from) ;
+            ok = on_service_token_ok(token, from, has_from) ;
         else if (src == EVENT_SOURCE_SIGNAL) {
             int sig ;
-            ok = sig_parse(tok, &sig) != 0 ;
+            ok = sig_parse(token, &sig) != 0 ;
         } else if (src == EVENT_SOURCE_INOTIFY)
-            ok = event_in_is_valid(tok) ;
+            ok = event_in_is_valid(token) ;
 
         if (!ok)
-            log_warnu_return(LOG_EXIT_ZERO, "invalid On token: ", tok, " of service: ", name) ;
+            log_warnu_return(LOG_EXIT_ZERO, "invalid On token: ", token, " of service: ", name) ;
 
         p = sp ;
         while (*p == ' ') p++ ;
@@ -201,15 +193,14 @@ static int validate_from_sources(char const *from, int src, parse_build_ctx_t *c
 
     FOREACH_SBL(&stk, pos) {
 
-        char const *tok = stk.s + pos ;
-
         int type ;
-        struct resolve_hash_s *h = resolve_hash_search(ctx->hres, tok) ;
+        char known[SS_MAX_SERVICE_NAME + 1] ;
+        struct resolve_hash_s *h = parse_get_hashname(known, ctx->hres, stk.s + pos, ctx->inns) ;
 
         if (h) {
 
             if (h->res.type != E_PARSER_TYPE_EVENT)
-                log_warn_return(LOG_EXIT_ZERO, "From: ", tok, " is not an event source of service: ", name) ;
+                log_warn_return(LOG_EXIT_ZERO, "From: ", known, " is not an event source of service: ", name) ;
 
             type = (int)h->event.type ;
 
@@ -218,32 +209,32 @@ static int validate_from_sources(char const *from, int src, parse_build_ctx_t *c
             // the source was parsed by an earlier run: read it back from disk
             resolve_service_t res = RESOLVE_SERVICE_ZERO ;
             resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &res) ;
-            int r = resolve_read(w, ctx->info->base.s, tok) ;
+            int r = resolve_read(w, ctx->info->base.s, known) ;
             uint32_t rtype = res.type ;
             resolve_free(w) ;
 
             if (r <= 0)
-                log_warnu_return(LOG_EXIT_ZERO, "read the resolve file of source: ", tok, " of service: ", name) ;
+                log_warnu_return(LOG_EXIT_ZERO, "read the resolve file of source: ", known, " of service: ", name) ;
 
             // a reactor carries an event addon too, so test the service type first
             if (rtype != E_PARSER_TYPE_EVENT)
-                log_warn_return(LOG_EXIT_ZERO, "From: ", tok, " is not an event source of service: ", name) ;
+                log_warn_return(LOG_EXIT_ZERO, "From: ", known, " is not an event source of service: ", name) ;
 
             resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
             w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-            r = resolve_read(w, ctx->info->base.s, tok) ;
+            r = resolve_read(w, ctx->info->base.s, known) ;
             uint32_t etype = ev.type ;
             resolve_free(w) ;
 
             if (r <= 0)
-                log_warnu_return(LOG_EXIT_ZERO, "read the event addon of source: ", tok, " of service: ", name) ;
+                log_warnu_return(LOG_EXIT_ZERO, "read the event addon of source: ", known, " of service: ", name) ;
 
             type = (int)etype ;
         }
 
         if (type != src)
             log_warn_return(LOG_EXIT_ZERO, "EventType: ", event_src_to_string(src),
-                            " does not match its source: ", tok, " which is a ",
+                            " does not match its source: ", known, " which is a ",
                             event_src_to_string(type), " source, of service: ", name) ;
     }
 

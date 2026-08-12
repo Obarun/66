@@ -24,6 +24,7 @@
 #include "eventd.h"
 #include <66/resolve.h>
 #include <66/status.h>
+#include <66/event_rule.h>
 
 int eventd_rule_load(char const *base, char const *name, resolve_service_addon_event_t *out)
 {
@@ -146,14 +147,13 @@ int eventd_rule_match(resolve_service_addon_event_t const *r, char const *source
         token[tlen] = 0 ;
 
         char const *cond = token ;
-        char const *colon = strchr(token, ':') ;
+        size_t svclen = event_on_len(token) ;
 
-        if (colon && source_in_from(r, token, (size_t)(colon - token))) {
-            // a `svc:cond` per-source token: applies only when svc == source
-            size_t svclen = (size_t)(colon - token) ;
+        if (svclen && source_in_from(r, token, svclen)) {
+            // a `<source>:<condition>` per-source token: applies only when it names this source
             if (svclen != srclen || memcmp(token, source, srclen))
                 continue ;
-            cond = colon + 1 ;
+            cond = token + svclen + 1 ;
         }
         // otherwise a bare token (or an argument token like exit:0): applies here
 
@@ -188,11 +188,10 @@ int eventd_rule_onall(resolve_service_addon_event_t const *r, char const *source
         memcpy(token, start, tlen) ;
         token[tlen] = 0 ;
 
-        char const *colon = strchr(token, ':') ;
-        if (!colon)
+        size_t svclen = event_on_len(token) ;
+        if (!svclen)
             continue ; // bare token: decided against the incoming frame in eventd_rule_match
 
-        size_t svclen = (size_t)(colon - token) ;
         if (!source_in_from(r, token, svclen))
             continue ; // the colon is an argument (e.g. exited:0), not a source prefix
 
@@ -203,7 +202,7 @@ int eventd_rule_onall(resolve_service_addon_event_t const *r, char const *source
         if (!get_frame(token, svclen, &f, ctx))
             return 0 ; // the other source's state is unknown -> conjunction cannot hold
 
-        if (!eventd_token_match(colon + 1, &f))
+        if (!eventd_token_match(token + svclen + 1, &f))
             return 0 ;
     }
 

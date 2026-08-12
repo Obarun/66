@@ -17,6 +17,11 @@
 
 #include <stdint.h>
 #include <string.h> // strcmp
+#include <sys/types.h> // ssize_t
+
+#include <oblibs/string.h> // get_rlen_until
+
+#include <66/status.h> // status_result_from_string
 
 #define EVENT_SOURCE_TABLE(macro) \
     macro(EVENT_SOURCE_SERVICE,  "service") \
@@ -97,7 +102,6 @@ static inline int event_do_from_string(char const *s)
     return -1 ;
 }
 
-
 /** @brief inotify(7) constants accepted on an inotify source. Stored verbatim;
  * the daemon maps each name to its inotify mask. The On predicates of a service
  * reactor are NOT here -- they are the status vocabulary (see <66/status.h>). */
@@ -128,6 +132,35 @@ static inline int event_in_is_valid(char const *s)
     EVENT_IN_TABLE(EVENT_IN_IF)
 #undef EVENT_IN_IF
     return 0 ;
+}
+
+static inline size_t event_on_len(char const *token)
+{
+    ssize_t n = get_rlen_until(token, ':', strlen(token)) ;
+
+    if (n < 0)
+        return 0 ;
+
+    ssize_t m = get_rlen_until(token, ':', (size_t)n) ;
+    size_t start = m < 0 ? 0 : (size_t)m + 1 ;
+    size_t len = (size_t)n - start ;
+    char word[len + 1] ;
+
+    memcpy(word, token + start, len) ;
+    word[len] = 0 ;
+
+    switch (status_result_from_string(word)) {
+
+        case STATUS_RESULT_EXITED:
+        case STATUS_RESULT_SIGNALED:
+            n = m ;
+            break ;
+
+        default:
+            break ;
+    }
+
+    return n < 0 ? 0 : (size_t)n ;
 }
 
 #endif
