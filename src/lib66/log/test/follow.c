@@ -35,7 +35,7 @@
 
 #include <66/log.h>
 
-static char root[256] ;   /* per-suite scratch root under the sandbox tmpfs */
+static char root[] = "/tmp/66followXXXXXX" ; /* per-suite scratch root, mkdtemp'd in place */
 static int g_case ;       /* per-test counter, gives each test a fresh subdir */
 
 static void nap(long ms)
@@ -369,9 +369,7 @@ T_SUITE("log_follow")
     tzset() ;
     signal(SIGCHLD, SIG_DFL) ;
 
-    char tmpl[] = "/tmp/66followXXXXXX" ;
-    T_ASSERT(t_tmpdir(tmpl) != NULL, "mkdtemp scratch root") ;
-    memcpy(root, tmpl, sizeof tmpl) ;
+    T_ASSERT(t_tmpdir(root) != NULL, "mkdtemp scratch root") ;
 
     T_RUN(test_logdir_backlog_tags_rotation) ;
     T_RUN(test_logdir_no_name_tag) ;
