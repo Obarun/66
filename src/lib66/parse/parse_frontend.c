@@ -94,18 +94,11 @@ int parse_frontend(char const *sv, parse_build_ctx_t ctx)
     if (!ob_dirname(svsrc, sv))
         log_dieu(LOG_EXIT_SYS, "get dirname of: ", sv) ;
 
-    hash = resolve_hash_search(ctx.hres, svname) ;
+    char known[(ctx.inns ? strlen(ctx.inns) + 1 : 0) + svlen + 1] ;
+
+    hash = parse_get_hashname(known, ctx.hres, svname, ctx.inns) ;
     if (hash != NULL)
-        log_warn_return(2, "ignoring: ", svname, " service -- already appended to the selection") ;
-
-    if (ctx.inns) {
-        char n[strlen(ctx.inns) + 1 + strlen(svname) + 1] ;
-        auto_strings(n, ctx.inns, ":", svname) ;
-
-        hash = resolve_hash_search(ctx.hres, n) ;
-        if (hash != NULL)
-            log_warn_return(2, "ignoring: ", n, " service -- already appended to the selection") ;
-    }
+        log_warn_return(2, "ignoring: ", known, " service -- already appended to the selection") ;
 
     log_trace("parse service: ", sv) ;
 

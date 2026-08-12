@@ -129,6 +129,7 @@ extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, ssexec_t *info) ;
 extern void parse_copy_to_source(char const *dst, char const *src, resolve_service_t *res, uint8_t force) ;
+extern struct resolve_hash_s *parse_get_hashname(char *store, hash_t *hres, char const *name, char const *ns) ;
 
 /** module */
 extern void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
