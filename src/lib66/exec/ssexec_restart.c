@@ -96,7 +96,7 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
         log_die(LOG_EXIT_SYS, "service selection is not supervised -- try to start it first") ;
     }
 
-    sanitize_init(&graph, flag) ;
+    sanitize_init(&graph, flag, info->who) ;
 
     r = svc_send(argv, argc, info, SVC_TARGET_DOWN, "-D", "-wD", 1, nopropagate ? 0 : 1) ;
 
@@ -126,9 +126,14 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
 
         newargv[m] = 0 ;
 
+        uint8_t target = info->target ;
+        info->target = SVC_TARGET_UP ;
+
         PROG = "start" ;
         r = opt_dispatch(m, newargv, &cmd_start, info) ;
         PROG = prog ;
+
+        info->target = target ;
     }
 
     service_graph_destroy(&graph) ;

@@ -255,7 +255,10 @@ static void announce(uint32_t id, bool success)
             }
         }
 
-        log_info("Successfully ", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stopped" : "started", pmanager->cmdmsg ? "ed" : "", " service: ", name) ;
+        if (svc->waiting)
+            log_info("Armed reactor -- waiting for its event: ", name) ;
+        else
+            log_info("Successfully ", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stopped" : "started", pmanager->cmdmsg ? "ed" : "", " service: ", name) ;
 
         svc_send_event(SVC_EVENT_CHILD_SUCCESS, id) ;
 
@@ -356,20 +359,6 @@ static void wait_timeout_cb(sse_watcher_t *w, void *cbdata, int event)
     complete(id, false) ;
 }
 
-static void reactor_arm(uint32_t id)
-{
-    log_flow() ;
-
-    svc_ctx_t *svc = &pmanager->asvc[id] ;
-
-    if (svc->target != SVC_TARGET_UP || !svc->res->has_event || svc->res->type == E_PARSER_TYPE_EVENT
-        || pmanager->info->who == STATUS_WHO_EVENT)
-        return ;
-
-    if (!svcd_notify(svc->res->sa.s + svc->res->live.eventddir, 'a', pmanager->info->who, svc->res->sa.s + svc->res->name))
-        log_warnusys("arm event reactor: ", svc->res->sa.s + svc->res->name) ;
-}
-
 static int launch_classic(uint32_t id)
 {
     log_flow() ;
@@ -379,13 +368,6 @@ static int launch_classic(uint32_t id)
 
     svc->native = true ;
 
-
-    if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && svc_reactor_armed_idle(svc->res)) {
-        svc->waiting = true ;
-        complete(id, true) ;
-        return 1 ;
-    }
 
     if (pmanager->woption) {
 
@@ -455,14 +437,6 @@ static int launch_oneshot(uint32_t id)
     svc_ctx_t *svc = &pmanager->asvc[id] ;
     char const *name = svc->res->sa.s + svc->res->name ;
 
-    if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-        && svc_reactor_armed_idle(svc->res)) {
-        svc->native = true ;
-        svc->waiting = true ;
-        complete(id, true) ;
-        return 1 ;
-    }
-
     char *servicedir = svc->res->sa.s + svc->res->live.servicedir ;
     char *oneshotdir = svc->res->sa.s + svc->res->live.oneshotddir ;
     char oneshot[strlen(oneshotdir) + 2 + 1] ;
@@ -499,7 +473,22 @@ static int launch_service(uint32_t id)
 
     uint8_t type = svc->res->type ;
 
-    reactor_arm(id) ;
+    if (svc->target == SVC_TARGET_READY) {
+
+        /* the command is a start either way -- what the reactor skips is the run,
+         * not the bookkeeping. So the target resolves before the short-circuit. */
+        svc->target = SVC_TARGET_UP ;
+
+        if (svc_reactor_armed_idle(svc->res)) {
+
+            if (type != E_PARSER_TYPE_MODULE)
+                svc->native = true ;
+
+            svc->waiting = true ;
+            complete(id, true) ;
+            return 1 ;
+        }
+    }
 
     if (type == E_PARSER_TYPE_CLASSIC) {
 
@@ -510,13 +499,6 @@ static int launch_service(uint32_t id)
         return launch_oneshot(id) ;
 
     } else if (type == E_PARSER_TYPE_MODULE) {
-
-        if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
-            && svc_reactor_armed_idle(svc->res)) {
-            svc->waiting = true ;
-            complete(id, true) ;
-            return 1 ;
-        }
 
         int r = svc_compute_ns(pmanager, id) ;
         announce(id, !r ? true : false) ;

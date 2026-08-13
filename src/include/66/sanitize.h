@@ -30,7 +30,7 @@ extern int sanitize_fdholder_start(fdholder_client_t *c, const char *socket) ;
 extern int sanitize_fdholder(resolve_service_t *res, fdholder_client_t *c, ss_state_t *sta, uint32_t flag, uint8_t init) ;
 extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;
 extern int sanitize_scandir(resolve_service_t *res, ss_state_t *sta) ;
-extern void sanitize_init(service_graph_t *g, uint32_t flag) ;
+extern void sanitize_init(service_graph_t *g, uint32_t flag, uint8_t who) ;
 extern void sanitize_graph(ssexec_t *info) ;
 /** @Return 0 the service is already written
  * @Return 1 the service will be overwritten

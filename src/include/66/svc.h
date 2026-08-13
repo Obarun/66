@@ -57,9 +57,11 @@
 typedef enum svc_target_e svc_target_t ;
 enum svc_target_e
 {
-    SVC_TARGET_FREE = 0, // neither supervised nor running
+    SVC_TARGET_NONE = 0, // nothing declared: the verb picks its own
+    SVC_TARGET_FREE,     // neither supervised nor running
     SVC_TARGET_DOWN,     // supervised, no process
     SVC_TARGET_UP,       // supervised and running
+    SVC_TARGET_READY,    // able to serve: an ordinary service runs, a reactor arms and rests
     SVC_TARGET_KEEP      // no state change: deliver a signal and nothing else
 } ;
 

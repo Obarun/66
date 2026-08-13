@@ -64,7 +64,7 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
         log_dieu(LOG_EXIT_USER, "build the graph of the module: ", svc->res->sa.s + svc->res->name," -- please make a bug report") ;
 
     if (!svc_target_stops(mgr->target))
-        sanitize_init(&graph, flag) ;
+        sanitize_init(&graph, flag, mgr->info->who) ;
 
     svc_ctx_t asvc[graph.g.nsort] ;
 

@@ -34,6 +34,7 @@
 
 #include <66/event.h>
 #include <66/fdholder.h>
+#include <66/svc.h>
 
 void cleanup(resolve_service_t *res, uint32_t nres)
 {
@@ -70,7 +71,7 @@ void cleanup(resolve_service_t *res, uint32_t nres)
     errno = e ;
 }
 
-void sanitize_init(service_graph_t *g, uint32_t flag)
+void sanitize_init(service_graph_t *g, uint32_t flag, uint8_t who)
 {
     int r, issupervised = 0 ;
     uint32_t pos = 0, ntoclean = 0, nsubscribe = 0, msg[g->g.nvertexes] ;
@@ -288,6 +289,13 @@ void sanitize_init(service_graph_t *g, uint32_t flag)
         /** Consider Module as supervised */
         state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
         state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
+
+        if (pres->has_event && pres->type != E_PARSER_TYPE_EVENT
+            && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
+
+            if (!svcd_notify(sa + pres->live.eventddir, 'a', who, sa + pres->name))
+                log_warnusys("arm event reactor: ", sa + pres->name) ;
+        }
 
         if (!state_write(&sta, pres)) {
             cleanup(toclean, ntoclean) ;

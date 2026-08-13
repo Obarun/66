@@ -132,7 +132,7 @@ int ssexec_start(int argc, char const *const *argv, void *data)
     ensure_no_conflict(&graph, argc, argv) ;
 
     /** initiate services at the corresponding scandir */
-    sanitize_init(&graph, flag) ;
+    sanitize_init(&graph, flag, info->who) ;
 
     char const *nargv[nservice + 1] ;
     nservice = 0 ;
@@ -141,7 +141,9 @@ int ssexec_start(int argc, char const *const *argv, void *data)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send(nargv, nservice, info, SVC_TARGET_UP, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
+    uint8_t target = info->target ? info->target : SVC_TARGET_READY ;
+
+    e = svc_send(nargv, nservice, info, target, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
 
     service_graph_destroy(&graph) ;
 

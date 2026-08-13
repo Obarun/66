@@ -91,7 +91,7 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
         log_dieusys(LOG_EXIT_SYS, "resolve the graph") ;
     }
 
-    sanitize_init(&graph, flag) ;
+    sanitize_init(&graph, flag, info->who) ;
 
     service_graph_destroy(&graph) ;
 }

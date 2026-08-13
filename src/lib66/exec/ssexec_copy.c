@@ -38,6 +38,7 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
     dest->opt_color = src->opt_color ;
     dest->skip_opt_tree = src->skip_opt_tree ;
     dest->who = src->who ;
+    dest->target = src->target ;
 }
 
 
