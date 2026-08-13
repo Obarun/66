@@ -31,6 +31,7 @@
 #include <66/service.h>
 #include <66/config.h>
 #include <66/state.h>
+#include <66/status.h>
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/tree.h>
@@ -98,6 +99,8 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
     uint32_t flag = GRAPH_COLLECT_PARSE|GRAPH_WANT_REQUIREDBY, nservice = 0, pos = 0 ;
     resolve_service_t_ref pres = 0 ;
     _alloc_sbl_(tostop, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
+    _alloc_sbl_(toup, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
+    _alloc_sbl_(todown, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
     _alloc_sbl_(toenable, SS_MAX_SERVICE * SS_MAX_SERVICE_NAME) ;
     ss_state_t sta = STATE_ZERO ;
 
@@ -179,10 +182,21 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
         if (on_groups(pres))
             continue ;
 
-        if (sta.issupervised == STATE_FLAGS_TRUE) {
-            if (!sbl_add(&tostop, pres->sa.s + pres->name))
-                log_die_nomem("strbuf") ;
-        }
+        if (sta.issupervised != STATE_FLAGS_TRUE)
+            continue ;
+
+        if (!sbl_add(&tostop, pres->sa.s + pres->name))
+            log_die_nomem("strbuf") ;
+
+        service_status_t st = STATUS_ZERO ;
+
+        if (svc_status(pres, &st) < 0)
+            log_dieusys(LOG_EXIT_SYS, "read runtime status of: ", name) ;
+
+        bool up = st.pid > 0 || st.state == STATUS_STATE_DONE ;
+
+        if (!sbl_add(up ? &toup : &todown, pres->sa.s + pres->name))
+            log_die_nomem("strbuf") ;
     }
 
     if (sbl_count(&tostop) && rscan) {
@@ -198,7 +212,7 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
         info->opt_tree = 0 ;
 
         unsigned int m = 0 ;
-        int nargc = 3 + nservice + propagate ;
+        int nargc = 3 + sbl_count(&tostop) + propagate ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
@@ -256,30 +270,40 @@ int ssexec_reconfigure(int argc, char const *const *argv, void *data)
         }
     }
 
-    if (sbl_count(&tostop) && rscan) {
+    if (rscan) {
 
-        unsigned int m = 0 ;
-        int nargc = 2 + nservice + propagate ;
-        char const *prog = PROG ;
-        char const *newargv[nargc] ;
+        strbuf *list[2] = { &toup, &todown } ;
+        uint8_t const target[2] = { SVC_TARGET_UP, SVC_TARGET_DOWN } ;
 
-        newargv[m++] = "start" ;
-        if (propagate)
-            newargv[m++] = "-P" ;
+        for (unsigned int i = 0 ; i < 2 && !e ; i++) {
 
-        pos = 0 ;
-        FOREACH_GRAPH_SORT(service_graph_t, &graph, pos) {
+            if (!sbl_count(list[i]))
+                continue ;
 
-            uint32_t index = graph.g.sort[pos] ;
-            char *name = graph.g.sindex[index]->name ;
-            newargv[m++] = name ;
+            unsigned int m = 0 ;
+            int nargc = 2 + sbl_count(list[i]) + propagate ;
+            char const *prog = PROG ;
+            char const *newargv[nargc] ;
+
+            newargv[m++] = "start" ;
+            if (propagate)
+                newargv[m++] = "-P" ;
+
+            pos = 0 ;
+            FOREACH_SBL(list[i], pos)
+                newargv[m++] = list[i]->s + pos ;
+
+            newargv[m] = 0 ;
+
+            uint8_t saved = info->target ;
+            info->target = target[i] ;
+
+            PROG = "start" ;
+            e = opt_dispatch(m, newargv, &cmd_start, info) ;
+            PROG = prog ;
+
+            info->target = saved ;
         }
-
-        newargv[m] = 0 ;
-
-        PROG = "start" ;
-        e = opt_dispatch(m, newargv, &cmd_start, info) ;
-        PROG = prog ;
     }
 
     if (sbl_count(&toenable)) {
