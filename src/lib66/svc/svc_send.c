@@ -23,18 +23,16 @@
 #include <66/ssexec.h>
 #include <66/config.h>
 
-int svc_send(char const *const *argv, int argc, ssexec_t *info, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate)
+int svc_send(char const *const *argv, int argc, ssexec_t *info, uint8_t target, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate)
 {
     log_flow() ;
 
     int r ;
-    uint8_t requiredby = 1 ;
     char *cmdmsg = 0 ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
 
-    if (signal[1] == 'u' || signal[1] == 'U')
-        requiredby = 0 ;
+    uint8_t requiredby = target == SVC_TARGET_UP ? 0 : 1 ;
 
     if (signal[1] == 'r')
         cmdmsg = "restart" ;
@@ -64,9 +62,9 @@ int svc_send(char const *const *argv, int argc, ssexec_t *info, char const *sign
 
     svc_ctx_t asvc[graph.g.nsort] ;
 
-    svc_init_ctx(asvc, &graph, requiredby, flag) ;
+    svc_init_ctx(asvc, &graph, requiredby, flag, target) ;
 
-    r = svc_launch(asvc, graph.g.nsort, requiredby, info, wsignal, woption, signal, cmdmsg, propagate) ;
+    r = svc_launch(asvc, graph.g.nsort, target, info, wsignal, woption, signal, cmdmsg, propagate) ;
 
     service_graph_destroy(&graph) ;
 

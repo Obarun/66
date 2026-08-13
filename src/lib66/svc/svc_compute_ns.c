@@ -45,7 +45,7 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
 
     if (mgr->propagate) {
 
-        if (mgr->operation) {
+        if (svc_target_stops(mgr->target)) {
             requiredby = 1 ;
             FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
         } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
@@ -63,14 +63,14 @@ int svc_compute_ns(svc_manager_t *mgr, uint32_t id)
     if (!nservice)
         log_dieu(LOG_EXIT_USER, "build the graph of the module: ", svc->res->sa.s + svc->res->name," -- please make a bug report") ;
 
-    if (!mgr->operation)
+    if (!svc_target_stops(mgr->target))
         sanitize_init(&graph, flag) ;
 
     svc_ctx_t asvc[graph.g.nsort] ;
 
-    svc_init_ctx(asvc, &graph, requiredby, flag) ;
+    svc_init_ctx(asvc, &graph, requiredby, flag, mgr->target) ;
 
-    r = svc_launch(asvc, graph.g.nsort, mgr->operation, mgr->info, mgr->wsignal, mgr->woption, mgr->signal, mgr->cmdmsg, mgr->propagate) ;
+    r = svc_launch(asvc, graph.g.nsort, mgr->target, mgr->info, mgr->wsignal, mgr->woption, mgr->signal, mgr->cmdmsg, mgr->propagate) ;
 
     service_graph_destroy(&graph) ;
 

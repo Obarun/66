@@ -54,6 +54,27 @@
 #define SVC_FLAGS_TIMEOUT (1 << 7)
 #define SVC_FLAGS_WAITING (1 << 8)
 
+typedef enum svc_target_e svc_target_t ;
+enum svc_target_e
+{
+    SVC_TARGET_FREE = 0, // neither supervised nor running
+    SVC_TARGET_DOWN,     // supervised, no process
+    SVC_TARGET_UP,       // supervised and running
+    SVC_TARGET_KEEP      // no state change: deliver a signal and nothing else
+} ;
+
+/** @return whether @p target leaves the service supervised. */
+static inline int svc_target_supervised(uint8_t target)
+{
+    return target != SVC_TARGET_FREE ;
+}
+
+/** @return whether @p target asks for a transition down (stop or free). */
+static inline int svc_target_stops(uint8_t target)
+{
+    return target == SVC_TARGET_DOWN || target == SVC_TARGET_FREE ;
+}
+
 struct svc_ctx_s
 {
     pid_t pid ; // Process ID when running
@@ -79,7 +100,7 @@ struct svc_ctx_s
 
     // State management
     uint16_t state ; // Current state
-    uint16_t target_state ; // Desired state
+    uint8_t target ; // svc_target_e: state this service must reach
 
     // Dependencies
     uint32_t index ; // vertex index of the service
@@ -104,7 +125,7 @@ typedef struct svc_ctx_s svc_ctx_t ;
     .done = false, \
     .waiting = false, \
     .state = 0, \
-    .target_state = 0, \
+    .target = SVC_TARGET_UP, \
     .index = 0, \
     .depends = { NULL }, \
     .ndepends = 0, \
@@ -133,7 +154,7 @@ struct svc_manager_s
     // Configuration
     ssexec_t *info ;
     uint64_t timeout ; // Global operation timeout
-    uint8_t operation ; // START/STOP operation
+    uint8_t target ; // svc_target_e the batch was asked for; each svc_ctx_t resolves its own
     bool propagate ; // Propagate failures to dependents
 
     char signal[DATASIZE + 1] ; // signal to sent
@@ -143,35 +164,20 @@ struct svc_manager_s
 } ;
 typedef struct svc_manager_s svc_manager_t ;
 
-extern void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag) ;
-extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate) ;
+extern void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag, uint8_t target) ;
+extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate) ;
 extern int svc_compute_ns(svc_manager_t *mgr, uint32_t id) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who) ;
 extern int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name) ;
-extern int svc_send(char const *const *argv, int argc, ssexec_t *info, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate) ;
+extern int svc_send(char const *const *argv, int argc, ssexec_t *info, uint8_t target, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate) ;
 extern void svc_unsupervise(service_graph_t *g, uint8_t who) ;
 extern void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 extern int svc_status(resolve_service_t *res, service_status_t *st) ;
 extern int svc_is_up(char const *name) ;
-
-/**
- * @brief Tell whether @p res is a reactor that stays idle until its event fires.
- * @param[in] res  Service to inspect; its event addon is read from disk.
- * @return 1 if the service declares an event rule whose Do is start or restart,
- * 0 otherwise (no event addon, unreadable addon, or any other Do).
- */
 extern int svc_reactor_armed_idle(resolve_service_t *res) ;
-
-/**
- * @brief State to display for @p res, event meaning included.
- * @param[in] res  Service the status belongs to.
- * @param[in] st   Runtime record of that service.
- * @return st->state, or STATUS_STATE_WAITING when a down classic service is an
- * armed reactor.
- */
 extern uint8_t svc_status_effective(resolve_service_t *res, service_status_t const *st) ;
 
 #endif

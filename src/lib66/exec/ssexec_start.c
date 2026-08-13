@@ -141,7 +141,7 @@ int ssexec_start(int argc, char const *const *argv, void *data)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send(nargv, nservice, info, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
+    e = svc_send(nargv, nservice, info, SVC_TARGET_UP, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
 
     service_graph_destroy(&graph) ;
 

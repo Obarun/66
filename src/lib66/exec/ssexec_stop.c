@@ -114,7 +114,7 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
 
     nargv[nservice] = 0 ;
 
-    e = svc_send(nargv, nservice, info, "-d", "-wD", 1, nopropagate ? 0 : 1) ;
+    e = svc_send(nargv, nservice, info, unsupervise ? SVC_TARGET_FREE : SVC_TARGET_DOWN, "-d", "-wD", 1, nopropagate ? 0 : 1) ;
 
     if (e)
         return e ;

@@ -87,7 +87,7 @@ static bool deps_satisfied(uint32_t id)
 
     uint32_t pos = 0 ;
     svc_ctx_t *svc = &pmanager->asvc[id];
-    int flag = !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN ;
+    int flag = svc_target_stops(svc->target) ? SVC_FLAGS_DOWN : SVC_FLAGS_UP ;
 
     for (; pos < svc->ndepends ; pos++) {
 
@@ -132,7 +132,7 @@ static void propagate_failure(uint32_t id)
         svc_ctx_t *dep = &pmanager->asvc[did];
 
         // Only propagate to services that were supposed to start
-        if (dep->target_state == SVC_FLAGS_UP && (dep->state == SVC_FLAGS_WAITING_DEPS || dep->state == SVC_FLAGS_STARTING)) {
+        if (dep->target == SVC_TARGET_UP && (dep->state == SVC_FLAGS_WAITING_DEPS || dep->state == SVC_FLAGS_STARTING)) {
 
             // Stop any watchers that might be active */
             if (dep->pid > 0)
@@ -170,7 +170,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     auto_strings(file, supervisedir, "/", SS_STATUS) ;
 
     if (success) {
-        st.state = armed ? STATUS_STATE_WAITING : (pmanager->operation ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
+        st.state = armed ? STATUS_STATE_WAITING : (svc_target_stops(svc->target) ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
         st.result = STATUS_RESULT_SUCCESS ;
     } else {
         st.state = STATUS_STATE_FAILED ;
@@ -183,7 +183,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     /* readystamp dates the last run. A reactor that was only armed keeps the one of
      * its previous firing: its state says waiting again, but the fact that its
      * Execute already ran must survive the re-arm. A stop starts a fresh record. */
-    if (!svc->waiting && success && !pmanager->operation) {
+    if (!svc->waiting && success && svc->target == SVC_TARGET_UP) {
 
         clock_now(&st.readystamp) ;
 
@@ -219,7 +219,7 @@ static void announce(uint32_t id, bool success)
      * owns this, so svc_launch records it for a oneshot/module reactor (a classic's
      * waiting is derived from its down state, 66-supervise stays binary). Outside a
      * reactor, only a module's status is svc_launch's to write (it has no daemon). */
-    bool armed = !pmanager->operation && svc->res->has_event
+    bool armed = svc->target == SVC_TARGET_UP && svc->res->has_event
         && (svc->res->type == E_PARSER_TYPE_ONESHOT || svc->res->type == E_PARSER_TYPE_MODULE)
         && svc_reactor_armed_idle(svc->res) ;
 
@@ -230,7 +230,7 @@ static void announce(uint32_t id, bool success)
 
         if (!svc->execute->down && svc->res->type == E_PARSER_TYPE_CLASSIC) {
 
-            if (!pmanager->operation) {
+            if (svc->target == SVC_TARGET_UP) {
 
                 if (!access(scandir, F_OK)) {
                     log_trace("delete down file: ", file) ;
@@ -238,7 +238,7 @@ static void announce(uint32_t id, bool success)
                         log_warnusys("delete down file: ", file) ;
                 }
 
-            } else {
+            } else if (svc_target_stops(svc->target)) {
 
                 fd = io_open_mode(file, O_WRONLY | O_NONBLOCK | O_TRUNC | O_CREAT, 0666) ;
                 /** The directory and file may not exist. Typically,
@@ -255,7 +255,7 @@ static void announce(uint32_t id, bool success)
             }
         }
 
-        log_info("Successfully ", pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stopped" : "started", pmanager->cmdmsg ? "ed" : "", " service: ", name) ;
+        log_info("Successfully ", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stopped" : "started", pmanager->cmdmsg ? "ed" : "", " service: ", name) ;
 
         svc_send_event(SVC_EVENT_CHILD_SUCCESS, id) ;
 
@@ -269,7 +269,7 @@ static void announce(uint32_t id, bool success)
             close_fd(fd) ;
         }
 
-        flog_1_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : pmanager->operation ? "stop" : "start",  name, svc->exitcode) ;
+        flog_1_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stop" : "start",  name, svc->exitcode) ;
 
         svc_send_event(SVC_EVENT_CHILD_FAILED, id) ;
     }
@@ -362,7 +362,7 @@ static void reactor_arm(uint32_t id)
 
     svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-    if (pmanager->operation || !svc->res->has_event || svc->res->type == E_PARSER_TYPE_EVENT
+    if (svc->target != SVC_TARGET_UP || !svc->res->has_event || svc->res->type == E_PARSER_TYPE_EVENT
         || pmanager->info->who == STATUS_WHO_EVENT)
         return ;
 
@@ -380,7 +380,7 @@ static int launch_classic(uint32_t id)
     svc->native = true ;
 
 
-    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+    if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
         && svc_reactor_armed_idle(svc->res)) {
         svc->waiting = true ;
         complete(id, true) ;
@@ -408,7 +408,7 @@ static int launch_classic(uint32_t id)
             else if (wanted == EVENT_RESTART_READY) wanted = EVENT_RESTART ;
         }
 
-        event_state_init(&svc->match, wanted, pmanager->operation ? 1 : 0, 0) ;
+        event_state_init(&svc->match, wanted, svc_target_stops(svc->target) ? 1 : 0, 0) ;
         svc->ag.len = 0 ; // start this wait's reassembler empty
 
         // create the fifodir if missing, then subscribe BEFORE sending the command
@@ -425,7 +425,7 @@ static int launch_classic(uint32_t id)
             return 1 ;
         }
 
-        uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
+        uint64_t timeout = svc_target_stops(svc->target) ? svc->execute->timeout.stop : svc->execute->timeout.start ;
         if (timeout) {
             if (!sse_start_timer(&pmanager->loop, &svc->timeout, wait_timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1)) {
                 log_warnusys("start timeout watcher for service: ", svc->res->sa.s + svc->res->name) ;
@@ -455,7 +455,7 @@ static int launch_oneshot(uint32_t id)
     svc_ctx_t *svc = &pmanager->asvc[id] ;
     char const *name = svc->res->sa.s + svc->res->name ;
 
-    if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+    if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
         && svc_reactor_armed_idle(svc->res)) {
         svc->native = true ;
         svc->waiting = true ;
@@ -468,16 +468,16 @@ static int launch_oneshot(uint32_t id)
     char oneshot[strlen(oneshotdir) + 2 + 1] ;
     auto_strings(oneshot, oneshotdir, "/s") ;
 
-    log_trace("sending ", !pmanager->operation ? "start" : "stop", " to: ", oneshot) ;
+    log_trace("sending ", svc_target_stops(svc->target) ? "stop" : "start", " to: ", oneshot) ;
 
-    if (!oneshot_async_send(&svc->oneshot, &pmanager->loop, oneshot, pmanager->operation, pmanager->info->who, servicedir, &svc_oneshot_result, (void *)(uintptr_t)id)) {
+    if (!oneshot_async_send(&svc->oneshot, &pmanager->loop, oneshot, svc_target_stops(svc->target), pmanager->info->who, servicedir, &svc_oneshot_result, (void *)(uintptr_t)id)) {
         log_warnusys("request oneshot daemon for service: ", name) ;
         npid-- ;
         announce(id, false) ;
         return 1 ;
     }
 
-    uint64_t timeout = !pmanager->operation ? svc->execute->timeout.start : svc->execute->timeout.stop ;
+    uint64_t timeout = svc_target_stops(svc->target) ? svc->execute->timeout.stop : svc->execute->timeout.start ;
     if (timeout) {
         if (!sse_start_timer(&pmanager->loop, &svc->timeout, timeout_cb, (void *)(uintptr_t)id, timeout, 0, 1)) {
             log_warnusys("start timer watcher for service: ", name) ;
@@ -511,7 +511,7 @@ static int launch_service(uint32_t id)
 
     } else if (type == E_PARSER_TYPE_MODULE) {
 
-        if (!pmanager->operation && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
+        if (svc->target == SVC_TARGET_UP && svc->res->has_event && pmanager->info->who != STATUS_WHO_EVENT
             && svc_reactor_armed_idle(svc->res)) {
             svc->waiting = true ;
             complete(id, true) ;
@@ -523,7 +523,7 @@ static int launch_service(uint32_t id)
 
         if (!r) {
             svc->state = 0 ;
-            FLAGS_SET(svc->state, !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
+            FLAGS_SET(svc->state, svc_target_stops(svc->target) ? SVC_FLAGS_DOWN : SVC_FLAGS_UP) ;
             wait_deps(id) ;
         }
 
@@ -534,8 +534,9 @@ static int launch_service(uint32_t id)
         char const *eventddir = svc->res->sa.s + svc->res->live.eventddir ;
         char const *name = svc->res->sa.s + svc->res->name ;
 
-        if (!svcd_notify(eventddir, pmanager->operation ? 'd' : 'a', pmanager->info->who, name))
-            log_warnusys(pmanager->operation ? "disarm event source: " : "arm event source: ", name) ;
+        if (svc->target != SVC_TARGET_KEEP)
+            if (!svcd_notify(eventddir, svc_target_stops(svc->target) ? 'd' : 'a', pmanager->info->who, name))
+                log_warnusys(svc_target_stops(svc->target) ? "disarm event source: " : "arm event source: ", name) ;
 
         svc->native = true ;
 
@@ -652,7 +653,7 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
                 if (svc->native)
                     npid-- ;
                 svc->state = 0 ;
-                FLAGS_SET(svc->state, !pmanager->operation ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
+                FLAGS_SET(svc->state, svc_target_stops(svc->target) ? SVC_FLAGS_DOWN : SVC_FLAGS_UP) ;
                 wait_deps(msg.id) ;
                 break ;
 
@@ -756,7 +757,7 @@ static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
 }
 
 // main API
-static int svc_manager_init(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
+static int svc_manager_init(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
 {
     log_flow() ;
 
@@ -772,7 +773,7 @@ static int svc_manager_init(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, s
     pmanager->info = info ;
     pmanager->timeout = (uint64_t)info->timeout ;
     pmanager->propagate = propagate ? true : false ;
-    pmanager->operation = operation ;
+    pmanager->target = target ;
     pmanager->woption = woption ;
     auto_strings(pmanager->wsignal, wsignal) ;
     auto_strings(pmanager->signal, signal) ;
@@ -830,7 +831,6 @@ static int svc_manager_start(void)
 
         svc_ctx_t *svc = &pmanager->asvc[pos] ;
 
-        FLAGS_SET(svc->target_state, SVC_FLAGS_UP) ;
 
         if (FLAGS_ISSET(svc->state, SVC_FLAGS_UP)) {
             log_warn("skipping already up service: ", svc->res->sa.s + svc->res->name) ;
@@ -887,7 +887,6 @@ static int svc_manager_stop(void)
 
         svc_ctx_t *svc = &pmanager->asvc[pos] ;
 
-        FLAGS_SET(svc->target_state, SVC_FLAGS_DOWN) ;
 
         if (FLAGS_ISSET(svc->state, SVC_FLAGS_DOWN)) {
             log_warn("skipping already down service: ", svc->res->sa.s + svc->res->name) ;
@@ -960,7 +959,7 @@ static void svc_manager_free(void)
         close_fd(pmanager->notifd[1]) ;
 }
 
-int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
+int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate)
 {
     log_flow() ;
 
@@ -974,7 +973,7 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info
 
     npid = 0 ;
 
-    if (!svc_manager_init(asvc, nsvc, operation, info, wsignal, woption, signal, cmdmsg, propagate))
+    if (!svc_manager_init(asvc, nsvc, target, info, wsignal, woption, signal, cmdmsg, propagate))
         log_dieusys(LOG_EXIT_SYS, "initiate manager") ;
 
     // table mapping for depends array
@@ -989,12 +988,7 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t operation, ssexec_t *info
 
     v2svc = vertex_to_asvc ;
 
-    int result ;
-    if (!operation) {
-        result = svc_manager_start() ;
-    } else {
-        result = svc_manager_stop() ;
-    }
+    int result = svc_target_stops(target) ? svc_manager_stop() : svc_manager_start() ;
 
     if (result) {
         result = svc_manager_run() ;

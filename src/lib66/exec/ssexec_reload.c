@@ -98,7 +98,7 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
         log_warn_return(LOG_EXIT_ZERO, "service selection is not supervised -- try to start it first") ;
     }
 
-    r = svc_send(argv, argc, info, "-l", "-w ", 0, nopropagate ? 0 : 1) ;
+    r = svc_send(argv, argc, info, SVC_TARGET_KEEP, "-l", "-w ", 0, nopropagate ? 0 : 1) ;
     if (r) {
         service_graph_destroy(&graph) ;
         return r ;
@@ -128,7 +128,7 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
         nargv[m] = 0 ;
         int verbo = VERBOSITY ;
         VERBOSITY = 0 ;
-        r = svc_send(nargv, nargc, info, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
+        r = svc_send(nargv, nargc, info, SVC_TARGET_UP, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
         VERBOSITY = verbo ;
     }
 

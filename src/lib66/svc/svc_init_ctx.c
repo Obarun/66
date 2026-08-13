@@ -45,7 +45,7 @@ static svc_ctx_t ctx_init(uint32_t len)
     return svc ;
 }
 
-void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag)
+void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag, uint8_t target)
 {
     log_flow() ;
 
@@ -94,6 +94,7 @@ void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint3
         }
 
         svc.index = v->index ;
+        svc.target = target ;
 
         service_status_t st = STATUS_ZERO ;
 

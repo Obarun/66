@@ -192,5 +192,5 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
     if (argc < 1 || datalen < 2)
         return opt_emit_usage(cmd_signal.name, &cmd_signal) ;
 
-    return svc_send(argv, argc, info, signal, wsignal, woption, propagate) ;
+    return svc_send(argv, argc, info, SVC_TARGET_KEEP, signal, wsignal, woption, propagate) ;
 }

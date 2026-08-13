@@ -98,7 +98,7 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
 
     sanitize_init(&graph, flag) ;
 
-    r = svc_send(argv, argc, info, "-D", "-wD", 1, nopropagate ? 0 : 1) ;
+    r = svc_send(argv, argc, info, SVC_TARGET_DOWN, "-D", "-wD", 1, nopropagate ? 0 : 1) ;
 
     if (r)
         log_warnusys("stop service selection") ;
