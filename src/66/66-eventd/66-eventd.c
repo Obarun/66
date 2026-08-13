@@ -47,6 +47,7 @@
 #include <66/resolve.h>
 #include <66/enum_parser.h>
 #include <66/status.h>
+#include <66/state.h>
 #include <66/svc.h>
 #include <66/constants.h>
 #include <66/utils.h>
@@ -137,6 +138,7 @@ static char sysdir[SS_MAX_PATH_LEN + 1] ;
 static void reactor_run(uint8_t kind, char const *source, event_frame_t const *f) ;
 static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event) ;
 static void reactor_destroy(eventd_reactor_t *re) ;
+static eventd_reactor_t *reactor_create(char const *name) ;
 static void eventd_enqueue_emit(char const *name) ;
 static void eventd_drain_emits(void) ;
 
@@ -703,6 +705,51 @@ static void eventd_drain_emits(void)
     eventd.emitq.len = 0 ;
 }
 
+static int reactor_supervised(char const *name)
+{
+    log_flow() ;
+
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    ss_state_t ste = STATE_ZERO ;
+
+    int ok = resolve_read(wres, sysdir, name) == 1
+          && state_read(&ste, &res)
+          && ste.issupervised == STATE_FLAGS_TRUE ;
+
+    resolve_free(wres) ;
+
+    return ok ;
+}
+
+static void reactor_settle_pending_free(eventd_reactor_t *re)
+{
+    log_flow() ;
+
+    char name[SS_MAX_SERVICE_NAME] ;
+    uint64_t fires[EVENTD_MAX_TRIGGER] ;
+    uint8_t nfires = re->nfires ;
+
+    auto_strings(name, re->name) ; // re->name dies with the node
+    memcpy(fires, re->fires, sizeof(fires)) ;
+
+    reactor_wire(re, 0) ;
+    reactor_destroy(re) ;
+
+    if (!reactor_supervised(name))
+        return ;
+
+    eventd_reactor_t *nre = reactor_create(name) ;
+    if (!nre)
+        return ;
+
+    memcpy(nre->fires, fires, sizeof(fires)) ;
+    nre->nfires = nfires ;
+
+    reactor_catch_up(nre) ;
+    eventd_drain_emits() ;
+}
+
 static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event)
 {
     log_flow() ;
@@ -714,10 +761,8 @@ static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event)
         re->in_flight = 0 ;
         re->pid = 0 ;
         sse_free_child(&re->child) ;
-        if (re->pending_free) {
-            reactor_wire(re, 0) ;
-            reactor_destroy(re) ;
-        }
+        if (re->pending_free)
+            reactor_settle_pending_free(re) ;
         return ;
     }
 
@@ -738,39 +783,37 @@ static void reactor_reap_cb(sse_watcher_t *w, void *cbdata, int event)
     if (re->rule.emit)
         eventd_enqueue_emit(re->rule.sa.s + re->rule.emit) ;
 
-    if (re->pending_free) {
-        reactor_wire(re, 0) ;
-        reactor_destroy(re) ;
-    }
+    if (re->pending_free)
+        reactor_settle_pending_free(re) ;
 
     eventd_drain_emits() ;
 }
 
-static void eventd_arm_reactor(char const *name)
+static eventd_reactor_t *reactor_create(char const *name)
 {
     log_flow() ;
 
     size_t len = strlen(name) ;
 
     if (hash_find(&eventd.reactors, name, len))
-        return ; // idempotent : already armed
+        return 0 ; // idempotent : already armed
 
     resolve_service_addon_event_t rule = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
     int r = eventd_rule_load(sysdir, name, &rule) ;
     if (r < 0) {
         log_warnu("load event rule: ", name) ;
-        return ;
+        return 0 ;
     }
     if (!r) {
         log_warn("no event rule to arm: ", name) ;
-        return ;
+        return 0 ;
     }
 
     eventd_reactor_t *re = malloc(sizeof(*re) + len + 1) ;
     if (!re) {
         eventd_rule_free(&rule) ;
         log_warnusys("allocate reactor: ", name) ;
-        return ;
+        return 0 ;
     }
 
     re->rule = rule ; // transfer ownership of rule.sa to the node
@@ -785,12 +828,23 @@ static void eventd_arm_reactor(char const *name)
         eventd_rule_free(&re->rule) ;
         free(re) ;
         log_warnusys("register reactor: ", name) ;
-        return ;
+        return 0 ;
     }
 
     reactor_wire(re, 1) ;
 
     log_info("armed reactor: ", name) ;
+
+    return re ;
+}
+
+static void eventd_arm_reactor(char const *name)
+{
+    log_flow() ;
+
+    eventd_reactor_t *re = reactor_create(name) ;
+    if (!re)
+        return ;
 
     // the sources may already hold the awaited condition: fire it now if so
     reactor_catch_up(re) ;
