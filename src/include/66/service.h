@@ -268,9 +268,10 @@ struct resolve_service_addon_event_s
     uint32_t expression ; // string, cron expression
     uint32_t timezone ; // string, IANA name
     uint32_t interval ; // integer, milliseconds
+    uint32_t propagate ; // integer, boolean
 } ;
 
-#define RESOLVE_SERVICE_ADDON_EVENT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0 }
+#define RESOLVE_SERVICE_ADDON_EVENT_ZERO { STRBUF_ZERO, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0 }
 
 typedef struct resolve_service_s resolve_service_t, *resolve_service_t_ref ;
 struct resolve_service_s

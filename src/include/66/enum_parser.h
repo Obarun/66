@@ -226,7 +226,8 @@ typedef enum resolve_parser_enum_section_execute_e resolve_parser_enum_section_e
     macro(ON,           "On",           E_PARSER_EXPECT_BRACKET), \
     macro(ONALL,        "OnAll",        E_PARSER_EXPECT_BRACKET), \
     macro(DO,           "Do",           E_PARSER_EXPECT_LINE), \
-    macro(EMIT,         "Emit",         E_PARSER_EXPECT_LINE)
+    macro(EMIT,         "Emit",         E_PARSER_EXPECT_LINE), \
+    macro(PROPAGATE,    "Propagate",    E_PARSER_EXPECT_LINE)
 
 enum resolve_parser_enum_section_event_e
 {

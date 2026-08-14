@@ -79,6 +79,10 @@ void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resol
             ev->interval = resolve_add_uint32(data) ;
             break ;
 
+        case E_RESOLVE_SERVICE_EVENT_PROPAGATE:
+            ev->propagate = resolve_add_uint32(data) ;
+            break ;
+
         default:
             break ;
     }

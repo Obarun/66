@@ -531,10 +531,16 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
         // the event owns the moment an armed reactor runs: a Do = start means up now
         info.target = docmd == EVENT_DO_START ? SVC_TARGET_UP : SVC_TARGET_NONE ;
 
-        // call the subcommand handler directly: argv is its operands (argv[0] is
-        // the first positional), no options to parse -- no need for opt_dispatch
-        char const *argv[] = { re->name, 0 } ;
-        _exit(func->fn(1, argv, &info)) ;
+        unsigned int m = 0 ;
+        char const *argv[4] ;
+
+        argv[m++] = doname ;
+        if (!re->rule.propagate)
+            argv[m++] = "-P" ;
+        argv[m++] = re->name ;
+        argv[m] = 0 ;
+
+        _exit(opt_dispatch(m, argv, func, &info)) ;
     }
 
     re->pid = pid ;

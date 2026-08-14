@@ -1347,6 +1347,7 @@ This section is *optional*. It turns an ordinary `classic`, `oneshot` or `module
 | [`On` / `OnAll`](#on-onall) | brackets | yes for `service`/`signal`/`user` | the trigger condition(s) |
 | [`Do`](#do) | inline | one of `Do`/`Emit` | `66` command run on itself when it fires |
 | [`Emit`](#emit) | inline | one of `Do`/`Emit` | user event raised when it fires |
+| [`Propagate`](#propagate) | boolean | `true` | let the action reach the dependency chain |
 
 ### EventType
 
@@ -1444,6 +1445,39 @@ Raises a `user` event of the given name when the trigger fires, **independently*
 * syntax: [inline](#inline)
 
 * valid values: any name. It matches the [`On`](#on-onall) of a `user` reactor.
+
+### Propagate
+
+```ini
+Propagate = false
+```
+
+Whether the [`Do`](#do) command walks the dependency chain. Left out, the reaction is
+the bare `66` command and nothing else. Set to `false`, the action carries `-P`, exactly as if
+you had typed `66 restart -P <service>`.
+
+* mandatory: no
+
+* syntax: [boolean](#boolean)
+
+* valid values:
+
+    * A boolean value
+
+* notes:
+
+    `Do = X` means what `66 X` means: a reactor is a trigger, not a variant of the command. That
+    is why propagation is the default.
+
+    Which way the chain is walked depends on the verb, and so does what `false` costs you. A
+    [`Do`](#do) of `stop`, `restart`, `reload`, `reconfigure` or `free` reaches the services that
+    **depend on** the reactor. Setting `false` keeps the reaction to the service alone. A `Do = start`
+    instead reaches what the reactor **depends on**, and `false` then starts it without bringing
+    its dependencies up, rarely what you want.
+
+    For instance, the case `false` is made for: an `inotify` reactor restarting `udevd` when a rules file
+    changes. Propagating would drag every `requiredby` of `udevd` and their cascades along,
+    restarting most of the boot for one edited file.
 
 ---
 
@@ -1625,7 +1659,7 @@ A values separated by a colon. **Must** be on the same line with its correspondi
 
 ### *boolean*
 
-A value specifying a true state for the key. **Must** be on the same line with its corresponding *key*. If the key is not defined, it defaults to `false`.
+A value specifying a true state for the key. **Must** be on the same line with its corresponding *key*.
 
 * **Valid syntax**:
 
@@ -1924,6 +1958,7 @@ On = ()
 OnAll = ()
 Do =
 Emit =
+Propagate =
 ```
 
 The `[Main]` event keys (`EventType`, `Watch`, `On`, `Expression`, `Timezone`, `Every`) apply only to a `Type = event` **source**; the `[Event]` section applies only to a **reactor**. A frontend never holds both.

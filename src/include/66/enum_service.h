@@ -266,7 +266,8 @@ typedef enum resolve_service_enum_limit_e resolve_service_enum_limit_t ;
     macro(WATCH,       "eventwatch"), \
     macro(EXPRESSION,  "eventexpression"), \
     macro(TIMEZONE,    "eventtimezone"), \
-    macro(INTERVAL,    "eventinterval")
+    macro(INTERVAL,    "eventinterval"), \
+    macro(PROPAGATE,   "eventpropagate")
 
 enum resolve_service_enum_event_e
 {

@@ -280,7 +280,8 @@ int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_ev
         !resolve_add_cdb_uint(c, "eventwatch", ev->watch) ||
         !resolve_add_cdb_uint(c, "eventexpression", ev->expression) ||
         !resolve_add_cdb_uint(c, "eventtimezone", ev->timezone) ||
-        !resolve_add_cdb_uint(c, "eventinterval", ev->interval))
+        !resolve_add_cdb_uint(c, "eventinterval", ev->interval) ||
+        !resolve_add_cdb_uint(c, "eventpropagate", ev->propagate))
             return 0 ;
 
     return 1 ;

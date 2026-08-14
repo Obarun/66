@@ -388,6 +388,16 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         ev->emit = resolve_add_string(wres, v) ;
     }
 
+    ev->propagate = 1 ;
+
+    if (EVENT_PRESENT(st, PROPAGATE)) {
+
+        v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_PROPAGATE, 0) ;
+
+        if (v[0] == 'F' || v[0] == 'f' || v[0] == '0')
+            ev->propagate = 0 ;
+    }
+
     free(wres) ;
 
     res->has_event = 1 ;

@@ -461,6 +461,7 @@ void test_parser_enums(void) {
     assert(E_PARSER_SECTION_EVENT_ONALL == (m)++);
     assert(E_PARSER_SECTION_EVENT_DO == (m)++);
     assert(E_PARSER_SECTION_EVENT_EMIT == (m)++);
+    assert(E_PARSER_SECTION_EVENT_PROPAGATE == (m)++);
     assert(E_PARSER_SECTION_EVENT_ENDOFKEY == (m)++);
 
     m = 0 ;
@@ -825,7 +826,8 @@ void test_parser_lists(void) {
         assert(strcmp(*enum_list_parser_section_event[i].name, enum_str_parser_section_event[i]) == 0);
         int expected_values[] = {
             E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_BRACKET,
-            E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE
+            E_PARSER_EXPECT_BRACKET, E_PARSER_EXPECT_LINE, E_PARSER_EXPECT_LINE,
+            E_PARSER_EXPECT_LINE
         };
         assert(enum_list_parser_section_event[i].expected == expected_values[i]);
     }

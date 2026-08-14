@@ -276,7 +276,8 @@ eventwatch       : None
 eventexpression  : None
 eventtimezone    : None
 eventinterval    : 0
-rversion         : 0.9.0.0
+eventpropagate   : 0
+rversion         : 0.9.1.0
 ```
 
 The resolve file is the full, low-level picture. For day-to-day use, the [66 status](66-status.html) command presents a readable summary drawn from this file and from the service's runtime record, rather than dumping every field.
@@ -311,6 +312,7 @@ eventwatch       : None
 eventexpression  : None
 eventtimezone    : None
 eventinterval    : 0
+eventpropagate   : 1
 ```
 
 The numeric fields are enumerations, not flags:
@@ -320,6 +322,7 @@ The numeric fields are enumerations, not flags:
 - `eventdo` is the `Do` key: `0` none, `1` start, `2` stop, `3` restart, `4` reload, `5` reconfigure, `6` free.
 - `eventfrom` and `eventon` hold the lists verbatim, space separated, with `neventfrom` and `neventon` counting them.
 - `eventwatch`, `eventexpression`, `eventtimezone` and `eventinterval` belong to the source families — `Watch` for inotify, `Expression`/`Timezone` for schedule, `Every` for timer — and stay empty on a reactor.
+- `eventpropagate` is the `Propagate` key: `1` when the `Do` command walks the dependency chain, which is the default, `0` when the rule opted out and the action carries `-P`.
 
 See [the event system](66-event.html) for the grammar these fields come from.
 

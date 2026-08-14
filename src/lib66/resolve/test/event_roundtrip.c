@@ -45,6 +45,7 @@ static void test_roundtrip(char const *dir)
     ev.expression = resolve_add_string(w, "0 0 3 * * ?") ;
     ev.timezone = resolve_add_string(w, "Europe/Paris") ;
     ev.interval = 60000 ;
+    ev.propagate = 1 ;
 
     if (!resolve_write_cdb(w, dir, "svc.event")) {
         printf("FAIL: resolve_write_cdb\n") ;
@@ -71,6 +72,7 @@ static void test_roundtrip(char const *dir)
     assert(!strcmp(back.sa.s + back.expression, "0 0 3 * * ?")) ;
     assert(!strcmp(back.sa.s + back.timezone, "Europe/Paris")) ;
     assert(back.interval == 60000) ;
+    assert(back.propagate == 1) ;
 
     /* the sanitize path must preserve every string leaf too */
     service_resolve_sanitize_addon_event(&back) ;
@@ -82,6 +84,7 @@ static void test_roundtrip(char const *dir)
     assert(!strcmp(back.sa.s + back.timezone, "Europe/Paris")) ;
     assert(back.type == EVENT_SOURCE_SCHEDULE) ;
     assert(back.interval == 60000) ;
+    assert(back.propagate == 1) ;
 
     resolve_free(wback) ;
     resolve_free(w) ;

@@ -157,6 +157,7 @@ static info_field_t const fields[] = {
     { "eventexpression", INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, expression), DATA_SERVICE_EVENT },
     { "eventtimezone",   INFO_FIELD_STR, offsetof(resolve_service_addon_event_t, timezone),   DATA_SERVICE_EVENT },
     { "eventinterval",   INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, interval),   DATA_SERVICE_EVENT },
+    { "eventpropagate",  INFO_FIELD_U32, offsetof(resolve_service_addon_event_t, propagate),  DATA_SERVICE_EVENT },
 
     { "rversion",        INFO_FIELD_STR, offsetof(resolve_service_t, rversion), 0 },
 } ;

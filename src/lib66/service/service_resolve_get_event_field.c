@@ -86,6 +86,11 @@ int service_resolve_get_event_field(strbuf *sa, resolve_service_addon_event_t *e
             str = fmt ;
             break ;
 
+        case E_RESOLVE_SERVICE_EVENT_PROPAGATE:
+            fmt[u32_fmt(fmt, ev->propagate)] = 0 ;
+            str = fmt ;
+            break ;
+
         default:
             return 0 ;
     }

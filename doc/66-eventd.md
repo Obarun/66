@@ -17,7 +17,7 @@ The keys a source and a reactor declare are documented in [66-frontend](66-front
 One `66-eventd` process serves every event rule in the scandir:
 
 - On an **arm** request it registers a source or a reactor. For a `timer`, `inotify` or `schedule` **source** it starts the underlying watcher (a timerfd, an inotify watch, a cron schedule) and writes the source's status. For a **reactor** it subscribes to each of its sources and immediately re-evaluates it against their current state (see [firing immediately on arm](66-event.html#firing-immediately-on-arm)).
-- When a source fires, it evaluates every reactor that listens to it — applying the [`On`/`OnAll`](66-event.html#on-versus-onall) match, the [state gating](66-event.html#when-a-reactor-actually-fires-state-gating), the [in-flight latch](66-event.html#the-in-flight-latch) and the [backstop](#anti-loop-backstop) — then forks the matching `66` subcommand (`start`, `stop`, `restart`, `reload`, `reconfigure`, `free`) to act on the reactor. Actions run with an event provenance, so [66 status](66-status.html) reports *who* changed the service as `event`.
+- When a source fires, it evaluates every reactor that listens to it. It apply the [`On`/`OnAll`](66-event.html#on-versus-onall) match, the [state gating](66-event.html#when-a-reactor-actually-fires-state-gating), the [in-flight latch](66-event.html#the-in-flight-latch) and the [backstop](#anti-loop-backstop), then forks the matching `66` subcommand (`start`, `stop`, `restart`, `reload`, `reconfigure`, `free`) to act on the reactor. The subcommand walks the dependency chain like the bare command, unless the rule set [`Propagate`](66-frontend.html#propagate) to false carring the `-P` option. Actions run with an event provenance, so [66 status](66-status.html) reports *who* changed the service as `event`.
 - A reactor may also **raise** a named event (`Emit`). Raised events are queued and drained, so a chain of reactions runs to completion without unbounded recursion.
 - All `inotify` sources share a single inotify instance; each event is routed to the right source by its watch descriptor. If the kernel drops a watch (its watched path was removed), only that source is marked *failed*; the others keep running.
 
@@ -26,7 +26,7 @@ One `66-eventd` process serves every event rule in the scandir:
 Like [66-supervise](66-supervise.html), `66-eventd` has no configuration files of its own: it reads everything from each service's resolve database, compiled by [66 parse](66-parse.html) from the [frontend](66-frontend.html) file. The relevant compiled facts are:
 
 - `Type = event` and its `EventType`: the service is a source of the given family.
-- the `[Event]` rule (`EventType`, `From`, `On`/`OnAll`, `Do`, `Emit`): the service is a reactor.
+- the `[Event]` rule (`EventType`, `From`, `On`/`OnAll`, `Do`, `Emit`, `Propagate`): the service is a reactor.
 
 ## Files
 

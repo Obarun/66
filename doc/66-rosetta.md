@@ -65,7 +65,7 @@ A service can now react to what happens on the system instead of being wired int
 
 | What | Where |
 | --- | --- |
-| `[Event]` section | turns any `classic`, `oneshot` or `module` service into a **reactor** -- `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` |
+| `[Event]` section | turns any `classic`, `oneshot` or `module` service into a **reactor** -- `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit`, `Propagate` |
 | `Type = event` | a new service type: a non-supervised **source** (`inotify`, `schedule`, `timer`) that runs no process |
 | `66 emit` | raise a user event by name, by hand or from a script |
 | `66-eventd` | the daemon that routes events to the reactors |

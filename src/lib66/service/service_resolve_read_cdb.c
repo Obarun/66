@@ -253,7 +253,8 @@ int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t 
         !resolve_get_key_u32(c, "eventwatch", &ev->watch) ||
         !resolve_get_key_u32(c, "eventexpression", &ev->expression) ||
         !resolve_get_key_u32(c, "eventtimezone", &ev->timezone) ||
-        !resolve_get_key_u32(c, "eventinterval", &ev->interval))
+        !resolve_get_key_u32(c, "eventinterval", &ev->interval) ||
+        !resolve_get_key_u32(c, "eventpropagate", &ev->propagate))
             return (errno = EINVAL, 0) ;
 
     return 1 ;

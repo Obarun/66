@@ -198,7 +198,7 @@ selects which family of source it subscribes to and, for `service`/`signal`/`use
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | `Propagate` |
 
 ```ini
 # frontend: backend
@@ -230,7 +230,7 @@ Do    = restart
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `On`/`OnAll`, `Do`/`Emit` | `Propagate` |
 
 ```ini
 # frontend: sshd
@@ -250,7 +250,7 @@ Do   = reload
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `On`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `On`, `Do`/`Emit` | `Propagate` |
 
 A `user` reactor has **no `From`** — it listens for a *name*, wherever that name comes from.
 A name is raised in three ways: by hand with `66 emit <name>`, by another reactor's `Emit`
@@ -342,7 +342,7 @@ be cut off when the teardown proceeds.
 
 | Role | Section | Required keys | Optional keys |
 |---|---|---|---|
-| reactor | `[Event]` | `EventType`, `From`, `Do`/`Emit` | — |
+| reactor | `[Event]` | `EventType`, `From`, `Do`/`Emit` | `Propagate` |
 
 A reactor to a configured source carries **no `On`**: the condition lives in the source and
 is authoritative. To react differently, create a distinct source.
@@ -369,6 +369,26 @@ EventType = schedule
 From = ( nightly-3am )
 Do = start
 ```
+
+A reaction is the bare `66` command, dependency chain included. A rule that must stay narrow
+opts out with [`Propagate`](66-frontend.html#propagate):
+
+```ini
+# udevd frontend: reloads itself when a rules file changes, alone
+[Main]
+Type = classic
+Description = "device manager"
+[Start]
+Execute = ( /usr/bin/udevd )
+[Event]
+EventType = inotify
+From = ( udev-rules-watch )
+Do = restart
+Propagate = false
+```
+
+`udevd` is required by most of the boot. Without that last line, editing one rules file would
+restart nearly the whole system; here only `udevd` bounces.
 
 ## A cascading example: certificate rotation
 
@@ -805,4 +825,5 @@ On = ()
 OnAll = ()
 Do =
 Emit =
+Propagate =
 ```
