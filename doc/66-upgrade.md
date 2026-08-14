@@ -1,5 +1,84 @@
 # Changelog for 66
 
+# In 0.9.1.0
+
+## Overview
+
+A small release: one new frontend key and a handful of fixes, several of which
+concern the event system and the way a command decides what state a service must
+end in.
+
+The migration is **automatic** and touches one thing only, the `[Event]` addon of
+your reactors, which gains a key. Nothing else in the resolve database changes, and
+**no behaviour of yours changes**: the new key defaults to what your reactors already
+did.
+
+## What you must do
+
+Nothing. Read the `Propagate` entry below if you run a reactor whose action restarts
+a service that much of the system depends on, which is the case the key was made for.
+
+## New things to explore
+
+- **`[Event] Propagate`** ([66-frontend](66-frontend.html#propagate)):
+
+    Whether a reactor's [`Do`](66-frontend.html#do) command walks the dependency
+    chain. It defaults to `true`, because `Do = X` means what `66 X` means: a
+    reactor is a trigger, not a variant of the command, so your existing reactors
+    are untouched.
+
+    Set it to `false` and the action carries `-P`. This is what makes a narrow
+    reaction usable: an `inotify` reactor restarting `udevd` when a rules file
+    changes would otherwise drag every service that depends on `udevd`, and their
+    cascades, with it, restarting most of the boot for one edited file.
+
+    Which way the chain is walked depends on the verb, and so does what `false`
+    costs you. `stop`, `restart`, `reload`, `reconfigure` and `free` reach the
+    services that **depend on** the reactor. `start` instead reaches what the reactor
+    **depends on**, and turning propagation off there starts it without bringing its
+    dependencies up, which is rarely what you want.
+
+## Bug fixes
+
+- **`66 reconfigure` gives every service back the state it was found in** (d4f92e7):
+
+    A service the user had stopped came back **started**; so did a service that had
+    never been supervised and was only pulled in as a dependency. The command now
+    takes a snapshot of each service before tearing anything down, and restores
+    exactly that: what was running is started again, what was merely supervised is
+    supervised again and left down, and what was not supervised is left alone.
+
+- **A reactor that was running is running again after a reconfigure** (ae91b3b3):
+
+    It used to fall back to armed-and-idle. Whether a service must merely be able to
+    serve or must actually be up is now carried per service, so the reactor's own
+    state decides.
+
+- **`66 reload` and `66 signal` no longer behave like a stop** (bb55e971):
+
+    Both inferred their intent from the signal character they were handed, and
+    anything that was not `u` fell in the stop branch. A reload dropped a `down` file
+    in the scandir, marking a running service as one not to bring back up, used the
+    stop timeout, and **disarmed an event source** it was merely signalling.
+
+- **A `Do = reconfigure` reactor no longer disarms itself** (e388b444):
+
+    Its own action unsupervises the service in passing, and the disarm that reached
+    the daemon was taken for a request to disappear: the reactor never reacted again.
+
+- **`requiredby` of a leaf service is no longer empty** (ddb6118):
+
+    A service declaring no dependency of its own owns no addon on disk, and the
+    first string written to it landed at the offset that means *unset*. The count
+    was right, the list read empty, on every leaf of a dependency tree.
+
+- **A module member is found by its bare name** (52dde235, 8e907276):
+
+    Inside a module, a service naming a sibling, in `Depends` or in the `From`/`On`
+    of an `[Event]` section, is now resolved against the module namespace as well.
+
+---
+
 # In 0.9.0.0
 
 - Adaptation to `oblibs` `0.4.0.0`
