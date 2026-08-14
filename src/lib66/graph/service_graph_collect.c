@@ -109,12 +109,20 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
          * node so the edges can be walked (gated on the core has_dependencies). */
         struct resolve_hash_s *added = resolve_hash_search(&g->hres, name) ;
         resolve_service_addon_dependencies_t *dep = &added->dependencies ;
+        resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
         if (res.has_dependencies) {
-            resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+
             if (resolve_read(wdep, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
-            free(wdep) ;
-        }
+
+        } else
+            /* a service declaring no dependency of its own has no addon on disk, yet
+             * sanitize_graph appends its requiredby here once another service names
+             * it. Seed the empty-string sentinel now: without it the first string
+             * lands at offset 0, which every reader takes for "unset". */
+            resolve_init(wdep) ;
+
+        free(wdep) ;
 
         if (dep->ndepends) {
 
