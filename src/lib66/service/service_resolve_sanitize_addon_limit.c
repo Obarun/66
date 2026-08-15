@@ -35,7 +35,7 @@ void service_resolve_sanitize_addon_limit(resolve_service_addon_limit_t *l)
 
     resolve_init(wres) ;
 
-    l->rversion = l->rversion ? resolve_add_string(wres, stk + l->rversion) : 0 ;
+    l->rversion = 0 ;
 
     free(wres) ;
 }

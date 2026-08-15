@@ -35,8 +35,8 @@ void service_resolve_sanitize_addon_environ(resolve_service_addon_environ_t *e)
 
     resolve_init(wres) ;
 
+    e->rversion = 0 ;
     // string fields only; env_overwrite and nimportfile are integers
-    e->rversion = e->rversion ? resolve_add_string(wres, stk + e->rversion) : 0 ;
     e->env = e->env ? resolve_add_string(wres, stk + e->env) : 0 ;
     e->envdir = e->envdir ? resolve_add_string(wres, stk + e->envdir) : 0 ;
     e->importfile = e->importfile ? resolve_add_string(wres, stk + e->importfile) : 0 ;

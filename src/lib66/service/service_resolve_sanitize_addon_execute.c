@@ -35,8 +35,8 @@ void service_resolve_sanitize_addon_execute(resolve_service_addon_execute_t *ex)
 
     resolve_init(wres) ;
 
+    ex->rversion = 0 ;
     // string fields only; the integers (notify/maxdeath/timeout/down/…) are untouched
-    ex->rversion = ex->rversion ? resolve_add_string(wres, stk + ex->rversion) : 0 ;
     ex->run.run = ex->run.run ? resolve_add_string(wres, stk + ex->run.run) : 0 ;
     ex->run.run_user = ex->run.run_user ? resolve_add_string(wres, stk + ex->run.run_user) : 0 ;
     ex->run.build = ex->run.build ? resolve_add_string(wres, stk + ex->run.build) : 0 ;

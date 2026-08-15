@@ -35,8 +35,8 @@ void service_resolve_sanitize_addon_regex(resolve_service_addon_regex_t *rx)
 
     resolve_init(wres) ;
 
+    rx->rversion = 0 ;
     // string fields only; the n* counts are integers
-    rx->rversion = rx->rversion ? resolve_add_string(wres, stk + rx->rversion) : 0 ;
     rx->configure = rx->configure ? resolve_add_string(wres, stk + rx->configure) : 0 ;
     rx->directories = rx->directories ? resolve_add_string(wres, stk + rx->directories) : 0 ;
     rx->files = rx->files ? resolve_add_string(wres, stk + rx->files) : 0 ;

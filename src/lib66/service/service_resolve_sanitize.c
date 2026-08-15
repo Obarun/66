@@ -62,7 +62,7 @@ void service_resolve_sanitize(resolve_service_t *res)
     res->live.oneshotddir = res->live.oneshotddir ? resolve_add_string(wres, stk + res->live.oneshotddir) : 0 ;
     res->live.eventddir = res->live.eventddir ? resolve_add_string(wres, stk + res->live.eventddir) : 0 ;
 
-    res->rversion = res->rversion ? resolve_add_string(wres, stk + res->rversion) : 0 ;
+    res->rversion = 0 ;
 
     free(wres) ;
 }

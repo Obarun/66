@@ -35,8 +35,8 @@ void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io)
 
     resolve_init(wres) ;
 
+    io->rversion = 0 ;
     // string fields only; the fd types are integers
-    io->rversion = io->rversion ? resolve_add_string(wres, stk + io->rversion) : 0 ;
     io->fdin.destination = io->fdin.destination ? resolve_add_string(wres, stk + io->fdin.destination) : 0 ;
     io->fdout.destination = io->fdout.destination ? resolve_add_string(wres, stk + io->fdout.destination) : 0 ;
     io->fderr.destination = io->fderr.destination ? resolve_add_string(wres, stk + io->fderr.destination) : 0 ;

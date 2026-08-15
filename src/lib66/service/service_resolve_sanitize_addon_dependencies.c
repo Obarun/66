@@ -35,8 +35,8 @@ void service_resolve_sanitize_addon_dependencies(resolve_service_addon_dependenc
 
     resolve_init(wres) ;
 
+    dep->rversion = 0 ;
     // string fields only; the n* counts are integers
-    dep->rversion = dep->rversion ? resolve_add_string(wres, stk + dep->rversion) : 0 ;
     dep->depends = dep->depends ? resolve_add_string(wres, stk + dep->depends) : 0 ;
     dep->requiredby = dep->requiredby ? resolve_add_string(wres, stk + dep->requiredby) : 0 ;
     dep->optsdeps = dep->optsdeps ? resolve_add_string(wres, stk + dep->optsdeps) : 0 ;
