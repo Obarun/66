@@ -219,6 +219,10 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
             case VERSION_0910:
                 migrate_create_snap(info, oversion) ;
                 migrate_0900() ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 did++ ;
                 state = VERSION_0910 ;
                 break ;
