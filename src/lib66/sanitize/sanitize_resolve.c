@@ -28,6 +28,18 @@
 #include <66/tree.h>
 #include <66/constants.h>
 
+#define sanitize_addon(type, ctype, zero, sanitize, what) \
+do { \
+    ctype addon = zero ; \
+    resolve_wrapper_t_ref w = resolve_set_struct(type, &addon) ; \
+    if (resolve_read(w, info->base.s, name) <= 0) \
+        log_dieu(LOG_EXIT_SYS, "read the " what " addon of service: ", name, " -- please make a bug report") ; \
+    sanitize(&addon) ; \
+    if (!resolve_write(w, info->base.s, name)) \
+        log_dieusys(LOG_EXIT_SYS, "write the " what " addon of service: ", name) ; \
+    resolve_free(w) ; \
+} while (0)
+
 static int sanitize_service(ssexec_t *info)
 {
     log_flow() ;
@@ -63,6 +75,27 @@ static int sanitize_service(ssexec_t *info)
 
         if (!resolve_write(wres, info->base.s, name))
             log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of service: ", name) ;
+
+        if (c->res.has_limit)
+            sanitize_addon(DATA_SERVICE_LIMIT, resolve_service_addon_limit_t, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, service_resolve_sanitize_addon_limit, "limit") ;
+
+        if (c->res.has_environ)
+            sanitize_addon(DATA_SERVICE_ENVIRON, resolve_service_addon_environ_t, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, service_resolve_sanitize_addon_environ, "environ") ;
+
+        if (c->res.has_io)
+            sanitize_addon(DATA_SERVICE_IO, resolve_service_addon_io_t, RESOLVE_SERVICE_ADDON_IO_ZERO, service_resolve_sanitize_addon_io, "io") ;
+
+        if (c->res.has_execute)
+            sanitize_addon(DATA_SERVICE_EXECUTE, resolve_service_addon_execute_t, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, service_resolve_sanitize_addon_execute, "execute") ;
+
+        if (c->res.has_dependencies)
+            sanitize_addon(DATA_SERVICE_DEPENDENCIES, resolve_service_addon_dependencies_t, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, service_resolve_sanitize_addon_dependencies, "dependencies") ;
+
+        if (c->res.has_regex)
+            sanitize_addon(DATA_SERVICE_REGEX, resolve_service_addon_regex_t, RESOLVE_SERVICE_ADDON_REGEX_ZERO, service_resolve_sanitize_addon_regex, "regex") ;
+
+        if (c->res.has_event)
+            sanitize_addon(DATA_SERVICE_EVENT, resolve_service_addon_event_t, RESOLVE_SERVICE_ADDON_EVENT_ZERO, service_resolve_sanitize_addon_event, "event") ;
     }
 
     service_graph_destroy(&graph) ;
