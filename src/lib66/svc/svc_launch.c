@@ -273,6 +273,12 @@ static void announce(uint32_t id, bool success)
 
         flog_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stop" : "start",  name, svc->exitcode) ;
 
+        svc->state = 0 ;
+        FLAGS_SET(svc->state, SVC_FLAGS_FAILED) ;
+
+        if (!pmanager->exitcode)
+            pmanager->exitcode = svc->exitcode ? svc->exitcode : LOG_EXIT_SYS ;
+
         svc_send_event(SVC_EVENT_CHILD_FAILED, id) ;
     }
 }
@@ -751,6 +757,7 @@ static int svc_manager_init(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssex
     pmanager->asvc = asvc ;
     pmanager->nsvc = nsvc ;
     pmanager->shutdown_requested = false ;
+    pmanager->exitcode = 0 ;
     pmanager->info = info ;
     pmanager->timeout = (uint64_t)info->timeout ;
     pmanager->propagate = propagate ? true : false ;
@@ -975,6 +982,8 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, c
         result = svc_manager_run() ;
     }
 
+    int e = !result ? 1 : pmanager->exitcode ;
+
     svc_manager_free() ;
     /** svc_compute_ns calls svc_launch and overwrites the pmanager global
      * pointer, v2svc and resets npid to run its own tally. Restore all three
@@ -983,5 +992,5 @@ int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, c
     v2svc = saved_v2svc ;
     npid = saved_npid ;
 
-    return !result ? 1 : 0 ;
+    return e ;
 }

@@ -171,6 +171,9 @@ static void announce(uint32_t id, bool success)
 
         flog_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcode) ;
 
+        if (!pmanager->exitcode)
+            pmanager->exitcode = tree->exitcode ? tree->exitcode : LOG_EXIT_SYS ;
+
         tree_send_event(TREE_EVENT_CHILD_FAILED, id) ;
     }
 
@@ -544,6 +547,7 @@ static int tree_manager_init(tree_ctx_t *atree, uint32_t ntree, uint8_t operatio
     pmanager->atree = atree ;
     pmanager->ntree = ntree ;
     pmanager->shutdown_requested = false ;
+    pmanager->exitcode = 0 ;
     pmanager->info = info ;
     pmanager->timeout = (uint64_t)info->timeout ;
     pmanager->operation = operation ;
@@ -759,6 +763,9 @@ int tree_launch(tree_ctx_t *atree, uint32_t ntree, uint8_t operation, ssexec_t *
         result = tree_manager_run() ;
     }
 
+    int e = !result ? 1 : pmanager->exitcode ;
+
     tree_manager_free() ;
-    return !result ? 1 : 0 ;
+
+    return e ;
 }

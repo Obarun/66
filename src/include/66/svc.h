@@ -155,6 +155,7 @@ struct svc_manager_s
 
     // State
     bool shutdown_requested ; // Shutdown in progress
+    int exitcode ; // first service that missed its target
 
     // Configuration
     ssexec_t *info ;

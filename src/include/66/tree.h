@@ -179,6 +179,7 @@ struct tree_manager_s
 
     // State
     bool shutdown_requested ; // Shutdown in progress
+    int exitcode ; // first tree that missed its state
 
     // Configuration
     ssexec_t *info ;
