@@ -65,16 +65,19 @@ enum svc_target_e
     SVC_TARGET_KEEP      // no state change: deliver a signal and nothing else
 } ;
 
-/** @return whether @p target leaves the service supervised. */
 static inline int svc_target_supervised(uint8_t target)
 {
     return target != SVC_TARGET_FREE ;
 }
 
-/** @return whether @p target asks for a transition down (stop or free). */
 static inline int svc_target_stops(uint8_t target)
 {
     return target == SVC_TARGET_DOWN || target == SVC_TARGET_FREE ;
+}
+
+static inline int svc_target_starts(uint8_t target)
+{
+    return target == SVC_TARGET_UP || target == SVC_TARGET_READY ;
 }
 
 struct svc_ctx_s

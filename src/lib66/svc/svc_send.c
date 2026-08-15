@@ -32,7 +32,7 @@ int svc_send(char const *const *argv, int argc, ssexec_t *info, uint8_t target, 
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
 
-    uint8_t requiredby = target == SVC_TARGET_UP ? 0 : 1 ;
+    uint8_t requiredby = svc_target_starts(target) ? 0 : 1 ;
 
     if (signal[1] == 'r')
         cmdmsg = "restart" ;
