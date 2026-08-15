@@ -211,6 +211,19 @@ int service_resolve_read_addon_dependencies_cdb(ocdb *c, resolve_service_addon_d
         !resolve_get_key_u32(c, "nconflict", &dep->nconflict))
             return (errno = EINVAL, 0) ;
 
+    if (!dep->depends)
+        dep->ndepends = 0 ;
+    if (!dep->requiredby)
+        dep->nrequiredby = 0 ;
+    if (!dep->optsdeps)
+        dep->noptsdeps = 0 ;
+    if (!dep->contents)
+        dep->ncontents = 0 ;
+    if (!dep->provide)
+        dep->nprovide = 0 ;
+    if (!dep->conflict)
+        dep->nconflict = 0 ;
+
     return 1 ;
 }
 
