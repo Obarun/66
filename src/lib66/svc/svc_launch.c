@@ -126,22 +126,21 @@ static void propagate_failure(uint32_t id)
     uint32_t pos = 0 ;
     svc_ctx_t *svc = &pmanager->asvc[id] ;
 
-    for (; pos < svc->ndepends ; pos++) {
+    for (; pos < svc->nrequiredby ; pos++) {
 
-        uint32_t did = get_asvc_id(svc->depends[pos]) ;
-        svc_ctx_t *dep = &pmanager->asvc[did];
+        uint32_t did = get_asvc_id(svc->requiredby[pos]) ;
+        svc_ctx_t *dep = &pmanager->asvc[did] ;
 
-        // Only propagate to services that were supposed to start
-        if (dep->target == SVC_TARGET_UP && (dep->state == SVC_FLAGS_WAITING_DEPS || dep->state == SVC_FLAGS_STARTING)) {
+        if (!FLAGS_ISSET(dep->state, SVC_FLAGS_WAITING_DEPS))
+            continue ;
 
-            // Stop any watchers that might be active */
-            if (dep->pid > 0)
-                kill(dep->pid, SIGTERM) ;
+        log_warnu(svc_target_stops(dep->target) ? "stop" : "start", " service: ", dep->res->sa.s + dep->res->name, " -- a service it waits for failed") ;
 
-            // Recursively propagate
-            if (pmanager->propagate)
-                propagate_failure(did) ;
-        }
+        dep->state = 0 ;
+        FLAGS_SET(dep->state, SVC_FLAGS_FAILED) ;
+        npid-- ;
+
+        propagate_failure(did) ;
     }
 }
 
@@ -272,7 +271,7 @@ static void announce(uint32_t id, bool success)
             close_fd(fd) ;
         }
 
-        flog_1_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stop" : "start",  name, svc->exitcode) ;
+        flog_warnu("%s service: %s -- exited with signal: %u", pmanager->cmdmsg ? pmanager->cmdmsg : svc_target_stops(svc->target) ? "stop" : "start",  name, svc->exitcode) ;
 
         svc_send_event(SVC_EVENT_CHILD_FAILED, id) ;
     }

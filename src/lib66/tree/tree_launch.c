@@ -114,6 +114,31 @@ static void wait_deps(uint32_t id)
     }
 }
 
+static void propagate_failure(uint32_t id)
+{
+    log_flow() ;
+
+    uint32_t pos = 0 ;
+    tree_ctx_t *tree = &pmanager->atree[id] ;
+
+    for (; pos < tree->nrequiredby ; pos++) {
+
+        uint32_t did = get_atree_id(tree->requiredby[pos]) ;
+        tree_ctx_t *dep = &pmanager->atree[did] ;
+
+        if (!FLAGS_ISSET(dep->state, TREE_FLAGS_WAITING_DEPS))
+            continue ;
+
+        log_1_warnu(pmanager->operation ? "stop" : "start", " tree: ", dep->tres->sa.s + dep->tres->name, " -- a tree it waits for failed") ;
+
+        dep->state = 0 ;
+        FLAGS_SET(dep->state, TREE_FLAGS_FAILED) ;
+        npid-- ;
+
+        propagate_failure(did) ;
+    }
+}
+
 static inline int tree_send_event(tree_event_type_t type, uint32_t id)
 {
     log_flow() ;
@@ -144,7 +169,7 @@ static void announce(uint32_t id, bool success)
 
     } else {
 
-        flog_1_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcode) ;
+        flog_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcode) ;
 
         tree_send_event(TREE_EVENT_CHILD_FAILED, id) ;
     }
@@ -407,11 +432,13 @@ static void notifier_cb(sse_watcher_t *w, void *cbdata, int event)
             case TREE_EVENT_CHILD_FAILED:
                 tree->state = 0 ;
                 FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
+                propagate_failure(msg.id) ;
                 break ;
 
             case TREE_EVENT_TIMEOUT:
                 tree->state = 0 ;
                 FLAGS_SET(tree->state, TREE_FLAGS_TIMEOUT) ;
+                propagate_failure(msg.id) ;
                 break ;
 
             case TREE_EVENT_SHUTDOWN_REQUEST:
