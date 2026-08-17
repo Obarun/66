@@ -192,7 +192,14 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
     if (argc < 1 || datalen < 2)
         return opt_emit_usage(cmd_signal.name, &cmd_signal) ;
 
-    uint8_t target = signal[1] == 'u' || signal[1] == 'U' ? SVC_TARGET_UP : SVC_TARGET_KEEP ;
+    uint8_t target = SVC_TARGET_KEEP ;
+
+    for (unsigned int pos = 1 ; pos < datalen ; pos++) {
+        if (memchr("uUo", signal[pos], 3)) {
+            target = SVC_TARGET_UP ;
+            break ;
+        }
+    }
 
     return svc_send(argv, argc, info, target, signal, wsignal, woption, propagate) ;
 }
