@@ -82,7 +82,6 @@ static inline int svc_target_starts(uint8_t target)
 
 struct svc_ctx_s
 {
-    pid_t pid ; // Process ID when running
     resolve_service_t *res ; // Service resolution data
     resolve_service_addon_execute_t *execute ; // execute addon (down/timeout/notify)
     resolve_service_addon_dependencies_t *dependencies ; // dependencies addon (module contents)
@@ -120,7 +119,6 @@ struct svc_ctx_s
 typedef struct svc_ctx_s svc_ctx_t ;
 
 #define SVC_CTX_ZERO { \
-    .pid = -1, \
     .res = NULL, \
     .execute = NULL, \
     .dependencies = NULL, \

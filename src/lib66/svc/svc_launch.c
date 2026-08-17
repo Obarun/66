@@ -846,9 +846,6 @@ static int svc_manager_start(void)
 
                 log_warn("failed to start service: ", svc->res->sa.s + svc->res->name);
                 svc->state = SVC_FLAGS_FAILED ;
-                if (svc->pid)
-                    kill(svc->pid, SIGKILL) ;
-                svc->pid = 0 ;
 
                 // Propagate failure to dependents if enabled
                 if (pmanager->propagate)
@@ -899,9 +896,6 @@ static int svc_manager_stop(void)
 
                 log_warn("failed to stop service: ", svc->res->sa.s + svc->res->name) ;
                 svc->state = SVC_FLAGS_FAILED ;
-                if (svc->pid)
-                    kill(svc->pid, SIGKILL) ;
-                svc->pid = 0 ;
             }
 
         } else {
