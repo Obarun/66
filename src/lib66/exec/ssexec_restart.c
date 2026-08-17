@@ -90,11 +90,14 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
 
     nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
 
-    if (!nservice) {
-        if (errno == EINVAL)
-            log_dieusys(LOG_EXIT_SYS, "unable to build service selection graph") ;
+    if (!nservice && errno == EINVAL)
+        log_dieusys(LOG_EXIT_SYS, "unable to build service selection graph") ;
+
+    /* the return of the build counts what the selection found, the graph holds what
+     * GRAPH_WANT_SUPERVISED kept: a service that was never started is collected but
+     * never becomes a vertex, and the start below would be handed an empty argv. */
+    if (!graph.g.nsort)
         log_die(LOG_EXIT_SYS, "service selection is not supervised -- try to start it first") ;
-    }
 
     sanitize_init(&graph, flag, info->who) ;
 
@@ -108,7 +111,7 @@ int ssexec_restart(int argc, char const *const *argv, void *data)
          * services before calling ssexec_signal.
          * For instance, 66 free -P sA, 66 start sB,
          * where sB depends on sA */
-        int nargc = 2 + nservice + propagate ;
+        int nargc = 2 + graph.g.nsort + propagate ;
         char const *prog = PROG ;
         char const *newargv[nargc] ;
 
