@@ -138,7 +138,9 @@ static void propagate_failure(uint32_t id)
 
         dep->state = 0 ;
         FLAGS_SET(dep->state, SVC_FLAGS_FAILED) ;
-        npid-- ;
+
+        if (dep->res->type != E_PARSER_TYPE_MODULE)
+            npid-- ;
 
         propagate_failure(did) ;
     }
