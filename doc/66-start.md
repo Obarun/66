@@ -24,7 +24,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 - **-h, --help**: prints this help.
 
-- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *start* command will not attempt to start the services that are dependent on the service, regardless of their current state.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *start* command will not attempt to start the services that the service depends on, regardless of their current state.
 
 ## Usage examples
 

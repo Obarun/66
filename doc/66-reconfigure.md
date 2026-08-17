@@ -16,13 +16,13 @@ For `module` *service* types, the same process is applied to all services within
 
 Multiple *services* can be reconfigured by separating their names with a space.
 
-This command handles [interdependencies](66.html#handling-dependencies) for the [stop](66-stop.html), [free](66-free.html) and [start](66-start.html) process.
+This command handles [interdependencies](66.html#handling-dependencies) for the [stop](66-stop.html), [free](66-free.html) and [start](66-start.html) process. The stop and free part is propagated to the services that depend on the selection, the start part to the services it depends on.
 
 ## Options
 
 - **-h, --help**: prints this help.
 
-- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *reconfigure* command will not attempt to stop/start the services that are dependent on the service, regardless of their current state and only apply the parse process.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *reconfigure* command will not attempt to stop/start the services that depend on the service nor the ones it depends on, regardless of their current state. The *services* named on the command line are still stopped, unsupervised, parsed again and brought back up.
 
 ## Usage examples
 

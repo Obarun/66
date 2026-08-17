@@ -14,12 +14,12 @@ This command is the heart of `66` concerning service state change. Every other `
 
 Multiple *services* can be handled by separating their names with a space.
 
-This command handles [interdependencies](66.html#handling-dependencies).
+This command handles [interdependencies](66.html#handling-dependencies). The direction it takes depends on the operation asked for. The `-u`, `-U` and `-o` operations bring the service up, so they are propagated to its dependencies, which are brought up first. Every other operation is propagated to its required-by dependencies.
 
 ## Options
 
 - **-h, --help**: print this help.
-- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *signal* command will not attempt to send signal to the services that are dependent on the service, regardless of their current state.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *signal* command only sends the signal to the services named on the command line, whichever direction the operation would otherwise propagate to.
 - **-wu, --wait u**: do not exit until the service is up.
 - **-wU, --wait U**: do not exit until the service is up and ready and has notified readiness.
 - **-wd, --wait d**: do not exit until the service is down.
