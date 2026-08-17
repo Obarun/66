@@ -1475,9 +1475,10 @@ you had typed `66 restart -P <service>`.
     instead reaches what the reactor **depends on**, and `false` then starts it without bringing
     its dependencies up, rarely what you want.
 
-    For instance, the case `false` is made for: an `inotify` reactor restarting `udevd` when a rules file
-    changes. Propagating would drag every `requiredby` of `udevd` and their cascades along,
-    restarting most of the boot for one edited file.
+    For instance, the case `false` is made for: an `inotify` reactor reloading `postgresql`
+    when `pg_hba.conf` changes. Propagating would drag every `requiredby` of `postgresql` and
+    their cascades along, SIGHUP-ing the whole application stack for one edited access
+    control line.
 
 ---
 

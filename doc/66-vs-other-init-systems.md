@@ -46,25 +46,25 @@ architecture, and 66 is not trying to; see *Placement*.
 Before the argument, the object. Everything below is the real syntax; a reader who has
 never seen 66 can judge the rest against it.
 
-A service is one file. Here is a supervised daemon that also restarts itself whenever the
-DHCP client rewrites `/etc/resolv.conf`:
+A service is one file. Here is a supervised daemon that also re-reads its configuration
+whenever your configuration management tool rewrites `/etc/ssh/sshd_config`:
 
 ```ini
 [Main]
 Type = classic
-Description = "dnsmasq daemon"
+Description = "OpenSSH daemon"
 Depends = ( network )
 
 [Start]
-Execute = ( /usr/bin/dnsmasq -k )
+Execute = ( /usr/bin/sshd -D )
 
 [Event]
 EventType = inotify
-From = ( resolv-watch )
-Do = restart
+From = ( sshd-config-watch )
+Do = reload
 ```
 
-Everything about dnsmasq is in the file called dnsmasq, including how it reacts. There is
+Everything about sshd is in the file called sshd, including how it reacts. There is
 no companion unit beside it.
 
 The `[Event]` block names a source, and a source is itself a service, of a type that runs
@@ -73,16 +73,16 @@ no process and only emits:
 ```ini
 [Main]
 Type = event
-Description = "watch /etc/resolv.conf"
+Description = "watch /etc/ssh/sshd_config"
 EventType = inotify
-Watch = /etc/resolv.conf
+Watch = /etc/ssh/sshd_config
 On = ( IN_CLOSE_WRITE )
 ```
 
 `Execute` is an execline script by default, but a shebang on its first line switches
 language: the same daemon in bash or Python is the same file with
-`Execute = (#!/usr/bin/bash …)`. Bring it up with `66 start dnsmasq`; there is no separate
-parse step, `start` does it. A logger is attached by default, so `66 status dnsmasq` reports
+`Execute = (#!/usr/bin/bash …)`. Bring it up with `66 start sshd`; there is no separate
+parse step, `start` does it. A logger is attached by default, so `66 status sshd` reports
 the pid, the uptime, the tree it landed in, and the last lines it printed.
 
 That is the shape of the whole system: one INI file per service, groups of services as

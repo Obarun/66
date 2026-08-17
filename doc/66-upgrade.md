@@ -28,9 +28,10 @@ a service that much of the system depends on, which is the case the key was made
     are untouched.
 
     Set it to `false` and the action carries `-P`. This is what makes a narrow
-    reaction usable: an `inotify` reactor restarting `udevd` when a rules file
-    changes would otherwise drag every service that depends on `udevd`, and their
-    cascades, with it, restarting most of the boot for one edited file.
+    reaction usable: an `inotify` reactor reloading `postgresql` when
+    `pg_hba.conf` changes would otherwise drag every service that depends on the
+    database, and their cascades, with it, SIGHUP-ing the whole application
+    stack for one edited access control line.
 
     Which way the chain is walked depends on the verb, and so does what `false`
     costs you. `stop`, `restart`, `reload`, `reconfigure` and `free` reach the

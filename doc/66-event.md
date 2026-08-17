@@ -15,41 +15,41 @@ which key goes in which section, its allowed values — is part of the frontend 
 
 ## A worked example
 
-Say your DHCP client rewrites `/etc/resolv.conf`, and you want `dnsmasq` to restart every
-time that happens. Two pieces are involved: a **source** that notices the file change, and
-a **reactor** that acts on it.
+Say your configuration management tool rewrites `/etc/ssh/sshd_config`, and you want `sshd`
+to re-read its configuration every time that happens. Two pieces are involved: a **source**
+that notices the file change, and a **reactor** that acts on it.
 
 First, the source — a service whose only job is to watch the file:
 
 ```ini
-# frontend: resolv-watch
+# frontend: sshd-config-watch
 [Main]
 Type = event
-Description = "watch /etc/resolv.conf"
+Description = "watch /etc/ssh/sshd_config"
 EventType = inotify
-Watch = /etc/resolv.conf
+Watch = /etc/ssh/sshd_config
 On = ( IN_CLOSE_WRITE )
 ```
 
-Then, `dnsmasq` itself gains an `[Event]` section that subscribes to that source:
+Then, `sshd` itself gains an `[Event]` section that subscribes to that source:
 
 ```ini
-# frontend: dnsmasq
+# frontend: sshd
 [Main]
 Type = classic
-Description = "dnsmasq daemon"
+Description = "OpenSSH daemon"
 [Start]
-Execute = ( /usr/bin/dnsmasq -k )
+Execute = ( /usr/bin/sshd -D )
 [Event]
 EventType = inotify
-From = ( resolv-watch )
-Do = restart
+From = ( sshd-config-watch )
+Do = reload
 ```
 
-At runtime: [66 start](66-start.html) `resolv-watch` **arms** the watch; when
-`/etc/resolv.conf` changes, `66-eventd` sees that `dnsmasq` has `From = ( resolv-watch )`
-and runs `66 restart dnsmasq`. That is the whole model — a source emits, one or more
-reactors act.
+At runtime: [66 start](66-start.html) `sshd-config-watch` **arms** the watch; when
+`/etc/ssh/sshd_config` changes, `66-eventd` sees that `sshd` has
+`From = ( sshd-config-watch )` and runs `66 reload sshd`. That is the whole model — a source
+emits, one or more reactors act.
 
 ## Sources and reactors
 
@@ -146,12 +146,12 @@ remaining keys depend on it. Field syntax is documented in
 | source | `[Main]` | `EventType`, `Watch`, `On` | — |
 
 ```ini
-# frontend: resolv-watch
+# frontend: sshd-config-watch
 [Main]
 Type = event
-Description = "watch /etc/resolv.conf"
+Description = "watch /etc/ssh/sshd_config"
 EventType = inotify
-Watch = /etc/resolv.conf
+Watch = /etc/ssh/sshd_config
 On = ( IN_CLOSE_WRITE IN_MOVE_SELF )
 ```
 
@@ -374,21 +374,22 @@ A reaction is the bare `66` command, dependency chain included. A rule that must
 opts out with [`Propagate`](66-frontend.html#propagate):
 
 ```ini
-# udevd frontend: reloads itself when a rules file changes, alone
+# postgresql frontend: re-reads its access rules alone when pg_hba.conf changes
 [Main]
 Type = classic
-Description = "device manager"
+Description = "database server"
 [Start]
-Execute = ( /usr/bin/udevd )
+Execute = ( /usr/bin/postgres -D /var/lib/postgres/data )
 [Event]
 EventType = inotify
-From = ( udev-rules-watch )
-Do = restart
+From = ( pg-hba-watch )
+Do = reload
 Propagate = false
 ```
 
-`udevd` is required by most of the boot. Without that last line, editing one rules file would
-restart nearly the whole system; here only `udevd` bounces.
+`postgresql` is required by every service that talks to the database. Without that last line,
+editing one access control line would SIGHUP the whole application stack; here only
+`postgresql` re-reads its rules.
 
 ## A cascading example: certificate rotation
 
