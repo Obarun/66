@@ -4,18 +4,34 @@
 
 ## Overview
 
-A small release: one new frontend key and a handful of fixes, several of which
-concern the event system and the way a command decides what state a service must
-end in.
+A maintenance release: one new frontend key, and a long list of fixes on what a
+command carries with it, on what it reports when it does not get there, and on the
+event system.
 
-The migration is **automatic** and touches one thing only, the `[Event]` addon of
-your reactors, which gains a key. Nothing else in the resolve database changes, and
-**no behaviour of yours changes**: the new key defaults to what your reactors already
+The migration is **automatic**. It stamps the resolve files at the new version, the
+addons included, and repairs a list whose count was kept while its content was not.
+Your declarations are read as they are, nothing of yours has to be rewritten.
+
+Two observable changes are worth a look before you meet them, both in the next
+section: an exit code that no longer claims success, and a few warnings that now
+obey the verbosity you asked for. The new key defaults to what your reactors already
 did.
 
 ## What you must do
 
-Nothing. Read the `Propagate` entry below if you run a reactor whose action restarts
+Nothing. Two things are worth knowing before you meet them.
+
+1. **A command that does not reach its target now fails.** A deadline set with `-T`
+   that expires, and a transaction interrupted by a signal, used to return `0` while
+   the services were still in transition. They return `111` now, with their own
+   message. A script that read the exit code of such a command was told it had
+   worked; it will now be told the truth.
+2. **A few warnings are quieter.** They were printed whatever the verbosity asked
+   for, and now follow their level like every other warning. Add `-v2` to see them
+   again: the deprecation notices of the moved frontend keys, the refusal to enable
+   a tree of the boot group, and the report of an aborted transaction.
+
+Read the `Propagate` entry below if you run a reactor whose action restarts
 a service that much of the system depends on, which is the case the key was made for.
 
 ## New things to explore
@@ -40,6 +56,64 @@ a service that much of the system depends on, which is the case the key was made
     dependencies up, which is rarely what you want.
 
 ## Bug fixes
+
+- **A module whose member fails no longer takes the session down with it** (63f404a):
+
+    Starting a module whose member could not start reached a `kill` on a field the
+    manager never wrote, which held the `-1` of its initialiser: the signal went to
+    every process the caller was allowed to signal. As root, at boot, that is the
+    whole system. The field was a leftover of the days when the manager forked, and
+    is gone.
+
+- **A command that never reaches its target now says so** (dfe8366, ef980be):
+
+    Three ways of not finishing all returned success. A service that failed its
+    transition, a deadline given with `-T` that expired, and a `SIGTERM` or `SIGINT`
+    that cut the transaction short. All three now leave with `111`, each with its own
+    message.
+
+- **`66 start` no longer walks the graph backwards** (b17e5dd):
+
+    A start declares readiness as its target, which the sender did not recognise, so
+    it carried the services that **depend on** the selection instead of those it
+    depends on. Enabled but uninitialised services were dragged into the batch, which
+    took the whole batch down with them, and at boot the tree never came up.
+
+- **Nothing released what was waiting on a failure** (1a26569, bd0aaa0):
+
+    When a service or a tree failed, whatever waited on it stayed in the manager's
+    count, which then never reached zero: the command hung. Waiters are now released
+    and told why. A module, which is computed in place and never enters that count,
+    is no longer subtracted from it either, which took the count below zero and hung
+    the command just the same.
+
+- **`66 signal` brings up what the service needs** (4267af6, 9e5e698):
+
+    `-u`, `-U` and `-o` ask the service to come up, so they now carry its
+    dependencies, as they did before the target replaced the signal string. The
+    direction was also read from the first operation alone, which made `-uO` and
+    `-Ou` two different commands.
+
+- **`66 restart` of a service that was never started explains itself** (9f6f115):
+
+    It guarded on the number of services collected rather than on what the graph kept,
+    and an unsupervised service is collected but never becomes a vertex. The restart
+    then handed an empty selection to the start, which complained about a missing
+    argument. It now says the selection is not supervised and suggests starting it.
+
+- **A tree that ran out of time is signalled** (d8899b2, 20c931b):
+
+    The timeout tested a pointer that is never null, so the child running the
+    transition was never signalled and the timeout event never raised. An empty tree
+    and a tree whose command could not be launched also reported the same thing, so a
+    failed fork was announced as a success.
+
+- **The migration no longer carries a count without its list** (3dbe731, 52e9f33, 0594314, 6053065):
+
+    A count kept beside an offset that means *unset* makes every reader walk an empty
+    string, which is fatal. The offset now decides, at the point where the resolve
+    files are read, and the migration neither carries such a pair over nor leaves an
+    addon behind at the version it was found at.
 
 - **`66 reconfigure` gives every service back the state it was found in** (d4f92e7):
 
