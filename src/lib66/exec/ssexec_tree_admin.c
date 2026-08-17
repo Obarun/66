@@ -646,7 +646,7 @@ void tree_enable_disable(tree_graph_t *g, char const *base, char const *treename
         log_trace(!action ? "disable " : "enable ", treename, "...") ;
 
         if (tree_ongroups(base, treename, TREE_GROUPS_BOOT) && action) {
-            log_1_warn(treename," is a part of group ", TREE_GROUPS_BOOT," -- ignoring enable request") ;
+            log_warn(treename," is a part of group ", TREE_GROUPS_BOOT," -- ignoring enable request") ;
             return ;
         }
 
@@ -872,7 +872,7 @@ void tree_rules(char const *base, char const *treename, uid_t *uids, uint8_t wha
         } else if (r >= 0 && !what) {
 
             if (owner == uids[pos+1]) {
-                log_1_warn("you cannot deny yourself -- ignoring request") ;
+                log_warn("you cannot deny yourself -- ignoring request") ;
                 continue ;
             }
 

@@ -129,7 +129,7 @@ static void propagate_failure(uint32_t id)
         if (!FLAGS_ISSET(dep->state, TREE_FLAGS_WAITING_DEPS))
             continue ;
 
-        log_1_warnu(pmanager->operation ? "stop" : "start", " tree: ", dep->tres->sa.s + dep->tres->name, " -- a tree it waits for failed") ;
+        log_warnu(pmanager->operation ? "stop" : "start", " tree: ", dep->tres->sa.s + dep->tres->name, " -- a tree it waits for failed") ;
 
         dep->state = 0 ;
         FLAGS_SET(dep->state, TREE_FLAGS_FAILED) ;

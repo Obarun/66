@@ -423,7 +423,7 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         if (parse_store_present(st, E_PARSER_SECTION_MAIN, main_keys[i])) {
 
-            log_1_warn("key ", names[i], " at section [Main] is deprecated -- declare it at section [Execute] instead") ;
+            log_warn("key ", names[i], " at section [Main] is deprecated -- declare it at section [Execute] instead") ;
 
             char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, main_keys[i], 0) ;
             resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;

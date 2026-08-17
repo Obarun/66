@@ -71,7 +71,7 @@ static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexe
         log_dieu(LOG_EXIT_SYS, "convert string") ;
 
     if (propagate)
-        log_1_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", dep.sa.s + dep.requiredby) ;
+        log_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", dep.sa.s + dep.requiredby) ;
 
     strbuf_free(&dep.sa) ;
 

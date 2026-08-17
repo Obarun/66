@@ -44,7 +44,7 @@ int tree_seed_get_group_permissions(tree_seed_t *seed)
 
     if (!strcmp(groups, TREE_GROUPS_BOOT) && seed->disen > 0) {
 
-        log_1_warn("enable was asked for a tree on group boot -- ignoring enable request") ;
+        log_warn("enable was asked for a tree on group boot -- ignoring enable request") ;
         seed->disen = 0 ;
     }
 

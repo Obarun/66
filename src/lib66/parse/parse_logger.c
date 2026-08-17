@@ -129,7 +129,7 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                 break ;
 
             case E_PARSER_SECTION_LOGGER_TIMESTART :
-                log_1_warn("key TimeoutStart is deprecated -- use key Timeout instead") ;
+                log_warn("key TimeoutStart is deprecated -- use key Timeout instead") ;
                 if (!u32_scan_strict(v, &lg->execute.timeout.start))
                     parse_error_return(0, 3, t) ;
                 break ;
