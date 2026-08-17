@@ -613,12 +613,6 @@ static int tree_manager_start(void)
             continue ;
         }
 
-        // Skip if service is already running
-        if (FLAGS_ISSET(tree->state, TREE_FLAGS_STARTING | TREE_FLAGS_PROCESSING)) {
-            log_warn("skipping already processing tree: ", tree->tres->sa.s + tree->tres->name) ;
-            continue ;
-        }
-
         npid++ ;
         // Check if we can start this service now
         if (deps_satisfied(pos)) {
@@ -658,11 +652,6 @@ static int tree_manager_stop(void)
 
         if (FLAGS_ISSET(tree->state, TREE_FLAGS_DOWN)) {
             log_warn("skipping already down tree: ", tree->tres->sa.s + tree->tres->name) ;
-            continue ;
-        }
-
-        if (FLAGS_ISSET(tree->state, TREE_FLAGS_STOPPING | TREE_FLAGS_PROCESSING)) {
-            log_warn("skipping already processing tree: ", tree->tres->sa.s + tree->tres->name) ;
             continue ;
         }
 

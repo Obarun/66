@@ -827,12 +827,6 @@ static int svc_manager_start(void)
             continue ;
         }
 
-        // Skip if service is already running
-        if (FLAGS_ISSET(svc->state, SVC_FLAGS_STARTING | SVC_FLAGS_PROCESSING)) {
-            log_warn("skipping already processing service: ", svc->res->sa.s + svc->res->name) ;
-            continue ;
-        }
-
         /* a module is handled synchronously by svc_compute_ns and never spawns an
          * async process to wait for: it must not enter the npid tally. */
         if (svc->res->type != E_PARSER_TYPE_MODULE)
@@ -877,11 +871,6 @@ static int svc_manager_stop(void)
 
         if (FLAGS_ISSET(svc->state, SVC_FLAGS_DOWN)) {
             log_warn("skipping already down service: ", svc->res->sa.s + svc->res->name) ;
-            continue ;
-        }
-
-        if (FLAGS_ISSET(svc->state, SVC_FLAGS_STOPPING | SVC_FLAGS_PROCESSING)) {
-            log_warn("skipping already processing service: ", svc->res->sa.s + svc->res->name) ;
             continue ;
         }
 
