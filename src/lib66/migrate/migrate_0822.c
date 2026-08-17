@@ -1,5 +1,5 @@
 /*
- * migrate_0821.c
+ * migrate_0822.c
  *
  * Copyright (c) 2025 Eric Vidal <eric@obarun.org>
  *
@@ -237,12 +237,15 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
         dep->contents = old->dependencies.contents ? resolve_add_string(depwres, old->sa.s + old->dependencies.contents) : 0 ;
         dep->provide = old->dependencies.provide ? resolve_add_string(depwres, old->sa.s + old->dependencies.provide) : 0 ;
         dep->conflict = old->dependencies.conflict ? resolve_add_string(depwres, old->sa.s + old->dependencies.conflict) : 0 ;
-        dep->ndepends = old->dependencies.ndepends ;
-        dep->nrequiredby = old->dependencies.nrequiredby ;
-        dep->noptsdeps = old->dependencies.noptsdeps ;
-        dep->ncontents = old->dependencies.ncontents ;
-        dep->nprovide = old->dependencies.nprovide ;
-        dep->nconflict = old->dependencies.nconflict ;
+        dep->ndepends = dep->depends ? old->dependencies.ndepends : 0 ;
+        dep->nrequiredby = dep->requiredby ? old->dependencies.nrequiredby : 0 ;
+        dep->noptsdeps = dep->optsdeps ? old->dependencies.noptsdeps : 0 ;
+        dep->ncontents = dep->contents ? old->dependencies.ncontents : 0 ;
+        dep->nprovide = dep->provide ? old->dependencies.nprovide : 0 ;
+        dep->nconflict = dep->conflict ? old->dependencies.nconflict : 0 ;
+
+        new->has_dependencies = (dep->ndepends || dep->nrequiredby || dep->noptsdeps ||
+                                 dep->ncontents || dep->nprovide || dep->nconflict) ? 1 : 0 ;
         free(depwres) ;
     }
 
@@ -275,8 +278,8 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
         ex->chdir = old->execute.chdir ? resolve_add_string(exwres, old->sa.s + old->execute.chdir) : 0 ;
         ex->capsbound = old->execute.capsbound ? resolve_add_string(exwres, old->sa.s + old->execute.capsbound) : 0 ;
         ex->capsambient = old->execute.capsambient ? resolve_add_string(exwres, old->sa.s + old->execute.capsambient) : 0 ;
-        ex->ncapsbound = old->execute.ncapsbound ;
-        ex->ncapsambient = old->execute.ncapsambient ;
+        ex->ncapsbound = ex->capsbound ? old->execute.ncapsbound : 0 ;
+        ex->ncapsambient = ex->capsambient ? old->execute.ncapsambient : 0 ;
         free(exwres) ;
     }
 
@@ -350,7 +353,7 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
         e->envdir = old->environ.envdir ? resolve_add_string(ewres, old->sa.s + old->environ.envdir) : 0 ;
         e->env_overwrite = old->environ.env_overwrite ;
         e->importfile = old->environ.importfile ? resolve_add_string(ewres, old->sa.s + old->environ.importfile) : 0 ;
-        e->nimportfile = old->environ.nimportfile ;
+        e->nimportfile = e->importfile ? old->environ.nimportfile : 0 ;
         free(ewres) ;
     }
 
@@ -365,9 +368,9 @@ static void service_resolve_sanitize_0821(resolve_service_t *new, resolve_servic
         rx->directories = old->regex.directories ? resolve_add_string(rxwres, old->sa.s + old->regex.directories) : 0 ;
         rx->files = old->regex.files ? resolve_add_string(rxwres, old->sa.s + old->regex.files) : 0 ;
         rx->infiles = old->regex.infiles ? resolve_add_string(rxwres, old->sa.s + old->regex.infiles) : 0 ;
-        rx->ndirectories = old->regex.ndirectories ;
-        rx->nfiles = old->regex.nfiles ;
-        rx->ninfiles = old->regex.ninfiles ;
+        rx->ndirectories = rx->directories ? old->regex.ndirectories : 0 ;
+        rx->nfiles = rx->files ? old->regex.nfiles : 0 ;
+        rx->ninfiles = rx->infiles ? old->regex.ninfiles : 0 ;
         free(rxwres) ;
     }
 
