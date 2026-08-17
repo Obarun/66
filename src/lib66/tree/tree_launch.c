@@ -336,18 +336,18 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 
     // Check for watcher errors first
     if (w->api_errno != 0) {
+        log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
         if (!pmanager->exitcode)
             pmanager->exitcode = LOG_EXIT_SYS ;
-        log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
     }
 
     if (!(event & SSE_READ)) {
+        log_warn("unexpected event on signalfd callback") ;
         if (!pmanager->exitcode)
             pmanager->exitcode = LOG_EXIT_SYS ;
-        log_warn("unexpected event on signalfd callback") ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
@@ -355,9 +355,9 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 
     sse_signal_t *s = (sse_signal_t *)w->sdata;
     if (!s) {
+        log_warn("signalfd sdata is NULL") ;
         if (!pmanager->exitcode)
             pmanager->exitcode = LOG_EXIT_SYS ;
-        log_warn("signalfd sdata is NULL") ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
