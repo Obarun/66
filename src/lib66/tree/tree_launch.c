@@ -264,7 +264,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
     }
 
     if (!sse_start_child(&pmanager->loop, &tree->child, child_cb, (void*)(uintptr_t)id, tree->pid, 2, true)) {
-        if (tree->pid)
+        if (tree->pid > 0)
             kill(tree->pid, SIGKILL);
         tree->state = TREE_FLAGS_FAILED ;
         log_warnusys_return(LOG_EXIT_LESSONE, "start child watcher for tree: ", tree->tres->sa.s + tree->tres->name) ;
@@ -529,7 +529,7 @@ static void timeout_cb(sse_watcher_t *w, void *cbdata, int event)
         return ;
     }
 
-    if (!tree && tree->pid > 0) {
+    if (tree->pid > 0) {
         // Kill the service
         log_warn("tree timeout, killing: ", tree->tres->sa.s + tree->tres->name) ;
         kill(tree->pid, SIGTERM) ;
@@ -631,7 +631,7 @@ static int tree_manager_start(void)
 
                 log_warn("failed to start tree: ", tree->tres->sa.s + tree->tres->name);
                 tree->state = TREE_FLAGS_FAILED ;
-                if (tree->pid)
+                if (tree->pid > 0)
                     kill(tree->pid, SIGKILL) ;
             }
 
@@ -674,7 +674,7 @@ static int tree_manager_stop(void)
 
                 log_warn("failed to stop tree: ", tree->tres->sa.s + tree->tres->name) ;
                 tree->state = TREE_FLAGS_FAILED ;
-                if (tree->pid)
+                if (tree->pid > 0)
                     kill(tree->pid, SIGKILL) ;
                 tree->pid = 0 ;
             }
