@@ -337,6 +337,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 
     // Check for watcher errors first
     if (w->api_errno != 0) {
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
@@ -344,6 +346,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
     }
 
     if (!(event & SSE_READ)) {
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         log_warn("unexpected event on signalfd callback") ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
@@ -352,6 +356,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 
     sse_signal_t *s = (sse_signal_t *)w->sdata;
     if (!s) {
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         log_warn("signalfd sdata is NULL") ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
@@ -363,7 +369,9 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
         case SIGTERM :
         case SIGKILL :
         case SIGINT :
-            log_1_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            log_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            if (!pmanager->exitcode)
+                pmanager->exitcode = LOG_EXIT_SYS ;
             tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
             break ;
         default :
@@ -378,16 +386,16 @@ static void deadline_cb(sse_watcher_t *w, void *cbdata, int event)
     (void)cbdata ;
     (void)event ;
 
-    // Check for watcher errors
-    if (w->api_errno != 0) {
-        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
-        // Still trigger shutdown, then free
-        tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
-        sse_free_timer(w) ;
-        return ;
-    }
+    /* the selection did not reach its target: the deadline ends the command the
+     * same way a failed transition does, only the message differs. */
+    if (!pmanager->exitcode)
+        pmanager->exitcode = LOG_EXIT_SYS ;
 
-    log_warn("global deadline reached, shutting down") ;
+    if (w->api_errno != 0)
+        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
+    else
+        log_warnu("reach the target of the tree selection within the given timeout") ;
+
     tree_send_event(TREE_EVENT_SHUTDOWN_REQUEST, 0) ;
     // one-shot timer
     sse_free_timer(w) ;

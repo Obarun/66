@@ -547,6 +547,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
     // Check for watcher errors first
     if (w->api_errno != 0) {
         log_warn("signalfd watcher error: ", strerror(w->api_errno)) ;
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
@@ -554,6 +556,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
 
     if (!(event & SSE_READ)) {
         log_warn("unexpected event on signalfd callback") ;
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
@@ -562,6 +566,8 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
     sse_signal_t *s = (sse_signal_t *)w->sdata;
     if (!s) {
         log_warn("signalfd sdata is NULL") ;
+        if (!pmanager->exitcode)
+            pmanager->exitcode = LOG_EXIT_SYS ;
         sse_free_signal(w) ;
         pmanager->loop.running = false ;
         return ;
@@ -572,7 +578,9 @@ static void signalfd_cb(sse_watcher_t *w, void *cbdata, int event)
         case SIGTERM :
         case SIGKILL :
         case SIGINT :
-            log_1_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            log_warn("received SIGTERM or SIGKILL or SIGINT, aborting transaction") ;
+            if (!pmanager->exitcode)
+                pmanager->exitcode = LOG_EXIT_SYS ;
             svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
             break ;
         default :
@@ -587,16 +595,14 @@ static void deadline_cb(sse_watcher_t *w, void *cbdata, int event)
     (void)cbdata ;
     (void)event ;
 
-    // Check for watcher errors
-    if (w->api_errno != 0) {
-        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
-        // Still trigger shutdown, then free
-        svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
-        sse_free_timer(w) ;
-        return ;
-    }
+    if (!pmanager->exitcode)
+        pmanager->exitcode = LOG_EXIT_SYS ;
 
-    log_warn("global deadline reached, shutting down") ;
+    if (w->api_errno != 0)
+        log_warn("deadline watcher error: ", strerror(w->api_errno)) ;
+    else
+        log_warnu("reach the target of the service selection within the given timeout") ;
+
     svc_send_event(SVC_EVENT_SHUTDOWN_REQUEST, 0) ;
     // one-shot timer
     sse_free_timer(w) ;
