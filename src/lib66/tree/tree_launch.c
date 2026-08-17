@@ -245,7 +245,7 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
     tree->pid = fork() ;
     if (tree->pid < 0) {
         FLAGS_SET(tree->state, TREE_FLAGS_FAILED) ;
-        log_warnusys_return(LOG_EXIT_ZERO, newargv[0], " services of tree: ", tree->tres->sa.s + tree->tres->name) ;
+        log_warnusys_return(LOG_EXIT_LESSONE, newargv[0], " services of tree: ", tree->tres->sa.s + tree->tres->name) ;
     }
 
     if (!tree->pid) {
@@ -267,12 +267,12 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
         if (tree->pid)
             kill(tree->pid, SIGKILL);
         tree->state = TREE_FLAGS_FAILED ;
-        log_warnusys_return(LOG_EXIT_ZERO, "start child watcher for tree: ", tree->tres->sa.s + tree->tres->name) ;
+        log_warnusys_return(LOG_EXIT_LESSONE, "start child watcher for tree: ", tree->tres->sa.s + tree->tres->name) ;
     }
 
     if (pmanager->timeout) {
         if (!sse_start_timer(&pmanager->loop, &tree->timeout, timeout_cb, (void*)(uintptr_t)id, pmanager->timeout, 0, 1))
-            log_warnusys_return(LOG_EXIT_ZERO, "start timer watcher for tree: ",  tree->tres->sa.s + tree->tres->name) ;
+            log_warnusys_return(LOG_EXIT_LESSONE, "start timer watcher for tree: ",  tree->tres->sa.s + tree->tres->name) ;
     }
 
     return 1 ;
@@ -318,11 +318,10 @@ static int launch_tree(uint32_t id)
 
     r = ssexec_callback(tree, id, &stk, &sinfo) ;
     ssexec_free(&sinfo) ;
-
-    if (!r) {
+    if (r <= 0) {
         npid-- ;
-        announce(id, true) ;
-        return 1 ;
+        announce(id, !r ? true : false) ;
+        return !r ? 1 : 0 ;
     }
 
     return r ;
