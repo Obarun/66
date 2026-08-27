@@ -12,7 +12,7 @@ To build and install the 66 project, you need:
 
 - `execline` version `2.9.6.1` or later (runtime dependency, for the generated service scripts): [skarnet.org/software/execline](https://skarnet.org/software/execline).
 
-- `oblibs` version `0.4.0.0` or later: [git.obarun.org/Obarun/oblibs](https://git.obarun.org/Obarun/oblibs).
+- `oblibs` version `0.4.0.1` or later: [git.obarun.org/Obarun/oblibs](https://git.obarun.org/Obarun/oblibs).
 
 - `lowdown` version `0.6.4` or later (optional, for generating man pages and HTML documentation): [kristaps.bsd.lv/lowdown](https://kristaps.bsd.lv/lowdown).
 

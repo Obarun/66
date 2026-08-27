@@ -6,7 +6,7 @@ if [ "$1" == "commit" ]; then
     tag=0
 fi
 
-oblibs_tag="0.4.0.0"
+oblibs_tag="0.4.0.1"
 
 check_tag(){
 
