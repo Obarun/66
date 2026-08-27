@@ -277,7 +277,7 @@ eventexpression  : None
 eventtimezone    : None
 eventinterval    : 0
 eventpropagate   : 0
-rversion         : 0.9.1.0
+rversion         : 0.9.1.2
 ```
 
 The resolve file is the full, low-level picture. For day-to-day use, the [66 status](66-status.html) command presents a readable summary drawn from this file and from the service's runtime record, rather than dumping every field.
@@ -469,9 +469,10 @@ It is created at [66 scandir create](66-scandir.html#start) invocation if it doe
 ├── environment
 │   └── 0                                  one directory per UID
 │       └── <variable>                     one file per published variable, see 66 env
-└── log
-    └── 0                                  destination of the scandir-log output
-        └── current                        uncaught logs
+├── log
+│   └── 0                                  destination of the scandir-log output
+│       └── current                        uncaught logs
+└── tmp                                    temporary of every resolve write
 ```
 
 The annotations in parentheses are the resolve fields ([66 resolve](66-resolve.html)) that hold each path.
@@ -514,7 +515,7 @@ At [start](66-start.html) command executed will created the corresponding `%%liv
 
 ### %%livedir%%/environment
 
-This directory holds the *runtime environment*: the per-session variables published with the [66 env](66-env.html) command. It is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state` and `%%livedir%%/log`, so that every account can own its own subdirectory below it.
+This directory holds the *runtime environment*: the per-session variables published with the [66 env](66-env.html) command. It is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state`, `%%livedir%%/log` and `%%livedir%%/tmp`, so that every account can own its own subdirectory below it.
 
 It is also where the temporary file of a publication is created, for the time of a `rename` into the subdirectory below. Nothing else lives here.
 
@@ -527,6 +528,14 @@ One directory per account, mode `0755` and owned by that account. It holds **one
 The directory lives and dies with the scandir it belongs to: [66 scandir remove](66-scandir.html#remove) destroys it, so nothing published survives it. `66 env` never creates it — it reports its absence rather than publishing into a store no service reads.
 
 Because the whole directory is read by `environ_merge_dir`, it is subject to the limits of an [environment directory](66-scandir.html#environment): at most `20` files, hence at most 20 published variables, and no empty file. This is why a publication never creates its temporary here.
+
+### %%livedir%%/tmp
+
+A [resolve file](#resolve-files) is never written in place: the CDB is built in a temporary file here, then copied over its destination, so a database that fails to build never reaches the resolve it was meant to replace. The directory is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state`, `%%livedir%%/log` and `%%livedir%%/environment`, so that every account writes its own temporaries here without being able to remove those of another.
+
+Each temporary is named after the resolve being written, carries a random suffix, and is unlinked as soon as the copy is done. Nothing else lives here.
+
+A command run where 66 never booted, in an installer chroot or a container build, finds no live directory at all. It then creates this directory itself when it may, and an account that owns nothing under `%%livedir%%` writes instead in a `tmp` directory of its own base, `${HOME}/%%user_dir%%/tmp` for a regular account.
 
 ## %%system_log%%
 
@@ -545,5 +554,7 @@ User can control the rotation of the log file with:
 ## Resolve files
 
 *Resolve* files are essentially [CDB](http://cr.yp.to/cdb.html) databases. They are independent of extra libraries, running daemons, or third-party programs. These files are lightweight and efficient to read and write. However, the downside is the inability to upgrade a field without rewriting the entire database whenever modifications are made to any fields.
+
+A resolve is never modified in place: the whole database is rebuilt in a temporary file under `%%livedir%%/tmp` and copied over the previous one, which is why a write needs a writable live directory and not only a writable destination.
 
 The size of the database varies based on its contents and typically ranges between 4-7 kilobytes.

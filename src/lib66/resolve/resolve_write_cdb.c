@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <oblibs/log.h>
 #include <oblibs/io.h>
@@ -23,28 +24,80 @@
 #include <oblibs/cdb.h>
 #include <oblibs/files.h>
 #include <oblibs/fd.h>
+#include <oblibs/directory.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
+#include <66/utils.h>
+#include <66/config.h>
+
+/** The ssexec_scandir_create takes care of the SS_LIVE SS_LIVE_TMP
+ * by itself but it will only work if the machine was booted with 66.
+ *
+ * Command on chrooted system e.g. from an installer will fail on an non-existant
+ * directory.
+ * Booting on a ro filesystem will also fail, the temporary directory
+ * must be writable.
+ *
+ * Best-effort here when the machine was not booted and root
+ * was never used, typically on a container. A user cannot create
+ * anything under /run/66, which belongs to root, so its own base
+ * directory is used instead */
+static int create_livetmp(strbuf *dir)
+{
+    log_flow() ;
+
+    if (!auto_strbuf(dir, SS_LIVE SS_LIVE_TMP))
+        log_warnusys_return(LOG_EXIT_ZERO, "strbuf") ;
+
+    if (scan_mode(dir->s, S_IFDIR) > 0)
+        return 1 ;
+
+    if (getuid()) {
+
+        dir->len = 0 ;
+        if (!set_ownersysdir(dir, getuid()) || !auto_strbuf(dir, SS_LIVE_TMP))
+            log_warnusys_return(LOG_EXIT_ZERO, "set owner directory") ;
+
+        if (scan_mode(dir->s, S_IFDIR) > 0)
+            return 1 ;
+    }
+
+    log_trace("create temporary directory: ", dir->s) ;
+
+    if (!dir_create_parent(dir->s, 0755))
+        log_warnusys_return(LOG_EXIT_ZERO, "create directory: ", dir->s) ;
+
+    if (!getuid() && chmod(dir->s, S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "chmod: ", dir->s) ;
+
+    return 1 ;
+}
 
 int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name)
 {
     log_flow() ;
 
-    int fd ;
-    size_t pathlen = strlen(path), namelen = strlen(name), livelen = strlen(SS_LIVE) ;
+    int fd = -1 ;
+    size_t pathlen = strlen(path), namelen = strlen(name) ;
     ocdbmaker c = OCDBMAKER_ZERO ;
     char file[pathlen + namelen + 1] ;
-    char tfile[livelen + SS_LIVE_TMP_LEN + 1 + strlen(name) + 8] ;
+    _alloc_strbuf_(tfile, SS_MAX_PATH) ;
 
     auto_strings(file, path, name) ;
-    auto_strings(tfile, SS_LIVE, SS_LIVE_TMP, "/", name, ":", "XXXXXX") ;
 
-    fd = mkstemp(tfile) ;
+    if (!create_livetmp(&tfile))
+        return 0 ;
+
+    if (!auto_strbuf(&tfile, "/", name, ":XXXXXX"))
+        log_warnusys_return(LOG_EXIT_ZERO, "strbuf") ;
+
+    fd = mkstemp(tfile.s) ;
     if (fd < 0 || !io_set_block(fd)) {
-        log_warnusys("mkstemp: ", tfile) ;
+        log_warnusys("mkstemp: ", tfile.s) ;
         goto err_fd ;
     }
 
@@ -105,24 +158,24 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
     }
 
     if (!ocdb_make_finish(&c) || fsync(fd) < 0) {
-        log_warnusys("write to: ", tfile) ;
+        log_warnusys("write to: ", tfile.s) ;
         goto err ;
     }
 
     close_fd(fd) ;
 
-    if (!file_copy(tfile, file, 0600)) {
-        log_warnusys("copy: ", tfile, " to ", file) ;
+    if (!file_copy(tfile.s, file, 0600)) {
+        log_warnusys("copy: ", tfile.s, " to ", file) ;
         goto err_fd ;
     }
 
-    file_tryunlink(tfile) ;
+    file_tryunlink(tfile.s) ;
 
     return 1 ;
 
     err:
         close_fd(fd) ;
     err_fd:
-        file_tryunlink(tfile) ;
+        file_tryunlink(tfile.s) ;
         return 0 ;
 }
