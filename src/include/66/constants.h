@@ -70,6 +70,8 @@
 #define SS_STATE_LEN (sizeof SS_STATE - 1)
 #define SS_LIVEENV "environment"
 #define SS_LIVEENV_LEN (sizeof SS_LIVEENV - 1)
+#define SS_LIVE_TMP "tmp"
+#define SS_LIVE_TMP_LEN (sizeof SS_LIVE_TMP - 1)
 #define SS_LIVEENV_EVENT "env."
 #define SS_LIVEENV_EVENT_LEN (sizeof SS_LIVEENV_EVENT - 1)
 #define SS_LIVEENV_EVENT_GONE "unenv."

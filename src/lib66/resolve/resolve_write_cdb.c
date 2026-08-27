@@ -24,6 +24,7 @@
 #include <oblibs/files.h>
 #include <oblibs/fd.h>
 
+#include <66/constants.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/tree.h>
@@ -33,13 +34,13 @@ int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *nam
     log_flow() ;
 
     int fd ;
-    size_t pathlen = strlen(path), namelen = strlen(name) ;
+    size_t pathlen = strlen(path), namelen = strlen(name), livelen = strlen(SS_LIVE) ;
     ocdbmaker c = OCDBMAKER_ZERO ;
     char file[pathlen + namelen + 1] ;
-    char tfile[5 + strlen(name) + 8] ;
+    char tfile[livelen + SS_LIVE_TMP_LEN + 1 + strlen(name) + 8] ;
 
     auto_strings(file, path, name) ;
-    auto_strings(tfile, "/tmp/", name, ":", "XXXXXX") ;
+    auto_strings(tfile, SS_LIVE, SS_LIVE_TMP, "/", name, ":", "XXXXXX") ;
 
     fd = mkstemp(tfile) ;
     if (fd < 0 || !io_set_block(fd)) {

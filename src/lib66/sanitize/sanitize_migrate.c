@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <oblibs/directory.h>
+#include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -34,7 +36,7 @@
 #include <66/sanitize.h>
 #include <66/migrate.h>
 
-#define MIGRATE_NVERSION 10
+#define MIGRATE_NVERSION 11
 static const char *version_list[MIGRATE_NVERSION] = {
     "0.8.0.0",
     "0.8.0.1",
@@ -45,7 +47,8 @@ static const char *version_list[MIGRATE_NVERSION] = {
     "0.8.2.1",
     "0.8.2.2",
     "0.9.0.0",
-    "0.9.1.0"
+    "0.9.1.0",
+    "0.9.1.1"
 } ;
 
 enum migrate_version_e
@@ -60,21 +63,23 @@ enum migrate_version_e
     VERSION_0822,
     VERSION_0900,
     VERSION_0910,
+    VERSION_0911,
     VERSION_ENDOFKEY
 } ;
 
 static const uint8_t migrate_state [MIGRATE_NVERSION][MIGRATE_NVERSION] = {
-    //  VERSION_0800            VERSION_0801          VERSION_0802            VERSION_0810            VERSION_0811            VERSION_0820            VERSION_0821            VERSION_0822            VERSION_0900
-    { VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0800 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0801 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0802 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0811,       VERSION_0811,       VERSION_0811,       VERSION_0811,       VERSION_0820,       VERSION_0820 },    // VERSION_0810 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0820,       VERSION_0820,       VERSION_0820,       VERSION_0820,       VERSION_0820 },    // VERSION_0811 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0821,       VERSION_0821,       VERSION_0822,       VERSION_0822 },    // VERSION_0820 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0822,       VERSION_0822 },    // VERSION_0821 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0900,       VERSION_0900 },    // VERSION_0822 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0910 },    // VERSION_0900 old
-    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY } // VERSION_0910 old
+    //  VERSION_0800            VERSION_0801          VERSION_0802            VERSION_0810            VERSION_0811            VERSION_0820            VERSION_0821            VERSION_0822            VERSION_0900            VERSION_0910            VERSION_0911
+    { VERSION_ENDOFKEY, VERSION_0801,     VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0800 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_0802,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0801 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810,       VERSION_0810 },    // VERSION_0802 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0811,       VERSION_0811,       VERSION_0811,       VERSION_0811,       VERSION_0820,       VERSION_0820,       VERSION_0820 },    // VERSION_0810 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0820,       VERSION_0820,       VERSION_0820,       VERSION_0820,       VERSION_0820,       VERSION_0820 },    // VERSION_0811 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0821,       VERSION_0821,       VERSION_0822,       VERSION_0822,       VERSION_0822 },    // VERSION_0820 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0822,       VERSION_0822,       VERSION_0822 },    // VERSION_0821 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0900,       VERSION_0900,       VERSION_0900 },    // VERSION_0822 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0910,       VERSION_0910 },    // VERSION_0900 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_0911 },    // VERSION_0910 old
+    { VERSION_ENDOFKEY, VERSION_ENDOFKEY, VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY,   VERSION_ENDOFKEY } // VERSION_0911 old
 } ;
 
 static uint8_t str_to_int(const char *version)
@@ -156,12 +161,35 @@ void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t
 
 }
 
+static void migrate_livetmp(void)
+{
+    log_flow() ;
+
+    char const *dir = SS_LIVE SS_LIVE_TMP ;
+
+    if (scan_mode(dir, S_IFDIR) > 0)
+        return ;
+
+    log_trace("create live temporary directory: ", dir) ;
+
+    if (!dir_create_parent(dir, 0755))
+        log_dieusys(LOG_EXIT_SYS, "create directory: ", dir) ;
+
+    if (chmod(dir, S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chmod: ", dir) ;
+}
+
 /** Return 0 if no migration was made else 1 */
 int sanitize_migrate(ssexec_t *info, const char *oversion)
 {
     log_flow() ;
 
     uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
+
+    if (migrate_state[state][current] == VERSION_ENDOFKEY)
+        return 0 ;
+
+    migrate_livetmp() ;
 
     while (state < VERSION_ENDOFKEY) {
 
@@ -227,6 +255,18 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                     log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
                 did++ ;
                 state = VERSION_0910 ;
+                break ;
+
+            case VERSION_0911:
+                migrate_create_snap(info, oversion) ;
+                if (!sanitize_resolve(info, DATA_SERVICE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
+                if (!sanitize_resolve(info, DATA_TREE_MASTER))
+                    log_dieusys(LOG_EXIT_SYS, "sanitize Master resolve files") ;
+                did++ ;
+                state = VERSION_0911 ;
                 break ;
 
             default:

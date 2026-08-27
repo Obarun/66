@@ -10,6 +10,8 @@ stages:
 before_script:
   - pacman -Syu --noconfirm
   - pacman -S base-devel meson git lowdown --noconfirm
+  - mkdir -p /run/66/tmp
+  - chmod 1777 /run/66/tmp
 
 request:
   stage: request
