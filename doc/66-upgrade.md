@@ -1,5 +1,40 @@
 # Changelog for 66
 
+# In 0.9.1.1
+
+## Overview
+
+A single fix, for a machine whose bootloader hands the kernel a root filesystem
+mounted read-only: the scandir was not created at all, and the boot ended on a
+`sulogin` prompt. Releases `0.9.0.0` and `0.9.1.0` are affected, `0.8.x` is not.
+
+The migration is **automatic**. It stamps the resolve files at the new version and
+completes the live directory, so a system already running does not have to be
+rebooted to get the fix.
+
+## What you must do
+
+Nothing.
+
+## Bug fixes
+
+- **The scandir is created again when `/` is still read-only at boot**:
+
+    Writing a resolve file builds the database in a temporary file before putting
+    it in place, and that temporary was created under `/tmp`. At the moment the
+    scandir is created, `/tmp` is still a plain directory of the root filesystem:
+    the service that mounts a tmpfs over it, like the one that remounts `/`
+    read-write, lives in the very scandir being created. A root mounted read-only
+    left nowhere to write, and the boot stopped on the first service internal to
+    the scandir, which since `0.9.0.0` carries a minimal resolve file read locally
+    by its supervisor.
+
+    The temporary is now built in `/run/66/tmp`, a directory of the live tree
+    created together with the scandir, on the tmpfs 66 mounts itself and which is
+    therefore always writable. Nothing in your declarations changes.
+
+---
+
 # In 0.9.1.0
 
 ## Overview
