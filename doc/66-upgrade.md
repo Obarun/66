@@ -1,5 +1,40 @@
 # Changelog for 66
 
+# In 0.9.1.2
+
+## Overview
+
+A follow-up to `0.9.1.1`, which moved the temporary of a resolve write into
+`/run/66/tmp` and laid that directory down together with the scandir. That holds
+on a machine booted by 66, and nowhere else: where 66 has never booted, an
+installer chroot, a container or a package build, the directory does not exist
+and every command that writes a resolve stops on it. Only `0.9.1.1` is affected.
+
+The migration is **automatic** and stamps the resolve files at the new version.
+
+## What you must do
+
+Nothing.
+
+## Bug fixes
+
+- **A command that writes a resolve no longer needs a booted machine**:
+
+    The temporary directory is created on demand, at the first write that finds
+    it missing. An account that owns nothing under the live directory, which is
+    the case of every regular account since `/run/66` belongs to root, writes its
+    temporaries in a `tmp` directory of its own base instead. A `66 enable` run
+    as a user inside a chroot therefore no longer depends on a root command
+    having passed there first.
+
+## For packagers
+
+The test suite no longer needs `/run/66/tmp` to exist. A build that runs
+`meson test` in a clean environment, on a machine where 66 never booted, passes
+under any account.
+
+---
+
 # In 0.9.1.1
 
 ## Overview
