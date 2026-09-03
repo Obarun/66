@@ -493,9 +493,9 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
     char ownerstr[UID_FMT] ;
     ownerstr[uid_format(ownerstr, getuid())] = 0 ;
 
-    char liveenv[strlen(livedir) + 1 + SS_LIVEENV_LEN + 1 + UID_FMT + 1] ;
+    char liveenv[strlen(livedir) + SS_LIVEENV_LEN + 1 + UID_FMT + 1] ;
 
-    auto_strings(liveenv, livedir, "/", SS_LIVEENV, "/", ownerstr) ;
+    auto_strings(liveenv, livedir, SS_LIVEENV, "/", ownerstr) ;
 
     if (scan_mode(liveenv, S_IFDIR) > 0)
         if (!environ_merge_dir(eram, liveenv))
