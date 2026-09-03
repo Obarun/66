@@ -1,0 +1,81 @@
+# Editorial identity of the documentation site, consumed by obdev/docs-builder.
+#
+# The theme, the mkdocs configuration and the deployment live there, not here.
+# This project only produces its markdown and this manifest.
+#
+# The four fields are required. The name and the version are not here: they come
+# from CI_PROJECT_NAME and CI_COMMIT_TAG, one source, and the name must stay
+# equal to the bucket prefix.
+description: Init and Service manager
+repo_url: https://git.obarun.org/Obarun/66
+repo_name: Obarun/66
+nav:
+- Home: index.md
+- Guides:
+  - Getting started: 66-getting-started.md
+  - Cheatsheet: 66-cheatsheet.md
+  - Dependencies and ordering: 66-dependencies.md
+  - Logging: 66-logging.md
+  - The event system: 66-event.md
+  - Troubleshooting & FAQ: 66-troubleshooting.md
+  - Coming from systemd, OpenRC or runit: 66-migration.md
+  - Where 66 stands among init systems: 66-vs-other-init-systems.md
+  - Running 66 inside a container: 66-container.md
+- 66 commands:
+  - 66 commands: 66.md
+  - boot: 66-boot.md
+  - configure: 66-configure.md
+  - disable: 66-disable.md
+  - emit: 66-emit.md
+  - enable: 66-enable.md
+  - env: 66-env.md
+  - fdholder: 66-fdholder.md
+  - free: 66-free.md
+  - halt: 66-halt.md
+  - hibernate: 66-hibernate.md
+  - log: 66-log.md
+  - parse: 66-parse.md
+  - poweroff: 66-poweroff.md
+  - reboot: 66-reboot.md
+  - reconfigure: 66-reconfigure.md
+  - reload: 66-reload.md
+  - remove: 66-remove.md
+  - resolve: 66-resolve.md
+  - restart: 66-restart.md
+  - rosetta: 66-rosetta.md
+  - runstate: 66-runstate.md
+  - scandir: 66-scandir.md
+  - signal: 66-signal.md
+  - snapshot: 66-snapshot.md
+  - start: 66-start.md
+  - state: 66-state.md
+  - status: 66-status.md
+  - stop: 66-stop.md
+  - suspend: 66-suspend.md
+  - tree: 66-tree.md
+  - upgrade: 66-upgrade.md
+  - version: 66-version.md
+  - wall: 66-wall.md
+- Extra tools:
+  - 66-echo: 66-echo.md
+  - 66-nuke: 66-nuke.md
+  - 66-umountall: 66-umountall.md
+  - execl-envfile: execl-envfile.md
+  - execl-runas: execl-runas.md
+- Internal tools:
+  - 66-supervise: 66-supervise.md
+  - 66-eventd: 66-eventd.md
+  - 66-hpr: 66-hpr.md
+  - 66-shutdownd: 66-shutdownd.md
+  - 66-svctl: 66-svctl.md
+- Reference:
+  - Frontend service file: 66-frontend.md
+  - Instantiated service file: 66-instantiated-service.md
+  - Module services: 66-module.md
+  - Module service usage: 66-module-usage.md
+  - Module service creation: 66-module-creation.md
+  - Service configuration file: 66-service-configuration-file.md
+  - Deeper understanding: 66-deeper.md
+  - Upgrade and Migration process: 66-upgrade-process.md
+  - Standard I/O redirection: 66-standard-io-redirection.md
+  - Identifier interpretation: 66-identifier.md
