@@ -31,4 +31,7 @@ void name_isvalid(char const *name)
 
     if (!strcmp(name, SS_SERVICE "@"))
         log_die(LOG_EXIT_USER, "service@ as service name is a reserved name") ;
+
+    if (!strcmp(name, SS_PROVIDE + 1))
+        log_die(LOG_EXIT_USER, SS_PROVIDE + 1, " as service name is a reserved name") ;
 }

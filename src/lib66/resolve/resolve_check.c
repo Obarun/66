@@ -23,10 +23,10 @@
 
 static int resolve_path(char *path, char *lname, char const *base, char const *name)
 {
-    auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+    if (!service_resolve_provide(lname, name, base))
+        log_warnusys_return(LOG_EXIT_ZERO, "resolve provide alias") ;
 
-    if (!service_resolve_symlink(base, path, lname))
-        log_warnusys_return(LOG_EXIT_ZERO, "resolve symlink path") ;
+    auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", lname) ;
 
     return 1 ;
 }

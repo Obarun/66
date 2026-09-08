@@ -29,7 +29,7 @@ uint32_t service_graph_build_system(service_graph_t *g, ssexec_t *info, uint32_t
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    char const *exclude[1] = { 0 } ;
+    char const *exclude[2] = { SS_PROVIDE + 1, 0 } ;
     char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
 
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;

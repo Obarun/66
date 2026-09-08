@@ -62,7 +62,7 @@ static void doit(strbuf *sa, ssexec_t *info, uint8_t earlier)
     if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
 
-    nservice = service_graph_ncollect(&graph, sa->s, sa->len, info, flag) ;
+    nservice = service_graph_ncollect(&graph, sa->s, sa->len, info, flag, 0) ;
 
     if (!nservice && earlier) {
         service_graph_destroy(&graph) ;

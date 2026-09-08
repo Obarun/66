@@ -32,7 +32,7 @@
 #include <66/sanitize.h>
 #include <66/enum_parser.h>
 
-uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag)
+uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag, strbuf *out)
 {
     log_flow() ;
 
@@ -40,12 +40,12 @@ uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len
     size_t pos = 0 ;
 
     for (; pos < len ; pos += strlen(list + pos) + 1)
-        n += service_graph_collect(g, list + pos, info, flag) ;
+        n += service_graph_collect(g, list + pos, info, flag, out) ;
 
     return n ;
 }
 
-uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *info, uint32_t flag)
+uint32_t service_graph_collect(service_graph_t *g, const char *sv, ssexec_t *info, uint32_t flag, strbuf *out)
 {
     log_flow() ;
 
@@ -56,6 +56,13 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     struct resolve_hash_s *hash = NULL ;
+    char name[SS_MAX_SERVICE_NAME + 1] ;
+
+    if (!service_resolve_provide(name, sv, info->base.s))
+        log_dieu(LOG_EXIT_SYS, "resolve service: ", sv) ;
+
+    if (out && !sbl_add(out, name))
+        log_die_nomem("strbuf") ;
 
     hash = resolve_hash_search(&g->hres, name) ;
 
@@ -132,7 +139,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
             if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+            n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
         }
 
         if (dep->nrequiredby) {
@@ -143,7 +150,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
             if (!sbl_clean_string(&stk, dep->sa.s + dep->requiredby))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+            n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
         }
 
         /**
@@ -164,7 +171,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
             if (!sbl_clean_string(&stk, dep->sa.s + dep->contents))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+            n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
         }
 
         /* a service/signal reactor's From sources are establishment edges: pull
@@ -187,7 +194,7 @@ uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *i
                 if (!sbl_clean_string(&stk, ev->sa.s + ev->from))
                     log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-                n += service_graph_ncollect(g, stk.s, stk.len, info, flag) ;
+                n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
             }
         }
     }

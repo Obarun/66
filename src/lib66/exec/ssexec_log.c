@@ -100,7 +100,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
 {
     _cleanup_strbuf_ strbuf names = STRBUF_ZERO ;
     char solve[info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
-    char const *exclude[1] = { 0 } ;
+    char const *exclude[2] = { SS_PROVIDE + 1, 0 } ;
     log_source_t *src = 0 ;
     size_t n = 0, pos = 0 ;
 

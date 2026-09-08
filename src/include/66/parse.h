@@ -124,7 +124,7 @@ extern int parse_core(resolve_service_t *res, char const *sv, char const *svname
 
 extern void parse_build(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 extern int parse_execute(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
-extern int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep) ;
+extern int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep, char const *service, char const *base) ;
 extern void parse_error(int ierr, resolve_enum_table_t table) ;
 extern void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, char const *prefix, hash_t *hres, ssexec_t *info) ;
 extern void parse_db_migrate(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, ssexec_t *info) ;

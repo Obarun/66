@@ -226,7 +226,7 @@ extern void tree_graph_destroy(tree_graph_t *g) ;
  * If the service does not exist and the `CONDITION_COLLECT_TOPARSE` flag is set,
  * it will attempt to resolve and sanitize it.
  */
-extern uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *info, uint32_t flag) ;
+extern uint32_t service_graph_collect(service_graph_t *g, const char *name, ssexec_t *info, uint32_t flag, strbuf *out) ;
 extern uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *info) ;
 
 /**
@@ -255,7 +255,7 @@ extern uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec
  * @note
  * This function call graph_collect for each service define at @param slist.
  */
-extern uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag) ;
+extern uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag, strbuf *out) ;
 extern uint32_t tree_graph_ncollect(tree_graph_t *g, const char *list, size_t len, ssexec_t *info) ;
 
 /**

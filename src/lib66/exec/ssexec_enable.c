@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -65,6 +66,21 @@ opt_cmd_t const cmd_enable = {
     .fn = &ssexec_enable,
 } ;
 
+static void isalias_already(strbuf *sa, char const *base)
+{
+    size_t pos = 0 ;
+    char owner[SS_MAX_SERVICE_NAME + 1] ;
+
+    FOREACH_SBL(sa, pos) {
+
+        if (!service_resolve_provide(owner, sa->s + pos, base))
+            log_dieu(LOG_EXIT_SYS, "resolve provide alias: ", sa->s + pos) ;
+
+        if (strcmp(owner, sa->s + pos))
+            log_die(LOG_EXIT_USER, "name: ", sa->s + pos, " is currently provided by: ", owner, " -- disable it first with '66 disable ", sa->s + pos, "' command") ;
+    }
+}
+
 int ssexec_enable(int argc, char const *const *argv, void *data)
 {
     ssexec_t *info = data ;
@@ -97,6 +113,8 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
 
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments") ;
+
+    isalias_already(&sa, info->base.s) ;
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, info, flag) ;
 

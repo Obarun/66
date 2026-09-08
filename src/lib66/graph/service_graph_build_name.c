@@ -26,7 +26,7 @@ uint32_t service_graph_build_name(service_graph_t *g, const char *name, ssexec_t
 
     uint32_t n = 0 ;
 
-    n = service_graph_collect(g, name, info, flag) ;
+    n = service_graph_collect(g, name, info, flag, 0) ;
     if (!n)
         return n ;
 

@@ -390,6 +390,7 @@ extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *ha
 extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
 extern void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby) ;
 extern int service_resolve_symlink(char const *base, char *path, char *name) ;
+extern int service_resolve_provide(char *dst, char const *src, char const *base) ;
 
 /* avoid circular dependencies by prototyping the ss_state_t instead
  * of calling the state.h header file*/

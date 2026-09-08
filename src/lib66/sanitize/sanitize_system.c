@@ -60,7 +60,7 @@ void sanitize_system(ssexec_t *info)
     size_t baselen = info->base.len ;
     uid_t log_uid ;
     gid_t log_gid ;
-    char dst[baselen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1] ;
+    char dst[baselen + SS_SYSTEM_LEN + SS_SERVICE_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_PROVIDE_LEN + 1] ;
     auto_strings(dst,info->base.s, SS_SYSTEM) ;
 
     /** base is /var/lib/66 or $HOME/.66*/
@@ -130,6 +130,9 @@ void sanitize_system(ssexec_t *info)
     }
 
     auto_strings(dst, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
+    auto_check(dst) ;
+
+    auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN, SS_PROVIDE) ;
     auto_check(dst) ;
 
     auto_strings(dst + baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN, SS_MASTER) ;

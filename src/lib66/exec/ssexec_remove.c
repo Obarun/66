@@ -132,11 +132,9 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
         return ;
     }
 
-    _alloc_strbuf_(path, SS_MAX_PATH_LEN) ;
     _alloc_sbl_(stk, strlen(dep.sa.s + dep.provide)) ;
-    _alloc_strbuf_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
-    _alloc_strbuf_(lname, SS_MAX_PATH_LEN) ;
-
+    _alloc_strbuf_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_PROVIDE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
+    char owner[SS_MAX_SERVICE_NAME + 1] ;
     if (!sbl_clean_string(&stk, dep.sa.s + dep.provide))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
@@ -145,29 +143,20 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
     FOREACH_SBL(&stk, pos) {
 
         char *name = stk.s + pos ;
-        lnk.len = path.len = 0 ;
+        lnk.len = 0 ;
 
-        if (!auto_strbuf(&lnk, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name))
+        if (!auto_strbuf(&lnk, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", name))
             log_die_nomem("strbuf") ;
 
-        if (!auto_strbuf(&path, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name))
-            log_die_nomem("strbuf") ;
+        if (!service_resolve_provide(owner, name, info->base.s)) {
+            log_warnusys("resolve provide alias: ", name) ;
+            continue ;
+        }
 
-        if (symlink_type(lnk.s) > 0) {
-
-            lname.len = 0 ;
-            if (!auto_strbuf(&lname, name))
-                log_die_nomem("strbuf") ;
-
-            if (!service_resolve_symlink(info->base.s, path.s, lname.s)) {
-                log_warnusys("resolve symlink path: ", lnk.s) ;
-                continue ;
-            }
-
-            if (!strcmp(lname.s, res->sa.s + res->name)) {
-                log_trace("remove provide symlink: ", lnk.s) ;
-                file_tryunlink(lnk.s) ;
-            }
+        /** the entry belongs to whoever created it */
+        if (!strcmp(owner, res->sa.s + res->name)) {
+            log_trace("remove provide symlink: ", lnk.s) ;
+            file_tryunlink(lnk.s) ;
         }
     }
 }

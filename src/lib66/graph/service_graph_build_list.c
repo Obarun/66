@@ -17,21 +17,24 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/graph.h>
+#include <66/service.h>
 
 uint32_t service_graph_build_list(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag)
 {
     log_flow() ;
 
     uint32_t n = 0 ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
-    n = service_graph_ncollect(g, list, len, info, flag) ;
+    n = service_graph_ncollect(g, list, len, info, flag, &sa) ;
     if (!n)
         return n ;
 
-    if (!service_graph_nresolve(g, list, len, flag))
+    if (!service_graph_nresolve(g, sa.s, sa.len, flag))
         return (errno = EINVAL, 0) ;
 
     return n ;
