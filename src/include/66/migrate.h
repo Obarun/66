@@ -32,6 +32,7 @@ extern void migrate_0811() ;
 extern void migrate_0821() ;
 extern void migrate_0822() ;
 extern void migrate_0900() ;
+extern void migrate_0912() ;
 
 extern int migrate_write_frozen_0821(resolve_service_t_0821 *res, char const *base, char const *name) ;
 extern int service_resolve_read_cdb_0821(ocdb *c, resolve_service_t_0821 *res) ;

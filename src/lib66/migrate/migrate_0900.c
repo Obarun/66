@@ -97,7 +97,7 @@ void migrate_0900(void)
     log_flow() ;
 
     size_t pos = 0 ;
-    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, 0 } ;
+    char const *exclude[4] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_PROVIDE + 1, 0 } ;
     ssexec_t info = SSEXEC_ZERO ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
