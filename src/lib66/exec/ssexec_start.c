@@ -27,31 +27,27 @@
 #include <66/sanitize.h>
 #include <66/config.h>
 
-static void ensure_no_conflict(service_graph_t *graph, int argc, char const *const *argv)
+static void ensure_no_conflict(service_graph_t *graph, char const *name)
 {
-    int i = 0 ;
-    for (; i < argc ; i++) {
+    struct resolve_hash_s *hash = resolve_hash_search(&graph->hres, name) ;
 
-        struct resolve_hash_s *hash = resolve_hash_search(&graph->hres, argv[i]) ;
+    if (hash == NULL)
+        log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
 
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", argv[i], " not available -- please make a bug report") ;
+    if (hash->dependencies.nconflict) {
 
-        if (hash->dependencies.nconflict) {
+        _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
+        size_t pos = 0 ;
+        int r ;
 
-            _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
-            size_t pos = 0 ;
-            int r ;
+        if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.conflict))
+            log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-            if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.conflict))
-                log_dieu(LOG_EXIT_SYS, "clean string") ;
+        FOREACH_SBL(&stk, pos) {
 
-            FOREACH_SBL(&stk, pos) {
-
-                r = svc_is_up(stk.s + pos) ;
-                if (r > 0)
-                    log_die(LOG_EXIT_SYS, "conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please stop the '", stk.s + pos, "' service first.") ;
-            }
+            r = svc_is_up(stk.s + pos) ;
+            if (r > 0)
+                log_die(LOG_EXIT_SYS, "conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please stop the '", stk.s + pos, "' service first.") ;
         }
     }
 }
@@ -129,17 +125,16 @@ int ssexec_start(int argc, char const *const *argv, void *data)
     if (!graph.g.nsort)
         log_warn_return(e,"no services found to handle") ;
 
-    ensure_no_conflict(&graph, argc, argv) ;
+    char const *nargv[nservice + 1] ;
+    nservice = 0 ;
+    HASH_FOREACH(&graph.g.vertexes, c, tmp) {
+        ensure_no_conflict(&graph, c->name) ;
+        nargv[nservice++] = c->name ;
+    }
+    nargv[nservice] = 0 ;
 
     /** initiate services at the corresponding scandir */
     sanitize_init(&graph, flag, info->who) ;
-
-    char const *nargv[nservice + 1] ;
-    nservice = 0 ;
-    HASH_FOREACH(&graph.g.vertexes, c, tmp)
-        nargv[nservice++] = c->name ;
-
-    nargv[nservice] = 0 ;
 
     uint8_t target = info->target ? info->target : SVC_TARGET_READY ;
 
