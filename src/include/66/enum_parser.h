@@ -71,7 +71,6 @@ typedef enum resolve_parser_enum_section_e resolve_parser_enum_section_t ;
     macro(DEPENDS,          "Depends",          E_PARSER_EXPECT_BRACKET), \
     macro(REQUIREDBY,       "RequiredBy",       E_PARSER_EXPECT_BRACKET), \
     macro(OPTSDEPS,         "OptsDepends",      E_PARSER_EXPECT_BRACKET), \
-    macro(CONTENTS,         "Contents",         E_PARSER_EXPECT_BRACKET), \
     macro(OPTIONS,          "Options",          E_PARSER_EXPECT_BRACKET), \
     macro(NOTIFY,           "Notify",           E_PARSER_EXPECT_UINT), \
     macro(USER,             "User",             E_PARSER_EXPECT_BRACKET), \
