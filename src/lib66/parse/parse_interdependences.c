@@ -28,6 +28,7 @@
 #include <66/utils.h>
 #include <66/constants.h>
 #include <66/instance.h>
+#include <66/state.h>
 #include <66/module.h>
 
 int parse_interdependences(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
@@ -98,7 +99,12 @@ int parse_interdependences(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                 dctx.inns = 0 ;
                 dctx.intree = 0 ;
             }
-            parse_frontend(sa.s, dctx) ;
+
+            /** the name is validated on every parse, but a dependency is only
+             * pulled in when the service is parsed for the first time: a forced
+             * parse must not walk the whole chain down and rewrite it. */
+            if (ctx->isparsed == STATE_FLAGS_FALSE)
+                parse_frontend(sa.s, dctx) ;
         }
 
     } else

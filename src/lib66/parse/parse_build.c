@@ -60,12 +60,11 @@ static void build_supervised(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
     if (!parse_execute(c, ctx))
         log_die(LOG_EXIT_SYS, "parse execute of service: ", name) ;
 
-    if (!parse_dependencies(ctx->st, &c->dependencies))
+    if (!parse_dependencies(ctx->st, &c->dependencies, name, ctx->info->base.s))
         log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
-    if (ctx->isparsed == STATE_FLAGS_FALSE)
-        if (!parse_interdependences(c, ctx))
-            log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
+    if (!parse_interdependences(c, ctx))
+        log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
     if (!parse_io(c, ctx))
         log_die(LOG_EXIT_SYS, "parse io of service: ", name) ;
@@ -122,12 +121,11 @@ static void parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
     if (!parse_environ(c, ctx))
         log_die(LOG_EXIT_SYS, "parse environment of service: ", name) ;
 
-    if (!parse_dependencies(ctx->st, &c->dependencies))
+    if (!parse_dependencies(ctx->st, &c->dependencies, name, ctx->info->base.s))
         log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
-    if (ctx->isparsed == STATE_FLAGS_FALSE)
-        if (!parse_interdependences(c, ctx))
-            log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
+    if (!parse_interdependences(c, ctx))
+        log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
     if (!parse_regex(c, ctx))
         log_die(LOG_EXIT_SYS, "parse regex of service: ", name) ;
