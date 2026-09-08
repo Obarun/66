@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <stddef.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -30,20 +31,21 @@ int service_resolve_symlink(char const *base, char *path, char *name)
 
     ssize_t len = readlink(path, l, SS_MAX_PATH_LEN) ;
 
-    if (len < 0)
+    if (len < 1)
         return 1 ;
 
-    if ((long unsigned int)len >= SS_MAX_PATH_LEN)
+    if ((size_t)len >= SS_MAX_PATH_LEN)
         return (errno = EINVAL, 0) ;
 
     l[len] = 0 ;
 
-    if (l[0] != '/') {
-        auto_strings(ln, l) ;
-        auto_strings(l, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", ln) ;
-    }
+    if (l[0] == '/')
+        return 1 ;
 
-    if (len > 0 && symlink_type(l) > 0) {
+    auto_strings(ln, l) ;
+    auto_strings(l, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", ln) ;
+
+    if (symlink_type(l) > 0) {
 
         auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", ln) ;
 
