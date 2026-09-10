@@ -81,6 +81,16 @@ under any of these alternate names, like symbolic links.
 Provide = ( network networking )
 ```
 
+A name has at most one claimant at a time. `66 enable` takes the names of the
+service it activates, and refuses when another service already holds one of
+them, whether that service is a provider or the service bearing the name
+itself. `66 disable` gives the names back. Every other command follows the
+alias: `66 status network` answers for the service providing it.
+
+While a name is provided, the service bearing that name is reached through its
+provider, so `66 remove network` acts on the provider, not on a service called
+`network`. A `Provide` naming the service itself is dropped with a warning.
+
 A service in any bracketed list can be **commented out** with a leading `#`
 without removing the line:
 

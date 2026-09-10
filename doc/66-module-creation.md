@@ -255,9 +255,6 @@ ignored** (no error), because a module runs no process of its own.
 - **[`[Regex]`](66-frontend.html#section-regex)** — `Configure`, `InFiles`, `Directories`,
   `Files`, as in [Step 3](#step-3-the-regex-transformations).
 
-`contents` is **not** an authoring key: `66` computes it from the services the module
-expanded to. A `Contents = …` written by hand is ignored and overwritten.
-
 ### Parse order
 
 For `66 parse webapp@blog`, `66`:

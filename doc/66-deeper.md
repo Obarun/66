@@ -34,6 +34,9 @@ This directory stores trees and services configuration files. You should see thi
 └── system
     ├── .resolve
     │   ├── service
+    │   │    ├── .provide
+    │   │    │    ├── <name> -> ../<service>
+    │   │    │    └── <name> -> ../<service>
     │   │    ├── <service> -> %%system_dir%%/system/service/svc/<service>
     │   │    └── <service> -> %%system_dir%%/system/service/svc/<service>
     │   ├── Master
@@ -84,7 +87,9 @@ The [live directory](#livedir) is not duplicated per user: it is shared, and the
 
 The `%%system_dir%%/system/.resolve` directory contains resolve files for trees. Each tree have its own resolve file, while the [Master](#master-resolve-file) resolve file contains information about all trees available on the system.
 
-The `%%system_dir%%/system/.resolve/service` directory consists of symlinks that point to resolve files for each service. These symlinks enable `66` to quickly access the resolve files for individual services, facilitating the construction of the complete graph of services interdependences.
+The `%%system_dir%%/system/.resolve/service` directory consists of symlinks that point to resolve files for each service. These symlinks enable `66` to quickly access the resolve files for individual services, facilitating the construction of the complete graph of services interdependences. It holds service identities only, so reading it gives the exact list of the services installed on the system.
+
+The `%%system_dir%%/system/.resolve/service/.provide` directory holds the names declared by the [Provide](66-frontend.html#provide) key. Each entry is a relative symlink to the service answering to that name, written as `../<service>`, which keeps a provided name out of the service list.
 
 The `%%system_dir%%/system/service/svc` directory includes service directories, each housing the results of the [parse](66-parse.html) process, as well as internal directories and files essential for `66`.
 

@@ -60,11 +60,12 @@
 
 # Parsed services: every other command either dies on a service that is not
 # parsed, or silently ignores it. resolve_check() builds
-# <base>/system/.resolve/service/<name> and resolves it through
-# service_resolve_symlink(), so an entry that resolves there is exactly what
-# "parsed" means -- no need to run 66 to find out. The entries are symlinks to
-# the service's resolve directory, hence the symlink-following qualifiers: a
-# dangling one would not resolve for 66 either.
+# <base>/system/.resolve/service/<name>, so an entry that resolves there is
+# exactly what "parsed" means -- no need to run 66 to find out. The entries are
+# symlinks to the service directory, hence the symlink-following qualifiers: a
+# dangling one would not resolve for 66 either. The provided names live in the
+# .provide subdirectory, which the glob leaves out on its own: a name is not a
+# service and must not be offered as one.
 (( $+functions[_66_parsed_services] )) || _66_parsed_services() {
     local -aU names
     local expl base=$(_66_basedir)
