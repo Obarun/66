@@ -22,7 +22,6 @@
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/directory.h>
-#include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
 #include <oblibs/lexer.h>
@@ -62,7 +61,6 @@ enum enum_tree_opts_e
     TREE_OPTS_NOSEED,
     TREE_OPTS_ALLOW,
     TREE_OPTS_DENY,
-    TREE_OPTS_CLONE,
     TREE_OPTS_ENDOFKEY
 } ;
 typedef enum enum_tree_opts_e enum_tree_opts_t, *enum_tree_opts_t_ref ;
@@ -76,7 +74,6 @@ tree_opts_map_t const tree_opts_table[] =
     { .str = "noseed",      .id = TREE_OPTS_NOSEED },
     { .str = "allow",       .id = TREE_OPTS_ALLOW },
     { .str = "deny",        .id = TREE_OPTS_DENY },
-    { .str = "clone",       .id = TREE_OPTS_CLONE },
     { .str = 0 }
 } ;
 
@@ -91,13 +88,11 @@ struct tree_what_s
     uint8_t enable ;
     uint8_t disable ;
     uint8_t remove ;
-    uint8_t clone ;
     uint8_t groups ;
     uint8_t current ;
     uint8_t noseed ;
 
     char gr[6] ;
-    char sclone[100] ;
     uid_t auids[256] ;
     uid_t duids[256] ;
     uint8_t ndepends ; // only used if the term none is passed as dependencies
@@ -105,7 +100,7 @@ struct tree_what_s
 
     uint8_t nopts ;
 } ;
-#define TREE_WHAT_ZERO { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, { 0 }, 1, 1, 0 }
+#define TREE_WHAT_ZERO { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, { 0 }, { 0 }, { 0 }, 1, 1, 0 }
 
 tree_what_t what_init(void)
 {
@@ -387,15 +382,6 @@ static void tree_parse_options(tree_graph_t *g, char const *str, ssexec_t *info,
 
                         tree_parse_uid_list(what->duids, val) ;
                         what->deny = 1 ;
-                        break ;
-
-                   case TREE_OPTS_CLONE:
-
-                        if (strlen(val) > 99)
-                            log_die(LOG_EXIT_USER, "clone name cannot exceed 100 characters") ;
-
-                        auto_strings(what->sclone, val) ;
-                        what->clone = 1 ;
                         break ;
 
                     default :
@@ -1007,79 +993,6 @@ void tree_current(ssexec_t *info)
 
 }
 
-void tree_clone(char const *clone, ssexec_t *info)
-{
-    log_flow() ;
-
-    struct stat st ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
-
-    size_t syslen = info->base.len + SS_SYSTEM_LEN, clonelen = strlen(clone) ;
-
-    if (resolve_check(wres, info->base.s, clone))
-        log_die(LOG_EXIT_USER, clone, ": already exist") ;
-
-    /** copy tree resolve file */
-    char src[syslen + SS_RESOLVE_LEN + 1 + info->treename.len + 1] ;
-    char dst[syslen + SS_RESOLVE_LEN + 1 + clonelen + 1] ;
-    auto_strings(src, info->base.s, SS_SYSTEM, SS_RESOLVE, "/", info->treename.s) ;
-    auto_strings(dst, info->base.s, SS_SYSTEM, SS_RESOLVE, "/", clone) ;
-
-    if (stat(src, &st) < 0)
-        log_dieusys(LOG_EXIT_SYS, "stat: ", src) ;
-
-    if (!file_copy(src, dst, st.st_mode))
-        log_dieusys(LOG_EXIT_SYS, "copy: ", src, " to: ", dst) ;
-
-    if (lchown(dst, st.st_uid, st.st_gid) < 0)
-        log_dieusys(LOG_EXIT_SYS, "chown: ", dst) ;
-
-    if (resolve_read(wres, info->base.s, clone) <= 0)
-        log_dieu(LOG_EXIT_SYS, "read resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_INIT ;
-
-    if (!resolve_modify_field_by(wres, table, 0))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_SUPERVISED ;
-
-    if (!resolve_modify_field_by(wres, table, 0))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
-
-    if (!resolve_modify_field_by(wres, table, ""))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_NCONTENTS ;
-
-    if (!resolve_modify_field_by(wres, table, 0))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_ENABLED ;
-
-    if (!resolve_modify_field_by(wres, table, 0))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    table.u.tree.id = E_RESOLVE_TREE_NAME ;
-
-    if (!resolve_modify_field_by(wres, table, clone))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", clone) ;
-
-    if (!resolve_write(wres, info->base.s, clone))
-        log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", clone) ;
-
-    resolve_free(wres) ;
-
-    /** tree Master resolve file */
-    tree_master_modify_contents(info->base.s) ;
-
-    log_info("Cloned successfully: ", info->treename.s, " to: ", clone) ;
-}
-
 int on_tree_admin(int id, char const *arg, void *data)
 {
     (void)data ;
@@ -1287,9 +1200,6 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
 
     if (what.current)
         tree_current(info) ;
-
-    if (what.clone)
-        tree_clone(what.sclone, info) ;
 
     freed:
         info->treename.len = 0 ;

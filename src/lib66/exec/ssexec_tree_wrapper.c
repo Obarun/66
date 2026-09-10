@@ -100,7 +100,6 @@ static char const tree_admin_epilog[] =
     "options for -o (colon-separated):\n"
     "    enable               enable the tree\n"
     "    noseed               do not apply a seed file\n"
-    "    clone                clone an existing tree\n"
     "    depends=tree,...     trees this one depends on (or none)\n"
     "    requiredby=tree,...  trees required by this one (or none)\n"
     "    groups=group,...     boot, admin, user or none\n"

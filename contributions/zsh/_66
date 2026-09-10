@@ -179,7 +179,6 @@
     _values -s : 'tree option' \
         'enable[enable the tree]' \
         'noseed[do not apply a seed file]' \
-        'clone[clone an existing tree]:tree:_66_trees' \
         'depends[trees this one depends on]:tree,...:_66_trees' \
         'requiredby[trees required by this one]:tree,...:_66_trees' \
         'groups[boot, admin, user or none]:group:_66_tree_groups' \

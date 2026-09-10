@@ -118,7 +118,6 @@ valid fields for `-o` options are:
    - **groups=**: add *tree* to the specified groups. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
    - **allow=**: comma separated list of account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
    - **deny=**: comma separated list of account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
-   - **clone=**: make a clone of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exist in the system.
    - **noseed**: do not use seed file to build the *tree*. Even if a seed file exists, ignore it and create tree only with options passed or [basic creation configuration](#basic-creation-configuration).
    - **enable**: activate the tree at the next boot.
 
@@ -130,10 +129,10 @@ Creates a tree named `treefoo`
 66 tree create treefoo
 ```
 
-Creates, configures and clones a *tree* named `treefoo` where the clone of `treefoo` is named `treefoo2`
+Creates and configures a *tree* named `treefoo`
 
 ```
-66 tree create -o depends=treebar,treebaz:groups=admin:deny=none:allow=root:clone=treefoo2 treefoo
+66 tree create -o depends=treebar,treebaz:groups=admin:deny=none:allow=root treefoo
 ```
 
 ### Admin
@@ -163,7 +162,6 @@ valid fields for `-o` options are:
    - **groups=** *group*: add *tree* to the specified *group*. Accepted group are `boot`, `admin`, `user` and `none` —see [Groups behavior](#groups-behavior).
    - **allow=** *user*: comma separated list of *user* account to allow at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*. Any user not explicitly allowed is automatically denied for configuring the given *tree*.
    - **deny=** *user*: comma separated list of *user* account to deny at *tree*. Account must be valid on the system. **name account is expected** not the corresponding `UID` of the account. The term `user` is also accepted to significate that all user neither root of the system can use *tree*.
-   - **clone=** *name*: make a clone *name* of *tree*. This create an exact copy of the configuration of the *tree*, with the exception that no services are associated with the cloned *tree*. The name of the clone **must not** already exist in the system.
 
 #### Usage examples
 
