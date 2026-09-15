@@ -52,7 +52,7 @@ static int symlink_provide_reclaim(char const *base, char const *name, char cons
     /** a service bearing that name holds it as long as it is enabled */
     if (resolve_read(wres, base, name) > 0 && strcmp(res.sa.s + res.name, service) && res.enabled) {
         resolve_free(wres) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "a service named: ", name, " is enabled -- disable it first with '66 disable ", name, "' command") ;
+        log_warn_return(LOG_EXIT_ZERO, "a service named: ", name, " is already enabled -- disable it first with '66 disable ", name, "' command") ;
     }
 
     resolve_free(wres) ;
