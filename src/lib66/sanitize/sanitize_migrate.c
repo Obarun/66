@@ -172,6 +172,9 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
 
     uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
 
+    if (state < VERSION_0920)
+        migrate_0912_provide_symlink() ;
+
     while (state < VERSION_ENDOFKEY) {
 
         state = migrate_state[state][current] ;
@@ -264,7 +267,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
 
             case VERSION_0920:
                 migrate_create_snap(info, oversion) ;
-                migrate_0912() ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE))

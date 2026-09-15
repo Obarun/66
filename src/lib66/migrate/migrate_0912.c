@@ -29,7 +29,7 @@
 #include <66/ssexec.h>
 #include <66/utils.h>
 
-void migrate_0912(void)
+void migrate_0912_provide_symlink(void)
 {
     log_flow() ;
 
