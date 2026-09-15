@@ -57,7 +57,7 @@
 #define DOTSUFFIX ":XXXXXX"
 #define DOTSUFFIXLEN (sizeof(DOTSUFFIX) - 1)
 #define SHUTDOWND_FIFO "fifo"
-static char const *live = 0 ;
+static char const *live = SS_LIVE ;
 static int inns = 0 ;
 static int nologger = 0 ;
 
@@ -71,7 +71,6 @@ typedef struct shutdownd_ctx_s
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "path",         .help = "live directory" },
     { .id = 'g',         .shortname = 'g', .longname = "grace-time",.arg = OPT_REQUIRED, .argname = "milliseconds", .help = "grace time between the SIGTERM and the SIGKILL" },
     { .id = 'B',         .shortname = 'B', .longname = "container", .arg = OPT_NONE,                                .help = "the system is running inside a container" },
     { .id = 'c',         .shortname = 'c', .longname = "no-logger", .arg = OPT_NONE,                                .help = "the catch-all logger do not exist" },
@@ -107,11 +106,10 @@ static inline void stop_trees (void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (!auto_strbuf(&info.live, live) || set_livedir(&info.live) <= 0)
+    if (!auto_strbuf(&info.live, live))
         log_dieusys(LOG_EXIT_SYS, "set live directory: ", live) ;
 
-    if (!strbuf_copy(&info.scandir, &info.live) || !strbuf_uncounted(&info.scandir)
-        || set_livescan(&info.scandir, info.owner) <= 0)
+    if (!set_livescan(&info.scandir, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set scandir directory") ;
 
     tree_send(2, 0, 0, 0, &info) ; // 2 = free, master (every enabled tree)
@@ -173,8 +171,8 @@ static inline void prepare_shutdown (istream *b, sse_watcher_t *timer, unsigned 
     if (u && u <= 300000)
         *grace_time = u ;
 
-    char eventddir[strlen(live) + 1 + SS_SCANDIR_LEN + 3 + SS_EVENTD_LEN + 1] ;
-    auto_strings(eventddir, live, "/", SS_SCANDIR, "/0/", SS_EVENTD) ;
+    char eventddir[strlen(live) + SS_SCANDIR_LEN + 3 + SS_EVENTD_LEN + 1] ;
+    auto_strings(eventddir, live, SS_SCANDIR, "/0/", SS_EVENTD) ;
 
     if (!svcd_notify(eventddir, 'e', STATUS_WHO_SHUTDOWN, "shutdown.begin"))
         log_warnusys("emit shutdown event") ;
@@ -260,9 +258,7 @@ static inline void prepare_stage4 (char what)
             SS_LIBEXECPREFIX "66-svctl -DxH -- ")
             || !ostream_puts(&b,live)
             || !ostream_puts(&b,SS_BOOT_LOG " }\n  "))
-            || !ostream_puts(&b, SS_BINPREFIX "66 -l ")
-            || !ostream_puts(&b, live)
-            || !ostream_puts(&b, " scandir abort\n}")
+            || !ostream_puts(&b, SS_BINPREFIX "66 scandir abort\n}")
             || !ostream_putflush(&b, "\n", 1))
             log_dieusys(LOG_EXIT_SYS, "write to ", STAGE4_FILE ".new") ;
     }
@@ -382,7 +378,6 @@ int main (int argc, char const *const *argv)
             switch (o)
             {
                 case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
-                case 'l' : live = st.arg ; break ;
                 case 'g' :
                     if (!u32_scan_strict(st.arg, &grace_time))
                         return opt_emit_usage(cmd.name, &cmd) ;
@@ -394,8 +389,6 @@ int main (int argc, char const *const *argv)
         }
         argc -= st.ind ; argv += st.ind ;
     }
-    if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
-    else live = SS_LIVE ;
     if (grace_time > 300000) grace_time = 300000 ;
 
     /* if we're in stage 4, run it immediately; otherwise fall through to the daemon */

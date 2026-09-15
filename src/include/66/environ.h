@@ -30,7 +30,7 @@ extern int env_prepare_for_write(strbuf *dst, strbuf *contents, resolve_service_
 extern int env_get_destination(strbuf *sa, resolve_service_addon_environ_t *e) ;
 
 /** runtime environment */
-extern void env_runtime_setdir(strbuf *dir, strbuf *live, uid_t owner) ;
+extern void env_runtime_setdir(strbuf *dir, uid_t owner) ;
 extern int env_runtime_key_isvalid(char const *key) ;
 extern int env_runtime_publish(char const *dir, char const *key, char const *value) ;
 extern int env_runtime_withdraw(char const *dir, char const *key) ;

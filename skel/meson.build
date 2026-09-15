@@ -39,7 +39,6 @@ foreach skel_file : skel_files
         'sed',
         '-e', 's|@BINDIR@|' + BINDIR + '|g',
         '-e', 's|@EXECLINE_SHEBANGPREFIX@|' + get_option('shebangdir') + '|g',
-        '-e', 's|@LIVEDIR@|' + get_option('livedir') + '|g',
         '-e', 's|@SKEL@|' + get_option('skeleton-dir') + '|g',
         '@INPUT@'
       ],
@@ -58,7 +57,6 @@ foreach skel_file : skel_files
         'sed',
         '-e', 's|@BINDIR@|' + BINDIR + '|g',
         '-e', 's|@EXECLINE_SHEBANGPREFIX@|' + get_option('shebangdir') + '|g',
-        '-e', 's|@LIVEDIR@|' + get_option('livedir') + '|g',
         '-e', 's|@SKEL@|' + get_option('skeleton-dir') + '|g',
         '@INPUT@'
       ],

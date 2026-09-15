@@ -33,7 +33,6 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
     dest->ownerlen = src->ownerlen ;
     dest->timeout = src->timeout ;
     dest->opt_verbo = src->opt_verbo ;
-    dest->opt_live = src->opt_live ;
     dest->opt_timeout = src->opt_timeout ;
     dest->opt_color = src->opt_color ;
     dest->skip_opt_tree = src->skip_opt_tree ;

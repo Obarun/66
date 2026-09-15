@@ -182,7 +182,7 @@ static int shutdown_run(int argc, char const *const *argv, void *data)
     /* -f/-F: sync and stop the hardware right now, through 66-hpr */
     if (force) {
 
-        unsigned int nargc = 5 + (force > 1 ? 1 : 0) + (nowall ? 1 : 0) ;
+        unsigned int nargc = 4 + (force > 1 ? 1 : 0) + (nowall ? 1 : 0) ;
         char const *newargv[nargc] ;
         unsigned int m = 0 ;
         newargv[m++] = SS_BINPREFIX "66-hpr" ;
@@ -192,8 +192,6 @@ static int shutdown_run(int argc, char const *const *argv, void *data)
         if (nowall)
             newargv[m++] = "-W" ;
         newargv[m++] = command ;
-        newargv[m++] = "-l" ;
-        newargv[m++] = info->live.s ;
         newargv[m] = 0 ;
 
         exec_path_die(newargv[0], newargv, (char const *const *) environ) ;

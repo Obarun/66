@@ -60,7 +60,7 @@ static char const *cver = 0 ;
 /* init.conf / cmdline overridable values, pre-seeded with their default so they
  * are never empty even when the key is absent from the configuration */
 static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
-static char live[SS_MAX_PATH_LEN + 1] = SS_LIVE ;
+static char const *live = SS_LIVE ;
 static char tree[SS_MAX_PATH_LEN + 1] = "" ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
@@ -175,7 +175,6 @@ struct conf_entry_s {
     char const *key ;
     conf_type_e type ;
     void *target ;      // unsigned int* (CONF_UINT) | buffer char* (CONF_STR)
-    uint8_t absolute ;  // require an absolute path
 } ;
 
 static void parse_conf(const char *conf)
@@ -183,13 +182,12 @@ static void parse_conf(const char *conf)
     log_flow() ;
 
     static conf_entry_t const conf_table[] = {
-        { "VERBOSITY",        CONF_UINT, &VERBOSITY,       0 },
-        { "PATH",             CONF_STR,  path,             0 },
-        { "LIVE",             CONF_STR,  live,             1 },
-        { "TREE",             CONF_STR,  tree,             0 },
-        { "UMASK",            CONF_UINT, &mask,            0 },
-        { "CATCHLOG",         CONF_UINT, &catch_log,       0 },
-        { 0, 0, 0, 0 }
+        { "VERBOSITY",        CONF_UINT, &VERBOSITY },
+        { "PATH",             CONF_STR,  path },
+        { "TREE",             CONF_STR,  tree },
+        { "UMASK",            CONF_UINT, &mask },
+        { "CATCHLOG",         CONF_UINT, &catch_log },
+        { 0, 0, 0 }
     } ;
 
     _cleanup_strbuf_ strbuf kernel = STRBUF_ZERO ;
@@ -229,9 +227,6 @@ static void parse_conf(const char *conf)
         } else {
 
             auto_strings(e->target, val.s) ;
-
-            if (e->absolute && *(char const *)e->target != '/')
-                sulogin("must be an absolute path: ", e->target) ;
         }
     }
 }
@@ -360,19 +355,6 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
             sulogin("copy stderr to stdout","") ;
     }
 
-    info->live.len = 0 ;
-    if (!auto_strbuf(&info->live, live) || set_livedir(&info->live) <= 0) {
-        log_warnusys("set live directory: ", live) ;
-        _exit(LOG_EXIT_SYS) ;
-    }
-
-    info->scandir.len = 0 ;
-    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_uncounted(&info->scandir)
-        || set_livescan(&info->scandir, info->owner) <= 0) {
-        log_warnusys("set scandir directory: ", info->live.s) ;
-        _exit(LOG_EXIT_SYS) ;
-    }
-
     size_t modn = sbl_count(env), elen = environ_length((char const *const *)environ) ;
     char const *merged[elen + modn + 1] ;
     environ_merge(merged, elen + modn + 1, (char const *const *)environ, elen, env->s, env->len) ;
@@ -429,14 +411,12 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
     pid_t pid ;
     int wstat ;
-    int m = 7 + len, i = 0, n = 0 ;
+    int m = 5 + len, i = 0, n = 0 ;
     char const *newargv[m] ;
 
     newargv[n++] = "66" ;
     newargv[n++] = "-v" ;
     newargv[n++] = cver ;
-    newargv[n++] = "-l" ;
-    newargv[n++] = live ;
     newargv[n++] = prog ;
 
     for (;i<len;i++)
@@ -565,8 +545,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     int ttyfd = catch_log ? 2 : 1 ; // the terminal is on stderr (logger) or stdout (no logger)
     bannerlen = strlen(banner) ;
     livelen = strlen(live) ;
-    char tfifo[livelen + 1 + SS_BOOT_LOGFIFO_LEN + 1] ;
-    auto_strings(tfifo, live, "/", SS_BOOT_LOGFIFO) ;
+    char tfifo[livelen + SS_BOOT_LOGFIFO_LEN + 1] ;
+    auto_strings(tfifo, live, SS_BOOT_LOGFIFO) ;
     fifo = tfifo ;
 
     // outlives the fork: run_stage2 writes it on a container boot failure
@@ -714,7 +694,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
     if (catch_log)
     {
-        log_info("Starts boot logger at: ",live,"/log/0") ;
+        log_info("Starts boot logger at: ",live,SS_LOG,"/0") ;
         int fdr = io_open(fifo, O_RDONLY|O_NONBLOCK) ;
         if (fdr == -1)
             sulogin("open fifo: ",fifo) ;
@@ -745,11 +725,9 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         char fmtfd[2 + U32_FMT] = "-" ;
 
         size_t m = 0 ;
-        char const *newargv[8] ;
+        char const *newargv[6] ;
         newargv[m++] = "66" ;
         newargv[m++] = "-v0" ;
-        newargv[m++] = "-l" ;
-        newargv[m++] = live ;
         newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
         if (!catch_log)

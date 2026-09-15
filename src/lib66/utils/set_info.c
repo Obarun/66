@@ -13,8 +13,10 @@
  */
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 
+#include <66/config.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
 
@@ -23,26 +25,16 @@ void set_info(ssexec_t *info)
 {
     log_flow() ;
 
-    int r ;
-
     if (!info->skip_opt_tree)
         set_treeinfo(info) ;
 
-    r = set_livedir(&info->live) ;
-    if (!r)
-        log_die_nomem("strbuf") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "live: ", info->live.s, " must be an absolute path") ;
+    info->live.len = 0 ;
 
-    if (!strbuf_copy(&info->scandir, &info->live) || !strbuf_uncounted(&info->scandir))
+    if (!auto_strbuf(&info->live, SS_LIVE))
         log_die_nomem("strbuf") ;
 
-
-    r = set_livescan(&info->scandir, info->owner) ;
-    if (!r)
+    if (!set_livescan(&info->scandir, info->owner))
         log_die_nomem("strbuf") ;
-    if(r < 0)
-        log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " must be an absolute path") ;
 
     if (!set_environment(&info->environment, info->owner))
         log_dieusys(LOG_EXIT_ZERO, "set environment") ;

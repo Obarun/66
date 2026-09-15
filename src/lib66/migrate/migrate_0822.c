@@ -759,7 +759,7 @@ static void migrate_scandir_notification(char const *dir)
  * its own binary reads. So run the script when it is there -- exactly what the
  * 0.8.2.2 binary did on startup -- and fall back to the daemon otherwise. The
  * next boot writes a plain run file: this one only has to survive until then. */
-static void migrate_scandir_shutdownd(char const *live, char const *dir, unsigned int container, unsigned int catch_log)
+static void migrate_scandir_shutdownd(char const *dir, unsigned int container, unsigned int catch_log)
 {
     log_flow() ;
 
@@ -768,7 +768,7 @@ static void migrate_scandir_shutdownd(char const *live, char const *dir, unsigne
     if (!auto_strbuf(&b,
         "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
         SS_EXECLINE_BINPREFIX "foreground { " SS_EXECLINE_BINPREFIX "tryexec { ./stage4 } }\n" \
-        SS_LIBEXECPREFIX "66-shutdownd -l ", live, " -g 3000")
+        SS_LIBEXECPREFIX "66-shutdownd -g 3000")
         || (container && !auto_strbuf(&b, " -B"))
         || (!catch_log && !auto_strbuf(&b, " -c"))
         || !auto_strbuf(&b, "\n"))
@@ -879,7 +879,7 @@ static void migrate_scandir_0822(void)
             auto_strings(shut, scandir, "/", "66-shutdownd") ;
 
             if (!access(shut, F_OK))
-                migrate_scandir_shutdownd(live, shut, container, catch_log) ;
+                migrate_scandir_shutdownd(shut, container, catch_log) ;
         }
 
         if (catch_log) {

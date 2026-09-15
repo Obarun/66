@@ -34,7 +34,7 @@ int ssexec_env_set(int argc, char const *const *argv, void *data)
 
     _cleanup_strbuf_ strbuf dir = STRBUF_ZERO ;
 
-    env_runtime_setdir(&dir, &info->live, info->owner) ;
+    env_runtime_setdir(&dir, info->owner) ;
 
     for (int pos = 0 ; pos < argc ; pos++) {
 

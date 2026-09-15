@@ -16,7 +16,7 @@ description: 'Absolute path prefix for external execline binaries used in genera
 option('livedir',
 type: 'string',
 value: '/run/66',
-description: 'Default live directory')
+description: 'Absolute path to the live directory, the only source there is')
 
 option('max-service',
 type: 'integer',

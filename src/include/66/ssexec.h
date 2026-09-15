@@ -41,7 +41,6 @@ struct ssexec_s
     uint64_t timeout ;
     // argument passed or not at commandline 0->no,1->yes
     uint8_t opt_verbo ;
-    uint8_t opt_live ;
     uint8_t opt_tree ;
     uint8_t opt_timeout ;
     uint8_t opt_color ;
@@ -63,7 +62,6 @@ struct ssexec_s
                         .ownerlen = 0, \
                         .timeout = 0, \
                         .opt_verbo = 0, \
-                        .opt_live = 0, \
                         .opt_tree = 0, \
                         .opt_timeout = 0, \
                         .opt_color = 0, \

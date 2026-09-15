@@ -26,7 +26,7 @@ if name_length > max_tree_name_size
 endif
 
 # Validate path lengths
-foreach path : [skeleton_dir, system_dir, system_log_dir, system_service_dir, system_script_dir, system_seed_dir,
+foreach path : [livedir, skeleton_dir, system_dir, system_log_dir, system_service_dir, system_script_dir, system_seed_dir,
                 sysadmin_service_dir, sysadmin_service_conf_dir, sysadmin_seed_dir, sysadmin_environment_dir,
                 user_dir, user_log_dir, user_service_dir, user_service_conf_dir, user_script_dir, user_seed_dir, user_environment_dir]
   path_length = run_command('sh', '-c', 'printf "%s" "${#1}"', path, check: true).stdout().strip().to_int()

@@ -53,11 +53,6 @@ int info_graph_display_tree(char const *name)
     if (resolve_read(wres, sa.s, name) <= 0)
         goto freed ;
 
-    sa.len = 0 ;
-
-    int r = set_livedir(&sa) ;
-    if (r <= 0)
-        goto freed ;
     /*
     int init = tres.init ;
     if (init < 0)

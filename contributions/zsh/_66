@@ -762,7 +762,6 @@ _66() {
     _arguments -C \
         '(-h --help)'{-h,--help}'[print this help]' \
         '(-v --verbosity)'{-v,--verbosity}'[increase/decrease verbosity]:number:(0 1 2 3 4 5)' \
-        '(-l --live)'{-l,--live}'[an absolute path to the live directory]:path:_files -/' \
         '(-t --tree)'{-t,--tree}'[the tree to use]:treename:_66_trees' \
         '(-T --timeout)'{-T,--timeout}'[a timeout in milliseconds]:milliseconds:' \
         '(-z --color)'{-z,--color}'[enable colorization of the output]' \

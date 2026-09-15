@@ -35,7 +35,6 @@
 static opt_t const opts_main[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
     { .id = 'v',         .shortname = 'v', .longname = "verbosity", .arg = OPT_REQUIRED, .argname = "number",       .help = "increase/decrease verbosity" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",      .arg = OPT_REQUIRED, .argname = "path",         .help = "an absolute path to the live directory" },
     { .id = 't',         .shortname = 't', .longname = "tree",      .arg = OPT_REQUIRED, .argname = "treename",     .help = "the tree to use" },
     { .id = 'T',         .shortname = 'T', .longname = "timeout",   .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "a timeout in milliseconds" },
     { .id = 'z',         .shortname = 'z', .longname = "color",     .arg = OPT_NONE,                                .help = "enable colorization of the output" },
@@ -52,16 +51,6 @@ static int on_global(int id, char const *arg, void *data)
             if (!u32_scan_strict(arg, &VERBOSITY))
                 log_die(LOG_EXIT_USER, "invalid verbosity level: ", arg) ;
             info->opt_verbo = 1 ;
-            break ;
-
-        case 'l' :
-
-            if (strlen(arg) > SS_MAX_PATH)
-                flog_die(LOG_EXIT_USER, "live path is too long -- it can not exceed %d", SS_MAX_PATH) ;
-            info->live.len = 0 ;
-            if (!auto_strbuf(&info->live, arg))
-                log_die_nomem("strbuf") ;
-            info->opt_live = 1 ;
             break ;
 
         case 't' :

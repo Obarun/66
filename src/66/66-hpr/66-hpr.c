@@ -53,11 +53,10 @@
 #endif
 
 char const *banner = 0 ;
-char const *live = 0 ;
+char const *live = SS_LIVE ;
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'H', .longname = "help",     .arg = OPT_NONE,                          .help = "print this help" },
-    { .id = 'l',         .shortname = 'l', .longname = "live",     .arg = OPT_REQUIRED, .argname = "path",   .help = "live directory" },
     { .id = 'b',         .shortname = 'b', .longname = "banner",   .arg = OPT_REQUIRED, .argname = "message",.help = "end banner to display" },
     { .id = 'f',         .shortname = 'f', .longname = "force",    .arg = OPT_NONE,                          .help = "force" },
     { .id = 'h',         .shortname = 'h', .longname = "halt",     .arg = OPT_NONE,                          .help = "halt the system" },
@@ -96,7 +95,6 @@ int main (int argc, char const *const *argv)
             if (o == OPT_END) break ;
             switch (o) {
                 case OPT_ID_HELP : return opt_emit_help(cmd.name, &cmd) ;
-                case 'l' : live = st.arg ; break ;
                 case 'h' : what = 1 ; break ;
                 case 'p' : what = 2 ; break ;
                 case 'r' : what = 3 ; break ;
@@ -114,8 +112,6 @@ int main (int argc, char const *const *argv)
         argc -= st.ind ; argv += st.ind ;
     }
     if (!banner) banner = HPR_WALL_BANNER ;
-    if (live && live[0] != '/') log_die(LOG_EXIT_USER,"live: ",live," must be an absolute path") ;
-    else live = SS_LIVE ;
     if (!what)
         log_die(LOG_EXIT_USER, "one of the -h, -p, -r, -s or -i options must be given") ;
 

@@ -214,11 +214,11 @@ inline static void shebang(strbuf *b, char const *opts)
         log_die_nomem("strbuf") ;
 }
 
-void append_shutdown(strbuf *b, char const *live, char const *verb)
+void append_shutdown(strbuf *b, char const *verb)
 {
     log_flow() ;
 
-    if (!auto_strbuf(b,SS_BINPREFIX "66 -l ",live," ",verb))
+    if (!auto_strbuf(b,SS_BINPREFIX "66 ",verb))
         log_die_nomem("strbuf") ;
 
     if (!CONTAINER)
@@ -248,7 +248,7 @@ static void write_strbuf(strbuf *b, char const *dst, char const *file)
     strbuf_free(b) ;
 }
 
-void write_shutdownd(char const *live, char const *scandir)
+void write_shutdownd(char const *scandir)
 {
     log_flow() ;
 
@@ -270,8 +270,7 @@ void write_shutdownd(char const *live, char const *scandir)
 
     shebang(&b, "-P") ;
     if (!auto_strbuf(&b,
-        SS_LIBEXECPREFIX "66-shutdownd -l ",
-        live," -g 3000"))
+        SS_LIBEXECPREFIX "66-shutdownd -g 3000"))
             log_die_nomem("strbuf") ;
 
     if (CONTAINER)
@@ -397,7 +396,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 SS_EXECLINE_BINPREFIX "fdclose 2\n" \
                 SS_EXECLINE_BINPREFIX "wait { }\n" \
                 SS_EXECLINE_BINPREFIX "foreground {\n" \
-                SS_BINPREFIX "66-hpr -f -n -${HALTCODE} -l ",live," \n}\n" \
+                SS_BINPREFIX "66-hpr -f -n -${HALTCODE}\n}\n" \
                 SS_EXECLINE_BINPREFIX "exit ${EXITCODE}\n"))
                     log_die_nomem("strbuf") ;
 
@@ -408,8 +407,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 SS_EXECLINE_BINPREFIX "fdmove -c 1 2\n" \
                 SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66-echo -- \"scandir ",
                 scandir," exited. Rebooting.\" }\n" \
-                SS_BINPREFIX "66-hpr -r -f -l ",
-                live,"\n"))
+                SS_BINPREFIX "66-hpr -r -f\n"))
                     log_die_nomem("strbuf") ;
 
         } else {
@@ -434,7 +432,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
                 SS_EXECLINE_BINPREFIX "foreground {\n" \
                 SS_BINPREFIX "66-nuke\n}\n" \
                 SS_EXECLINE_BINPREFIX "wait { }\n" \
-                SS_BINPREFIX "66-hpr -f -n -p -l ",live,"\n"))
+                SS_BINPREFIX "66-hpr -f -n -p\n"))
                     log_die_nomem("strbuf") ;
         }
         else {
@@ -450,8 +448,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
 
                 if (!auto_strbuf(&b,
                     " Rebooting.\" }\n" \
-                    SS_BINPREFIX "66-hpr -r -f -l ",
-                    live,"\n"))
+                    SS_BINPREFIX "66-hpr -r -f\n"))
                         log_die_nomem("strbuf") ;
 
             } else if (!auto_strbuf(&b,"\" }\n"))
@@ -463,8 +460,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
     if (!BOOT) {
 
         if (!auto_strbuf(&b,
-            SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 -l ",
-            live," tree stop }\n"))
+            SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 tree stop }\n"))
                 log_die_nomem("strbuf") ;
 
     }
@@ -475,13 +471,13 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         case USR1:
 
             if (BOOT)
-                append_shutdown(&b,live,"poweroff") ;
+                append_shutdown(&b,"poweroff") ;
 
             break ;
         case USR2:
 
             if (BOOT)
-                append_shutdown(&b,live,"halt") ;
+                append_shutdown(&b,"halt") ;
 
             break ;
         case TERM:
@@ -491,7 +487,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
         case INT:
 
             if (BOOT)
-                append_shutdown(&b,live,"reboot") ;
+                append_shutdown(&b,"reboot") ;
 
             break ;
 
@@ -580,7 +576,7 @@ static void create_scandir(char const *live, char const *scandir)
         if (CATCH_LOG)
             write_bootlog(live, scandir) ;
 
-        write_shutdownd(live, scandir) ;
+        write_shutdownd(scandir) ;
     }
 
     create_service_socket(scandir, SS_FDHOLDER, "66-fdholderd", "s") ;

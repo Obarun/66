@@ -22,20 +22,14 @@
 #include <66/environ.h>
 #include <66/utils.h>
 
-void env_runtime_setdir(strbuf *dir, strbuf *live, uid_t owner)
+void env_runtime_setdir(strbuf *dir, uid_t owner)
 {
     log_flow() ;
 
     int r ;
 
-    if (!strbuf_copy(dir, live) || !strbuf_uncounted(dir))
+    if (!set_liveenviron(dir, owner))
         log_die_nomem("strbuf") ;
-
-    r = set_liveenviron(dir, owner) ;
-    if (!r)
-        log_die_nomem("strbuf") ;
-    if (r < 0)
-        log_die(LOG_EXIT_SYS, "live: ", live->s, " must be an absolute path") ;
 
     /** the directory is created and destroyed along with the scandir it belongs
      * to; 66 env never creates it, so its absence is a real error to report. */

@@ -31,9 +31,7 @@
 extern char const *get_userhome(uid_t myuid) ;
 extern int youruid(uid_t *passto,char const *owner) ;
 extern int yourgid(gid_t *passto,uid_t owner) ;
-extern int set_livedir(strbuf *live) ;
 extern int set_livescan(strbuf *live,uid_t owner) ;
-extern int set_livestate(strbuf *live,uid_t owner) ;
 extern int set_liveenviron(strbuf *live,uid_t owner) ;
 extern int set_ownerhome(strbuf *base,uid_t owner) ;
 extern int set_ownersysdir(strbuf *base,uid_t owner) ;

@@ -45,7 +45,7 @@ static int sleep_run(char const *action, void *data)
 {
     log_flow() ;
 
-    ssexec_t *info = data ;
+    (void)data ;
 
     /* drain option state into a local, then reset the static for re-entrancy. */
     uint8_t acl = opt_acl ;
@@ -59,12 +59,10 @@ static int sleep_run(char const *action, void *data)
             log_die(LOG_EXIT_ONE, "no authorized users logged in") ;
     }
 
-    char const *newargv[5] ;
+    char const *newargv[3] ;
     unsigned int m = 0 ;
     newargv[m++] = SS_BINPREFIX "66-hpr" ;
     newargv[m++] = action ;
-    newargv[m++] = "-l" ;
-    newargv[m++] = info->live.s ;
     newargv[m] = 0 ;
 
     exec_path_die(newargv[0], newargv, (char const *const *) environ) ;

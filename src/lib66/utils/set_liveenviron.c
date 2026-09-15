@@ -19,6 +19,7 @@
 #include <oblibs/types.h>
 #include <oblibs/strbuf.h>
 
+#include <66/config.h>
 #include <66/constants.h>
 #include <66/utils.h>
 
@@ -26,17 +27,14 @@ int set_liveenviron(strbuf *liveenviron, uid_t owner)
 {
     log_flow() ;
 
-    int r ;
     char ownerpack[UID_FMT] ;
-
-    r = set_livedir(liveenviron) ;
-    if (r < 0) return -1 ;
-    if (!r) return 0 ;
-
     size_t ownerlen = uid_format(ownerpack, owner) ;
+
     ownerpack[ownerlen] = 0 ;
 
-    if (!auto_strbuf(liveenviron, SS_LIVEENV, "/", ownerpack))
+    liveenviron->len = 0 ;
+
+    if (!auto_strbuf(liveenviron, SS_LIVE, SS_LIVEENV, "/", ownerpack))
         log_warnsys_return(LOG_EXIT_ZERO, "strbuf") ;
 
     return 1 ;
