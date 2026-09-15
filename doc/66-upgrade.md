@@ -1,5 +1,84 @@
 # Changelog for 66
 
+# In 0.9.2.0
+
+## Overview
+
+Three options that never did what they promised are gone: the global `-l` of the
+`66` command, the same `-l` of `66-hpr` and of `66-shutdownd`, and the `clone`
+value of `66 tree -o`. With the global `-l` goes the `LIVE=` key of `init.conf`,
+which was its only source. The live directory is now fixed at compile time, by
+the `-D livedir=` option to `meson setup`, and nothing overrides it at runtime.
+
+The migration is **automatic**. It stamps the resolve files at the new version
+and rewrites the control scripts of a scandir already on disk, so a machine
+upgraded without a reboot keeps answering the power button.
+
+## What you must do
+
+Remove the `LIVE=` line from `/etc/66/init.conf` if you edited that file. A key
+that is not in the table is never read, so a leftover `LIVE=` is ignored in
+silence: if you had pointed it somewhere other than the compiled default, the
+machine now boots on the compiled default without telling you. Drop `-l` from
+any script of yours that passes it to `66`, `66-hpr` or `66-shutdownd`, and drop
+`clone=` from any call to `66 tree create` or `66 tree admin`, since all four now
+stop on an unknown option.
+
+## Interface changes
+
+- **The global `-l, --live` option is gone**:
+
+    It claimed to move the supervision directory of a service, and it did not.
+    A service command reads its scandir from the resolve file, not from the
+    option, so `66 -l /somewhere start foo` acted on the scandir the service was
+    parsed with. The only commands the option really reached were the ones that
+    write the live directory, and 66 was its own only caller, passing it to the
+    children it spawns at boot.
+
+- **`66-hpr -l` and `66-shutdownd -l` are gone**:
+
+    Both stored the path and then overwrote it with the compiled default one
+    line later, so a value passed there had never had any effect.
+
+- **The `LIVE=` key of `init.conf` is gone**:
+
+    It fed the global `-l`, and nothing else. The skeleton no longer ships it.
+
+- **`66 tree -o clone=` is gone**:
+
+    It copied the resolve file of a tree under a new name. Use `66 tree create`
+    with the options you want instead.
+
+## Bug fixes
+
+- **A forced shutdown no longer writes past the end of its argument array**:
+
+    `66 poweroff -f`, `66 reboot -f` and `66 halt -f` build the command line of
+    `66-hpr` in an array sized one element short, and the terminating null
+    landed outside it.
+
+- **The boot logger fifo no longer carries a doubled separator**:
+
+    The path was assembled with a separator the live directory already ends
+    with.
+
+## For packagers
+
+`meson setup` now refuses a `livedir` that is not an absolute path, and trims a
+trailing slash from it. Since it is the only source of the live directory left,
+a mistake there used to surface at boot and now stops the build.
+
+`lib66` breaks its API and its ABI. `set_livedir()` and `set_livestate()` are
+gone: the first validated a live directory a caller could choose, and no caller
+chooses one any more, the second had none. `set_livescan()` and
+`set_liveenviron()` now build the whole path themselves instead of extending a
+buffer the caller had preloaded, and `env_runtime_setdir()` loses the live
+directory from its arguments for the same reason. `struct ssexec_s` loses a
+field, and `append_shutdown` and `write_shutdownd` lose a parameter. Rebuild
+everything that links against it, `66-tools` included.
+
+---
+
 # In 0.9.1.2
 
 ## Overview
