@@ -438,7 +438,7 @@ this directory is intended for system administrators to install [seed](66-tree.h
 
 ## %%livedir%%
 
-This directory is specified at compile time by using the `-D livedir=` option to `meson setup`. It also can be specified on-the-fly with the [66 -l](66.html) option.
+This directory is specified at compile time by using the `-D livedir=` option to `meson setup`.
 
 This should be within a writable and executable filesystem, likely a RAM filesystem, mounted with `exec` and `rw` mount flag.
 

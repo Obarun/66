@@ -7,7 +7,7 @@ This program is primarily used internally by `66`. User may prefer to use `66 ha
 ## Interface
 
 ```
-66-hpr [ -H ] [ -l live ] [ -b banner ] [ -f ] [ -h | -p | -r | -s | -i ] [ -n ] [ -d | -w ] [ -W ]
+66-hpr [ -H ] [ -b banner ] [ -f ] [ -h | -p | -r | -s | -i ] [ -n ] [ -d | -w ] [ -W ]
 ```
 
 - If the **-s** or **-i** option is passed the system is suspended or hibernated: the kernel power state is written synchronously and the command returns once the machine wakes up. No service is stopped.
@@ -23,8 +23,6 @@ This is the traditional sysvinit interface for the `halt`, `poweroff` and `reboo
 ## Options
 
 - **-H, --help**: prints this help.
-
-- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem — likely a RAM filesystem — see [66 scandir](66-scandir.html).
 
 - **-b, --banner** *banner*: Text to display before executing the shutdown process. Defaults to:
 

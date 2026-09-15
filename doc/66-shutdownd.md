@@ -7,7 +7,7 @@ This program is a modified copy of [s6-linux-init-shutdownd](https://skarnet.org
 ## Interface
 
 ```
-66-shutdownd [ -h ] [ -l live ] [ -g gracetime ] [ -B ] [ -c ]
+66-shutdownd [ -h ] [ -g gracetime ] [ -B ] [ -c ]
 ```
 
 - 66-shutdownd opens the `%%livedir%%/scandir/0/shutdownd/fifo` pipe and listens to it. The [66 poweroff](66-poweroff.html), [66 reboot](66-reboot.html) and [66 halt](66-halt.html) commands send their request to this pipe when they trigger the shutdown procedure.
@@ -21,8 +21,6 @@ This program is a modified copy of [s6-linux-init-shutdownd](https://skarnet.org
 ## Options
 
 - **-h, --help**: prints this help.
-
-- **-l, --live** *live*: changes the supervision directory of *service* to *live*. By default this will be `%%livedir%%`. The default can also be changed at compile time by passing the `-D livedir=live` option to `meson setup`. An existing absolute path is expected and should be within a writable and executable filesystem - likely a RAM filesystem—see [66 scandir](66-scandir.html).
 
 - **-g, --grace-time** *gracetime*: specify a grace time between the `SIGTERM` and the `SIGKILL` in milliseconds if the shutdown command does not provide one. Defaults to `3000`.
 

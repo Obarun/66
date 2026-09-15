@@ -16,7 +16,7 @@ When the `start` subcommand is invoked, this command launches `66-scandir`, whic
 
 - **-h, --help**: prints this help.
 
-- **-o, --owner** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%` by default or the resulting path provided by the `66 -l` option.
+- **-o, --owner** *owner*: handles the *scandir* for the given *owner*. Only the root user can use this option. Note that *owner* can be any valid user on the system. However, the given user must have sufficient permissions to create the necessary directories at its location. That is `%%livedir%%`.
 
 ## Subcommands
 

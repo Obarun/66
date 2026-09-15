@@ -86,7 +86,7 @@ A service can now react to what happens on the system instead of being wired int
 | `66 signal` | gains `--stop-group` / `--cont-group` / `--kill-group`, which signal the whole process group |
 | `66-shutdown` | `66 halt` / `66 poweroff` / `66 reboot` (with `-c` / `--cancel`) |
 
-Every command and subcommand now accepts long options too (`--help`, `--verbosity`, `--live`, `--tree`, `--timeout`, `--color`, and per-command forms). Short options are unchanged, so existing scripts keep working.
+Every command and subcommand now accepts long options too (`--help`, `--verbosity`, `--tree`, `--timeout`, `--color`, and per-command forms). Short options are unchanged, so existing scripts keep working.
 
 ### `66 status` fields
 
@@ -292,12 +292,11 @@ Generally, the prefix is removed from commands, for example, `66-enable` becomes
 
 ## General options changes
 
-Previous tools accepted the options `-h`, `-z`, `-l`, `-T` and `-t`. These options are now integrated into the general `66` command. Let's take an examples:
+Previous tools accepted the options `-h`, `-z`, `-T` and `-t`. These options are now integrated into the general `66` command. Let's take an examples:
 
 | Old command | New command |
 | --- | --- |
 | `66-enable` -t root consolekit | `66` -t root `enable` consolekit |
-| `66-start` -l /run/66 sshd | `66` -l /run/66 `start` sshd |
 
 ## Help accessibility
 

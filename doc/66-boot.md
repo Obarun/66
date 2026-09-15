@@ -20,7 +20,7 @@ Command *boot* never exits. It forks *stage2* and execs into [scandir start](66-
 
 - **-c, --container**: boot inside a container instead of on real hardware. Container mode is selected **only** by this option. The boot then follows the same path as a hardware boot — it brings up the services of the enabled trees — so a container runs as a full supervised system, not a single command. Leaving the container differs from rebooting a machine: pid 1 exits with a code instead of handing the machine over to the kernel. Use [66 halt](66-halt.html) to make pid 1 exit with the code held in the `%%livedir%%/container/<owner>/halt` file (`EXITCODE`, default `0`); [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) make it report a `SIGINT` and a `SIGHUP` respectively. If the boot itself fails, pid 1 exits with `111`. See the container behaviour under [66 scandir -B](66-scandir.html).
 
-- **-m, --mount**: umount the basename of the *LIVE* directory set into the *init.conf* skeleton file, if it is already mounted, and mounts a tmpfs on it. By default, the *LIVE* basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
+- **-m, --mount**: umount the basename of the `%%livedir%%` directory, if it is already mounted, and mounts a tmpfs on it. By default, the `%%livedir%%` basename is mounted if it is not already a valid mountpoint. Otherwise without the **-m** option, it does nothing.
 
 - **-s, --skeleton** *skel*: an absolute path. Directory that holds skeleton files. By default this will be `%%skel%%`. The default can also be changed at compile time by passing the `-D skeleton-dir=DIR` option to `meson setup`. This directory ***must*** contain the necessary skeleton files to properly boot the machine, without it the system **will not boot**.
 
@@ -53,11 +53,11 @@ When booting a system, command *boot* performs the following operations:
 
 - It uses `/dev/null` as its stdin (instead of `/dev/console`). Although stdout and stderr still use `/dev/console` for now.
 
-- It checks if the *LIVE* basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the *LIVE* basename is a valid mountpoint and performs a mount.
+- It checks if the `%%livedir%%` basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the `%%livedir%%` basename is a valid mountpoint and performs a mount.
 
-- It creates the *LIVE* directory invocating [66 -v VERBOSITY -l LIVE scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
+- It creates the `%%livedir%%` directory invocating [66 -v VERBOSITY scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
 
-- It initiates the early services of every tree of the `boot` group invocating [66 -v VERBOSITY -l LIVE tree init --group boot](66-tree.html#init) — or of *TREE* alone when that key is set.
+- It initiates the early services of every tree of the `boot` group invocating [66 -v VERBOSITY tree init --group boot](66-tree.html#init) — or of *TREE* alone when that key is set.
 
 - It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](66-scandir.html) is executed).
 
@@ -71,7 +71,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It also makes the catch-all logger's fifo its stderr.
 
-- It execs into [66 -v VERBOSITY -l LIVE scandir start](66-scandir.html) with `LIVE/scandir/0` (default `%%livedir%%/scandir/0`) as its scandir.
+- It execs into [66 -v VERBOSITY scandir start](66-scandir.html) with `%%livedir%%/scandir/0` as its scandir.
 
     * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services of the `boot` group (or of *TREE* when pinned), where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
@@ -87,9 +87,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot th
 
 - `init.conf` : this file contains a set of `key=value` pairs available to a user to configure the boot process. A key that is absent keeps its built-in default, so every key is optional; the name of a key ***must not*** be changed. By default:
 
-    * `VERBOSITY=1` : increases/decreases the verbosity of the *stage1* process.
-
-    * `LIVE=%%livedir%%` : an absolute path; creates the scandir at *LIVE*. The value will depend by default on the `-D livedir=live` option set at compile time.
+    * `VERBOSITY=2` : increases/decreases the verbosity of the *stage1* process.
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
