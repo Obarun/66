@@ -353,7 +353,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
     if (!res->version) {
         res->version = resolve_add_string(wres, SS_VERSION) ;
-        log_info("key Version at section [Main] was not set -- define it to: ", SS_VERSION) ;
+        log_trace("key Version at section [Main] was not set -- define it to: ", SS_VERSION) ;
     }
 
     if (!res->user) {
