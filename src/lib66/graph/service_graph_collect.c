@@ -32,6 +32,28 @@
 #include <66/sanitize.h>
 #include <66/enum_parser.h>
 
+static void collect_edges(resolve_wrapper_t_ref wres, strbuf *out, uint32_t *field, uint32_t *n)
+{
+    log_flow() ;
+
+    // sbl_sortndrop reports an empty list as a failure
+    if (!out->len) {
+        *n = 0 ;
+        *field = resolve_add_string(wres, "") ;
+        return ;
+    }
+
+    if (!sbl_sortndrop(out))
+        log_dieusys(LOG_EXIT_SYS, "sort the collected edges") ;
+
+    *n = sbl_count(out) ;
+
+    if (!sbl_rebuild_oneline(out))
+        log_dieu(LOG_EXIT_SYS, "convert strbuf to string") ;
+
+    *field = resolve_add_string(wres, out->s) ;
+}
+
 uint32_t service_graph_ncollect(service_graph_t *g, const char *list, size_t len, ssexec_t *info, uint32_t flag, strbuf *out)
 {
     log_flow() ;
@@ -112,34 +134,28 @@ uint32_t service_graph_collect(service_graph_t *g, const char *sv, ssexec_t *inf
 
         n++ ;
 
-        /** the dependencies live in an autonomous addon; load it into the hash
-         * node so the edges can be walked (gated on the core has_dependencies). */
         struct resolve_hash_s *added = resolve_hash_search(&g->hres, name) ;
         resolve_service_addon_dependencies_t *dep = &added->dependencies ;
         resolve_wrapper_t_ref wdep = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
-        if (res.has_dependencies) {
+        r = resolve_read(wdep, info->base.s, name) ;
+        if (r < 0)
+            log_dieu(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
 
-            if (resolve_read(wdep, info->base.s, name) <= 0)
-                log_dieu(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
-
-        } else
-            /* a service declaring no dependency of its own has no addon on disk, yet
-             * sanitize_graph appends its requiredby here once another service names
-             * it. Seed the empty-string sentinel now: without it the first string
-             * lands at offset 0, which every reader takes for "unset". */
+        if (!r)
             resolve_init(wdep) ;
-
-        free(wdep) ;
 
         if (dep->ndepends) {
 
             size_t len = strlen(dep->sa.s + dep->depends) ;
             _alloc_sbl_(stk, len + 1) ;
+            _alloc_sbl_(edges, len + 1) ;
 
             if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
                 log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-            n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
+            n += service_graph_ncollect(g, stk.s, stk.len, info, flag, &edges) ;
+
+            collect_edges(wdep, &edges, &dep->depends, &dep->ndepends) ;
         }
 
         if (dep->nrequiredby) {
@@ -174,6 +190,8 @@ uint32_t service_graph_collect(service_graph_t *g, const char *sv, ssexec_t *inf
             n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
         }
 
+        free(wdep) ;
+
         /* a service/signal reactor's From sources are establishment edges: pull
          * them into the selection so the arm supervises them before eventd
          * subscribes. Read from the event addon (single source of truth), gated on
@@ -184,18 +202,22 @@ uint32_t service_graph_collect(service_graph_t *g, const char *sv, ssexec_t *inf
             resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
             if (resolve_read(wev, info->base.s, name) <= 0)
                 log_dieu(LOG_EXIT_SYS, "read event addon of: ", name) ;
-            free(wev) ;
 
             if ((ev->type == EVENT_SOURCE_SERVICE || ev->type == EVENT_SOURCE_SIGNAL) && ev->nfrom) {
 
                 size_t len = strlen(ev->sa.s + ev->from) ;
                 _alloc_sbl_(stk, len + 1) ;
+                _alloc_sbl_(edges, len + 1) ;
 
                 if (!sbl_clean_string(&stk, ev->sa.s + ev->from))
                     log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
-                n += service_graph_ncollect(g, stk.s, stk.len, info, flag, 0) ;
+                n += service_graph_ncollect(g, stk.s, stk.len, info, flag, &edges) ;
+
+                collect_edges(wev, &edges, &ev->from, &ev->nfrom) ;
             }
+
+            free(wev) ;
         }
     }
 

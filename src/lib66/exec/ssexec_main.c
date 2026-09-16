@@ -288,7 +288,7 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
                  * abort here -- the marker is written once the state is set up. */
                 log_trace("initialize system version file with version: ", SS_VERSION) ;
                 if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-                    log_1_warnusys("write system version file: ", dst) ;
+                    log_warnusys("write system version file: ", dst) ;
 
             } else {
 

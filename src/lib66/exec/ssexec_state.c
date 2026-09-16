@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <oblibs/string.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -22,6 +23,7 @@
 #include <66/info.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/state.h>
 #include <66/config.h>
 #include <66/ssexec.h>
@@ -98,14 +100,14 @@ int ssexec_state(int argc, char const *const *argv, void *data)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     ss_state_t sta = STATE_ZERO ;
-    char const *svname = 0 ;
+    char svname[SS_MAX_SERVICE_NAME + 1] ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    svname = *argv ;
+    if (*argv[0] == '/') {
 
-    if (svname[0] == '/') {
+        auto_strings(svname, *argv) ;
 
         char pack[STATE_STATE_SIZE] ;
 
@@ -116,6 +118,9 @@ int ssexec_state(int argc, char const *const *argv, void *data)
         state_unpack(pack, &sta) ;
 
     } else {
+
+        if (!service_resolve_provide(svname, *argv, info->base.s))
+            log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
         r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
         if (r == -1)

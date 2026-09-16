@@ -880,10 +880,19 @@ int ssexec_status(int argc, char const *const *argv, void *data)
     if(!strcmp(nl_langinfo(CODESET), "UTF-8"))
         S_STYLE = &graph_utf8;
 
-    if (!argc)
+    if (!argc) {
+
         info_status_all() ;
-    else
-        info_status_one(*argv, select) ;
+
+    } else {
+
+        char sv[SS_MAX_SERVICE_NAME + 1] ;
+
+        if (!service_resolve_provide(sv, *argv, pinfo->base.s))
+            log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
+
+        info_status_one(sv, select) ;
+    }
 
     return 0 ;
 }

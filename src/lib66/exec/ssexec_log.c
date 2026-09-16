@@ -192,13 +192,17 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     log_source_t *src = 0 ;
+    char sv[SS_MAX_SERVICE_NAME + 1] ;
     int r ;
 
-    r = resolve_read(wres, info->base.s, name) ;
+    if (!service_resolve_provide(sv, name, info->base.s))
+        log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", name) ;
+
+    r = resolve_read(wres, info->base.s, sv) ;
     if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
-        log_die(LOG_EXIT_USER, "unknown service: ", name) ;
+        log_die(LOG_EXIT_USER, "unknown service: ", sv) ;
 
     src = malloc(sizeof(log_source_t)) ;
     if (!src)
@@ -210,22 +214,22 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
     if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
         resolve_free(wio) ;
-        log_die(LOG_EXIT_USER, "service has no readable log: ", name) ;
+        log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
     }
 
     char const *dest = io.sa.s + io.fdout.destination ;
 
     if (io.fdout.type == E_PARSER_IO_TYPE_66LOG) {
 
-        if (!log_source_logdir(&src[0], name, dest))
-            log_dieusys(LOG_EXIT_SYS, "read log directory of: ", name) ;
+        if (!log_source_logdir(&src[0], sv, dest))
+            log_dieusys(LOG_EXIT_SYS, "read log directory of: ", sv) ;
 
     } else if (io.fdout.type == E_PARSER_IO_TYPE_FILE) {
 
-        if (!log_source_file(&src[0], name, dest))
-            log_dieusys(LOG_EXIT_SYS, "read log file of: ", name) ;
+        if (!log_source_file(&src[0], sv, dest))
+            log_dieusys(LOG_EXIT_SYS, "read log file of: ", sv) ;
 
-    } else log_die(LOG_EXIT_USER, "service has no readable log: ", name) ;
+    } else log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
 
     resolve_free(wio) ;
     resolve_free(wres) ;
@@ -247,22 +251,26 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    char sv[SS_MAX_SERVICE_NAME + 1] ;
 
-    int r = resolve_read(wres, info->base.s, target) ;
+    if (!service_resolve_provide(sv, target, info->base.s))
+        log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", target) ;
+
+    int r = resolve_read(wres, info->base.s, sv) ;
     if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", target) ;
+        log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
-        log_die(LOG_EXIT_USER, "unknown service: ", target) ;
+        log_die(LOG_EXIT_USER, "unknown service: ", sv) ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
     if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
         resolve_free(wio) ;
-        log_die(LOG_EXIT_USER, "service has no readable log: ", target) ;
+        log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
     }
 
     if (io.fdout.type != E_PARSER_IO_TYPE_66LOG && io.fdout.type != E_PARSER_IO_TYPE_FILE)
-        log_die(LOG_EXIT_USER, "service has no readable log: ", target) ;
+        log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
 
 
     uint8_t is_logdir = io.fdout.type == E_PARSER_IO_TYPE_66LOG ? 1 : 0 ;
@@ -273,7 +281,7 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
     resolve_free(wio) ;
     resolve_free(wres) ;
 
-    return log_follow(target, dest, is_logdir, 0, re) ;
+    return log_follow(sv, dest, is_logdir, 0, re) ;
 }
 
 int ssexec_log(int argc, char const *const *argv, void *data)

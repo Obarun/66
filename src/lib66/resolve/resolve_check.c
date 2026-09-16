@@ -21,16 +21,6 @@
 #include <66/constants.h>
 #include <66/service.h>
 
-static int resolve_path(char *path, char *lname, char const *base, char const *name)
-{
-    if (!service_resolve_provide(lname, name, base))
-        log_warnusys_return(LOG_EXIT_ZERO, "resolve provide alias") ;
-
-    auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", lname) ;
-
-    return 1 ;
-}
-
 int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
@@ -42,55 +32,47 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 
     if (wres->type == DATA_SERVICE) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
     } else if (wres->type == DATA_SERVICE_LIMIT) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_ENVIRON) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_ENVIRON_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_IO) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_IO_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_EXECUTE) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_EXECUTE_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_DEPENDENCIES_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_REGEX) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_REGEX_SUFFIX) ;
 
     } else if (wres->type == DATA_SERVICE_EVENT) {
 
-        if (!resolve_path(path, lname, base, name))
-            return 0 ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
         auto_strings(lname + strlen(lname), SS_ADDON_EVENT_SUFFIX) ;
 

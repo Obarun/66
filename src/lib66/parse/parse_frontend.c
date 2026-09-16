@@ -28,6 +28,7 @@
 #include <66/constants.h>
 #include <66/ssexec.h>
 #include <66/service.h>
+#include <66/symlink.h>
 #include <66/config.h>
 #include <66/resolve.h>
 #include <66/enum_parser.h>
@@ -172,6 +173,9 @@ int parse_frontend(char const *sv, parse_build_ctx_t ctx)
     struct resolve_hash_s *c = resolve_hash_search(ctx.hres, name) ;
 
     parse_build(c, &ctx) ;
+
+    if (symlink_provide_istaken(ctx.info->base.s, ctx.hres, c) < 0)
+        log_dieu(LOG_EXIT_SYS, "settle the name of service: ", name) ;
 
     parse_store_free(&st) ;
 

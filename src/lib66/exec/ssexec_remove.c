@@ -118,47 +118,8 @@ static void remove_provide(resolve_service_t *res, ssexec_t *info)
 {
     log_flow() ;
 
-    size_t pos = 0 ;
-
-    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t_ref dw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
-    if (!res->has_dependencies || resolve_read(dw, info->base.s, res->sa.s + res->name) <= 0) {
-        resolve_free(dw) ;
-        return ;
-    }
-
-    if (!dep.nprovide) {
-        resolve_free(dw) ;
-        return ;
-    }
-
-    _alloc_sbl_(stk, strlen(dep.sa.s + dep.provide)) ;
-    _alloc_strbuf_(lnk, info->base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_PROVIDE_LEN + 1 + SS_MAX_SERVICE_NAME) ;
-    char owner[SS_MAX_SERVICE_NAME + 1] ;
-    if (!sbl_clean_string(&stk, dep.sa.s + dep.provide))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
-
-    resolve_free(dw) ;
-
-    FOREACH_SBL(&stk, pos) {
-
-        char *name = stk.s + pos ;
-        lnk.len = 0 ;
-
-        if (!auto_strbuf(&lnk, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", name))
-            log_die_nomem("strbuf") ;
-
-        if (!service_resolve_provide(owner, name, info->base.s)) {
-            log_warnusys("resolve provide alias: ", name) ;
-            continue ;
-        }
-
-        /** the entry belongs to whoever created it */
-        if (!strcmp(owner, res->sa.s + res->name)) {
-            log_trace("remove provide symlink: ", lnk.s) ;
-            file_tryunlink(lnk.s) ;
-        }
-    }
+    if (!symlink_provide_update(info->base.s, res, SYMLINK_PROVIDE_REMOVE))
+        log_dieu(LOG_EXIT_SYS, "release the provided names of: ", res->sa.s + res->name) ;
 }
 
 static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propagate)
@@ -398,7 +359,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
 
     /* drain option state into locals, then reset the statics for re-entrancy. */
     int r ;
-    size_t pos = 0 ;
+    int pos = 0 ;
     uint8_t propagate = opt_nopropagate ;
     uint8_t force = opt_force ;
     opt_nopropagate = 0 ;
@@ -408,6 +369,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
     resolve_wrapper_t_ref wres = 0 ;
     hash_t hres = HASH_ZERO ;
     struct resolve_hash_s *c, *tmp ;
+    char holder[SS_MAX_SERVICE_NAME + 1] ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -415,7 +377,7 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
     if (!hash_init(&hres, 0, offsetof(struct resolve_hash_s, node)))
         log_dieusys(LOG_EXIT_SYS, "initialize hash table") ;
 
-    for(; pos < (size_t)argc ; pos++) {
+    for(; pos < argc ; pos++) {
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         wres = resolve_set_struct(DATA_SERVICE, &res) ;
@@ -424,11 +386,19 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", argv[pos]) ;
 
-        if (!r)
+        if (!r) {
+
+            if (!service_resolve_provide(holder, argv[pos], info->base.s))
+                log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", argv[pos]) ;
+
+            if (strcmp(holder, argv[pos]))
+                log_die(LOG_EXIT_USER, "name: ", argv[pos], " is provided by: ", holder, " -- '66 remove -P ", holder, "' instead") ;
+
             log_dieu(LOG_EXIT_USER, "find service: ", argv[pos], " -- did you parse it?") ;
+        }
 
         if (res.inns && !force)
-            log_die(LOG_EXIT_USER, "service: ", argv[pos]," is part of a module and cannot be removed alone -- please remove the entire module instead using \'66 remove ", res.sa.s + res.inns, "\'") ;
+            log_die(LOG_EXIT_USER, "service: ", argv[pos]," is part of a module and cannot be removed alone -- please remove the entire module instead using '66 remove ", res.sa.s + res.inns, "'") ;
 
         if (!res.islog) {
 

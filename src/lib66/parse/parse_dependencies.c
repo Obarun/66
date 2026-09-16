@@ -36,29 +36,7 @@ static int event_from_is_supervised(char const *type)
     return src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL ;
 }
 
-static void resolve_alias_list(strbuf *stk, char const *base)
-{
-    log_flow() ;
-
-    size_t pos = 0 ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-
-    FOREACH_SBL(stk, pos) {
-
-        char name[SS_MAX_SERVICE_NAME + 1] ;
-
-        if (!service_resolve_provide(name, stk->s + pos, base))
-            log_dieu(LOG_EXIT_SYS, "resolve provide alias: ", stk->s + pos) ;
-
-        if (sbl_search(&sa, name) < 0 && !sbl_add(&sa, name))
-            log_die_nomem("strbuf") ;
-    }
-
-    if (!strbuf_copy(stk, &sa))
-        log_die_nomem("strbuf") ;
-}
-
-int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep, char const *service, char const *base)
+int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *dep, char const *service)
 {
     log_flow() ;
 
@@ -75,13 +53,13 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
         char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, kid, &len) ;
 
         uint32_t *field = 0, *nfield = 0 ;
-        uint8_t opts = 0, alias = 0, provided = 0 ;
+        uint8_t opts = 0, alias = 0 ;
 
         switch (kid) {
 
-            case E_PARSER_SECTION_MAIN_DEPENDS:    field = &dep->depends ;    nfield = &dep->ndepends ;    provided = 1 ; break ;
-            case E_PARSER_SECTION_MAIN_REQUIREDBY: field = &dep->requiredby ; nfield = &dep->nrequiredby ; provided = 1 ; break ;
-            case E_PARSER_SECTION_MAIN_OPTSDEPS:   field = &dep->optsdeps ;   nfield = &dep->noptsdeps ;   opts = 1 ; provided = 1 ; break ;
+            case E_PARSER_SECTION_MAIN_DEPENDS:    field = &dep->depends ;    nfield = &dep->ndepends ;    break ;
+            case E_PARSER_SECTION_MAIN_REQUIREDBY: field = &dep->requiredby ; nfield = &dep->nrequiredby ; break ;
+            case E_PARSER_SECTION_MAIN_OPTSDEPS:   field = &dep->optsdeps ;   nfield = &dep->noptsdeps ;   opts = 1 ; break ;
             case E_PARSER_SECTION_MAIN_PROVIDE:    field = &dep->provide ;    nfield = &dep->nprovide ;    alias = 1 ; break ;
             case E_PARSER_SECTION_MAIN_CONFLICT:   field = &dep->conflict ;   nfield = &dep->nconflict ;   break ;
 
@@ -107,9 +85,6 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
             if (stk.len != len)
                 log_warn("service: ", service, " provides its own name -- ignoring it") ;
         }
-
-        if (provided && stk.len)
-            resolve_alias_list(&stk, base) ;
 
         if (stk.len)
             *field = parse_compute_list(wres, &stk, nfield, opts) ;

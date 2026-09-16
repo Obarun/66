@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <oblibs/string.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -21,6 +22,7 @@
 
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/constants.h>
 #include <66/status.h>
 #include <66/info.h>
 #include <66/svc.h>
@@ -86,15 +88,14 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
 
     service_status_t st = STATUS_ZERO ;
-    char const *svname = 0 ;
+    char svname[SS_MAX_SERVICE_NAME + 1] ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    svname = *argv ;
+    if (*argv[0] == '/') {
 
-    if (svname[0] == '/') {
-
+        auto_strings(svname, *argv) ;
         if (access(svname, F_OK) < 0)
             log_dieusys(LOG_EXIT_SYS, "access status file: ", svname) ;
 
@@ -105,6 +106,9 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
             log_die(LOG_EXIT_USER, "invalid status file: ", svname) ;
 
     } else {
+
+        if (!service_resolve_provide(svname, *argv, info->base.s))
+            log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
         r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
         if (r == -1)

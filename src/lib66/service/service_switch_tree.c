@@ -25,7 +25,9 @@ void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    // get informations from a fresh source
+    resolve_service_t fresh = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &fresh) ;
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
     table.u.service.id = E_RESOLVE_SERVICE_CONFIG_TREENAME ;
 
@@ -35,8 +37,8 @@ void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_
 
     service_resolve_modify_field(res, table.u.service, totreename) ;
 
-    if (!resolve_write(wres, info->base.s, res->sa.s + res->name))
-        log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
+    if (!resolve_modify_field(wres, info->base.s, res->sa.s + res->name, table, totreename))
+        log_dieu(LOG_EXIT_SYS, "write resolve file of: ", res->sa.s + res->name) ;
 
-    free(wres) ;
+    resolve_free(wres) ;
 }

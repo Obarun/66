@@ -210,7 +210,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     opt_noname = 0 ;
 
     int r = 0 ;
-    char const *svname = 0 ;
+    char svname[SS_MAX_SERVICE_NAME + 1] ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
@@ -218,10 +218,9 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    svname = *argv ;
+    if (*argv[0] == '/') {
 
-    if (svname[0] == '/') {
-
+        auto_strings(svname, *argv) ;
         char basename[strlen(svname) + 1] ;
         char dirname[strlen(svname) + 1] ;
 
@@ -235,6 +234,9 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {
+
+        if (!service_resolve_provide(svname, *argv, info->base.s))
+            log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
         r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
         if (r == -1)

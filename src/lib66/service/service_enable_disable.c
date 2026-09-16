@@ -48,6 +48,23 @@ static void mark_isdone(hash_t *hres, const char *name)
     t->visit = 1 ;
 }
 
+static void write_enabled(resolve_service_t *res, bool action, char const *base)
+{
+    log_flow() ;
+
+    resolve_service_t fresh = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &fresh) ;
+    resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
+
+    table.u.service.id = E_RESOLVE_SERVICE_CONFIG_ENABLED ;
+    res->enabled = action ? 1 : 0 ;
+
+    if (!resolve_modify_field(wres, base, res->sa.s + res->name, table, action ? "1" : "0"))
+        log_dieu(LOG_EXIT_SYS, "write resolve file of: ", res->sa.s + res->name) ;
+
+    resolve_free(wres) ;
+}
+
 /** @action == false disable
  * @action == true enable */
 void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv)
@@ -57,45 +74,41 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
     if (!isdone(&g->hres, hash->name)) {
 
         resolve_service_t_ref res = &hash->res ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
         char const *treename = 0 ;
         bool same = sbl_search(argv, hash->name) >= 0 ? true : false ;
         bool ns = hash->res.inns ? true : false ;
 
-        if (hash->dependencies.nprovide)
-            if (!symlink_provide(info->base.s, res, action))
+        if (hash->dependencies.nprovide && action)
+            if (!symlink_provide_update(info->base.s, res, SYMLINK_PROVIDE_ENABLE))
                 log_dieu(LOG_EXIT_SYS, "make provide symlink") ;
 
         if (hash->dependencies.nconflict && action) {
 
             _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
-            resolve_service_t c = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &c) ;
             size_t pos = 0 ;
+            char sv[SS_MAX_SERVICE_NAME + 1] ;
 
             if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.conflict))
                 log_dieu(LOG_EXIT_SYS, "clean string") ;
 
             FOREACH_SBL(&stk, pos) {
 
-                if (resolve_read(w, info->base.s, stk.s + pos) > 0 && c.enabled)
-                    log_die(LOG_EXIT_SYS,"conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please disable the '", c.sa.s + c.name, "' service first.") ;
-            }
+                if (!service_resolve_provide(sv, stk.s + pos, info->base.s))
+                    log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", stk.s + pos) ;
 
-            resolve_free(w) ;
+                int r = service_isenabled(info->base.s, sv) ;
+                if (r < 0)
+                    log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
+
+                if (r)
+                    log_die(LOG_EXIT_SYS,"conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please disable the '", sv, "' service first.") ;
+            }
         }
 
         if (info->opt_tree && ((hash->res.inns && ns) || same))
             treename = info->treename.s ;
         else
             treename = res->sa.s + (res->intree ? res->intree : res->treename) ;
-
-        /** detach treename: resolve_write() below appends SS_VERSION to res->sa
-         * (service_resolve_write_cdb), which reallocates it and would leave treename
-         * (a pointer into res->sa) dangling for the tree_service_add() calls. */
-        char treename_buf[strlen(treename) + 1] ;
-        auto_strings(treename_buf, treename) ;
-        treename = treename_buf ;
 
         /** resolve file may already exist. Be sure to add it to the contents field of the tree.*/
         if (action) {
@@ -106,12 +119,7 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                 tree_service_add(treename, res->sa.s + res->name, info) ;
         }
 
-        res->enabled = action ? 1 : 0 ;
-
-        if (!resolve_write(wres, res->sa.s + res->path.home, res->sa.s + res->name))
-            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", res->sa.s + res->name) ;
-
-        free(wres) ;
+        write_enabled(res, action, res->sa.s + res->path.home) ;
 
         /** the logger must be disabled to avoid to start it
          * with the 66 tree start <tree> command */
@@ -127,18 +135,11 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
             if (!isdone(&g->hres, name)) {
 
-                wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
-
-                h->res.enabled = action ? 1 : 0 ;
-
-                if (!resolve_write(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
-                    log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
+                write_enabled(&h->res, action, h->res.sa.s + h->res.path.home) ;
 
                 log_info("Disabled successfully: ", name) ;
 
                 mark_isdone(&g->hres, name) ;
-
-                free(wres) ;
             }
         }
 
@@ -176,8 +177,6 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
 
                     if (!isdone(&g->hres, name)) {
 
-                        wres = resolve_set_struct(DATA_SERVICE,  &h->res) ;
-
                         if (action) {
 
                             if (info->opt_tree && (hash->res.inns || sbl_search(argv, hash->name) >= 0))
@@ -186,16 +185,11 @@ void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, boo
                                 tree_service_add(treename, h->res.sa.s + h->res.name, info) ;
                         }
 
-                        h->res.enabled = action ? 1 : 0 ;
-
-                        if (!resolve_write(wres, h->res.sa.s + h->res.path.home, h->res.sa.s + h->res.name))
-                            log_dieu(LOG_EXIT_SYS, "write  resolve file of: ", h->res.sa.s + h->res.name) ;
+                        write_enabled(&h->res, action, h->res.sa.s + h->res.path.home) ;
 
                         mark_isdone(&g->hres, h->res.sa.s + h->res.name) ;
 
                         log_info(!action ? "Disabled" : "Enabled"," successfully: ", h->res.sa.s + h->res.name) ;
-
-                        free(wres) ;
                     }
                 }
                 service_graph_destroy(&graph) ;

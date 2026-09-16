@@ -195,7 +195,7 @@ static int graph_action_depends(service_graph_t *g, struct resolve_hash_s *c, ui
 
             h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
-                log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
+                log_warn_return(LOG_EXIT_ZERO, "no service answers to the name: ", stk.s + pos, " -- is its provider enabled?") ;
 
             if (FLAGS_ISSET(flag, GRAPH_WANT_LOGGER))
                 if (!graph_action_logger(g, &h->res, flag))
@@ -235,7 +235,7 @@ static int graph_action_requiredby(service_graph_t *g, struct resolve_hash_s *c,
 
             h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
-                log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
+                log_warn_return(LOG_EXIT_ZERO, "service: ", stk.s + pos, " is not available") ;
 
             if (FLAGS_ISSET(flag, GRAPH_WANT_LOGGER))
                 if (!graph_action_logger(g, &h->res, flag))
@@ -276,7 +276,7 @@ static int graph_action_eventdeps(service_graph_t *g, struct resolve_hash_s *c, 
 
             h = resolve_hash_search(&g->hres, stk.s + pos) ;
             if (h == NULL)
-                log_warnusys_return(LOG_EXIT_ZERO,"get information of service: ", stk.s + pos) ;
+                log_warn_return(LOG_EXIT_ZERO, "no service answers to the name: ", stk.s + pos, " -- is its provider enabled?") ;
 
             if (FLAGS_ISSET(flag, GRAPH_WANT_LOGGER))
                 if (!graph_action_logger(g, &h->res, flag))
@@ -467,7 +467,7 @@ int service_graph_nresolve(service_graph_t *g, const char *list, size_t len, uin
 
         h = resolve_hash_search(&g->hres, list + pos) ;
         if (h == NULL)
-            log_warnusys_return(LOG_EXIT_ZERO, "get information of service: ", list + pos) ;
+            log_warn_return(LOG_EXIT_ZERO, "no service answers to the name: ", list + pos, " -- is its provider enabled?") ;
 
         if (!graph_action(g, &h->res, flag))
             return 0 ;

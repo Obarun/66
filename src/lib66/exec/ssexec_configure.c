@@ -258,7 +258,8 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     cfg_satmp = (strbuf)STRBUF_ZERO ;
     cfg_savar = (strbuf)STRBUF_ZERO ;
     uint8_t todo = opt_todo, current = opt_current ;
-    char const *sv = 0, *svconf = 0, *import = opt_import ;
+    char const *svconf = 0, *import = opt_import ;
+    char sv[SS_MAX_SERVICE_NAME + 1] ;
     opt_todo = T_UNSET ;
     opt_current = 0 ;
     opt_import = 0 ;
@@ -266,7 +267,8 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    sv = argv[0] ;
+    if (!service_resolve_provide(sv, *argv, info->base.s))
+        log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
     if (todo == T_UNSET && !import && !current) todo = T_EDIT ;
 
@@ -283,7 +285,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
     resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
     if (!res.has_environ || resolve_read(we, res.sa.s + res.path.home, res.sa.s + res.name) <= 0 || !e.envdir) {
-        log_1_warn(sv," do not have configuration file") ;
+        log_warn(sv," do not have configuration file") ;
         resolve_free(we) ;
         resolve_free(wres) ;
         return 0 ;

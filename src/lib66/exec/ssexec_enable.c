@@ -32,6 +32,8 @@
 #include <66/graph.h>
 #include <66/enum_parser.h>
 #include <66/config.h>
+#include <66/symlink.h>
+#include <66/sanitize.h>
 
 static opt_t const opts_enable[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",  .arg = OPT_NONE, .help = "print this help" },
@@ -66,21 +68,6 @@ opt_cmd_t const cmd_enable = {
     .fn = &ssexec_enable,
 } ;
 
-static void isalias_already(strbuf *sa, char const *base)
-{
-    size_t pos = 0 ;
-    char owner[SS_MAX_SERVICE_NAME + 1] ;
-
-    FOREACH_SBL(sa, pos) {
-
-        if (!service_resolve_provide(owner, sa->s + pos, base))
-            log_dieu(LOG_EXIT_SYS, "resolve provide alias: ", sa->s + pos) ;
-
-        if (strcmp(owner, sa->s + pos))
-            log_die(LOG_EXIT_USER, "name: ", sa->s + pos, " is currently provided by: ", owner, " -- disable it first with '66 disable ", sa->s + pos, "' command") ;
-    }
-}
-
 int ssexec_enable(int argc, char const *const *argv, void *data)
 {
     ssexec_t *info = data ;
@@ -94,9 +81,12 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     bool start = false, action = true ; /* action=true -> enable */
+    size_t pos = 0 ;
+    int e = 1 ;
+    uint8_t provide = 0 ;
+    struct resolve_hash_s *h, *htmp ;
     service_graph_t graph = GRAPH_SERVICE_ZERO ;
     vertex_t *c, *tmp ;
-    int e = 1 ;
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
 
     if (start_opt)
@@ -114,12 +104,25 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     if (!environ_import_arguments(&sa, argv, argc))
         log_dieusys(LOG_EXIT_SYS, "import arguments") ;
 
-    isalias_already(&sa, info->base.s) ;
+    FOREACH_SBL(&sa, pos) {
+
+        if (symlink_provide_isavailable(info->base.s, sa.s + pos, info->owner) < 0)
+            log_dieu(LOG_EXIT_SYS, "settle the name: ", sa.s + pos) ;
+    }
 
     nservice = service_graph_build_list(&graph, sa.s, sa.len, info, flag) ;
 
     if (!nservice)
         log_die(LOG_EXIT_USER, "services selection is not available -- please make a bug report") ;
+
+    HASH_FOREACH(&graph.hres, h, htmp) {
+
+        if (symlink_provide_isclaimable(info->base.s, &h->res) < 0)
+            log_dieu(LOG_EXIT_SYS, "settle the provided names of: ", h->res.sa.s + h->res.name) ;
+
+        if (h->dependencies.nprovide)
+            provide = 1 ;
+    }
 
     resolve_hash_reset_visit(&graph.hres) ;
     nservice = 0 ;
@@ -160,6 +163,10 @@ int ssexec_enable(int argc, char const *const *argv, void *data)
     }
 
     e = 0 ;
+
+    // cleanup and write a fresh dependencies addon
+    if (provide)
+        sanitize_graph(info) ;
 
     if (start && graph.g.nvertexes) {
 

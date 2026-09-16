@@ -32,6 +32,13 @@ Both directions are recursive and handled by every command that needs it
 
 ## The five relationship keys
 
+All five take a bracketed list, and a service in such a list can be **commented
+out** with a leading `#` without removing the line:
+
+```
+Depends = ( database #cache network )
+```
+
 ### Depends — "I need these first"
 
 The forward link. Each listed service must start successfully **before** this
@@ -74,29 +81,59 @@ Conflict = ( connman networkmanager )
 
 ### Provide — "I also answer to these names"
 
-Aliases. The service can be referenced (as a dependency, or on the command line)
-under any of these alternate names, like symbolic links.
+Names the service answers to, in addition to its own. A name is a bridge
+between what a frontend or a command line says and the service that currently
+answers to it: a consumer writes `Depends = ( network )`, keeps that name in
+its resolve, and reaches whoever provides `network` when the graph is built.
 
 ```
 Provide = ( network networking )
 ```
 
-A name has at most one claimant at a time. `66 enable` takes the names of the
-service it activates, and refuses when another service already holds one of
-them, whether that service is a provider or the service bearing the name
-itself. `66 disable` gives the names back. Every other command follows the
-alias: `66 status network` answers for the service providing it.
+**One name, one thing.** A name designates a service bearing it, or a provider
+of it, never both. Among providers, exactly one answers to the name at a time,
+and who that is changes on these events only:
 
-While a name is provided, the service bearing that name is reached through its
-provider, so `66 remove network` acts on the provider, not on a service called
-`network`. A `Provide` naming the service itself is dropped with a warning.
+| event | who answers afterwards |
+|---|---|
+| a provider enters the system while the name is free, because you enable it or because a dependency pulls it in | that provider |
+| you enable a provider | that provider, whoever answered before |
+| you remove the provider answering | nobody, until another provider enters the system or is enabled |
+| you disable the provider answering | unchanged, it keeps answering |
 
-A service in any bracketed list can be **commented out** with a leading `#`
-without removing the line:
+The last line is what makes a dependency on the name behave like any other: a
+disabled provider is started by whoever depends on it, exactly as a disabled
+service would be.
 
-```
-Depends = ( database #cache network )
-```
+> **Removing a provider with `-P`.** `66 remove -P` keeps the services that
+> depend on the one it removes, which is what you want to reinstall a provider
+> without tearing down its consumers. The name is released all the same, and
+> nothing bears it: until another provider answers to it, every command that
+> builds the system graph fails on the orphaned name, `unable to find service
+> frontend file of: network`, including commands that have nothing to do with it.
+> Hand the name over in the same breath, by enabling another provider, or drop
+> the `-P` and let the consumers go with it.
+
+**What is refused.** Each refusal below happens before anything is written, so
+a refused command leaves the system as it was:
+
+| you ask for | refused when | way out |
+|---|---|---|
+| `66 enable` of a provider | a service bears the name it provides | `66 remove` that service |
+| `66 enable` of a provider | another provider answering to that name is enabled | `66 disable` that provider |
+| `66 enable` of a service | a provider answers to the name the service bears | `66 remove` that provider |
+| `66 enable` of a provided name | a command line names services, never providers | enable the provider by its own name |
+| `66 enable` of a consumer | it pulls in both a service and a provider of that service's name | drop one of the two frontends |
+| `66 enable` of a consumer | nobody answers to a name it depends on | enable a provider of that name first |
+
+The system reads a frontend when it needs one, and `66 enable` does that for
+you: these refusals reach you through it. An administrator calling
+[66 parse](66-parse.html) by hand meets the same ones, worded the same way.
+
+**Names on the command line.** Every command that acts on a running service, or
+asks about one, follows the name: `66 status network` answers for the service
+providing it. `66 remove` acts on a frontend and takes the name literally:
+`66 remove network` removes a service called `network`, never its provider.
 
 ## A worked example
 

@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
@@ -69,9 +70,14 @@ static void migrate_event_0900(ssexec_t *info, char const *path, char const *nam
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
 
     char aname[strlen(name) + SS_ADDON_EVENT_SUFFIX_LEN + 1] ;
+    char file[strlen(path) + strlen(name) + SS_ADDON_EVENT_SUFFIX_LEN + 1] ;
     auto_strings(aname, name, SS_ADDON_EVENT_SUFFIX) ;
+    auto_strings(file, path, aname) ;
 
     // a service without an [Event] section owns no such addon
+    if (access(file, F_OK) < 0 && errno == ENOENT)
+        return ;
+
     if (resolve_open_cdb(&fd, &c, path, aname) <= 0)
         return ;
 

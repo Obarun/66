@@ -26,6 +26,8 @@
 #include <66/config.h>
 #include <66/constants.h>
 #include <66/migrate.h>
+#include <66/resolve.h>
+#include <66/service.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
 
@@ -88,5 +90,32 @@ void migrate_0912_provide_symlink(void)
             log_dieusys(LOG_EXIT_SYS, "point symlink: ", new, " to: ", target) ;
 
         file_tryunlink(old) ;
+    }
+
+    {
+        _cleanup_strbuf_ strbuf names = STRBUF_ZERO ;
+        size_t npos = 0 ;
+
+        if (!sbl_dir_get_recursive(&names, dir, exclude, S_IFLNK, 0))
+            log_dieusys(LOG_EXIT_SYS, "get provided names") ;
+
+        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+
+        FOREACH_SBL(&names, npos) {
+
+            char *name = names.s + npos ;
+            char lnk[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_PROVIDE_LEN + 1 + strlen(name) + 1] ;
+
+            auto_strings(lnk, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", name) ;
+
+            if (!resolve_check(wres, info.base.s, name))
+                continue ;
+
+            log_warn("service: ", name, " has a name a provider claims -- the service keeps it, remove one of them to hand it over") ;
+            file_tryunlink(lnk) ;
+        }
+
+        free(wres) ;
     }
 }

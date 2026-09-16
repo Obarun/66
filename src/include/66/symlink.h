@@ -18,13 +18,26 @@
 #define SYMLINK_SOURCE 0
 #define SYMLINK_LIVE 1
 
+/** the events that can change who answers to a provided name */
+#define SYMLINK_PROVIDE_PARSE 0
+#define SYMLINK_PROVIDE_ENABLE 1
+#define SYMLINK_PROVIDE_REMOVE 2
+
 #include <stdint.h>
+
+#include <oblibs/hash.h>
+
 #include <66/service.h>
 
 extern int symlink_switch(resolve_service_t *res, uint8_t flag) ;
 extern int symlink_make(resolve_service_t *res) ;
 extern int symlink_type(const char *path) ;
-extern int symlink_provide(const char *base, resolve_service_t *res, bool action) ;
+extern int symlink_provide_update(const char *base, resolve_service_t *res, uint8_t event) ;
+/** the three below settle a name: 1 when it is free, -1 on system error, and a
+ * refusal exits LOG_EXIT_USER where its reason is known */
+extern int symlink_provide_istaken(char const *base, hash_t *hres, struct resolve_hash_s *c) ;
+extern int symlink_provide_isclaimable(char const *base, resolve_service_t *res) ;
+extern int symlink_provide_isavailable(char const *base, char const *name, uid_t owner) ;
 
 /** Create the symbolic link @name pointing to @target, atomically replacing any
  * existing @name. If @name does not exist, symlink() is used directly; otherwise

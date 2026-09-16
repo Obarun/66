@@ -60,7 +60,7 @@ static void build_supervised(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
     if (!parse_execute(c, ctx))
         log_die(LOG_EXIT_SYS, "parse execute of service: ", name) ;
 
-    if (!parse_dependencies(ctx->st, &c->dependencies, name, ctx->info->base.s))
+    if (!parse_dependencies(ctx->st, &c->dependencies, name))
         log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
     if (!parse_interdependences(c, ctx))
@@ -121,7 +121,7 @@ static void parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
     if (!parse_environ(c, ctx))
         log_die(LOG_EXIT_SYS, "parse environment of service: ", name) ;
 
-    if (!parse_dependencies(ctx->st, &c->dependencies, name, ctx->info->base.s))
+    if (!parse_dependencies(ctx->st, &c->dependencies, name))
         log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
 
     if (!parse_interdependences(c, ctx))

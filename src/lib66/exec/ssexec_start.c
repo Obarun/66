@@ -26,6 +26,8 @@
 #include <66/svc.h>
 #include <66/sanitize.h>
 #include <66/config.h>
+#include <66/service.h>
+#include <66/constants.h>
 
 static void ensure_no_conflict(service_graph_t *graph, char const *name)
 {
@@ -36,6 +38,7 @@ static void ensure_no_conflict(service_graph_t *graph, char const *name)
 
     if (hash->dependencies.nconflict) {
 
+        char sv[SS_MAX_SERVICE_NAME + 1] ;
         _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.conflict)) ;
         size_t pos = 0 ;
         int r ;
@@ -45,7 +48,10 @@ static void ensure_no_conflict(service_graph_t *graph, char const *name)
 
         FOREACH_SBL(&stk, pos) {
 
-            r = svc_is_up(stk.s + pos) ;
+            if (!service_resolve_provide(sv, stk.s + pos, hash->res.sa.s + hash->res.path.home))
+                log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", stk.s + pos) ;
+
+            r = svc_is_up(sv) ;
             if (r > 0)
                 log_die(LOG_EXIT_SYS, "conflicting service for '", hash->res.sa.s + hash->res.name, "' -- please stop the '", stk.s + pos, "' service first.") ;
         }

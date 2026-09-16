@@ -270,9 +270,9 @@ Lists optional dependencies. **66** will enable the first available service from
 Provide = ( network networking )
 ```
 
-Defines one or more service aliases, alternate names under which this service can be referenced. These aliases behave like symbolic links, allowing the same service to be managed with different name.
+Defines one or more names this service answers to, in addition to its own. A name is a bridge between what a frontend or a command line says and the service that currently answers to it: nothing is rewritten on either side, the name is followed when the graph is built.
 
-A name has at most one claimant at a time. [66 enable](66-enable.html) takes the names of the service it activates and refuses when another service already holds one of them, whether that service provides the name or bears it. [66 disable](66-disable.html) gives the names back. Every other command follows the alias, so a service is reached through the name it provides, and the service bearing that name is reached through its provider for as long as the name is held. A `Provide` naming the service itself is dropped with a warning.
+A name designates one thing at a time, a service bearing it or a provider of it, never both, and among providers exactly one answers to it. The events that move the answer from one provider to another, the refusals that keep the rule, and which commands follow a name rather than take it literally, are described in [dependencies](66-dependencies.html). A `Provide` naming the service itself is dropped with a warning.
 
 * mandatory: no
 

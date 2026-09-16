@@ -28,30 +28,29 @@ int service_resolve_provide(char *dst, char const *src, char const *base)
     log_flow() ;
 
     char path[SS_MAX_PATH_LEN] ;
-    char l[SS_MAX_PATH_LEN + 1] ;
-
-    if (strlen(src) > SS_MAX_SERVICE_NAME)
-        return (errno = ENAMETOOLONG, 0) ;
+    char lnk[SS_MAX_PATH_LEN + 1] ;
 
     auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", src) ;
 
-    ssize_t len = readlink(path, l, SS_MAX_PATH_LEN) ;
+    ssize_t len = readlink(path, lnk, SS_MAX_PATH_LEN) ;
 
-    // no entry: the name is not provided, it answers for itself
-    if (len < 1) {
+    if (len < 0) {
+
+        // any other failure leaves the answer unknown
+        if (errno != ENOENT)
+            return 0 ;
+
+        // no entry: the name is not provided, it answers for itself
         auto_strings(dst, src) ;
         return 1 ;
     }
 
-    if ((size_t)len >= SS_MAX_PATH_LEN)
-        return (errno = EINVAL, 0) ;
-
-    l[len] = 0 ;
+    lnk[len] = 0 ;
 
     // the link is written as ../<provider>, so that it resolves on disk
-    char *provider = !strncmp(l, "../", 3) ? l + 3 : l ;
+    char *provider = !strncmp(lnk, "../", 3) ? lnk + 3 : lnk ;
 
-    if (!*provider || strlen(provider) > SS_MAX_SERVICE_NAME)
+    if (!*provider)
         return (errno = EINVAL, 0) ;
 
     auto_strings(dst, provider) ;

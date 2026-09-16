@@ -461,6 +461,9 @@ void parse_service(hash_t *hres, char const *sv, ssexec_t *info, uint8_t force, 
             if (!symlink_switch(&c->res, SYMLINK_SOURCE))
                 log_dieusys(LOG_EXIT_SYS, "sanitize_symlink") ;
 
+            if (!symlink_provide_update(info->base.s, &c->res, SYMLINK_PROVIDE_PARSE))
+                log_dieu(LOG_EXIT_SYS, "make provide symlink") ;
+
             log_info("Parsed successfully: ", c->res.sa.s + c->res.name, " at tree: ", c->res.sa.s + c->res.treename) ;
 
             c->visit = 1 ;

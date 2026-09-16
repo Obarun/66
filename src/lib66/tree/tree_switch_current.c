@@ -30,7 +30,7 @@ int tree_switch_current(char const *base, char const *treename)
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CURRENT ;
 
     if (tree_ongroups(base, treename, TREE_GROUPS_BOOT)) {
-        log_1_warn("you can't mark a tree current if it is part of the boot group") ;
+        log_warn("you can't mark a tree current if it is part of the boot group") ;
         goto freed ;
     }
 

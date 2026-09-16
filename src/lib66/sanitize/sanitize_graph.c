@@ -53,7 +53,8 @@ void sanitize_graph(ssexec_t *info)
     HASH_FOREACH(&graph.hres, c, tmp) {
 
         wres = resolve_set_struct(DATA_SERVICE, &c->res) ;
-        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
+        resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
+        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
         char name[strlen(c->res.sa.s + c->res.name) + 1] ;
         auto_strings(name, c->res.sa.s + c->res.name) ;
 
@@ -64,35 +65,59 @@ void sanitize_graph(ssexec_t *info)
         nvertex = v->ndepends >= v->nrequiredby ? v->ndepends : v->nrequiredby ;
         _alloc_sbl_(stk, nvertex * SS_MAX_SERVICE_NAME + 1) ;
 
+        if (!resolve_check(depwres, info->base.s, name))
+            resolve_init(depwres) ;
+        else if (resolve_read(depwres, info->base.s, name) <= 0)
+            log_dieu(LOG_EXIT_SYS, "read dependencies addon of service: ", name) ;
+
         if (v->ndepends) {
+
+            size_t pos = 0 ;
+            uint8_t did = 0 ;
+            _alloc_sbl_(declared, (dep.ndepends + v->ndepends) * SS_MAX_SERVICE_NAME + 1) ;
+            _alloc_sbl_(led, strlen(c->dependencies.sa.s + c->dependencies.depends) + 1) ;
+
+            if (dep.ndepends && !sbl_clean_string(&declared, dep.sa.s + dep.depends))
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
+
+            if (c->dependencies.ndepends && !sbl_clean_string(&led, c->dependencies.sa.s + c->dependencies.depends))
+                log_dieusys(LOG_EXIT_SYS, "clean string") ;
 
             if (!graph_get_stkedge(&stk, &graph.g, v, false))
                 log_die_nomem("strbuf") ;
 
-            c->dependencies.ndepends = 0 ;
-            c->dependencies.depends = 0 ;
+            FOREACH_SBL(&stk, pos) {
 
-            if (stk.len)
-                c->dependencies.depends = parse_compute_list(depwres, &stk, &c->dependencies.ndepends, 0) ;
+                char *edge = stk.s + pos ;
+
+                if (sbl_search(&led, edge) >= 0 || sbl_search(&declared, edge) >= 0)
+                    continue ;
+
+                if (!sbl_add(&declared, edge))
+                    log_die_nomem("strbuf") ;
+
+                did = 1 ;
+            }
+
+            if (did) {
+                dep.ndepends = 0 ;
+                dep.depends = parse_compute_list(depwres, &declared, &dep.ndepends, 0) ;
+            }
         }
 
         stk.len = 0 ;
 
-        if (v->nrequiredby) {
+        if (v->nrequiredby && !graph_get_stkedge(&stk, &graph.g, v, true))
+            log_die_nomem("strbuf") ;
 
-            if (!graph_get_stkedge(&stk, &graph.g, v, true))
-                log_die_nomem("strbuf") ;
+        dep.nrequiredby = 0 ;
+        dep.requiredby = 0 ;
 
-            c->dependencies.nrequiredby = 0 ;
-            c->dependencies.requiredby = 0 ;
+        if (stk.len)
+            dep.requiredby = parse_compute_list(depwres, &stk, &dep.nrequiredby, 0) ;
 
-            if (stk.len)
-                c->dependencies.requiredby = parse_compute_list(depwres, &stk, &c->dependencies.nrequiredby, 0) ;
-        }
-
-        c->res.has_dependencies = (c->dependencies.ndepends || c->dependencies.nrequiredby ||
-                                   c->dependencies.noptsdeps || c->dependencies.ncontents ||
-                                   c->dependencies.nprovide || c->dependencies.nconflict) ? 1 : 0 ;
+        c->res.has_dependencies = (dep.ndepends || dep.nrequiredby || dep.noptsdeps ||
+                                   dep.ncontents || dep.nprovide || dep.nconflict) ? 1 : 0 ;
 
         if (!resolve_write(wres, info->base.s, name))
             log_dieu(LOG_EXIT_SYS, "write resolve file of service: ", name) ;
@@ -101,7 +126,7 @@ void sanitize_graph(ssexec_t *info)
             log_dieu(LOG_EXIT_SYS, "write dependencies addon of service: ", name) ;
 
         resolve_free(wres) ;
-        free(depwres) ;
+        resolve_free(depwres) ;
     }
     service_graph_destroy(&graph) ;
 }

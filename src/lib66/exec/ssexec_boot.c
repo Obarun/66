@@ -594,7 +594,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     umask(mask) ;
 
     if (container && slashdev)
-        log_1_warn("-d options asked for a boot inside a container; are you sure your container does not come with a pre-mounted /dev?") ;
+        log_warn("-d options asked for a boot inside a container; are you sure your container does not come with a pre-mounted /dev?") ;
 
     if (slashdev) {
 

@@ -172,6 +172,9 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
 
     uint8_t state = str_to_int(oversion), current = str_to_int(SS_VERSION), did = 0 ;
 
+    if (state < current)
+        migrate_create_snap(info, oversion) ;
+
     if (state < VERSION_0920)
         migrate_0912_provide_symlink() ;
 
@@ -185,7 +188,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 return did ;
 
             case VERSION_0810:
-                migrate_create_snap(info, oversion) ;
                 migrate_0802() ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
@@ -196,7 +198,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0820:
-                migrate_create_snap(info, oversion) ;
                 migrate_0811() ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
@@ -207,7 +208,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0822:
-                migrate_create_snap(info, oversion) ;
                 migrate_0821() ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
@@ -218,7 +218,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0900:
-                migrate_create_snap(info, oversion) ;
                 migrate_0822() ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
@@ -229,7 +228,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0910:
-                migrate_create_snap(info, oversion) ;
                 migrate_0900() ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
@@ -242,7 +240,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0911:
-                migrate_create_snap(info, oversion) ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE))
@@ -254,7 +251,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0912:
-                migrate_create_snap(info, oversion) ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE))
@@ -266,7 +262,6 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 break ;
 
             case VERSION_0920:
-                migrate_create_snap(info, oversion) ;
                 migrate_0920() ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;

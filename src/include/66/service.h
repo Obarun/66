@@ -342,6 +342,7 @@ extern int service_endof_dir(char const *dir, char const *name) ;
 extern int service_frontend_path(strbuf *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude, uint8_t exlen) ;
 extern int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude) ;
 extern int service_is_g(char const *name, uint32_t flag) ;
+extern int service_isenabled(char const *base, char const *name) ;
 extern int service_get_treename(char *atree, char const *name) ;
 extern void service_resolve_sanitize(resolve_service_t *res) ;
 extern int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;

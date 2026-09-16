@@ -43,6 +43,7 @@ int parse_interdependences(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uint8_t exlen = 3 ;
     char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR } ;
+    char owner[SS_MAX_SERVICE_NAME + 1] ;
 
     if (listlen) {
 
@@ -83,9 +84,24 @@ int parse_interdependences(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             if (!strcmp(ctx->main, name))
                 log_die(LOG_EXIT_USER, "direct cyclic interdependences detected -- ", ctx->main, " depends on: ", service, " which depends on: ", ctx->main) ;
 
-            r = service_frontend_path(&sa, name, getuid(), ctx->forced_directory, exclude, exlen) ;
-            if (r < 1) {
-                log_warnu( "get frontend service file of: ", name) ;
+            if (!service_resolve_provide(owner, name, ctx->info->base.s)) {
+                log_warnusys("resolve provide alias: ", name) ;
+                goto freed ;
+            }
+
+            r = service_frontend_path(&sa, owner, getuid(), ctx->forced_directory, exclude, exlen) ;
+            if (r < 0) {
+                log_warnu( "get frontend service file of: ", owner) ;
+                goto freed ;
+            }
+
+            if (!r) {
+
+                if (strcmp(owner, name))
+                    log_warnu( "get frontend service file of: ", owner, " -- it provides: ", name) ;
+                else
+                    log_warn("no service answers to the name: ", name, " -- is its provider enabled?") ;
+
                 goto freed ;
             }
 
