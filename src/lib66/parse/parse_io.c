@@ -102,6 +102,9 @@ static int io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t 
             if (!strcmp(line, enum_str_parser_io_type[E_PARSER_IO_TYPE_66LOG]) || !strcmp(line, "s6log"))
                 return set_logdir(&io->fdout.destination, w, res, 0) ;
 
+            if (strlen(line) > SS_MAX_PATH)
+                log_warn_return(LOG_EXIT_ZERO, "path is too long: ", line) ;
+
             return set_logdir(&io->fdout.destination, w, res, line) ;
 
         case E_PARSER_IO_TYPE_NULL:

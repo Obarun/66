@@ -31,12 +31,12 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, void *data)
     ssexec_t *info = data ;
 
     char const *snapname = 0 ;
-    char snapdir[SS_MAX_PATH_LEN] ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
+    char snapdir[info->base.len + SS_SNAPSHOT_LEN + strlen(snapname) + 1] ;
 
     auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
 

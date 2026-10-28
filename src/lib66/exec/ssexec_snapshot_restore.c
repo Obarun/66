@@ -78,7 +78,6 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
     size_t pos = 0, dlen = 0 ;
     char const *snapname = 0 ;
     char const *exclude[1] = { 0 } ;
-    char snapdir[SS_MAX_PATH_LEN] ;
     char src[SS_MAX_PATH_LEN] ;
     char dst[SS_MAX_PATH_LEN] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
@@ -87,6 +86,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
+    char snapdir[info->base.len + SS_SNAPSHOT_LEN + strlen(snapname) + 1] ;
 
     auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1, "/", snapname) ;
 

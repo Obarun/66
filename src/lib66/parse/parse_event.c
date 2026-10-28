@@ -181,6 +181,22 @@ static int validate_on_tokens(char const *on, int src, char const *from, int has
     return 1 ;
 }
 
+static int check_from_names(char const *from, char const *name)
+{
+    _alloc_sbl_(stk, strlen(from) + 1) ;
+
+    if (!sbl_clean_string(&stk, from))
+        log_warnusys_return(LOG_EXIT_ZERO, "clean the From list of service: ", name) ;
+
+    size_t pos = 0 ;
+
+    FOREACH_SBL(&stk, pos)
+        if (strlen(stk.s + pos) > SS_MAX_SERVICE_NAME)
+            log_warn_return(LOG_EXIT_ZERO, "service: ", name, " names: ", stk.s + pos, " -- the name is too long") ;
+
+    return 1 ;
+}
+
 /** A tick reactor states an EventType that From already implies, and 66-eventd
  * delivers an event only to a reactor whose type equals the source's own type.
  * A mismatch parses, arms and then never fires -- silently. Refuse it here.
@@ -365,7 +381,7 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     }
 
     if ((src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL) &&
-        !validate_on_tokens(ev->sa.s + ev->on, src, ev->sa.s + ev->from, has_from, name)) {
+        (!check_from_names(ev->sa.s + ev->from, name) || !validate_on_tokens(ev->sa.s + ev->on, src, ev->sa.s + ev->from, has_from, name))) {
         free(wres) ;
         return 0 ;
     }

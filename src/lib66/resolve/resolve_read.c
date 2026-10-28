@@ -34,6 +34,9 @@ int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
     if (!suffix)
         return (errno = EINVAL, -1) ;
 
+    if (strlen(name) > SS_MAX_SERVICE_NAME)
+        return (errno = ENAMETOOLONG, 0) ;
+
     int r ;
     bool tree = wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER ;
     char path[SS_MAX_PATH_LEN] ;

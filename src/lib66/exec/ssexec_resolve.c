@@ -221,15 +221,14 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 
     if (*argv[0] == '/') {
 
-        auto_strings(svname, *argv) ;
-        char basename[strlen(svname) + 1] ;
-        char dirname[strlen(svname) + 1] ;
+        char basename[strlen(*argv) + 1] ;
+        char dirname[strlen(*argv) + 1] ;
 
-        if (!ob_basename(basename, svname))
-            log_dieu(LOG_EXIT_SYS, "get basename of: ", svname) ;
+        if (!ob_basename(basename, *argv))
+            log_dieu(LOG_EXIT_SYS, "get basename of: ", *argv) ;
 
-        if (!ob_dirname(dirname, svname))
-            log_dieu(LOG_EXIT_SYS, "get dirname of: ", svname) ;
+        if (!ob_dirname(dirname, *argv))
+            log_dieu(LOG_EXIT_SYS, "get dirname of: ", *argv) ;
 
         if (resolve_read_cdb(wres, dirname, basename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;

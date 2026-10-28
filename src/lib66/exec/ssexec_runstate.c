@@ -96,15 +96,14 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
 
     if (*argv[0] == '/') {
 
-        auto_strings(svname, *argv) ;
-        if (access(svname, F_OK) < 0)
-            log_dieusys(LOG_EXIT_SYS, "access status file: ", svname) ;
+        if (access(*argv, F_OK) < 0)
+            log_dieusys(LOG_EXIT_SYS, "access status file: ", *argv) ;
 
-        r = status_read(&st, svname) ;
+        r = status_read(&st, *argv) ;
         if (r < 0 && errno == EINVAL)
-            log_die(LOG_EXIT_USER, "invalid status file: ", svname) ;
+            log_die(LOG_EXIT_USER, "invalid status file: ", *argv) ;
         else if (r <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read status file: ", svname) ;
+            log_dieusys(LOG_EXIT_SYS, "read status file: ", *argv) ;
 
     } else {
 

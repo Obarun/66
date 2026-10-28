@@ -135,7 +135,6 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
     opt_system = 0 ;
     char const *snapname = 0 ;
     size_t pos = 0, len = 0 ;
-    char snapdir[SS_MAX_PATH_LEN] ;
     char src[SS_MAX_PATH_LEN] ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
 
@@ -150,6 +149,8 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
 
     if (service_graph_write_begin(info->owner, info->base.s, SS_LIVE) < 0)
         log_dieusys(LOG_EXIT_SYS, "lock the system") ;
+
+    char snapdir[info->base.len + SS_SNAPSHOT_LEN + strlen(snapname) + 1] ;
 
     auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1) ;
 
