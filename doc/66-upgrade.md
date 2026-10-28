@@ -10,6 +10,10 @@ value of `66 tree -o`. With the global `-l` goes the `LIVE=` key of `init.conf`,
 which was its only source. The live directory is now fixed at compile time, by
 the `-D livedir=` option to `meson setup`, and nothing overrides it at runtime.
 
+A name now designates one thing at a time, a service bearing it or a provider of
+it, never both. Providers are recorded apart, under `.provide/`, and exactly one
+of them answers to a name at a time.
+
 The dependency graph is rebuilt from what the frontends declare, and nothing
 else. A resolve file holds the declarations of its frontend; what a service is
 required by is computed when the graph is built, never written in the resolve
@@ -31,8 +35,9 @@ milliseconds by default.
 
 The migration is **automatic**. It stamps the resolve files at the new version
 and rewrites the control scripts of a scandir already on disk, so a machine
-upgraded without a reboot keeps answering the power button. It also rewrites
-the dependencies and the stop delay of each service from its frontend, see
+upgraded without a reboot keeps answering the power button. It also moves the
+aliases you already had into `.provide/`, and rewrites the dependencies and the
+stop delay of each service from its frontend, see
 [What happens by itself](#what-happens-by-itself).
 
 ## What you must do
@@ -150,6 +155,8 @@ Then check these points against your frontends and your scripts:
   that depend on `dbus` staying in place; `66 enable dbus` takes the name back.
   While the service bearing the name is enabled, its provider is refused (see
   [Provide](66-dependencies.html#provide-i-also-answer-to-these-names)).
+- **Enabling a provider while a rival answers to the same name exits `100`**
+  instead of `111`. A script that tested the code must be adjusted.
 - **The `[Start] Timeout` of a `Notify` service is enforced** by its
   supervisor, whatever brings it up: a service not ready in time is brought
   down, stays down and supervised, and its `result` reads `timeout-start`.
@@ -203,6 +210,15 @@ together migrate the system once.
   names explicitly is kept.
   The log directory and its content are left as they are, with the owner the
   previous release gave them.
+- **The aliases move into `.provide/`.** An alias whose name a service already
+  bears does not survive: the service keeps the name, the alias loses its claim,
+  and a warning names the service concerned. Both frontends stay. To hand the
+  name over to the provider, `66 disable -P` the service then `66 enable` the
+  provider.
+
+    ```
+    service: <name> has a name a provider claims -- the service keeps it, remove one of them to hand it over
+    ```
 
 ## Bug fixes
 
@@ -216,6 +232,18 @@ together migrate the system once.
 
     The path was assembled with a separator the live directory already ends
     with.
+
+- **`66 log` follows a provided name**:
+
+    `66 log network`, on a name only a provider answers to, answered `unknown
+    service: network`. It now reaches the provider that answers to it.
+
+- **`66 remove` names the provider instead of asking whether the service was
+  parsed**:
+
+    `66 remove network`, on a name no service bears, answered `unable to find
+    service: network -- did you parse it?`. It now says which provider answers
+    to the name, and to remove that provider instead.
 
 ## For packagers
 
@@ -246,6 +274,13 @@ the `depends` of every service and the `requiredby` it declares itself.
 `sanitize_source()` and `sanitize_write()` are gone as well, and `svc_launch()`,
 `svc_init_ctx()`, `svc_is_up()` and `svc_compute_ns()` leave the public `66/svc.h`.
 Several primitives now return `1`, `0` or `-1`.
+
+`symlink_provide()` is gone from `66/symlink.h`. The provided names are handled
+by the `symlink_provide_*()` family: `symlink_provide_parse()`,
+`symlink_provide_enable()`, `symlink_provide_release()`,
+`symlink_provide_drop()`, and the checks `symlink_provide_isavailable()`,
+`symlink_provide_claim()` and `symlink_provide_isfree()`, which write the reason
+of a refusal in a buffer instead of exiting.
 
 `meson setup` takes a new `-D default-stop-timeout=` option, in milliseconds,
 `10000` by default.
