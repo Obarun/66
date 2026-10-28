@@ -37,7 +37,7 @@ sed_args = [
 
 # 59 pages — HTML output (strict mirror of make-html.sh)
 html_pages = [
-  '66', '66-boot', '66-cheatsheet', '66-container', '66-configure', '66-deeper',
+  '66', '66-boot', '66-cheatsheet', '66-container', '66-configure', '66-contracts', '66-deeper',
   '66-dependencies', '66-disable',
   '66-echo', '66-emit', '66-enable', '66-env', '66-event', '66-eventd', '66-fdholder', '66-free', '66-frontend', '66-getting-started',
   '66-halt', '66-hpr',
@@ -63,9 +63,9 @@ man1_pages = [
   '66-version', '66-wall', 'execl-envfile', 'execl-runas',
 ]
 
-# 11 pages — man section 5 (strict mirror of make-man.sh)
+# 12 pages — man section 5 (strict mirror of make-man.sh)
 man5_pages = [
-  '66-deeper', '66-event', '66-frontend', '66-identifier', '66-instantiated-service',
+  '66-contracts', '66-deeper', '66-event', '66-frontend', '66-identifier', '66-instantiated-service',
   '66-module', '66-module-creation', '66-module-usage', '66-service-configuration-file',
   '66-standard-io-redirection', '66-upgrade-process',
 ]

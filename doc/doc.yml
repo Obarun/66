@@ -75,6 +75,7 @@ nav:
   - Module service usage: 66-module-usage.md
   - Module service creation: 66-module-creation.md
   - Service configuration file: 66-service-configuration-file.md
+  - Command contracts: 66-contracts.md
   - Deeper understanding: 66-deeper.md
   - Upgrade and Migration process: 66-upgrade-process.md
   - Standard I/O redirection: 66-standard-io-redirection.md
