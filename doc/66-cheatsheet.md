@@ -22,12 +22,13 @@ each command's reference page. An option that takes a value accepts both
 | Register **and** run it now | `66 enable --start foo` |
 | Stop it (stays enabled) | `66 stop foo` |
 | Un-register it from boot | `66 disable foo` |
-| Stop and unregister in one go | `66 disable --stop foo` |
+| Unregister, stop and drop from the scandir in one go | `66 disable --stop foo` |
 | Restart (down then up) | `66 restart foo` |
 | Reload config — sends `SIGHUP` | `66 reload foo` |
 | Re-apply an edited frontend file | `66 reconfigure foo` |
 | Stop and drop from the scandir | `66 free foo` |
 | Erase everything `66` generated for it | `66 remove foo` |
+| Repair a service whose files do not read | `66 reconfigure --cleanup foo` |
 
 `66 remove` is irreversible (it keeps only your frontend file). Several services
 at once: separate names with spaces — `66 start foo bar baz`.

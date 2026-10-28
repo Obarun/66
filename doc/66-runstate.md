@@ -19,6 +19,12 @@ question: is the service running right now, since when, and with which result.
 The *service* argument is either a service name or an absolute path to a *status*
 file.
 
+`runstate` shows the state the service is in now, never the one it is heading to. A service
+that dies by itself reads `finishing` while its `finish` script runs, one brought down by
+[66 stop](66-stop.html) reads `stopping`. After `66 signal -o`, a classic that runs reads `up`.
+The record of a oneshot or of a module lives under the live directory only: no record means
+the service is down, and nothing of it survives a reboot.
+
 ## Options
 
 - **-h, --help**: prints this help.
@@ -70,7 +76,7 @@ death.
 | `up` | the service is running (and ready) |
 | `stopping` | a stop is in progress |
 | `finishing` | the `finish` script is running |
-| `restarting` | a restart is in progress |
+| `restarting` | the process is down and its supervisor brings it back up, a crash loop included |
 | `done` | a oneshot has run to completion |
 | `failed` | the crash budget is exhausted, the service is parked |
 | `waiting` | an armed [event](66-event.html) reactor: it holds no process and waits for its event |
@@ -88,8 +94,8 @@ Seeing `down` here on a classic reactor does not mean it is disarmed.
 | `success` | clean state, nothing to report | `0` |
 | `exited` | the process exited | the exit code |
 | `signaled` | the process was killed by a signal | the signal number |
-| `timeout-start` | the start timeout elapsed | `0` |
-| `timeout-stop` | the stop timeout elapsed | `0` |
+| `timeout-start` | a service with `Notify` was not ready within its `[Start] Timeout` and was brought down | `0` |
+| `timeout-stop` | the way down outlasted the `[Stop] Timeout` and the process was killed | `0` |
 | `crash-limit` | the crash budget was exhausted | `0` |
 | `exec-failed` | the `run` script never executed | the `errno` |
 

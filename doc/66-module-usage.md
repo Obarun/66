@@ -70,7 +70,11 @@ the inside service:
 ```
 
 The colon separates the instance (`webapp@blog`) from the inside service (`worker`); it is the
-service's real, stored name, so every `66` command accepts it:
+service's real, stored name. [start](66-start.html), [stop](66-stop.html), [free](66-free.html),
+[signal](66-signal.html), [reload](66-reload.html) and [restart](66-restart.html) accept it and
+act on that service only, the module is neither pulled in nor touched. [parse](66-parse.html),
+[enable](66-enable.html), [disable](66-disable.html), [remove](66-remove.html) and
+[reconfigure](66-reconfigure.html) refuse it: they handle the module as a whole.
 
 ```
 66 restart webapp@blog:server
@@ -81,3 +85,12 @@ If an inside service is itself instantiated, give its full name after the colon:
 ```
 66 reload webapp@blog:cache@ro
 ```
+
+Once an inside service has been freed alone, `66 signal`, `66 reload` and `66 restart` of the
+module are refused with `100`; `66 stop` and `66 free` of the module pass over it.
+
+## Starting and stopping order
+
+Started, a module comes up after its inside services: they start in their dependency order,
+then the module is marked up. Stopped, the module is marked down first, then its inside
+services stop in reverse order.

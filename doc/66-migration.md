@@ -132,7 +132,7 @@ one. Everything that can restart `foo` at 3 a.m. is written in `foo`'s own
 frontend, so you read one file instead of searching the whole service tree. And
 subscribing a service to an existing event changes exactly one file — its own —
 never a file belonging to a service you do not own. The only key that reaches
-outward, [`Emit`](66-event.html#emit), raises a *name*, never a command: whoever
+outward, [`Emit`](66-frontend.html#emit), raises a *name*, never a command: whoever
 cares subscribes on their side. See [the event system](66-event.html).
 
 **Applying config changes is per-service, not global.** `systemctl daemon-reload`

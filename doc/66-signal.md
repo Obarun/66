@@ -16,10 +16,16 @@ Multiple *services* can be handled by separating their names with a space.
 
 This command handles [interdependencies](66.html#handling-dependencies). The direction it takes depends on the operation asked for. The `-u`, `-U` and `-o` operations bring the service up, so they are propagated to its dependencies, which are brought up first. Every other operation is propagated to its required-by dependencies.
 
+`signal` prepares nothing: a named service that was never parsed, or that is not supervised, is refused with `100`, whatever the operation, `-u` included. A service met on the way that is not supervised is skipped, said at verbosity 2. A module one member of which was freed alone is refused with `100`.
+
+An event is sent only when the order acts on the service: a real change of state, or a signal delivered to its process. A `-u` or `-o` to a classic that runs, a `-d` to a service already down, a signal to a service that is down, send none. A signal delivered to a running service sends the event of that signal. A `-o` keeps a running classic up, and [66 runstate](66-runstate.html) shows it up.
+
+A named logger receives the signal with its service; under **-P**, the logger alone receives it.
+
 ## Options
 
 - **-h, --help**: print this help.
-- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *signal* command only sends the signal to the services named on the command line, whichever direction the operation would otherwise propagate to.
+- **-P, --no-propagate**: Do not handle service dependencies. In such cases, the *signal* command only sends the signal to the services named on the command line, whichever direction the operation would otherwise propagate to. Their logger does not follow them; a module still comes with its members.
 - **-wu, --wait u**: do not exit until the service is up.
 - **-wU, --wait U**: do not exit until the service is up and ready and has notified readiness.
 - **-wd, --wait d**: do not exit until the service is down.

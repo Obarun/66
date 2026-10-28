@@ -75,7 +75,7 @@ When booting a system, command *boot* performs the following operations:
 
     * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services of the `boot` group (or of *TREE* when pinned), where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
-    * The child then brings up the services of every enabled tree.
+    * The child then brings up the services of every enabled tree. An invalid service of a tree, its resolve file unreadable, part of a dependency cycle or without frontend, is left out with a warning naming it, together with every service that depends on it; the others start, and the tree counts as failed. When a tree of the `boot` group fails, the enabled trees are not started.
 
 In the unusual event that any of the above processes fail, command *boot* will try to launch a single-user login namely *sulogin* to provide the means to repair the system.
 

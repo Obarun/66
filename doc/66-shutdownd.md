@@ -12,7 +12,7 @@ This program is a modified copy of [s6-linux-init-shutdownd](https://skarnet.org
 
 - 66-shutdownd opens the `%%livedir%%/scandir/0/shutdownd/fifo` pipe and listens to it. The [66 poweroff](66-poweroff.html), [66 reboot](66-reboot.html) and [66 halt](66-halt.html) commands send their request to this pipe when they trigger the shutdown procedure.
 
-- When it receives a request to shut down, *66-shutdownd* brings the service trees down itself: it frees the enabled trees, then the `boot` tree, all marked as `shutdown`.
+- When it receives a request to shut down, *66-shutdownd* brings the service trees down itself: it frees the enabled trees, then the `boot` tree, all marked as `shutdown`. It waits for each service as its stop delay says: a service written with `[Stop] Timeout = 0` holds the shutdown until it is down. An invalid service is left out with a warning, the others stop.
 
 - It then kills the remaining processes, first with a `SIGTERM`, then—after the grace time specified by the shutdown command—with a `SIGKILL`.
 

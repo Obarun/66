@@ -85,9 +85,28 @@ A service can be `up` but `disabled` (started by hand, won't survive reboot), or
 ## I can't remove or re-create a service / scandir
 
 - `66 remove foo` is irreversible and removes everything except your frontend
-  file. If a service is running, stop it first.
+  file. A running service is stopped and unsupervised first; the services that
+  depend on it are removed with it.
 - `66 scandir create` refuses to overwrite an existing scandir — `66 scandir
   remove` it first (after `66 scandir stop`).
+
+## A command refuses a service as invalid
+
+A command refuses with `100` a service it has to act on when that service is
+invalid, and names the repair in its message:
+
+```
+service: b has an unreadable resolve file -- repair it with 66 reconfigure -c b
+service: c cannot be ordered: it is part of, or depends on, a dependency cycle -- break the cycle in the frontends, then re-parse them with 66 parse -f
+service: b has no frontend anywhere any more -- remove it with 66 remove b
+```
+
+`66 reconfigure -c` removes what the service left on disk and parses it again
+from its frontend; when its resolve file did not read, its activation is lost,
+enable it again if it was enabled. A command that does not touch the invalid
+service acts, and names it in a warning at verbosity 2. Never repair a file
+under the directories of 66 by hand: the commands above are the repairs 66
+offers.
 
 ## Reading more than the tail of a log
 

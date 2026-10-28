@@ -8,7 +8,7 @@ The event daemon. `66-eventd` runs the [event system](66-event.html) at runtime:
 66-eventd
 ```
 
-`66-eventd` is **not meant to be run directly**. [66-scandir](66-scandir.html) spawns one instance for the scandir it manages. You drive it through the ordinary resolve-aware commands: [66 start](66-start.html) and [66 stop](66-stop.html) on an `event` source or on a reactor **arm** and **disarm** the corresponding rule, and [66 emit](66-emit.html) raises a `user` event. You never talk to the daemon's socket yourself.
+`66-eventd` is **not meant to be run directly**. [66-scandir](66-scandir.html) spawns one instance for the scandir it manages. You drive it through the ordinary resolve-aware commands: [66 start](66-start.html) and [66 free](66-free.html) on an `event` source or on a reactor **arm** and **disarm** the corresponding rule, while [66 stop](66-stop.html) leaves it armed, and [66 emit](66-emit.html) raises a `user` event. You never talk to the daemon's socket yourself.
 
 The keys a source and a reactor declare are documented in [66-frontend](66-frontend.html#section-event); the model and the runtime rules the daemon enforces are documented in [66-event](66-event.html).
 
@@ -45,4 +45,4 @@ If a reactor fires **10 times within 10 seconds**, `66-eventd` treats it as a ru
 
 ## Control
 
-`66-eventd` listens on `eventd/s` for short messages — *arm*, *disarm*, and *emit a user event*. Only the scandir owner may connect (the daemon checks the peer's credentials and rejects the rest). You normally never write to this socket yourself: [66 start](66-start.html), [66 stop](66-stop.html) and [66 emit](66-emit.html) do it for you.
+`66-eventd` listens on `eventd/s` for short messages — *arm*, *disarm*, and *emit a user event*. Only the scandir owner may connect (the daemon checks the peer's credentials and rejects the rest). You normally never write to this socket yourself: [66 start](66-start.html), [66 free](66-free.html) and [66 emit](66-emit.html) do it for you.

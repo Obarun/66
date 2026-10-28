@@ -12,6 +12,10 @@ This command allows to handle the [configuration](66-service-configuration-file.
 
 The edition of the [configuration](66-service-configuration-file.html) file is the **default** option if neither option is passed.
 
+The command handles one *service*: when several are named, the first one is handled and each other is named in a warning. The *service* must be parsed: a name with a frontend that was never parsed is refused with `100`. A service inside a module is handled by its `module:service` name, and a provided name handles the configuration of its provider. A running service is not restarted: [66 restart](66-restart.html) applies the change.
+
+The **-c** and **-s** options cannot be combined, nor two of **-V**, **-L** and **-r**. A version that does not exist is refused with `100`.
+
 ## Options
 
 - **-h, --help**: prints this help.

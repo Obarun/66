@@ -19,6 +19,9 @@ The operand selects what to read:
 - **system**: the boot/scandir catch-all logger living under the live directory.
 - **service**: a single service, given by name.
 
+A *service* name follows the rules of every command: a name that has no frontend and that no
+service answers to, and a frontend that was never parsed, are refused with `100`.
+
 In the `(none)` and `system` cases each line is tagged with the name of its
 source, placed right after the timestamp and followed by `: `, in the manner of a
 syslog tag. The source name is the name of the service, or `system` for the
@@ -105,7 +108,7 @@ Because it must read a single ordered stream, `-f` is accepted **only** with an
 operand — `system` or a `<service>` — never in the aggregated `(none)` form (there
 is no way to interleave several live sources in true chronological order). It is
 also **incompatible with `-s`/`-u`** (there is no history to bound); combining them
-is an error. `-g` still applies, filtering the followed lines.
+is an error, refused with `100`, as is `-f` without operand. `-g` still applies, filtering the followed lines.
 
 For a service logged to a **66-log logdir** (and for `system`), follow tracks the
 `current` file and transparently reopens it across log rotation, so no line is

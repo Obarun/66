@@ -17,8 +17,10 @@ To act on a supervised service, use the friendly, resolve-aware commands [66 sta
 One `66-supervise` process supervises exactly one service:
 
 - It runs the service's `run` script and waits for it. When the process dies it is restarted, unless a *down* request is in effect (see [Files](#files)).
-- For a service that declares a readiness notification descriptor, the supervisor waits for the service to announce it is ready before reporting it *up and ready*.
-- When the service is brought down, the supervisor sends it the configured *down signal*, then runs the service's `finish` script before going back to a *down* state.
+- For a service that declares a readiness notification descriptor, the supervisor waits for the service to announce it is ready before reporting it *up and ready*. It gives the service its `[Start] Timeout` to do so, counted from the start of its process, whatever brings it up. When the time runs out, the supervisor brings it down by the way down below, the service stays down and supervised, its `result` reads `timeout-start` and the `timeout-start` event is sent; it is not started again until the next start. Without a readiness notification descriptor, a service is up as soon as its process starts, and nothing is timed.
+- When the service is brought down, the supervisor sends it the configured *down signal*, then runs the service's `finish` script before going back to a *down* state. The way down, the `finish` script included, waits for the `[Stop] Timeout` of the service, never for its `[Start] Timeout`; once it has passed, the supervisor sends `SIGKILL` and the `result` reads `timeout-stop`. A `[Stop] Timeout` the frontend does not write is the general stop delay chosen at the build of 66, `10000` milliseconds unless the `-D default-stop-timeout=` option of `meson setup` says otherwise; `0` written means without end, and no `SIGKILL` is sent. A logger gets the general stop delay.
+- A service wanted up again while it is on its way down is not killed: it is brought back up.
+- An order that does not change the state of the service, such as bringing up a service that runs, sends no event.
 - At every transition it writes the service's status to `supervise/status` so that [66 status](66-status.html) and the rest of `66` can report it.
 
 ## Configuration
@@ -26,7 +28,8 @@ One `66-supervise` process supervises exactly one service:
 Unlike a classic supervisor that reads a set of per-service files, `66-supervise` takes its configuration directly from the service's resolve database, compiled by [66 parse](66-parse.html) from the [frontend](66-frontend.html) file. The relevant frontend keys are:
 
 - `Notify` (in `[Start]`): the file descriptor on which the service announces its readiness.
-- `Timeout` (in `[Start]` / `[Stop]`): the maximum duration of the start / stop transition.
+- `Timeout` (in `[Start]`): the time a service with `Notify` has to become ready.
+- `Timeout` (in `[Stop]`): the time the way down may take before `SIGKILL`, as written by the parse, the general stop delay when the frontend does not write it.
 - `MaxDeath` / `MaxDeathInterval` (in `[Start]`): the crash budget (see [Crash budget](#crash-budget)).
 - `DownSignal` (in `[Stop]`): the signal sent to the service to bring it down.
 

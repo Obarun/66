@@ -12,8 +12,12 @@ quick glance.
 ## Interface
 
 ```
-status [ -h ] [ -n ] [ -f field,... ] [ -g ] [ -d depth ] [ -r ] service
+status [ -h ] [ -n ] [ -f field,... ] [ -g ] [ -d depth ] [ -r ] service...
 ```
+
+Several *services* can be given: each one is displayed, in the order of the dependency graph, whatever the order of the command line.
+
+A *service* never parsed is parsed first, along with its `Depends`, then displayed. A provided name displays its provider. A named service that is invalid, its resolve file unreadable, part of a dependency cycle or without frontend, is refused with `100`; an invalid service elsewhere is named in a warning.
 
 By default the dependency graph is rendered in the [start](66-start.html) order of execution. You can reverse the rendered order, meaning the [stop](66-stop.html) execution, with the `-r` option.
 
@@ -23,6 +27,8 @@ default display for any other service type; asking for it explicitly with `-f`
 stays valid.
 
 If no *service* is specified, it displays all services from all trees. This is a useful way to quickly get an overview of the entire service system. In that case, `-g` is implied and `-d` can be used but `-f` and `-n` options have no effect.
+
+When the scandir is not running, or the service has no runtime record yet, the `status` field reads `None`, prefixed by `enabled, ` when the service is enabled. A runtime record that cannot be read shows `unreadable`, with a warning naming the service; the command goes on.
 
 ## Options
 
@@ -34,7 +40,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 
 - **-g, --graph**: shows the dependency list of the *service* as a hierarchical graph instead of a list.
 
-- **-d, --depth** *depth*: limits the depth of the dependency list visualisation; default is 1. This implies **-g** option.
+- **-d, --depth** *depth*: limits the depth of the dependency list visualisation; default is 1. This implies **-g** option. A value that is not a number is refused with `100`.
 
 - **-r, --reverse**: shows the dependency list of *services* in reverse mode.
 
@@ -51,7 +57,7 @@ If no *service* is specified, it displays all services from all trees. This is a
 - **enabled**: `yes` if the service comes up at boot, `no` if it does not.
 - **pid**: the pid of the running process, `0` when there is none. Always a number, so a script never has to special-case a word.
 - **depends**: displays the service's dependencies.
-- **requiredby**: displays the service(s) which depends on service.
+- **requiredby**: displays the service(s) which depends on service, whether they declare it in their `Depends` or the service declares them in its `RequiredBy`.
 - **contents**: displays services within module.
 - **log**: displays the last five lines of the service's log. Use [66 log](66-log.html) to read the whole log, filter it or follow it.
 

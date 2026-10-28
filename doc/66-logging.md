@@ -63,7 +63,8 @@ tail -F %%system_log%%/foo/current
 
 Optional. It controls rotation and timestamping. It also accepts `RunAs`,
 `Execute` and a single `Timeout` (the logger's start timeout — it has no stop
-transition), behaving as in [[Start]](66-frontend.html#section-start).
+transition), behaving as in [[Start]](66-frontend.html#section-start). Its way down waits for
+the general stop delay chosen at the build of 66, then `SIGKILL`.
 
 ```
 [Logger]
@@ -78,7 +79,7 @@ RunAs = user
 | `Backup` | number of rotated files kept | `3` |
 | `MaxSize` | bytes before a file rotates (min `4096`) | `1000000` |
 | `Timestamp` | `tai`, `iso` or `none` | `iso` |
-| `RunAs` | user the logger runs as | service owner |
+| `RunAs` | user the logger runs as | `%%66log_user%%` for a system service, chosen at the build (`-D 66-log-user=`); the owner for a user service |
 
 - **`tai`** prefixes each line with a TAI64N stamp (decode with
   a TAI64N timestamp converter for human-readable time).
@@ -98,6 +99,26 @@ Options = ( !log )
 The service then inherits its parent's standard output, unless you redirect it
 yourself with `StdOut`. See [standard I/O redirection](66-standard-io-redirection.html)
 for `file:`, `console`, `syslog`, `null` and the other targets.
+
+Dropping the logger from the frontend of a service already parsed takes effect when the
+service is parsed again, with [66 reconfigure](66-reconfigure.html) or `66 parse -f`: the
+logger is stopped, unsupervised and removed.
+
+## The logger and the commands
+
+The logger of `foo` is named `foo-log`. It is a hard dependency of its service: `foo`
+depends on `foo-log`.
+
+- It follows its service on [start](66-start.html), [free](66-free.html),
+  [remove](66-remove.html) and [disable](66-disable.html). [66 stop](66-stop.html) of the
+  service leaves it running.
+- Under `-P`, a command acts on the named services only: their logger does not follow them.
+- Named alone, it is refused by `free`, `reconfigure` and `remove`, which handle it with its
+  service. A command that brings down, signals, reloads or restarts acts on its service as well,
+  except under `-P`: `66 signal -a -P foo-log` rotates the log file of `foo` and leaves `foo`
+  untouched. `66 start foo-log` starts the logger only.
+- The suffix `-log` is reserved to the loggers: a frontend whose name ends with it is refused
+  by the parse.
 
 ## Custom loggers
 

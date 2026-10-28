@@ -220,6 +220,7 @@
     _arguments -s \
         '(-h --help)'{-h,--help}'[print this help]' \
         '(-S --start)'{-S,--start}'[also start the service immediately]' \
+        '-P[do not propagate to dependencies]' \
         '*:service:_66_frontends'
 }
 
@@ -227,6 +228,7 @@
     _arguments -s \
         '(-h --help)'{-h,--help}'[print this help]' \
         '(-S --stop)'{-S,--stop}'[also stop the service immediately]' \
+        '-P[do not propagate to its requiredby]' \
         '*:service:_66_parsed_services'
 }
 
@@ -247,6 +249,7 @@
 (( $+functions[_66_cmd_free] )) || _66_cmd_free() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[print this help]' \
+        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate to its requiredby]' \
         '*:service:_66_parsed_services'
 }
 
@@ -275,6 +278,7 @@
     _arguments -s \
         '(-h --help)'{-h,--help}'[print this help]' \
         '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies]' \
+        '(-c --cleanup)'{-c,--cleanup}'[remove what the services left on disk before parsing them again]' \
         '*:service:_66_frontends'
 }
 
@@ -338,7 +342,7 @@
         '(-g --graph)'{-g,--graph}'[displays interdependences as graph]' \
         '(-r --reverse)'{-r,--reverse}'[reverse the interdependence graph]' \
         '(-d --depth)'{-d,--depth}'[limit the depth of interdependence graph recursion by depth]:number:' \
-        ':service:_66_parsed_services'
+        '*:service:_66_parsed_services'
 }
 
 (( $+functions[_66_cmd_log] )) || _66_cmd_log() {
@@ -378,7 +382,6 @@
 (( $+functions[_66_cmd_remove] )) || _66_cmd_remove() {
     _arguments -s \
         '(-h --help)'{-h,--help}'[print this help]' \
-        '(-P --no-propagate)'{-P,--no-propagate}'[do not propagate signal to its dependencies at stop process]' \
         '*:service:_66_parsed_services'
 }
 

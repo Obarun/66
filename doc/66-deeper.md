@@ -31,6 +31,7 @@ This directory stores trees and services configuration files. You should see thi
 
 ```
 %%system_dir%%
+├── .tmp
 └── system
     ├── .resolve
     │   ├── service
@@ -83,7 +84,7 @@ Every system or administrator directory documented below has a user counterpart,
 
 **Never pass an absolute path to a `user-*` option.** The value is relative and `${HOME}` is prepended at runtime for whoever owns the process, which is what lets a single build serve every user on the machine. Setting `user-dir=/home/alice/.66` would point every user at Alice's directory.
 
-The [live directory](#livedir) is not duplicated per user: it is shared, and the per-user parts are keyed by `UID` inside it, as `%%livedir%%/state/UID` and `%%livedir%%/environment/UID`.
+The live directory is not duplicated per user: it is shared, and the per-user parts are keyed by `UID` inside it, as `%%livedir%%/state/UID` and `%%livedir%%/environment/UID`.
 
 The `%%system_dir%%/system/.resolve` directory contains resolve files for trees. Each tree have its own resolve file, while the [Master](#master-resolve-file) resolve file contains information about all trees available on the system.
 
@@ -92,6 +93,10 @@ The `%%system_dir%%/system/.resolve/service` directory consists of symlinks that
 The `%%system_dir%%/system/.resolve/service/.provide` directory holds the names declared by the [Provide](66-frontend.html#provide) key. Each entry is a relative symlink to the service answering to that name, written as `../<service>`, which keeps a provided name out of the service list.
 
 The `%%system_dir%%/system/service/svc` directory includes service directories, each housing the results of the [parse](66-parse.html) process, as well as internal directories and files essential for `66`.
+
+The `%%system_dir%%/.tmp` directory holds the temporaries of the writes of the system: a resolve file, a link or a file of the system is prepared there, then renamed over its destination, so a write killed in the middle never leaves a half-written file behind. A command that writes the system empties it of what a killed command left there.
+
+The directory `%%system_dir%%` itself carries the lock of the system: a command that writes the system, the parse on the fly included, holds an exclusive lock on it while it writes on disk, never while it acts on the supervision. A second writing command waits for the first one, and says so at verbosity 3 once the wait lasts more than a second. A command that only reads the system never waits.
 
 ### %%system_dir%%/system/.resolve/<tree>
 
@@ -207,7 +212,7 @@ finish_user      : #!/usr/bin/execlineb -P
 finish_build     : None
 finish_runas     : None
 timeoutstart     : 0
-timeoutstop      : 0
+timeoutstop      : 10000
 down             : 0
 downsignal       : 0
 blockprivileges  : 0
@@ -282,7 +287,7 @@ eventexpression  : None
 eventtimezone    : None
 eventinterval    : 0
 eventpropagate   : 0
-rversion         : 0.9.1.2
+rversion         : 0.9.2.0
 ```
 
 The resolve file is the full, low-level picture. For day-to-day use, the [66 status](66-status.html) command presents a readable summary drawn from this file and from the service's runtime record, rather than dumping every field.
@@ -336,6 +341,10 @@ Some precision is needed here:
 - The intree field corresponds to the `InTree` field in the [frontend](66-frontend.html) file, while `treename` indicates the current associated tree of the service. Changing the tree with `66 -t <tree> enable <service>` modifies `treename`, leaving `intree` unchanged.
 
 - The `inns` field indicates whether the service is a part of a `module`.
+
+- The `depends` and `requiredby` fields hold what the frontend declares: its `Depends`, the dependency of `OptsDepends` found and its logger in `depends`, its own `RequiredBy` key in `requiredby`. The services that depend on a service are not written in its resolve file: `66` computes them from every resolve file when it builds the graph of the system, kept under `%%livedir%%/graph`, and [66 status](66-status.html) shows them.
+
+- The `timeoutstop` field holds the stop delay that applies: the `[Stop] Timeout` of the frontend, or the general stop delay chosen at the build of `66` when the frontend does not write it.
 
 - The `run` and `finish` field contains the content of the `%%system_dir%%/system/service/svc/<service>/run` and `%%system_dir%%/system/service/svc/<service>/finish` file respectively.
 
@@ -474,13 +483,24 @@ It is created at [66 scandir create](66-scandir.html#start) invocation if it doe
 ├── environment
 │   └── 0                                  one directory per UID
 │       └── <variable>                     one file per published variable, see 66 env
+├── graph
+│   └── 0                                  one directory per UID
+│       └── system                         the graph of the system, built from the resolve files
 ├── log
 │   └── 0                                  destination of the scandir-log output
 │       └── current                        uncaught logs
-└── tmp                                    temporary of every resolve write
+└── tmp                                    temporary of what 66 writes under %%livedir%%
 ```
 
 The annotations in parentheses are the resolve fields ([66 resolve](66-resolve.html)) that hold each path.
+
+### %%livedir%%/graph
+
+The commands read the graph of the services of an account from the file `%%livedir%%/graph/UID/system`. `66` builds it again from the resolve files after each command that writes the system, at the start of the scandir and after a reboot: a command that writes the system drops it before its first write, and a command that finds it missing builds it again. Its content is internal to `66`.
+
+The directory `%%livedir%%/graph` is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), so that each account owns its own subdirectory below it.
+
+A resolve file damaged on the disk outside `66` is seen by a command whose action touches the service, which reads it, builds the graph again and refuses; a command whose action does not touch it, run before the graph is built again, acts and says nothing about it.
 
 ### %%livedir%%/log
 
@@ -536,11 +556,9 @@ Because the whole directory is read by `environ_merge_dir`, it is subject to the
 
 ### %%livedir%%/tmp
 
-A [resolve file](#resolve-files) is never written in place: the CDB is built in a temporary file here, then copied over its destination, so a database that fails to build never reaches the resolve it was meant to replace. The directory is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state`, `%%livedir%%/log` and `%%livedir%%/environment`, so that every account writes its own temporaries here without being able to remove those of another.
+What `66` writes under `%%livedir%%`, the graph of the system, the links of the scandir and of the live state, the resolve files of the scandir itself, is prepared in a temporary file here, then renamed over its destination. The directory is created by [66 scandir create](66-scandir.html#create) with the sticky bit set (mode `1777`), like `%%livedir%%/scandir`, `%%livedir%%/state`, `%%livedir%%/log` and `%%livedir%%/environment`, so that every account writes its own temporaries here without being able to remove those of another. The resolve files of the system are not written here, but in `%%system_dir%%/.tmp`.
 
-Each temporary is named after the resolve being written, carries a random suffix, and is unlinked as soon as the copy is done. Nothing else lives here.
-
-A command run where 66 never booted, in an installer chroot or a container build, finds no live directory at all. It then creates this directory itself when it may, and an account that owns nothing under `%%livedir%%` writes instead in a `tmp` directory of its own base, `${HOME}/%%user_dir%%/tmp` for a regular account.
+A command run where 66 never booted, in an installer chroot or a container build, may find no live directory at all. Root then creates this directory itself; an account other than root cannot write under `%%livedir%%`.
 
 ## %%system_log%%
 
@@ -560,6 +578,6 @@ User can control the rotation of the log file with:
 
 *Resolve* files are essentially [CDB](http://cr.yp.to/cdb.html) databases. They are independent of extra libraries, running daemons, or third-party programs. These files are lightweight and efficient to read and write. However, the downside is the inability to upgrade a field without rewriting the entire database whenever modifications are made to any fields.
 
-A resolve is never modified in place: the whole database is rebuilt in a temporary file under `%%livedir%%/tmp` and copied over the previous one, which is why a write needs a writable live directory and not only a writable destination.
+A resolve is never modified in place: the whole database is rebuilt in a temporary file under `%%system_dir%%/.tmp` (`${HOME}/%%user_dir%%/.tmp` for a regular account) and renamed over the previous one.
 
 The size of the database varies based on its contents and typically ranges between 4-7 kilobytes.

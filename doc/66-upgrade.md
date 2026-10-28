@@ -10,9 +10,30 @@ value of `66 tree -o`. With the global `-l` goes the `LIVE=` key of `init.conf`,
 which was its only source. The live directory is now fixed at compile time, by
 the `-D livedir=` option to `meson setup`, and nothing overrides it at runtime.
 
+The dependency graph is rebuilt from what the frontends declare, and nothing
+else. A resolve file holds the declarations of its frontend; what a service is
+required by is computed when the graph is built, never written in the resolve
+file of another service. The graph of each account is kept in
+`%%livedir%%/graph/<uid>/system`, built again after each command that writes
+the system, at the start of the scandir and after a reboot. The commands that
+write the system take an exclusive lock of it, so two of them no longer write
+over each other.
+
+Every command now follows one contract, stated situation by situation: a refused
+command changes nothing, `-P` acts on the named services alone, an event means
+the order acted, and a service that cannot be read, that sits on a dependency
+cycle or that lost its frontend is named, with its repair, instead of breaking
+the commands that meet it.
+
+The way down of every service is now bounded: a `[Stop] Timeout` the frontend
+does not write is a general stop delay chosen at build time, `10000`
+milliseconds by default.
+
 The migration is **automatic**. It stamps the resolve files at the new version
 and rewrites the control scripts of a scandir already on disk, so a machine
-upgraded without a reboot keeps answering the power button.
+upgraded without a reboot keeps answering the power button. It also rewrites
+the dependencies and the stop delay of each service from its frontend, see
+[What happens by itself](#what-happens-by-itself).
 
 ## What you must do
 
@@ -23,6 +44,29 @@ machine now boots on the compiled default without telling you. Drop `-l` from
 any script of yours that passes it to `66`, `66-hpr` or `66-shutdownd`, and drop
 `clone=` from any call to `66 tree create` or `66 tree admin`, since all four now
 stop on an unknown option.
+
+Then check these points against your frontends and your scripts:
+
+1. **`66 remove -P` is gone.** Drop the `-P` from your scripts: `66 remove`
+   refuses it as an unknown option.
+2. **A service name ending with `-log` is refused.** The suffix is reserved to the
+   loggers 66 creates. Rename such a frontend, and every `Depends`, `RequiredBy`,
+   `OptsDepends`, `Provide` or `Conflict` that names it. A service already parsed
+   under such a name is removed by the migration, see below.
+3. **A service or tree name starting with a dot is refused.**
+4. **A service that must never be killed on its way down** needs
+   `[Stop] Timeout = 0` written in its frontend. Without the key, the way down
+   is killed after the general stop delay, `10000` milliseconds by default.
+5. **An `Emit` naming an event with a dot is refused** by the parse: the dotted
+   names belong to the events 66 raises itself. Rename the event, and the `On`
+   that listens to it.
+6. **A module is closed.** A member that names a service outside its module in
+   its `Depends`, `RequiredBy` or `OptsDepends`, a service outside the module
+   that names a member, and a member of `Type = module` are refused by the
+   parse. Declare the outside dependencies on the module itself.
+7. **A `CopyFrom` path that does not exist is refused** by the parse.
+8. **A script that relied on `-P` taking the logger along** must name the logger
+   itself: `-P` now acts on the named services only.
 
 ## Interface changes
 
@@ -48,6 +92,117 @@ stop on an unknown option.
 
     It copied the resolve file of a tree under a new name. Use `66 tree create`
     with the options you want instead.
+
+- **`66 remove -P` is gone** ([66 remove](66-remove.html)):
+
+    A removal always takes the services that depend on the removed one with it.
+    A neighbour that names the removed service in its `RequiredBy` keeps its
+    declaration, and the name becomes absent.
+
+- **`66 reconfigure -c, --cleanup` is new** ([66 reconfigure](66-reconfigure.html)):
+
+    It removes what the named services left on disk, as `66 remove` does, their
+    log directory and their configuration included, then parses them again and
+    puts them back in their state. It repairs a service whose resolve file or one
+    of its addons does not read.
+
+- **`-P` never takes the logger**:
+
+    Under `-P`, `start`, `stop`, `free`, `signal`, `reload`, `restart`, `enable`
+    and `disable` act on the named services only, their logger included in what
+    is left aside. A named logger is acted upon alone under `-P`.
+
+- **`66 status` takes several services** ([66 status](66-status.html)):
+
+    They are displayed in the order of the dependency graph. A runtime record that
+    cannot be read shows `unreadable`.
+
+- **New build option `default-stop-timeout`**:
+
+    The general stop delay, in milliseconds, applied when a frontend does not
+    write `[Stop] Timeout`. `10000` by default, `0` for without end.
+
+## Behaviour changes
+
+- **A refused command changes nothing.** Every named frontend is checked before
+  anything is written, enabled, started or stopped; a command naming several
+  services refuses all of them when one of them is refused. `66 reconfigure`
+  checks the frontends before it stops anything.
+- **`RequiredBy` is a declaration of the dependent's `Depends`.** A service named
+  there depends on the declaring one exactly as if its own frontend said so. A
+  service named there and never parsed is not parsed by the declaration.
+- **Invalid services are named, not tripped over.** A service whose resolve file
+  or addon does not read, that is part of or depends on a dependency cycle, or
+  whose frontend is gone, is refused with `100` by a command whose action touches
+  it, with a message that names its repair: `66 reconfigure -c`, `66 parse -f`
+  or `66 remove`. A command that does not touch it acts and warns at verbosity 2.
+  `66 tree start`, `66 tree stop`, `66 tree free`, the boot and the shutdown leave
+  it out, with what depends on it, and start or stop the others; the tree then
+  counts as failed.
+- **A dependency cycle in the frontends is refused** by the parse.
+- **`66 parse -f` keeps the tree and the activation** of the service, unless
+  `66 -t` names another tree, and refuses a supervised service whose frontend
+  changes its type.
+- **`66 enable -t` moves an already parsed service** and its logger to the
+  given tree.
+- **A provider takes over the name of a disabled service**: `66 disable -P dbus`
+  then `66 enable dbus-launch` hand `dbus` over to `dbus-launch`, the services
+  that depend on `dbus` staying in place; `66 enable dbus` takes the name back.
+  While the service bearing the name is enabled, its provider is refused (see
+  [Provide](66-dependencies.html#provide-i-also-answer-to-these-names)).
+- **The `[Start] Timeout` of a `Notify` service is enforced** by its
+  supervisor, whatever brings it up: a service not ready in time is brought
+  down, stays down and supervised, and its `result` reads `timeout-start`.
+  Without `Notify`, nothing is timed.
+- **The way down waits for `[Stop] Timeout`**, never for `[Start] Timeout`, then
+  `SIGKILL`. A stop that ends with that kill exits with `111`. The logger gets
+  the general stop delay, and the `finish` script is bounded by the same delay
+  instead of a fixed five seconds.
+- **An event means the order acted.** An order that changes nothing sends no
+  event: a start of a classic that runs, a stop of a service already down, a
+  signal to a service that is down. `66 reload` sends no signal event.
+- **Only `66 free` disarms a reactor or an event source.** `66 stop` and every
+  signal leave it armed; `66 remove` and `66 reconfigure` disarm it as `free`
+  does, and `66 reconfigure` arms again a reactor it found armed. `66 restart` of
+  a reactor brings it up now, and a reactor armed above a restarted service comes
+  back armed without running.
+- **`66 runstate` shows the current state**: `stopping` for a service brought
+  down by `66 stop`, `finishing` for one that died by itself, `up` for a classic
+  that runs after `66 signal -o`, `restarting` during a crash loop.
+- **A failed start says how the service ended**, at verbosity 2: `exited with
+  code <n>`, `killed by signal <n>`, `not ready within its start timeout`, and
+  `killed at its stop timeout` for a stop.
+- **`66 env set`** refuses an empty value, and both `set` and `import` refuse a
+  value starting with an exclamation mark.
+- **`66 log`** names an unknown or never parsed service as every other command.
+
+## What happens by itself
+
+The migration to `0.9.2.0` runs under the lock of the system: commands started
+together migrate the system once.
+
+- **The dependencies are written again from the frontends.** What 66 deduced
+  and wrote in the dependencies of a service before is dropped. The frontends
+  are parsed as `66 parse` does: the `configure` script of a module runs.
+- **The stop delay of each service is written again** from its frontend: the
+  general stop delay when `[Stop] Timeout` is not written, `0` when it is
+  written `0`.
+- **A service named with the suffix `-log` that is no logger is removed** from
+  the disk; its frontend stays. The migration acts on no supervision: such a
+  service that runs keeps running until the next reboot. The migration names it
+  with the services that depend on it, which name an absent service until their
+  frontend is changed:
+
+    ```
+    service: <name> ends with the suffix -log reserved to the loggers -- removed by the migration, parse its frontend again under another name; required by: <list>
+    ```
+
+- **The `runas` of a logger**, and the `runas` of the io of its service, left
+  implicit by the frontend, are written again as the user of the loggers
+  chosen at the build of 66, whatever their value; a `runas` the frontend
+  names explicitly is kept.
+  The log directory and its content are left as they are, with the owner the
+  previous release gave them.
 
 ## Bug fixes
 
@@ -76,6 +231,24 @@ buffer the caller had preloaded, and `env_runtime_setdir()` loses the live
 directory from its arguments for the same reason. `struct ssexec_s` loses a
 field, and `append_shutdown` and `write_shutdownd` lose a parameter. Rebuild
 everything that links against it, `66-tools` included.
+
+The graph API is replaced. `graph_add_deps()` and the `service_graph_build_*()`,
+`service_graph_collect()`, `service_graph_resolve()` family are gone; the graph
+of the system is built and read through `66/graph.h`, the selection of a command
+through the new `66/selection.h`, and the writes of the system go through the
+`service_graph_write_begin()` / `service_graph_write_end()` transaction of
+`66/graph.h`. A program that read the `depends` and
+`requiredby` of a resolve file to draw the graph now reads the declarations of
+each frontend only: the services that depend on a service are found by reading
+the `depends` of every service and the `requiredby` it declares itself.
+`symlink_switch()`, `env_prepare_for_write()`, the old parse entry points
+(`parse_service()`, `parse_cleanup()`...), `sanitize_graph()`,
+`sanitize_source()` and `sanitize_write()` are gone as well, and `svc_launch()`,
+`svc_init_ctx()`, `svc_is_up()` and `svc_compute_ns()` leave the public `66/svc.h`.
+Several primitives now return `1`, `0` or `-1`.
+
+`meson setup` takes a new `-D default-stop-timeout=` option, in milliseconds,
+`10000` by default.
 
 ---
 
@@ -1314,7 +1487,7 @@ sed -e "s:\[main\]:\[Main\]:g" \
     -i ${service}
 ```
 
-See [Rosetta Stone](66-rosetta.html#keyword-table-convertion) for the list of keyword name changes.
+See [Rosetta Stone](66-rosetta.html#keyword-table-conversion) for the list of keyword name changes.
 
 ### Behavior enhancements
 

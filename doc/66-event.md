@@ -98,7 +98,7 @@ Three consequences follow, and they are the reason the model is worth using:
   or otherwise touches that source — see [`From` is a watch, not a
   dependency](#from-is-a-watch-not-a-dependency).
 
-The one outward-facing key is [`Emit`](#emit), and it is deliberately indirect: it raises a
+The one outward-facing key is [`Emit`](66-frontend.html#emit), and it is deliberately indirect: it raises a
 *name*, not a command, and it acts on nobody. Whoever wants to react to that name subscribes
 to it, in their own frontend, with their own `Do`. So even the cascades below are made of
 services that each decided for themselves — no service is ever acted upon by a rule it does
@@ -122,10 +122,11 @@ construction, and each reactor keeps its own verb.
 ### About the `event` type and arming
 
 An `event` service is **not supervised**: it has no `[Start]` section and no running
-process. On such a service, [66 start](66-start.html) and [66 stop](66-stop.html) are **not**
+process. On such a service, [66 start](66-start.html) and [66 free](66-free.html) are **not**
 process supervision — they are *arm* and *disarm* messages sent to `66-eventd`. `66 start`
-tells the daemon to begin watching (open the inotify watch, program the timer, …); `66 stop`
-tells it to stop. Everything else (`enable`, dependencies, trees) works as usual.
+tells the daemon to begin watching (open the inotify watch, program the timer, …); `66 free`
+tells it to stop. [66 stop](66-stop.html) leaves the source armed. Everything else (`enable`,
+dependencies, trees) works as usual.
 
 ### One rule at most, and it is opt-in
 
@@ -300,7 +301,8 @@ yourself with `66 emit`; 66 does, from inside `66 boot`, the shutdown daemon and
 These names all carry a **dot**. The dotted form is reserved for events 66 raises itself; the
 names you raise with `66 emit` or `Emit` are bare (`cert-renewed`, `backend-down`). The two
 namespaces never collide, and a dot in an `On` line tells you at a glance the event comes from
-the system, not from another service.
+the system, not from another service. An `Emit` key that names an event with a dot is refused
+with `100` by the parse; an `On` key listens to it freely.
 
 | Event | Raised when | Typical use |
 |---|---|---|
@@ -629,9 +631,10 @@ authoritative description of them.
 
 ### Arming and disarming
 
-For a `Type = event` **source**, [66 start](66-start.html) and [66 stop](66-stop.html) do not
-supervise a process — they **arm** and **disarm** the source at the daemon (open the inotify
-watch, program the timer or schedule).
+For a `Type = event` **source**, [66 start](66-start.html) does not supervise a process, it
+**arms** the source at the daemon (open the inotify watch, program the timer or schedule). An
+event source has no dependencies: `66 start` arms it, nothing else. [66 stop](66-stop.html)
+leaves it armed and supervised; [66 free](66-free.html) disarms it.
 
 For a **reactor** the two verbs are **not** symmetric, and that asymmetry is the single most
 common point of confusion:
@@ -646,7 +649,10 @@ common point of confusion:
   `module`, a single `free` disarms every member reactor in the same pass.
 
 In short, to make a reactor stop reacting you must **`free` it — a plain `stop` is not
-enough**. This is also why *Recovery after `66-eventd` restarts* (below) re-arms a
+enough**. No signal disarms it either. [66 remove](66-remove.html) and
+[66 reconfigure](66-reconfigure.html) take the service out of the supervision as `free` does,
+so they disarm it; `66 reconfigure` arms again a reactor it found armed. The one exception is
+the [anti-loop backstop](#the-anti-loop-backstop) below. This is also why *Recovery after `66-eventd` restarts* (below) re-arms a
 merely-stopped reactor: it is still in the scandir, so the daemon picks it up again on the
 next repopulate.
 
@@ -657,6 +663,9 @@ the service comes up later, when its event fires. Every other verb is the opposi
 `reload`, `reconfigure` and `free` act on a *running* service, so `66 start` launches the
 reactor normally and it reacts from **up**. In [66 status](66-status.html) an armed-and-idle
 reactor shows the **WAITING** state.
+
+[66 restart](66-restart.html) of a reactor brings it up now, under a new process. A reactor
+armed above a service that is restarted or reloaded comes back armed: it is not run.
 
 ### When a reactor actually fires — state gating
 
@@ -717,6 +726,15 @@ event to happen strictly after the reactor is armed.
 fires only when all conditions hold *at the same instant*. A subtlety worth remembering: if
 one source's state cannot be determined at that instant, the `OnAll` **fails** (an
 unprovable condition is treated as unmet), not merely “not yet true”.
+
+### An event means the order acted
+
+An event tells that an order acted on the service: a real change of state, or a signal actually
+delivered to its process. An order that changes nothing sends no event, whatever the command:
+`66 start` or `66 signal -u`/`-o` of a classic that runs, `66 stop` or `66 signal -d` of a
+service already down, `66 start` of a oneshot already `done`, a signal to a service that is
+down. A `service` reactor waiting for `up` does not fire on a second start of a service already
+up.
 
 ### `reload` is not a signal
 

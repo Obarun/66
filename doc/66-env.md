@@ -25,10 +25,13 @@ instead of publishing into a store no service reads.
 
 - **import** *variable...*: publish each *variable* with the value it has **in the environment
   of the caller**. This is pure transport — the value is copied as it is found. A variable that
-  is not set, or set to an empty value, is skipped with a warning; nothing is computed, guessed
-  or checked for reachability.
+  is not set, or set to an empty value, is skipped with a warning at verbosity 2; nothing is
+  computed, guessed or checked for reachability. A value starting with an exclamation mark is
+  refused with `100`.
 
-- **set** *variable=value...*: publish each pair with the given *value*.
+- **set** *variable=value...*: publish each pair with the given *value*, as it is given. An
+  empty *value* (`variable=`) and a *value* starting with an exclamation mark are refused with
+  `100`, and nothing is published.
 
 - **unset** *variable...*: withdraw each *variable*. A variable that is not published is
   reported with a warning and the command carries on.

@@ -103,6 +103,8 @@ tree create [ -h ] [ -o depends=:requiredby=:... ] *tree*
 
 After creation *tree* do not contain any services. You need to [associate](#associated-service-to-a-tree) services within *tree* with the [66 enable](66-enable.html) command.
 
+A *tree* name starting with a dot is refused with `100`.
+
 This command handles [interdependencies](66.html#handling-dependencies).
 
 #### Options
@@ -288,7 +290,7 @@ This command displays information about a *tree*.
 tree status [ -h ] [ -n ] [ -f field,... ] [ -g ] [ -d depth ] [ -r ] tree
 ```
 
-If *tree* is not specified, the command return information of all trees available of the system.
+If *tree* is not specified, the command return information of all trees available of the system. The invalid services of the system are named in a warning, at verbosity 2.
 
 #### Options
 
@@ -476,6 +478,8 @@ If *tree* is not specified, the command manages all *enabled* services within al
 
 This command handles [interdependencies](66.html#handling-dependencies).
 
+An invalid service of the *tree*, its resolve file unreadable, part of a dependency cycle or without frontend, is left out with a warning naming it, together with every service that depends on it; the other services start. An absent service without frontend met on the way counts as invalid. The *tree* then counts as failed, and the command exits with `111`. A service of the *tree* in conflict with a running service refuses the whole *tree*: nothing of it starts and the command exits with `100`. A service that fails to start stops only what waits for it, and a *tree* that fails stops only the *trees* that wait for it; the others start. A selection of trees whose time runs out, or that receives a signal, exits with `111` as well.
+
 #### Options
 
 - **-h, --help**: prints this help.
@@ -507,6 +511,8 @@ This command stops all **running services** within tree
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
 This command handles [interdependencies](66.html#handling-dependencies).
+
+An invalid service of the *tree* is left out with a warning naming it; the other services stop. The *tree* then counts as failed, and the command exits with `111`. A service that fails to stop stops only what waits for it, and a *tree* that fails stops only the *trees* that wait for it.
 
 #### Options
 
@@ -540,6 +546,8 @@ This command stops and unsupervise tree.
 If *tree* is not specified, the command manages all services within all *enabled* trees available of the system.
 
 This command handles [interdependencies](66.html#handling-dependencies).
+
+An invalid service of the *tree* is left out with a warning naming it; the other services are stopped and unsupervised. The *tree* then counts as failed, and the command exits with `111`. A service that fails to stop stays supervised with what it depends on, the other services are unsupervised; a *tree* that fails stops only the *trees* that wait for it.
 
 #### Options
 

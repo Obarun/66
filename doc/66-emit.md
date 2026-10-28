@@ -10,13 +10,13 @@ emit [ -h ] name
 
 This command raises a user event named *name* and delivers it to the event daemon of the current [scandir](66-scandir.html). Every [reactor](66-event.html#declaring-a-reactor-the-event-section) that subscribes to that name — a service carrying an `[Event]` section with `EventType = user` and `On = ( name )` — then runs its declared reaction.
 
-`emit` is the manual entry point into the [event system](66-event.html). The same *name* can also be raised from inside the system by another reactor's [`Emit`](66-event.html#emit) key, or by 66 itself at a system milestone; `66 emit` is the equivalent an operator or a script runs by hand. A *name* is an arbitrary label of at most 256 characters — it does not have to match a service name.
+`emit` is the manual entry point into the [event system](66-event.html). The same *name* can also be raised from inside the system by another reactor's [`Emit`](66-frontend.html#emit) key, or by 66 itself at a system milestone; `66 emit` is the equivalent an operator or a script runs by hand. A *name* is an arbitrary label of at most 256 characters — it does not have to match a service name.
 
 The command is fire-and-forget: it delivers the event and returns immediately. It does not wait for the reactors to act, and it reports success whether or not any reactor is currently listening for *name*. It fails only when the event daemon cannot be reached — for instance when no [scandir](66-scandir.html) is running.
 
 ## Names 66 raises itself
 
-A `user` event does not always come from `66 emit`. 66 raises a handful of them on its own, and they all carry a **dot** — the dotted form marks an event raised by the system, while the names you raise here are bare (`cert-renewed`, `backend-down`). You subscribe to a dotted name exactly like any other, but you never emit it yourself:
+A `user` event does not always come from `66 emit`. 66 raises a handful of them on its own, and they all carry a **dot** — the dotted form marks an event raised by the system, while the names you raise here are bare (`cert-renewed`, `backend-down`). You subscribe to a dotted name exactly like any other, but you never emit it yourself. The [`Emit`](66-frontend.html#emit) key of a reactor that names an event with a dot is refused with `100` by the parse:
 
 | Event | Raised by |
 |---|---|

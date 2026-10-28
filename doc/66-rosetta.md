@@ -222,7 +222,7 @@ The table below gives you the keyword conversion between versions
 |@files|Files|
 |@infiles|InFiles|
 
-# Changes between `v0.6.1.3` and `0.7.0.0`.
+# Changes between `v0.6.1.3` and `0.7.0.0`
 
 Further information can be found on the [upgrade](66-upgrade.html) page concerning behavior changes, frontend keyword changes and more.
 

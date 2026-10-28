@@ -75,7 +75,7 @@ InFiles = ( :server:LISTENADDR=0.0.0.0:8080 ::INSTANCE=@I )
 name, **`blog`** (the part after the `@`). In the **module frontend itself** (`webapp@`,
 parsed as `webapp@blog`), identifiers are substituted directly, so `Description` above becomes
 `"web application instance blog"`, and the `InFiles` value `@I` becomes `blog`. `Configure`
-takes a [quoted](66-frontend.html#quote) value, so `@I` must be written `"@I"`.
+takes a [quoted](66-frontend.html#quotes) value, so `@I` must be written `"@I"`.
 
 Inside services are different: an identifier there is **not** the instance (see
 [Step 2](#step-2-the-inside-services)). That is why the instance is carried into them through
@@ -117,7 +117,10 @@ Execute = ( webapp-worker --app INSTANCE )
 `worker` depends on `server`: a dependency **inside** the module. It resolves to the module's
 own `server` because `66` looks the name up in `frontend/` only — this is the isolation rule.
 A `Depends = ( something-outside )` here would fail at parse: an inside service cannot reach
-out.
+out. The same holds for its `RequiredBy`, its `OptsDepends` and the `From` of an inside reactor, and the other way round: a service
+outside the module that names an inside service in its `Depends` or `RequiredBy` is refused by
+the parse as well. An inside service of `Type = module` is refused too: a module does not
+contain a module.
 
 **Careful with `@I` inside a member:** it does **not** expand to the instance here. Each inside
 service is parsed as its own frontend named after its local name, so `@I` in `frontend/server`
@@ -154,7 +157,7 @@ own identifiers against their local names. The four regex keys:
   file `GENERIC` to `blog`.
 
 - **`Configure`** — the value passed as `$1` to the [configure script](#step-4-the-configure-script).
-  It takes a [quoted](66-frontend.html#quote) value; we pass `"@I"`, so the script receives `blog`.
+  It takes a [quoted](66-frontend.html#quotes) value; we pass `"@I"`, so the script receives `blog`.
 
 `webapp@` needs only `InFiles` and `Configure`; `Directories`/`Files` are shown for
 completeness. Keys you do not use may be omitted.
@@ -184,8 +187,10 @@ echo "configured webapp instance ${instance}, worker=${WEBAPP_WORKER}" >&2
 
 The script runs with its working directory set to the module's `configure/` directory, so
 `../activated/` is the sibling to write into. If the script exits non-zero the **whole parse
-fails** — validate inputs and let a real error stop the build rather than shipping a broken
-instance. Its environment carries the module's `[Environment]` merged with a set of
+fails**, with exit code `111`, and nothing is written — validate inputs and let a real error stop the build rather than shipping a broken
+instance. The script runs at every parse of the module, [66 reconfigure](66-reconfigure.html)
+included, where it is part of the check made before anything is stopped; it writes in the
+working copy only. Its environment carries the module's `[Environment]` merged with a set of
 `MOD_*` variables (see [Configure environment](#configure-environment)).
 
 ## Step 5 — activation

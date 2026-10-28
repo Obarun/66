@@ -101,6 +101,9 @@ and for the event system.
   with an uppercase letter followed by lowercase letters **only** — no special
   characters, no numbers.
 * A section can be mandatory without all of its keys being mandatory.
+* **Service names.** The name of a frontend, or of one of its instances, ending with the
+  suffix `-log` is refused: the suffix is reserved to the loggers 66 creates. A name starting
+  with a dot is refused as well.
 
 The *value* of each key is parsed in one of several fixed formats (*inline*,
 *quotes*, *brackets*, *uint*, *path*…). Every key below states which one it uses;
@@ -138,7 +141,7 @@ Defines the service type. Determines how **66** orchestrates startup and supervi
 
     * classic : Standard supervised service. Runs continuously and is automatically restarted if it crashes.
     * oneshot : Executes once and does not restart. Suitable for initialization tasks.
-    * module : Configurable set of different type of service; integrates with the [`[Regex]`](#section-regex) section for file and directory transformations.
+    * module : Configurable set of different type of service; integrates with the [`[Regex]`](#section-regex) section for file and directory transformations. A module does not contain a module: a member of type `module` is refused by the parse.
     * event : A non-supervised **event source** for the [event system](66-event.html). It runs no process and has no `[Start]` section; its whole configuration lives in `[Main]` and is selected by [`EventType`](#eventtype). A `classic`/`oneshot`/`module` service becomes an event **reactor** instead by adding an [`[Event]`](#section-event) section — it does not use this value.
 
 ### Version
@@ -178,7 +181,9 @@ Provides a concise, human-readable summary of the service’s purpose. Enclosed 
 `66` resolves the full dependency graph for you — you never list transitive
 dependencies by hand (see [66](66.html#handling-dependencies)). In every bracketed
 list here, a name can be commented out by prefixing it with `#`, e.g.
-`Depends = ( fooA #fooB fooC )`.
+`Depends = ( fooA #fooB fooC )`. In every list, a name ending with the suffix `-log` is
+refused by the parse: the suffix is reserved to the loggers 66 creates. Only the end of the
+whole name counts, so the instance `tpl-log@x` of a frontend `tpl-log@` is accepted.
 
 | Key | Syntax | Required | Meaning |
 |---|---|---|---|
@@ -202,7 +207,7 @@ Declares the mandatory service dependencies. Each listed service must start succ
 
 * valid values:
 
-    * The name of any valid service.
+    * The name of any valid service. A name that has no frontend and that no service answers to is refused by the parse, as is a name ending with the suffix `-log`, reserved to the loggers 66 creates, or starting with a dot. Inside a [module](66-module-creation.html), a member names only members of its module, and a service outside the module names no member.
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
@@ -218,7 +223,7 @@ Declares the mandatory service dependencies. Each listed service must start succ
 RequiredBy = ( fooX fooY )
 ```
 
-Specifies reverse dependencies—services that depend on this service. Starting or enabling this service automatically updates those listed.
+Specifies reverse dependencies—services that depend on this service. A service listed here depends on this one exactly as if its own frontend listed this one in its [Depends](#depends). A listed service that was never parsed is not parsed by this declaration: the declaration is kept, and the listed service depends on this one once it is parsed, by its name or through a `Depends`. The frontend of the listed service is never modified.
 
 * mandatory: no
 
@@ -226,7 +231,7 @@ Specifies reverse dependencies—services that depend on this service. Starting 
 
 * valid values:
 
-    * The name of any valid service.
+    * The name of any valid service. A name ending with the suffix `-log` is refused by the parse. Inside a [module](66-module-creation.html), a member names only members of its module, and a service outside the module names no member.
 
     It is unnecessary to manually define chained sets of dependencies, see [66](66.html#handling-dependencies).
 
@@ -280,7 +285,7 @@ A name designates one thing at a time, a service bearing it or a provider of it,
 
 * valid values:
 
-    * Any arbitrary name.
+    * Any arbitrary name, except one ending with the suffix `-log`.
 
 ### Conflict
 
@@ -331,6 +336,8 @@ Configures optional behaviors for the service. Wrap options in parentheses for m
         ````
 
         The behavior of the logger can be configured in the corresponding section—see [[Logger]](#section-logger).
+
+        When a frontend drops the logger of a service already parsed, the parse that writes the service again stops, unsupervises and removes the logger.
 
 ### Flags
 
@@ -404,7 +411,7 @@ Verbatim copy directories and files on the fly to the main service destination. 
 
 * valid values:
 
-    * Any files or directories. It accepts *absolute* or *relative* path.
+    * Any files or directories. It accepts *absolute* or *relative* path. A path that does not exist is refused by the parse, and nothing is written.
 
         ```
         CopyFrom = ( data
@@ -577,7 +584,7 @@ This section is *mandatory*. It defines how the service is started.
 |---|---|---|---|---|
 | [`Execute`](#execute) | brackets | **yes** | — | the command(s) that start the service |
 | [`RunAs`](#runas) | inline/simple-colon | no | service owner | drop privileges to a user before exec |
-| [`Timeout`](#timeout-start) | uint | no | `0` (no timeout) | max time for the start transition, in ms |
+| [`Timeout`](#timeout-start) | uint | no | `0` (no timeout) | max time for a `Notify` service to become ready, or for the start script of a `oneshot`, in ms |
 | [`Notify`](#notify) | uint | no | — | readiness-notification file descriptor |
 | [`MaxDeath`](#maxdeath) | uint | no | `5` | crash budget before *failed* (`0` = never fail) |
 | [`MaxDeathInterval`](#maxdeathinterval) | uint | no | `30000` | crash-counting window, in ms |
@@ -645,9 +652,16 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 ```ini
 Timeout = 2000
 ```
-Specifies the maximum time (in milliseconds) the service may take to **start**. If
-the start transition does not complete within this time, `66` kills the service
-and reports the transition as failed.
+Specifies the maximum time (in milliseconds) a service declaring [`Notify`](#notify) may
+take to become **ready**, counted from the start of its process, whatever brings it up. When
+the time runs out, its supervisor brings it down by its way down: its down signal, then
+`SIGKILL` once its [`[Stop] Timeout`](#timeout-stop) has passed. The service stays down and
+supervised and is not started again until the next start; [66 runstate](66-runstate.html)
+shows its `result` as `timeout-start`, the `timeout-start` event is sent, and the command that
+waits for it exits with `111`. Without `Notify`, a service is up as soon as its process
+starts, and nothing is timed. The `[Start]` script of a `oneshot` is timed by this key: once the time
+has passed, 66-oneshotd kills it with `SIGKILL`, the oneshot is down, its `result` reads
+`timeout-start`, and the command exits with `111`.
 
 * mandatory: no
 
@@ -729,7 +743,7 @@ with [[Start]](#section-start) — they behave identically — plus its own
 |---|---|---|---|---|
 | [`Execute`](#execute) | brackets | no | signal the process | the command(s) that stop the service |
 | [`RunAs`](#runas) | inline/simple-colon | no | service owner | drop privileges to a user before exec |
-| [`Timeout`](#timeout-stop) | uint | no | `0` (no timeout) | max time for the stop transition, in ms |
+| [`Timeout`](#timeout-stop) | uint | no | general stop delay, `10000` | max time for the way down before `SIGKILL`, in ms |
 | [`DownSignal`](#downsignal) | inline | no | `SIGTERM` | signal used to stop/restart the process |
 
 ### Timeout (Stop)
@@ -738,9 +752,11 @@ with [[Start]](#section-start) — they behave identically — plus its own
 Timeout = 5000
 ```
 
-Specifies the maximum time (in milliseconds) the service's **stop** sequence may
-take. If the stop transition — the stop/`finish` script — does not complete within
-this time, `66` kills the service.
+Specifies the maximum time (in milliseconds) the way down of the service may take,
+its stop/`finish` script included, whatever brings it down. Once this time has passed, the
+supervisor (66-oneshotd for the `[Stop]` script of a `oneshot`) sends `SIGKILL`: the service stays down and supervised,
+[66 runstate](66-runstate.html) shows its `result` as `timeout-stop`, and the command that
+brought it down exits with `111`.
 
 * mandatory: no
 
@@ -748,8 +764,11 @@ this time, `66` kills the service.
 
 * valid values:
 
-    * Any valid number, in milliseconds. The default is `0`, which means no stop
-      timeout — the stop script may run as long as it needs.
+    * Any valid number, in milliseconds. When the key is not written, the general stop
+      delay chosen at the build of `66` applies: `10000` milliseconds, unless the
+      `-D default-stop-timeout=` option of `meson setup` says otherwise. `0` written means
+      without end: the way down may run as long as it needs, and no `SIGKILL` is sent.
+      The parse writes the delay that applies in the resolve file.
 
     The former name `TimeoutStop` is still accepted here as a deprecated alias of
     `Timeout`; it emits a deprecation warning and will be removed in a future release.
@@ -780,9 +799,12 @@ It will only have effects if value *log* was **not** prefixed by an exclamation 
 
 This section also accepts the [`RunAs`](#runas) and
 [`Execute`](#execute) keys (behaving as in [[Start]](#section-start)), plus a single
-`Timeout` key giving the logger's start timeout. The logger has **no stop
-transition** — it runs a single script and is brought down by a signal — so there is
-no stop timeout, even if an `Execute` is declared. `Timeout` is not mandatory; when
+`Timeout` key giving the logger's start timeout. A `RunAs` left out does not default to the
+owner of the service: the logger of a system service runs as `%%66log_user%%`, chosen at the
+build of `66` (`-D 66-log-user=`), and the logger of a user service runs as its owner. The logger has **no stop
+transition** — it runs a single script and is brought down by a signal — so it has no
+`[Stop]` section: its way down waits for the general stop delay chosen at the build of `66`
+(`10000` milliseconds by default), then `SIGKILL`. `Timeout` is not mandatory; when
 omitted, the default behaviour applies. The former name `TimeoutStart` is still
 accepted as a deprecated alias of `Timeout` (it warns and will be removed in a future
 release); `TimeoutStop` is no longer a valid logger key.
@@ -1264,7 +1286,8 @@ Specifies Linux capabilities that a service and its child processes automaticall
 
 `StdIn`, `StdOut` and `StdErr` control where the service's three standard streams
 go. They accept a plain keyword or, for some, a `type:/path` form ([simple-colon](#simple-colon)).
-See [Standard IO redirection](66-standard-io-redirection.html) for the full model.
+See [Standard IO redirection](66-standard-io-redirection.html) for the full model. The former
+value `s6log` is still accepted as a deprecated alias of `66log`.
 
 | Key | Default | Common values |
 |---|---|---|
@@ -1388,6 +1411,8 @@ The source(s) the reactor subscribes to. **Always explicit** — sources are nev
 
 * notes:
 
+    The `From` of a reactor inside a [module](66-module-creation.html) names services of that module only: a source outside it is refused by the parse.
+
     Each `From` source also becomes a **dependency** of the reactor, so `66` starts (or arms) the source before it arms the reactor. Consequently `66-eventd` reads the source's current state at arm time: a reactor whose source is already in the awaited state **fires immediately**, instead of waiting for the next transition. Likewise, `66 free <source>` disarms the reactors that depend on it.
 
 ### On / OnAll
@@ -1446,7 +1471,7 @@ Raises a `user` event of the given name when the trigger fires, **independently*
 
 * syntax: [inline](#inline)
 
-* valid values: any name. It matches the [`On`](#on-onall) of a `user` reactor.
+* valid values: any name without a dot. It matches the [`On`](#on-onall) of a `user` reactor. A name with a dot is reserved to the events 66 raises itself (`boot.done`, `env.DISPLAY`...): an `Emit` naming one is refused by the parse, while an `On` may listen to it.
 
 ### Propagate
 
@@ -1871,7 +1896,9 @@ Type = classic
 Execute = ( /usr/bin/true )
 ```
 
-This prototype contains all valid sections with all valid `key=value` pairs.
+This prototype contains all valid sections with all valid `key=value` pairs. Its values are
+left blank to list the keys only: a key written in a frontend carries a value, and an empty
+one, `()` included, is refused by the parse.
 
 ```
 [Main]

@@ -18,13 +18,28 @@ parse [ -h ] [ -f ] [ -I ] service...
 
 The absolute path of the frontend service file can also be set. In this case, the primary path of this absolute path must match `%%service_system%%` or `%%service_adm%%` or `$HOME/%%service_user%%` directory name e.g `%%service_system%%/ntpd/0.1.1/ntpd`.
 
-This command handles [interdependencies](66.html#handling-dependencies) and parses any interdependencies needed for the service if they aren't parsed yet.
+This command handles [interdependencies](66.html#handling-dependencies) and parses any interdependencies needed for the service if they aren't parsed yet. A name listed in the [RequiredBy](66-frontend.html#requiredby) key is never parsed by it: the declaration is kept, and a service named there depends on the declaring one once it is parsed, by its name or through a `Depends`.
+
+An already parsed service is left as it is, said at verbosity 2. A service is parsed into the tree of the `66 -t` option, else the tree of its `InTree` key, else the current tree.
+
+Every named frontend is checked before anything is written: when one of them is refused, nothing is written, for any of the named services. A frontend is refused with `100` when:
+
+- a name, the service name or one it names in `Depends`, `RequiredBy`, `OptsDepends`, `Provide` or `Conflict`, ends with the suffix `-log`, reserved to the loggers 66 creates. Only the end of the whole name counts: the instance `tpl-log@x` is accepted, `tpl@x-log` is not.
+- a service name, or a name in its `Depends`, starts with a dot.
+- a `Depends` names a service that has no frontend and that no service answers to.
+- its keys are invalid: a type, a timeout, a capability, an io path, a [CopyFrom](66-frontend.html#copyfrom) path that does not exist, an [Emit](66-frontend.html#emit) naming an event with a dot.
+- the frontends make a dependency cycle.
+- it names a member of a module alone (`module:member`): a module is parsed as a whole.
+- it breaks the rules of a [module](66-module-creation.html): a member of type `module`, or a dependency across the module.
+- it collides with a provided name: see [dependencies](66-dependencies.html#provide-i-also-answer-to-these-names).
+
+A dependency cycle written on the disk only, outside 66, is named by the services it concerns; parsing the frontends again with `-f` once the cycle is broken repairs them. An invalid service elsewhere on the system does not refuse the parse: it is named in a warning.
 
 ## Options
 
 - **-h, --help**: prints this help.
 
-- **-f, --force**: force. Overwrite an existing parsing result.
+- **-f, --force**: force. Overwrite an existing parsing result. The named service alone is written again: its dependencies are not parsed again, its `Depends` is checked again, and a dependency it adds and that was never parsed is parsed. Its activation and its tree do not change, unless `66 -t` names another tree. What the frontend drops is undone: a `Depends` dropped is unlinked; a logger dropped with `!log` and members dropped from a module are stopped, unsupervised and removed; a `Provide` name dropped is released, unless a service depends on it, which refuses the parse. A supervised service whose frontend changes its type is refused: free it first with [66 free](66-free.html), or use [66 reconfigure](66-reconfigure.html).
 
 - **-I, --no-import**: do not import modified configuration files from the previous version used. Refer to [Service configuration file](66-service-configuration-file.html) for further information.
 
