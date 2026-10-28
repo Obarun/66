@@ -9,166 +9,57 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <unistd.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <string.h>
-#include <stdlib.h>
-#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
-#include <oblibs/sbl.h>
 #include <oblibs/directory.h>
-#include <oblibs/fd.h>
-#include <oblibs/io.h>
 #include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/write.h>
-#include <66/constants.h>
-#include <66/environ.h>
-#include <66/enum_parser.h>
-#include <66/parse.h>
 
-int write_common(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *dst, uint8_t force)
+int write_common(resolve_service_addon_execute_t *ex, strbuf const *copyfrom, char const *dst)
 {
     log_flow() ;
+
+    size_t pos = 0, dstlen = strlen(dst) ;
 
     /** down file */
     if (ex->down) {
         log_trace("create file: ", dst, "/down") ;
         if (!file_create_empty(dst, "down", 0644))
-            log_warnusys_return(LOG_EXIT_ZERO, "create down file") ;
+            return -1 ;
     }
 
-    /** environment for module is already written by the regex_configure() function */
-    if (res->has_environ && e->env && res->type != E_PARSER_TYPE_MODULE) {
+    /** hierarchy copy: the sources the parse resolved and checked (parse_core) */
+    while (pos < copyfrom->len) {
 
-        _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
-        _cleanup_strbuf_ strbuf contents = STRBUF_ZERO ;
-        char name[strlen(res->sa.s + res->name) + 2] ;
-        auto_strings(name, ".", res->sa.s + res->name) ;
+        char const *src = copyfrom->s + pos ;
+        pos += strlen(src) + 1 ;
+        char const *name = copyfrom->s + pos ;
+        pos += strlen(name) + 1 ;
+        char dest[dstlen + 1 + strlen(name) + 1] ;
 
-        if (!env_prepare_for_write(&dst, &contents, res, e))
-            log_warnusys_return(LOG_EXIT_ZERO, "prepare environment for: ", res->sa.s + res->name) ;
+        auto_strings(dest, dst, "/", name) ;
 
-        if (!write_environ(name, contents.s, dst.s))
-            log_warnusys_return(LOG_EXIT_ZERO, "write environment for: ", res->sa.s + res->name) ;
-
-    }
-
-    /** hierarchy copy */
-    if (res->copyfrom) {
-
-        int r ;
-        size_t pos = 0 ;
-        _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-        char *src = res->sa.s + res->path.frontend ;
-        size_t srclen = strlen(src), dstlen = strlen(dst) ;
-        char basedir[srclen + 1] ;
-
-        if (!ob_dirname(basedir, src))
-            log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
-
-        if (!sbl_clean_string(&sa, res->sa.s + res->copyfrom))
-            log_warnusys_return(LOG_EXIT_ZERO, "clean string") ;
-
-        FOREACH_SBL(&sa, pos) {
-
-            char *what = sa.s + pos ;
-            int fd ;
-            size_t wlen = strlen(what) ;
-            char tmp[SS_MAX_PATH_LEN + 1] ;
-            char dest[dstlen + 1 + wlen + 1] ;
-            char basename[SS_MAX_PATH_LEN + 1] ;
-
-            if (what[0] == '/' ) {
-
-                auto_strings(tmp, what) ;
-
-                if (!ob_basename(basename, what))
-                    log_warnusys_return(LOG_EXIT_ZERO, "get basename of: ", what) ;
-
-                what = basename ;
-
-            } else if (what[0] == '.' && ((what[1] == '/') || (what[1] == '.' && what[2] == '/'))) {
-               /** distinction between .file and ./ ../ directory */
-                char b[strlen(src) + 1]  ;
-
-                if (!ob_dirname(b, src))
-                    log_warnusys_return(LOG_EXIT_ZERO, "get dirname of: ", src) ;
-
-                fd = io_open(".", O_RDONLY|O_NONBLOCK) ;
-                if (fd < 0)
-                    log_warnusys_return(LOG_EXIT_ZERO, "open current directory") ;
-
-                if (chdir(b) < 0) {
-                    close_fd(fd) ;
-                    log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
-                }
-
-                char *p = realpath(what, tmp) ;
-                if (!p) {
-                    close_fd(fd) ;
-                    log_warnusys_return(LOG_EXIT_ZERO, "get absolute path of: ", what) ;
-                }
-
-                if (chdir_fd(fd) < 0) {
-                    close_fd(fd) ;
-                    log_warnusys_return(LOG_EXIT_ZERO, "change directory") ;
-                }
-
-                close_fd(fd) ;
-
-                if (!ob_basename(basename, what))
-                    log_warnusys_return(LOG_EXIT_ZERO, "get basename of: ", what) ;
-
-                what = basename ;
-
-            } else {
-
-                auto_strings(tmp, basedir, what) ;
-            }
-
-            r = scan_mode(tmp, S_IFDIR) ;
-            if (r <= 0) {
-
-                r = scan_mode(tmp, S_IFREG) ;
-                if (!r)
-                    log_warnusys_return(LOG_EXIT_ZERO, "find: ", tmp) ;
-                else if (r < 0) {
-                    errno = ENOTSUP ;
-                    log_warnusys_return(LOG_EXIT_ZERO, "invalid format of: ", tmp) ;
-                }
-            }
-
-            auto_strings(dest, dst, "/", what) ;
-
-            log_trace("copy: ", tmp, " to: ", dest) ;
-            if (!tree_copy(tmp, dest))
-                log_warnusys_return(LOG_EXIT_ZERO, "copy: ", tmp, " to: ", dest) ;
-        }
-
+        log_trace("copy: ", src, " to: ", dest) ;
+        if (!tree_copy(src, dest))
+            return -1 ;
     }
 
     /** run file */
-    if (!write_execute_scripts("run", ex->sa.s + ex->run.run, dst, 0)) {
-        parse_cleanup(res, dst, force) ;
-        log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-    }
+    if (write_execute_scripts("run", ex->sa.s + ex->run.run, dst, 0) < 0)
+        return -1 ;
 
     /** finish file */
-    if (ex->finish.run) {
-        if (!write_execute_scripts("finish", ex->sa.s + ex->finish.run, dst, 0)) {
-            parse_cleanup(res, dst, force) ;
-            log_dieu(LOG_EXIT_SYS, "write execute script of: ", res->sa.s + res->name) ;
-        }
-    }
+    if (ex->finish.run && write_execute_scripts("finish", ex->sa.s + ex->finish.run, dst, 0) < 0)
+        return -1 ;
+
     return 1 ;
 }

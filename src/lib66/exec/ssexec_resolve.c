@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stddef.h>
@@ -29,6 +29,7 @@
 #include <66/constants.h>
 #include <66/config.h>
 #include <66/state.h>
+#include <66/command.h>
 
 static info_field_t const fields[] = {
     { "name",            INFO_FIELD_STR, offsetof(resolve_service_t, name), 0 },
@@ -235,17 +236,18 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 
     } else {
 
-        if (!service_resolve_provide(svname, *argv, info->base.s))
+        r = service_resolve_provide(svname, *argv, 0, info->base.s) ;
+        if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
-        r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-        if (r == -1)
-            log_dieu(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-        else if (!r || r == STATE_FLAGS_FALSE)
-            log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it first using '66 parse ", svname, "'") ;
+        char const *sv = r ? svname : *argv ;
 
-        if (resolve_read(wres, info->base.s, svname) <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
+        r = resolve_read(wres, info->base.s, sv) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
+
+        if (!r)
+            command_refuse_unknown(sv, info->base.s, info->owner, false) ;
     }
 
     /* addons a field may live in, indexed by addon id; loaded on demand */

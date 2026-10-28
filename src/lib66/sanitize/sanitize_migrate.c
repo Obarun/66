@@ -9,18 +9,15 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/string.h>
 
@@ -121,51 +118,6 @@ void migrate_create_snap(ssexec_t *info, const char *version)
     PROG = prog ;
 }
 
-/**
- * Version between 0.8.0.0 and 0.8.1.1 introduce a bug
- * not respecting the owner of the logger destination directory.
- * This function fix it, but its should only valuable for version
- * under 0.8.2.0 which fix the bug.
- */
-void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg)
-{
-    if (res->logger && !res->owner && io->fdout.type == E_PARSER_IO_TYPE_66LOG) {
-
-        _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-        char const *exclude[1] = { 0 } ;
-        size_t pos = 0 ;
-        uid_t uid ;
-        gid_t gid ;
-
-        char *dest = io->sa.s + io->fdout.destination ;
-        char const *runas = lg->execute.run.runas ? lg->sa.s + lg->execute.run.runas : SS_LOGGER_RUNNER ;
-
-        if (access(dest, F_OK) < 0) {
-            log_warnusys("find logger directory: '", dest, "' -- ignoring it") ;
-            return ;
-        }
-
-        if (!youruid(&uid, runas))
-            log_dieusys(LOG_EXIT_SYS, "get uid of account: ", runas) ;
-
-        if (!yourgid(&gid, uid))
-            log_dieusys(LOG_EXIT_SYS, "get gid") ;
-
-        if (chown(dest, uid, gid) < 0)
-            log_dieusys(LOG_EXIT_SYS, "chown: ", dest) ;
-
-        if (!sbl_dir_get_recursive(&sa, dest, exclude, S_IFREG|S_IFDIR,1))
-            log_dieu(LOG_EXIT_SYS, "get content of logger directory") ;
-
-        FOREACH_SBL(&sa, pos) {
-            if (chown(sa.s + pos, uid, gid) < 0)
-                log_dieusys(LOG_EXIT_SYS, "chown: ", sa.s + pos) ;
-        }
-    }
-
-}
-
-/** Return 0 if no migration was made else 1 */
 int sanitize_migrate(ssexec_t *info, const char *oversion)
 {
     log_flow() ;
@@ -265,6 +217,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                 migrate_0920() ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
+                if (migrate_0920_logsuffix() < 0 || migrate_0920_dependencies() < 0 || migrate_0920_runas() < 0)
+                    return -1 ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE_MASTER))

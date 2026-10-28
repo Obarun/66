@@ -51,6 +51,7 @@
 #include <66/svc.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/command.h>
 
 #include "66/config.h"
 #include "lib/eventd.h"
@@ -64,7 +65,7 @@
 typedef struct eventd_reactor_s eventd_reactor_t ;
 struct eventd_reactor_s
 {
-    char name[SS_MAX_SERVICE_NAME] ; // hash key
+    char name[SS_MAX_SERVICE_NAME + 1] ; // hash key
     resolve_service_addon_event_t rule ;
     sse_watcher_t child ; // valid iff in_flight
     pid_t pid ; // action child pid ; 0 when idle
@@ -78,7 +79,7 @@ struct eventd_reactor_s
 typedef struct eventd_source_s eventd_source_t ;
 struct eventd_source_s
 {
-    char name[SS_MAX_SERVICE_NAME] ; // hash key
+    char name[SS_MAX_SERVICE_NAME + 1] ; // hash key
     event_fifo_t fifo ; // service/signal fifodir subscription
     event_aggregator_t ag ;
     sse_watcher_t watcher ; // timer/schedule watcher
@@ -86,6 +87,7 @@ struct eventd_source_s
     int wd ; // inotify watch descriptor
     uint8_t type ; // event_source_t
     uint8_t subscribed ; // fifodir subscribed (service/signal) or watcher armed (tick)
+    uint8_t laststate ; // status_state_e of the last transition heard of a service source, STATUS_STATE_ENDOFKEY when none
     uint32_t refcount ; // number of armed reactors referencing this source (service/signal/user)
     hash_node_t node ; // eventd.sources, keyed by name
     hash_node_t wd_node ; // eventd.inotify_wd, keyed by wd (inotify sources only)
@@ -141,6 +143,7 @@ static void reactor_destroy(eventd_reactor_t *re) ;
 static eventd_reactor_t *reactor_create(char const *name) ;
 static void eventd_enqueue_emit(char const *name) ;
 static void eventd_drain_emits(void) ;
+static int reactor_source_status(char const *svc, size_t svclen, event_frame_t *out, void *ctx) ;
 
 static opt_t const opts[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                          .help = "print this help" },
@@ -163,6 +166,9 @@ static void eventd_on_frame(event_frame_t const *f, void *data)
     if (f->kind == EVENT_KIND_TRANSITION) kind = EVENT_SOURCE_SERVICE ;
     else if (f->kind == EVENT_KIND_SIGNAL) kind = EVENT_SOURCE_SIGNAL ;
     else return ; // lifecycle: no reactor kind listens for it
+
+    if (f->kind == EVENT_KIND_TRANSITION)
+        s->laststate = f->state ;
 
     reactor_run(kind, s->name, f) ;
     eventd_drain_emits() ;
@@ -252,6 +258,26 @@ static uint32_t inotify_mask_from_on(char const *on, uint32_t non)
     return mask ;
 }
 
+static int source_subscribe(eventd_source_t *s)
+{
+    char ev[strlen(s->name) + SS_EVENTDIR_LEN + 1] ;
+    auto_strings(ev, s->name, SS_EVENTDIR) ;
+
+    struct stat st ;
+    if (stat(ev, &st) < 0 || !S_ISDIR(st.st_mode)) {
+        log_warn("source not supervised yet, deferring subscription: ", s->name) ;
+        return 0 ;
+    }
+
+    if (!event_subscribe(&s->fifo, &eventd.epoll, ev, &eventd_event_handler, s, 0)) {
+        log_warnusys("subscribe to event fifodir: ", ev) ;
+        return 0 ;
+    }
+
+    s->subscribed = 1 ;
+    return 1 ;
+}
+
 static void source_ref(char const *name, size_t len, uint8_t type)
 {
     log_flow() ;
@@ -280,6 +306,7 @@ static void source_ref(char const *name, size_t len, uint8_t type)
     s->wd = -1 ;
     s->type = type ;
     s->subscribed = 0 ;
+    s->laststate = STATUS_STATE_ENDOFKEY ;
     s->refcount = 1 ;
     memcpy(s->name, name, len + 1) ;
 
@@ -289,24 +316,13 @@ static void source_ref(char const *name, size_t len, uint8_t type)
         return ;
     }
 
-    if (type == EVENT_SOURCE_SERVICE || type == EVENT_SOURCE_SIGNAL) {
+    if (type == EVENT_SOURCE_SERVICE || type == EVENT_SOURCE_SIGNAL)
+        source_subscribe(s) ;
 
-        char ev[len + SS_EVENTDIR_LEN + 1] ;
-        auto_strings(ev, s->name, SS_EVENTDIR) ;
-
-        struct stat st ;
-        if (stat(ev, &st) < 0 || !S_ISDIR(st.st_mode)) {
-            log_warn("source not supervised yet, deferring subscription: ", s->name) ;
-            return ;
-        }
-
-        if (!event_subscribe(&s->fifo, &eventd.epoll, ev, &eventd_event_handler, s, 0)) {
-            log_warnusys("subscribe to event fifodir: ", ev) ;
-            return ;
-        }
-
-        s->subscribed = 1 ;
-    }
+    // the state it is in when first heard of: what the arm reads (reactor_catch_up())
+    event_frame_t frame ;
+    if (type == EVENT_SOURCE_SERVICE && reactor_source_status(name, len, &frame, 0))
+        s->laststate = frame.state ;
 }
 
 static void source_unref(char const *name, size_t len, uint8_t type)
@@ -525,7 +541,8 @@ static void reactor_act(eventd_reactor_t *re, char const *treename)
 
         info.opt_tree = 1 ;
 
-        set_info(&info) ;
+        command_set_info(&info) ;
+
         info.who = STATUS_WHO_EVENT ;
         info.opt_react = 1 ; // a reaction acts on the reactor, never re-pulls its From sources
         // the event owns the moment an armed reactor runs: a Do = start means up now
@@ -563,10 +580,7 @@ static int reactor_source_status(char const *svc, size_t svclen, event_frame_t *
 {
     (void)ctx ;
 
-    if (svclen >= SS_MAX_SERVICE_NAME)
-        return 0 ;
-
-    char name[SS_MAX_SERVICE_NAME] ;
+    char name[SS_MAX_SERVICE_NAME + 1] ;
     memcpy(name, svc, svclen) ;
     name[svclen] = 0 ;
 
@@ -687,6 +701,51 @@ static void reactor_catch_up(eventd_reactor_t *re)
     }
 }
 
+static void source_rebind(char const *name)
+{
+    log_flow() ;
+
+    size_t len = strlen(name) ;
+    eventd_source_t *s = hash_find(&eventd.sources, name, len) ;
+    if (!s || (s->type != EVENT_SOURCE_SERVICE && s->type != EVENT_SOURCE_SIGNAL))
+        return ;
+
+    if (s->subscribed) {
+
+        // stat, not a primitive: only the existence of our published fifo is asked
+        struct stat st ;
+        if (!stat(s->fifo.fifopath, &st))
+            return ;
+
+        event_unsubscribe(&s->fifo) ;
+        s->subscribed = 0 ;
+    }
+
+    if (!source_subscribe(s))
+        return ;
+
+    log_info("subscribed to the source supervised again: ", name) ;
+
+    event_frame_t frame ;
+    if (s->type != EVENT_SOURCE_SERVICE || !reactor_source_status(name, len, &frame, 0))
+        return ;
+
+    /** a transition went out while 66-eventd heard nothing: only a state other
+     * than the last one heard is one; the same state is no event (contract,
+     * Events: an order that changes nothing sends no event) */
+    if (frame.state == s->laststate)
+        return ;
+
+    s->laststate = frame.state ;
+
+    eventd_reactor_t *re, *tmp ;
+    HASH_FOREACH(&eventd.reactors, re, tmp)
+        if (reactor_listens_to(re, EVENT_SOURCE_SERVICE, name))
+            reactor_evaluate(re, name, &frame) ;
+
+    eventd_drain_emits() ;
+}
+
 static void eventd_enqueue_emit(char const *name)
 {
     if (!sbl_add(&eventd.emitq, name))
@@ -722,7 +781,7 @@ static int reactor_supervised(char const *name)
     ss_state_t ste = STATE_ZERO ;
 
     int ok = resolve_read(wres, sysdir, name) == 1
-          && state_read(&ste, &res)
+          && state_read(&ste, &res) > 0
           && ste.issupervised == STATE_FLAGS_TRUE ;
 
     resolve_free(wres) ;
@@ -734,7 +793,7 @@ static void reactor_settle_pending_free(eventd_reactor_t *re)
 {
     log_flow() ;
 
-    char name[SS_MAX_SERVICE_NAME] ;
+    char name[SS_MAX_SERVICE_NAME + 1] ;
     uint64_t fires[EVENTD_MAX_TRIGGER] ;
     uint8_t nfires = re->nfires ;
 
@@ -813,7 +872,7 @@ static eventd_reactor_t *reactor_create(char const *name)
         return 0 ;
     }
     if (!r) {
-        log_warn("no event rule to arm: ", name) ;
+        log_warn(errno == EINVAL ? "unreadable event rule, not armed: " : "no event rule to arm: ", name) ;
         return 0 ;
     }
 
@@ -1138,7 +1197,7 @@ static uint8_t source_get_who(resolve_service_t *res)
     auto_strings(file, supervisedir, "/", SS_STATUS) ;
 
     service_status_t st = STATUS_ZERO ;
-    return status_read(&st, file) ? st.who : STATUS_WHO_SELF ;
+    return status_read(&st, file) > 0 ? st.who : STATUS_WHO_SELF ;
 }
 
 /* At the very first use of repopulate, the scandir
@@ -1227,8 +1286,9 @@ static void client_dispatch(eventd_client_t *conn)
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
         resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        int known = resolve_read(wres, sysdir, name) == 1 ;
 
-        if (resolve_read(wres, sysdir, name) == 1 && res.type == E_PARSER_TYPE_EVENT) {
+        if (known && res.type == E_PARSER_TYPE_EVENT) {
 
             if (verb == 'a')
                 eventd_arm_source(&res, who) ;
@@ -1239,7 +1299,16 @@ static void client_dispatch(eventd_client_t *conn)
             return ;
         }
 
+        int reactor = res.has_event ;
         resolve_free(wres) ;
+
+        /** 66 announces every service it puts under supervision: it may be
+         * the source of a reactor. Only a reactor has a rule to arm. */
+        if (verb == 'a') {
+            source_rebind(name) ;
+            if (known && !reactor)
+                return ;
+        }
     }
 
     switch (verb) {

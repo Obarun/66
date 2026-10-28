@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
@@ -42,7 +42,7 @@ uint32_t tree_graph_build_groups(tree_graph_t *g, ssexec_t *info, uint32_t flag)
 
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CONTENTS ;
 
-    if (!resolve_get_field(&sa, wres, info->base.s, SS_MASTER + 1, table))
+    if (resolve_get_field(&sa, wres, info->base.s, SS_MASTER + 1, table) <= 0)
         log_dieu(LOG_EXIT_SYS, "get resolve Master file of trees") ;
 
     resolve_free(wres) ;

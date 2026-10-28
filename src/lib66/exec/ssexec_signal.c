@@ -9,21 +9,28 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <signal.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
 #include <oblibs/attributes.h>
+#include <oblibs/bits.h>
+#include <oblibs/strbuf.h>
 
 #include <66/svc.h>
 #include <66/ssexec.h>
 #include <66/config.h>
+#include <66/graph.h>
+#include <66/selection.h>
+#include <66/service.h>
+#include <66/command.h>
 
 static char const cmdsig[NSIG] = {
 #define SVC_SIGNAL_ENTRY(op, sig) [sig] = op,
@@ -167,19 +174,85 @@ opt_cmd_t const cmd_signal = {
         "    R  the service has been started or restarted and has notified readiness",
 } ;
 
+static int add_services(bitset32_t *seeds, service_graph_t const *g)
+{
+    int added = 0 ;
+    uint32_t index, nvertex = service_graph_nvertex(g) ;
+
+    for (index = 0 ; index < nvertex ; index++) {
+
+        if (!bitset32_isvalid(seeds, index))
+            continue ;
+
+        uint32_t service = service_graph_logparent(g, index) ;
+
+        if (service != SERVICE_GRAPH_NOINDEX && !bitset32_isvalid(seeds, service)) {
+            bitset32_set(seeds, service) ;
+            added = 1 ;
+        }
+    }
+
+    return added ;
+}
+
+static int select_lot(selection_service_t *lot, command_graph_t *d, char const *const *argv, int argc, ssexec_t *info, strbuf *frontends, uint8_t action, bool nopropagate)
+{
+    selection_service_t sel, sup = SELECTION_SERVICE_ZERO ;
+    selection_service_policy_t policy = command_policy(action == SVC_ACTION_START ? SELECTION_SERVICE_PROPAGATE_DEPENDS : SELECTION_SERVICE_PROPAGATE_REQUIREDBY, nopropagate, false, false) ;
+
+    if (!command_argv_to_select(&sel, d, argv, argc, info, &policy, frontends, 0))
+        return 0 ;
+
+    bitset32_t named = sel.named, seeds = named ;
+
+    if (action == SVC_ACTION_START && !nopropagate && add_services(&seeds, &d->g)) {
+
+        selection_service_propagate(&sel, &d->g, &seeds, &policy) ;
+        sel.named = named ;
+
+        if (!command_resolve_load(d, &sel))
+            return 0 ;
+    }
+
+    command_refuse_selection(&sel, frontends, SELECTION_SERVICE_REFUSE_NAMED_ABSENT | SELECTION_SERVICE_REFUSE_MET_ABSENT | SELECTION_SERVICE_REFUSE_NAMED_INVALID | SELECTION_SERVICE_REFUSE_MET_INVALID) ;
+
+    if (svc_lot(lot, &sel, &d->store, SVC_LOT_COMMAND) < 0)
+        log_dieusys(LOG_EXIT_SYS, "select the services to signal") ;
+
+    command_refuse_unsupervised(&sup, lot, &d->store) ;
+
+    if (service_graph_warn_invalid(&d->g, frontends, &sel.member) < 0)
+        log_dieusys(LOG_EXIT_SYS, "warn about the invalid services") ;
+
+    return 1 ;
+}
+
+static uint8_t action_of(char const *signal)
+{
+    if (strpbrk(signal, "uUo"))
+        return SVC_ACTION_START ;
+
+    if (strpbrk(signal, "dD"))
+        return SVC_ACTION_STOP ;
+
+    return SVC_ACTION_SIGNAL ;
+}
+
 int ssexec_signal(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
 
     ssexec_t *info = data ;
 
-    uint8_t propagate = sig_propagate, woption = sig_woption ;
+    bool nopropagate = !sig_propagate ;
+    uint8_t woption = sig_woption ;
     char wsignal[5] ;
     char signal[DATASIZE + 1] ;
     unsigned int datalen = sig_datalen ;
 
     memcpy(wsignal, sig_wsignal, sizeof wsignal) ;
     memcpy(signal, sig_signal, sizeof signal) ;
+    signal[datalen] = 0 ;
 
     /* the locals now hold the whole option state: reset the statics to their
      * initial values so a nested re-dispatch of "signal" starts clean. */
@@ -192,14 +265,33 @@ int ssexec_signal(int argc, char const *const *argv, void *data)
     if (argc < 1 || datalen < 2)
         return opt_emit_usage(cmd_signal.name, &cmd_signal) ;
 
-    uint8_t target = SVC_TARGET_KEEP ;
+    int r ;
+    command_graph_t d = COMMAND_GRAPH_ZERO ;
+    selection_service_t lot = SELECTION_SERVICE_ZERO ;
+    strbuf frontends = STRBUF_ZERO ;
+    uint8_t action = action_of(signal + 1) ;
+    // an up is a start: a reactor a start arms is armed, not run
+    svc_request_t req = command_request(info, action, action == SVC_ACTION_START ? SVC_TARGET_READY : SVC_TARGET_KEEP, signal) ;
 
-    for (unsigned int pos = 1 ; pos < datalen ; pos++) {
-        if (memchr("uUo", signal[pos], 3)) {
-            target = SVC_TARGET_UP ;
-            break ;
-        }
-    }
+    req.wsignal = woption ? wsignal : 0 ;
+    req.verb = signal[1] == 'r' ? "restart" : 0 ;
 
-    return svc_send(argv, argc, info, target, signal, wsignal, woption, propagate) ;
+    command_refuse_scandir(info) ;
+
+    if (service_graph_load(&d.g, info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "load the graph of the system") ;
+
+    while (!select_lot(&lot, &d, argv, argc, info, &frontends, req.action, nopropagate))
+        command_graph_reload(&d, info, true) ;
+
+    strbuf_free(&frontends) ;
+
+    r = svc_send(&lot, &d.store, &req, 0) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "send the signal to the services of the selection") ;
+
+    service_graph_resolve_free(&d.store) ;
+    service_graph_free(&d.g) ;
+
+    return r ? 0 : LOG_EXIT_SYS ;
 }

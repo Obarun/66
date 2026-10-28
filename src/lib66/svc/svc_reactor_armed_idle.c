@@ -12,27 +12,23 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
+
 #include <oblibs/log.h>
 
 #include <66/svc.h>
 #include <66/event_rule.h>
-#include <66/resolve.h>
 #include <66/service.h>
 
-int svc_reactor_armed_idle(resolve_service_t *res)
+int svc_reactor_armed_idle(struct resolve_hash_s const *h)
 {
     log_flow() ;
 
-    if (!res->has_event)
+    if (!h->res.has_event)
         return 0 ;
 
-    resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    if (!(h->read & SERVICE_READ_EVENT))
+        return (errno = EINVAL, -1) ;
 
-    int idle = resolve_read(wev, res->sa.s + res->path.home, res->sa.s + res->name) == 1
-            && (ev.docmd == EVENT_DO_START || ev.docmd == EVENT_DO_RESTART) ;
-
-    resolve_free(wev) ;
-
-    return idle ;
+    return h->event.docmd == EVENT_DO_START || h->event.docmd == EVENT_DO_RESTART ;
 }

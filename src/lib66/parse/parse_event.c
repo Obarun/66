@@ -15,10 +15,12 @@
 #include <stdint.h>
 #include <stdlib.h> // free
 #include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
+#include <oblibs/string.h>
 #include <oblibs/types.h> // u64_scan, u64_scan_strict, sig_parse
 #include <oblibs/sse.h> // parse_cron, cron_t
 
@@ -43,10 +45,11 @@ static int read_list(parse_store_t *st, uint32_t sid, uint32_t kid, resolve_wrap
 
     _alloc_sbl_(stk, len + 1) ;
     if (!strbuf_copyb(&stk, v, len))
-        log_die_nomem("strbuf") ;
+        return -1 ;
 
-    if (!parse_list(&stk))
-        return 0 ;
+    int r = parse_list(&stk) ;
+    if (r <= 0)
+        return r ;
 
     if (stk.len)
         *off = parse_compute_list(wres, &stk, n, 0) ;
@@ -106,11 +109,12 @@ static int token_in_list(char const *list, char const *tok, size_t tlen)
 
 static int on_service_predicate_ok(char const *cond)
 {
-    char const *colon = strchr(cond, ':') ;
-    if (!colon)
+    size_t llen = str_search(cond, ':') ;
+
+    if (!cond[llen])
         return status_state_from_string(cond) >= 0 || status_result_from_string(cond) >= 0 ;
 
-    size_t llen = (size_t)(colon - cond) ;
+    char const *arg = cond + llen + 1 ;
     char word[llen + 1] ;
     memcpy(word, cond, llen) ;
     word[llen] = 0 ;
@@ -119,11 +123,11 @@ static int on_service_predicate_ok(char const *cond)
 
         case STATUS_RESULT_EXITED: {
             uint64_t n ;
-            return colon[1] && u64_scan_strict(colon + 1, &n) ;
+            return *arg && u64_scan_strict(arg, &n) ;
         }
         case STATUS_RESULT_SIGNALED: {
             int sig ;
-            return colon[1] && sig_parse(colon + 1, &sig) ;
+            return *arg && sig_parse(arg, &sig) ;
         }
         default:
             return 0 ; // any other word does not take an argument
@@ -181,13 +185,14 @@ static int validate_on_tokens(char const *on, int src, char const *from, int has
  * delivers an event only to a reactor whose type equals the source's own type.
  * A mismatch parses, arms and then never fires -- silently. Refuse it here.
  * Only the tick families reach this: their From is folded into depends, which is
- * what makes the source resolvable at this point. */
+ * what makes the source resolvable at this point: parse_interdependences()
+ * parsed it before, unless PARSE_NODEPS left it as it is, absent or parsed. */
 static int validate_from_sources(char const *from, int src, parse_build_ctx_t *ctx, char const *name)
 {
     _alloc_sbl_(stk, strlen(from) + 1) ;
 
     if (!sbl_clean_string(&stk, from))
-        log_warnusys_return(LOG_EXIT_ZERO, "clean the From list of service: ", name) ;
+        return -1 ;
 
     size_t pos = 0 ;
 
@@ -207,27 +212,24 @@ static int validate_from_sources(char const *from, int src, parse_build_ctx_t *c
         } else {
 
             // the source was parsed by an earlier run: read it back from disk
-            resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &res) ;
-            int r = resolve_read(w, ctx->info->base.s, known) ;
-            uint32_t rtype = res.type ;
-            resolve_free(w) ;
+            struct resolve_hash_s hs = RESOLVE_HASH_ZERO ;
+            int r = service_read(&hs, ctx->info->base.s, known, SERVICE_READ_EVENT) ;
+            uint32_t rtype = hs.res.type, etype = hs.event.type ;
+            service_read_free(&hs) ;
 
-            if (r <= 0)
+            if (r < 0)
+                return -1 ;
+
+            // -P leaves a source never parsed absent: nothing to compare it with
+            if (!r && errno == ENOENT && (ctx->flags & PARSE_NODEPS))
+                continue ;
+
+            if (!r)
                 log_warnu_return(LOG_EXIT_ZERO, "read the resolve file of source: ", known, " of service: ", name) ;
 
             // a reactor carries an event addon too, so test the service type first
             if (rtype != E_PARSER_TYPE_EVENT)
                 log_warn_return(LOG_EXIT_ZERO, "From: ", known, " is not an event source of service: ", name) ;
-
-            resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-            w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-            r = resolve_read(w, ctx->info->base.s, known) ;
-            uint32_t etype = ev.type ;
-            resolve_free(w) ;
-
-            if (r <= 0)
-                log_warnu_return(LOG_EXIT_ZERO, "read the event addon of source: ", known, " of service: ", name) ;
 
             type = (int)etype ;
         }
@@ -329,8 +331,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
     resolve_init(wres) ;
 
-    if (has_from && !read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, wres, &ev->from, &ev->nfrom)) {
+    int r = has_from ? read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, wres, &ev->from, &ev->nfrom) : 1 ;
+    if (r <= 0) {
         free(wres) ;
+        if (r < 0)
+            return -1 ;
         log_warnu_return(LOG_EXIT_ZERO, "read the From list of service: ", name) ;
     }
 
@@ -338,8 +343,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         ev->combine = EVENT_COMBINE_ANY ;
 
-        if (!read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ON, wres, &ev->on, &ev->non)) {
+        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ON, wres, &ev->on, &ev->non) ;
+        if (r <= 0) {
             free(wres) ;
+            if (r < 0)
+                return -1 ;
             log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
         }
 
@@ -347,8 +355,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         ev->combine = EVENT_COMBINE_ALL ;
 
-        if (!read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ONALL, wres, &ev->on, &ev->non)) {
+        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ONALL, wres, &ev->on, &ev->non) ;
+        if (r <= 0) {
             free(wres) ;
+            if (r < 0)
+                return -1 ;
             log_warnu_return(LOG_EXIT_ZERO, "read the OnAll list of service: ", name) ;
         }
     }
@@ -359,10 +370,13 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         return 0 ;
     }
 
-    if ((src == EVENT_SOURCE_INOTIFY || src == EVENT_SOURCE_SCHEDULE || src == EVENT_SOURCE_TIMER) &&
-        !validate_from_sources(ev->sa.s + ev->from, src, ctx, name)) {
-        free(wres) ;
-        return 0 ;
+    if (src == EVENT_SOURCE_INOTIFY || src == EVENT_SOURCE_SCHEDULE || src == EVENT_SOURCE_TIMER) {
+
+        r = validate_from_sources(ev->sa.s + ev->from, src, ctx, name) ;
+        if (r <= 0) {
+            free(wres) ;
+            return r ;
+        }
     }
 
     if (has_do) {
@@ -384,7 +398,14 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     }
 
     if (has_emit) {
+
         v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EMIT, 0) ;
+
+        if (v[str_search(v, '.')]) {
+            free(wres) ;
+            log_warn_return(LOG_EXIT_ZERO, "an event name with a dot is reserved to 66, Emit: ", v, " not allowed of service: ", name) ;
+        }
+
         ev->emit = resolve_add_string(wres, v) ;
     }
 
@@ -459,8 +480,12 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             ev->watch = resolve_add_string(wres, v) ;
 
             ev->combine = EVENT_COMBINE_ANY ;
-            if (!read_list(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_ON, wres, &ev->on, &ev->non)) {
+
+            int r = read_list(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_ON, wres, &ev->on, &ev->non) ;
+            if (r <= 0) {
                 free(wres) ;
+                if (r < 0)
+                    return -1 ;
                 log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
             }
 

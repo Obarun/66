@@ -9,10 +9,11 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -40,11 +41,8 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
     auto_strings(run, contents) ;
 
     log_trace("write file: ", dst, "/", file) ;
-    if (!file_write_at(dst, file, run, FAKELEN))
-        log_warnusys_return(LOG_EXIT_ZERO, "write: ", dst, "/", file) ;
-
-    if (chmod(write, 0755) < 0)
-        log_warnusys_return(LOG_EXIT_ZERO, "chmod", write) ;
+    if (!file_write_at(dst, file, run, FAKELEN) || chmod(write, 0755) < 0)
+        return -1 ;
 
     if (runas) {
 
@@ -60,21 +58,18 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
 
         if (colon) {
 
-            if (!uid_parse_strict(file, &uid))
-                log_warnu_return(LOG_EXIT_ZERO,"get uid of: ", runas) ;
-
-            if (!gid_parse_strict(colon + 1, &gid))
-                log_warnu_return(LOG_EXIT_ZERO,"get gid of: ", runas) ;
+            if (!uid_parse_strict(file, &uid) || !gid_parse_strict(colon + 1, &gid))
+                return (errno = EINVAL, -1) ;
 
         } else {
 
             if (!youruid(&uid, runas) ||
                 !yourgid(&gid, uid))
-                log_warnu_return(LOG_EXIT_ZERO,"get uid and gid of: ", runas) ;
+                return -1 ;
         }
 
         if (chown(write, uid, gid) < 0)
-            log_warnusys_return(LOG_EXIT_ZERO, "chown: ", write) ;
+            return -1 ;
     }
 
     return 1 ;

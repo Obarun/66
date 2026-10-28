@@ -9,42 +9,28 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <string.h>
-#include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/string.h>
-#include <oblibs/files.h>
 
 #include <66/state.h>
-#include <66/constants.h>
 #include <66/service.h>
 
-int state_read(ss_state_t *sta, resolve_service_t *res)
+int state_read(ss_state_t *sta, resolve_service_t const *res)
 {
     log_flow() ;
 
-    int r ;
-    char pack[STATE_STATE_SIZE] ;
-    char *path = 0 ;
-    char status[strlen(res->sa.s + res->live.statedir) + 1 + SS_STATUS_LEN + 1] ;
+    // the live copy first, then the one the parse writes in <base>
+    int r = state_read_remote(sta, res->sa.s + res->live.statedir) ;
+    if (!r)
+        r = state_read_file(sta, res->sa.s + res->live.status) ;
 
-    auto_strings(status, res->sa.s + res->live.statedir, "/", SS_STATUS) ;
+    // the absence of both is told by 0, errno ENOENT
+    if (!r)
+        errno = ENOENT ;
 
-    if (access(status, F_OK) < 0) {
-        path = res->sa.s + res->live.status ;
-    } else {
-        path = status ;
-    }
-
-    r = file_read(path, pack, STATE_STATE_SIZE) ;
-    if (r < STATE_STATE_SIZE || r < 0)
-        return 0 ;
-
-    state_unpack(pack, sta) ;
-
-    return 1 ;
+    return r ;
 }

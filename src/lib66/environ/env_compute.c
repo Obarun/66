@@ -9,11 +9,10 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
-#include <string.h>
 
 #include <oblibs/string.h>
 #include <oblibs/log.h>
@@ -26,62 +25,14 @@ int env_compute(strbuf *result, resolve_service_t *res, resolve_service_addon_en
 {
     log_flow() ;
 
-    int r ;
-    uint32_t conf = e->env_overwrite ;
-    size_t conflen = strlen(e->sa.s + e->envdir), versionlen = strlen(res->sa.s + res->version), namelen = strlen(res->sa.s + res->name) ;
-    char version[versionlen + 1] ;
-    char svconf[conflen + 1] ;
-    char name[namelen + 1] ;
-    char src[conflen + 1 + versionlen + 1] ;
+    char const *name = res->sa.s + res->name ;
 
-    auto_strings(version, res->sa.s + res->version) ;
-    auto_strings(svconf, e->sa.s + e->envdir) ;
-    auto_strings(name, res->sa.s + res->name) ;
-    auto_strings(src, svconf, "/", version) ;
-
-    /** previous version, this is the current version before
-     * the switch with env_make_symlink() */
-    _cleanup_strbuf_ strbuf pversion = STRBUF_ZERO ;
-    // future version, the one which we want
-    _cleanup_strbuf_ strbuf fversion = STRBUF_ZERO ;
-
-    /** store current configure file version before the switch
-     * of the symlink with the env_make_symlink() function */
-    r = env_find_current_version(&pversion, svconf) ;
-    if (r == -1)
-        log_warnu_return(LOG_EXIT_ZERO, "find previous configuration file version") ;
-
-    if(!env_make_symlink(res, e))
-        return 0 ;
-
-    /** !r means that previous version doesn't exist, no need to import anything */
-    if (r && !conf) {
-
-        r = env_find_current_version(&fversion, svconf) ;
-        /** should never happen, the env_make_symlink() die in case of error */
-        if (r <= 0)
-            log_warnu_return(LOG_EXIT_ZERO, "find current configuration file version") ;
-
-        char pv[pversion.len + 1] ;
-        char fv[fversion.len + 1] ;
-
-        if (!ob_basename(pv, pversion.s))
-            log_warnu_return(LOG_EXIT_ZERO, "get basename of: ", pversion.s) ;
-
-        if (!ob_basename(fv, fversion.s))
-            log_warnu_return(LOG_EXIT_ZERO, "get basename of: ", fversion.s) ;
-
-        if (!env_import_version_file(name, svconf, pv, fv, res->type))
-            return 0 ;
-
-    }
-
+    // the version directory is made, and the files of the previous version imported, by parse_write()
     if (!auto_strbuf(result, \
     "## [STARTWARN]\n## DO NOT MODIFY THIS FILE, IT OVERWRITTEN AT UPGRADE TIME.\n## Uses \'66 configure ", \
-    name,"\' command instead.\n## Or make a copy of this file at ", src, "/", name, \
+    name,"\' command instead.\n## Or make a copy of this file at ", e->sa.s + e->envdir, "/", res->sa.s + res->version, "/", name, \
     " and modify it.\n## [ENDWARN]\n", e->sa.s + e->env))
-        log_warnu_return(LOG_EXIT_ZERO,"strbuf") ;
-
+        return 0 ;
 
     return 1 ;
 }

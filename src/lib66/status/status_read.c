@@ -29,18 +29,13 @@ int status_read(service_status_t *st, char const *file)
     char pack[STATUS_STATE_SIZE + 1] ;
     ssize_t r = file_read(file, pack, STATUS_STATE_SIZE + 1) ;
 
-    if (r < 0) {
-        if (errno == ENOENT) {
-            *st = service_status_zero ;
-            return 1 ;
-        }
-        return -1 ;
-    }
+    *st = service_status_zero ;
 
-    if (r != STATUS_STATE_SIZE || (uint8_t)pack[0] != STATUS_VERSION) {
-        *st = service_status_zero ;
-        return 0 ;
-    }
+    if (r < 0)
+        return errno == ENOENT ? 0 : -1 ;
+
+    if (r != STATUS_STATE_SIZE || (uint8_t)pack[0] != STATUS_VERSION)
+        return (errno = EINVAL, -1) ;
 
     status_unpack(pack, st) ;
 

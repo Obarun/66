@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <errno.h>
 #include <sys/stat.h>
 
 #include <oblibs/log.h>
@@ -31,7 +32,9 @@ inline static void auto_rm(char const *str)
     log_flow() ;
 
     int r ;
-    r = scan_mode(str, S_IFDIR) ;
+    r = scan_mode(str, FLAGS_DIR) ;
+    if (!r && errno != ENOENT)
+        log_dieusys(LOG_EXIT_SYS, "check: ", str) ;
     if (r > 0) {
         log_info("Removing: ", str, "...") ;
         if (!dir_destroy(str))

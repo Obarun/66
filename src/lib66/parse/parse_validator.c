@@ -9,10 +9,11 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 
 #include <oblibs/log.h>
@@ -35,8 +36,9 @@ int parse_validator_init(parse_validator_t *v, char const *frontend)
 
     memset(acfg, 0, sizeof(acfg)) ;
 
-    if (!parse_get_section(acfg, &ncfg, frontend, len))
-        log_warnu_return(LOG_EXIT_ZERO, "get section") ;
+    int r = parse_get_section(acfg, &ncfg, frontend, len) ;
+    if (r <= 0)
+        return r ;
 
     for (; n < ncfg ; n++) {
 
@@ -48,9 +50,10 @@ int parse_validator_init(parse_validator_t *v, char const *frontend)
         memcpy(secname, frontend + acfg[n].opos + 1, nlen) ;
         secname[nlen] = 0 ;
 
+        // parse_get_section() kept the known sections only
         ssize_t id = key_to_enum(enum_list_parser_section, secname) ;
         if (id < 0)
-            log_warnu_return(LOG_EXIT_ZERO, "get id of section: ", secname, " -- please make a bug report") ;
+            return (errno = EINVAL, -1) ;
 
         v->off[id] = cstart ;
         v->len[id] = cend - cstart ;

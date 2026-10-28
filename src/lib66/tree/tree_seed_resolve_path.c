@@ -13,6 +13,7 @@
  */
 
 #include <unistd.h>//getuid
+#include <errno.h>
 #include <sys/types.h>
 
 #include <oblibs/string.h>
@@ -46,8 +47,9 @@ int tree_seed_resolve_path(strbuf *sa, char const *seed)
         src = sa->s ;
     }
 
+    // a 0 is absent only under ENOENT, any other one a system error: no fallback
     r = tree_seed_file_isvalid(src, seed) ;
-    if (r == -1)
+    if (r == -1 || (!r && errno != ENOENT))
         return 0 ;
 
     if (!r) {
@@ -55,7 +57,7 @@ int tree_seed_resolve_path(strbuf *sa, char const *seed)
         /** yeah double check because we can come from !uid */
         src = SS_SEED_ADMDIR ;
         r = tree_seed_file_isvalid(src, seed) ;
-        if (r == -1)
+        if (r == -1 || (!r && errno != ENOENT))
             return 0 ;
 
         if (!r) {

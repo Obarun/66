@@ -23,15 +23,13 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 
-int svc_status(resolve_service_t *res, service_status_t *st)
+int svc_status(resolve_service_t const *res, service_status_t *st)
 {
     log_flow() ;
-
-    *st = service_status_zero ;
 
     char const *supervisedir = res->sa.s + res->live.supervisedir ;
     char file[strlen(supervisedir) + 1 + SS_STATUS_LEN + 1] ;
     auto_strings(file, supervisedir, "/", SS_STATUS) ;
 
-    return status_read(st, file) < 0 ? -1 : 1 ;
+    return status_read(st, file) ;
 }

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 
@@ -25,7 +26,7 @@ int write_environ(char const *name, char const *contents, char const *dst)
     int r ;
     size_t len = strlen(contents) ;
 
-    r = scan_mode(dst,S_IFDIR) ;
+    r = scan_mode(dst,FLAGS_DIR) ;
     if (r < 0)
         log_warn_return(LOG_EXIT_ZERO, "conflicting format of the environment directory: ", dst) ;
     else if (!r)

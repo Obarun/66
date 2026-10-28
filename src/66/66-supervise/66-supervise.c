@@ -44,8 +44,9 @@
  * resolve in their own dir without ever appearing in the system graph. Config is
  * pulled from the struct:
  *   notification-fd -> ex.notify
- *   timeout-kill    -> ex.timeout.start
- *   timeout-finish  -> ex.timeout.stop
+ *   readiness delay -> ex.timeout.start (a Notify service not ready in time is brought down)
+ *   the way down    -> ex.timeout.stop (the down signal, then SIGKILL; 0 = without end),
+ *                      the finish script alike
  *   max-death-tally -> ex.maxdeath
  *   down-signal     -> ex.downsignal
  * Only the `down` file stays a file: it is runtime state (66 start/stop toggle it
@@ -137,6 +138,7 @@ static struct runtime_s
     uint8_t flagpaused ;
     uint8_t flagfinishing ;
     uint8_t flagwantup ;
+    uint8_t flagstopping ;      // the down signal was sent: the process is on its way down
     uint8_t flagready ;
     uint8_t flagfailed ;        // crash budget exhausted: parked, projects FAILED
     uint8_t result ;            // status_result_e: what last happened to the process
@@ -146,8 +148,9 @@ static struct runtime_s
     int exec_errno ;            // errno of the last failed exec, projected on EXEC_FAILED
 } status = { .flagwantup = 1 } ; // wants up by default unless a ./down file exists
 
-/** the death we caused with a timeout kill, consumed at the next process death
- * to override SIGNALED: 1 = uptimeout (TIMEOUT_START), 2 = finishtimeout (TIMEOUT_STOP). */
+/** the death we caused with a timeout, consumed at the next process death to
+ * override SIGNALED: 1 = [Start] Timeout of a Notify service (TIMEOUT_START),
+ * 2 = the way down or the finish script killed at their timeout (TIMEOUT_STOP). */
 static uint8_t kill_timeout = 0 ;
 
 /** provenance of the current state, latched on the op that actually flips wantup
@@ -303,14 +306,16 @@ static void project_status(service_status_t *st)
 
         case UP :
         case LASTUP :
-            if (!status.flagwantup) st->state = STATUS_STATE_STOPPING ;
+            // a once (-o) only clears wantup: the process runs on, up
+            if (status.flagstopping) st->state = STATUS_STATE_STOPPING ;
             else if (ex.notify && !status.flagready) st->state = STATUS_STATE_STARTING ;
             else st->state = STATUS_STATE_UP ;
             break ;
 
+        // down and wanted up: a start is due, a crash loop runs
         case DOWN :
         default :
-            st->state = (status.flagwantup && nextstart_set) ? STATUS_STATE_RESTARTING : STATUS_STATE_DOWN ;
+            st->state = status.flagwantup ? STATUS_STATE_RESTARTING : STATUS_STATE_DOWN ;
             break ;
     }
 }
@@ -393,7 +398,8 @@ static void set_down_and_ready(uint8_t terminal)
     } else settimeout(1) ;
 
     clock_now(&status.readystamp) ;
-    announce_event(terminal) ;
+    // a start timeout leaves the service down: what waits for it up gives up
+    announce_event(!status.flagwantup && status.result == STATUS_RESULT_TIMEOUT_START ? EVENT_FLAG_TERMINAL : terminal) ;
 }
 
 
@@ -417,6 +423,7 @@ static void drop_notifyfd(void)
 // The action array.
 
 static void nop(void){}
+static void up_d(void) ;
 
 static void bail(void)
 {
@@ -553,6 +560,8 @@ static void notify_cb(sse_watcher_t *w, void *data, int revents)
             nextstart_set = 1 ;
             clock_now(&status.readystamp) ;
             status.flagready = 1 ;
+            if (!gflags.dying)
+                settimeout_infinite() ;
             announce_event(0) ;
             notify_drop_req = 1 ;
             return ;
@@ -685,7 +694,11 @@ static void trystart(void)
         } else notify_active = 1 ;
     }
 
-    settimeout_infinite() ;
+    // a Notify service has [Start] Timeout to become ready, 0 = without end
+    if (ex.notify && ex.timeout.start)
+        settimeout_ms(ex.timeout.start) ;
+    else settimeout_infinite() ;
+
     nextstart_set = 0 ;
     state = UP ;
     status.flagready = 0 ;
@@ -713,10 +726,21 @@ static void set_wantdown(void)
     status.flagfailed = 0 ; // a stop clears the failed latch -> plain DOWN
 }
 
+static void announce_order(void (*apply)(void))
+{
+    service_status_t before = STATUS_ZERO, after = STATUS_ZERO ;
+    project_status(&before) ;
+    apply() ;
+    project_status(&after) ;
+
+    if (after.state != before.state)
+        announce_event(0) ;
+    else announce_status() ;
+}
+
 static void wantdown(void)
 {
-    set_wantdown() ;
-    announce_event(0) ;
+    announce_order(&set_wantdown) ;
 }
 
 static void set_wantup(void)
@@ -728,13 +752,18 @@ static void set_wantup(void)
       status.flagfailed = 0 ;     // and lifts the failed latch (reset-failed + start)
     }
 
+    if (status.flagstopping) {
+        gflags.dying = 0 ;
+        settimeout_infinite() ;
+    }
+
     status.flagwantup = 1 ;
+    status.flagstopping = 0 ;
 }
 
 static void wantup(void)
 {
-    set_wantup() ;
-    announce_event(0) ;
+    announce_order(&set_wantup) ;
 }
 
 static void wantDOWN(void)
@@ -792,6 +821,7 @@ static int uplastup_z(void)
 
     status.flagpaused = 0 ;
     status.flagready = 0 ;
+    status.flagstopping = 0 ;
     gflags.dying = 0 ;
 
     /* a commanded stop (wantup cleared, we sent the down signal) is a clean
@@ -800,6 +830,10 @@ static int uplastup_z(void)
     if (kill_timeout == 1) {
 
         status.result = STATUS_RESULT_TIMEOUT_START ;
+
+    } else if (kill_timeout == 2) {
+
+        status.result = STATUS_RESULT_TIMEOUT_STOP ;
 
     } else if (!status.flagwantup) {
 
@@ -844,12 +878,9 @@ static int uplastup_z(void)
 
     child_active = 1 ;
 
-    {
-        unsigned int timeout = ex.timeout.stop ? ex.timeout.stop : 5000 ;
-        if (timeout)
-          settimeout_ms(timeout) ;
-        else settimeout_infinite() ;
-    }
+    if (ex.timeout.stop)
+        settimeout_ms(ex.timeout.stop) ;
+    else settimeout_infinite() ;
 
     status.flagfinishing = 1 ;
     announce_event(0) ;
@@ -874,9 +905,18 @@ static void uptimeout(void)
 {
     if (gflags.dying) {
 
-        kill_timeout = 1 ;
+        if (kill_timeout != 1)
+            kill_timeout = 2 ;
+
         killk() ;
         settimeout(5) ;
+
+    } else if (ex.notify && !status.flagready) {
+
+        kill_timeout = 1 ;
+        status.flagwantup = 0 ;
+        latched_who = STATUS_WHO_SELF ;
+        up_d() ;
 
     } else {
 
@@ -887,9 +927,10 @@ static void uptimeout(void)
 
 static void up_d(void)
 {
-    unsigned int timeout = ex.timeout.start ;   // timeout-kill (0 = infinite)
+    unsigned int timeout = ex.timeout.stop ;   // the way down, 0 = without end
     if (status.flagwantup) latched_who = current_who ; // a real 1->0 owns the transition
     status.flagwantup = 0 ;
+    status.flagstopping = 1 ;
     killr() ;
     killc() ;
 
@@ -930,7 +971,7 @@ static void finishtimeout(void)
 
 static void finish_z(void)
 {
-    if (kill_timeout == 2)
+    if (kill_timeout == 2 && status.result != STATUS_RESULT_TIMEOUT_START)
         status.result = STATUS_RESULT_TIMEOUT_STOP ;
 
     kill_timeout = 0 ;

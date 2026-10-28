@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -122,8 +122,9 @@ inline static void auto_check(char const *str,mode_t type,mode_t perm,int what)
     log_flow() ;
 
     int r ;
-    r = scan_mode(str,S_IFDIR) ;
+    r = scan_mode(str,FLAGS_DIR) ;
     if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
+    if (!r && errno != ENOENT) log_dieusys(LOG_EXIT_SYS,"check: ",str) ;
     if (!r)
     {
         auto_dir(str,type) ;
@@ -140,6 +141,7 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+    _cleanup_strbuf_ strbuf tmpdir = STRBUF_ZERO ;
     resolve_init(wres) ;
     resolve_init(wex) ;
 
@@ -154,17 +156,17 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     auto_strings(rdir, dir, SS_RESOLVE) ;
     auto_dir(rdir, 0755) ;
 
+    // prepared on the filesystem of the scandir, renamed in place
+    if (set_livetmp(&tmpdir, getuid(), SS_LIVE) < 0)
+        log_dieusys(LOG_EXIT_SYS, "set the temporary directory of: ", SS_LIVE) ;
+
     log_trace("write resolve of: ", name, " at: ", dir) ;
-    if (!resolve_write_at(wres, dir, name))
+    if (!resolve_write_at(wres, dir, name, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "write resolve of: ", name) ;
 
-    {
-        char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
-        auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
-        log_trace("write resolve of: ", aname, " at: ", dir) ;
-        if (!resolve_write_at(wex, dir, aname))
-            log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
-    }
+    log_trace("write resolve of: ", name, SS_ADDON_EXECUTE_SUFFIX, " at: ", dir) ;
+    if (!resolve_write_at(wex, dir, name, tmpdir.s))
+        log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
 
     resolve_free(wres) ;
     resolve_free(wex) ;
@@ -175,8 +177,9 @@ inline static void auto_fifo(char const *str)
     log_flow() ;
 
     int r ;
-    r = scan_mode(str,S_IFIFO) ;
+    r = scan_mode(str,FLAGS_FIFO) ;
     if (r < 0) { errno = EEXIST ; log_diesys(LOG_EXIT_SYS,"conflicting format of: ",str) ; }
+    if (!r && errno != ENOENT) log_dieusys(LOG_EXIT_SYS,"check: ",str) ;
     if (!r)
     {
         log_trace("create fifo: ",str) ;
@@ -190,7 +193,8 @@ inline static void auto_rm(char const *str)
     log_flow() ;
 
     int r ;
-    r = scan_mode(str,S_IFDIR) ;
+    r = scan_mode(str,FLAGS_DIR) ;
+    if (!r && errno != ENOENT) log_dieusys(LOG_EXIT_SYS,"check: ",str) ;
     if (r > 0)
     {
         log_info("Removing: ",str,"...") ;
@@ -621,9 +625,18 @@ void sanitize_live(char const *live)
     auto_strings(tmp + livelen,SS_LIVEENV,"/",OWNERSTR) ;
     auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
 
-    /** run/66/tmp */
+    /** run/66/tmp, where what is written under run/66 is prepared */
     auto_strings(tmp + livelen, SS_LIVE_TMP) ;
     auto_check(tmp,0755,PERM1777,AUTO_CRTE_CHW_CHM) ;
+
+    /** run/66/graph, the cache of the graph of each owner: root's own
+     * directory 0 made in it before it is opened to every account */
+    if (!OWNER) {
+        auto_strings(tmp + livelen, SS_LIVEGRAPH, "/0") ;
+        auto_check(tmp,0755,0,AUTO_CRTE_CHW) ;
+        auto_strings(tmp + livelen, SS_LIVEGRAPH) ;
+        auto_chmod(tmp,PERM1777) ;
+    }
 }
 
 int on_scandir_create(int id, char const *arg, void *data)
@@ -686,8 +699,9 @@ int ssexec_scandir_create(int argc, char const *const *argv, void *data)
 
     GIDSTR[gid_format(GIDSTR,GIDOWNER)] = 0 ;
 
-    r = scan_mode(info->scandir.s, S_IFDIR) ;
+    r = scan_mode(info->scandir.s, FLAGS_DIR) ;
     if (r < 0) log_die(LOG_EXIT_SYS, "scandir: ", info->scandir.s, " exist with unkown mode") ;
+    if (!r && errno != ENOENT) log_dieusys(LOG_EXIT_SYS, "check scandir: ", info->scandir.s) ;
     if (!r) {
 
         log_trace("sanitize ", info->live.s, " ...") ;

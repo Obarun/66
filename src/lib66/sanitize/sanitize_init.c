@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
@@ -20,49 +20,55 @@
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/hash.h>
 #include <oblibs/types.h>
+#include <oblibs/bits.h>
 #include <oblibs/directory.h>
 #include <oblibs/files.h>
+#include <oblibs/strbuf.h>
 
 #include <66/graph.h>
+#include <66/selection.h>
 #include <66/state.h>
 #include <66/service.h>
 #include <66/sanitize.h>
 #include <66/symlink.h>
+#include <66/utils.h>
 #include <66/enum_parser.h>
-
 #include <66/event.h>
 #include <66/fdholder.h>
 #include <66/svc.h>
 
-void cleanup(resolve_service_t *res, uint32_t nres)
+static void cleanup(selection_service_t const *lot, service_graph_resolve_t *store, bitset32_t const *created)
 {
-    uint32_t pos = 0 ;
     int e = errno ;
-    ss_state_t sta = STATE_ZERO ;
-    resolve_service_t_ref pres = 0 ;
+    bool connected = false ;
     fdholder_client_t a ;
 
-    /* the fdholder socket is the scandir's, shared by every service here */
-    int connected = nres && sanitize_fdholder_start(&a, res[0].sa.s + res[0].live.fdholderdir) ;
-    if (nres && !connected)
-        log_warnusys("start fdholder: ", res[0].sa.s + res[0].live.fdholderdir) ;
+    for (uint32_t index = 0 ; index < service_graph_nvertex(lot->g) ; index++) {
 
-    for (; pos < nres ; pos++) {
+        struct resolve_hash_s *h ;
+        ss_state_t sta = STATE_ZERO ;
 
-        pres = &res[pos] ;
+        if (!bitset32_isvalid(created, index) || service_graph_resolve_get(store, index, 0, &h) <= 0)
+            continue ;
 
-        if (connected && !sanitize_fdholder(pres, &a, &sta, STATE_FLAGS_FALSE, 0))
-            log_warnusys("sanitize fdholder directory: ", pres->sa.s + pres->live.fdholderdir);
+        resolve_service_t *res = &h->res ;
 
-        log_trace("remove directory: ", pres->sa.s + pres->live.servicedir) ;
-        if (!dir_destroy(pres->sa.s + pres->live.servicedir))
-            log_warnusys("remove live directory: ", pres->sa.s + pres->live.servicedir) ;
+        if (!connected) {
+            connected = sanitize_fdholder_start(&a, res->sa.s + res->live.fdholderdir) ;
+            if (!connected)
+                log_warnusys("start fdholder: ", res->sa.s + res->live.fdholderdir) ;
+        }
 
-        log_trace("remove symlink: ", pres->sa.s + pres->live.scandir) ;
-        file_tryunlink(pres->sa.s + pres->live.scandir) ;
+        if (connected && !sanitize_fdholder(res, &a, &sta, STATE_FLAGS_FALSE, 0))
+            log_warnusys("sanitize fdholder directory: ", res->sa.s + res->live.fdholderdir) ;
 
+        log_trace("remove directory: ", res->sa.s + res->live.servicedir) ;
+        if (!dir_destroy(res->sa.s + res->live.servicedir))
+            log_warnusys("remove live directory: ", res->sa.s + res->live.servicedir) ;
+
+        log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
+        file_tryunlink(res->sa.s + res->live.scandir) ;
     }
 
     if (connected)
@@ -71,238 +77,249 @@ void cleanup(resolve_service_t *res, uint32_t nres)
     errno = e ;
 }
 
-void sanitize_init(service_graph_t *g, uint32_t flag, uint8_t who)
+static int prepare(struct resolve_hash_s *h, uint32_t index, bool earlier_stage, bitset32_t *created, bitset32_t *subscribe, bitset32_t *quiet)
 {
-    int r, issupervised = 0 ;
-    uint32_t pos = 0, ntoclean = 0, nsubscribe = 0, msg[g->g.nvertexes] ;
-    resolve_service_t toclean[g->g.nvertexes], tosubscribe[g->g.nvertexes] ;
-    vertex_t *c, *tmp ;
-    resolve_service_t *pres ;
+    resolve_service_t *res = &h->res ;
+    char const *name = res->sa.s + res->name ;
+    char const *scandir = res->sa.s + res->live.scandir ;
     ss_state_t sta = STATE_ZERO ;
-    bool earlier = false ;
+    int present ;
 
-    memset(msg, 0, g->g.nvertexes * sizeof(uint32_t)) ;
-    memset(toclean, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
-    memset(tosubscribe, 0, g->g.nvertexes * sizeof(resolve_service_t)) ;
-
-    HASH_FOREACH(&g->g.vertexes, c, tmp) {
-
-        char *name = c->name ;
-        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, name) ;
-
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
-
-        pres = &hash->res ;
-        toclean[ntoclean++] = hash->res ;
-        earlier = pres->earlier ? true : false ;
-
-        char *scandir = pres->sa.s + pres->live.scandir ;
-        size_t scandirlen = strlen(scandir) ;
-
-        r = state_read(&sta, pres) ;
-
-        if (!r)
-            log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug reports") ;
-
-        issupervised = access(scandir, F_OK) ;
-
-        if (!sanitize_livestate(pres, &sta)) {
-            cleanup(toclean, ntoclean) ;
-            log_dieu(LOG_EXIT_SYS, "sanitize state directory: ", pres->sa.s + pres->name) ;
-        }
-
-        /* oneshot and module are not supervised, but they get the same /run
-         * layout as a classic so the status window is uniform: a supervise/ dir
-         * for svc_launch's runtime record, and a hidden scandir symlink that
-         * 66-scandir skips. The supervisor builds these itself for a classic. */
-        if (pres->type != E_PARSER_TYPE_CLASSIC && sta.tounsupervise != STATE_FLAGS_TRUE) {
-
-            if (!dir_create_parent(pres->sa.s + pres->live.supervisedir, 0755)) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "create supervise directory of: ", pres->sa.s + pres->name) ;
-            }
-
-            if (!symlink_atomic(pres->sa.s + pres->live.servicedir, pres->sa.s + pres->live.scandir)) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "create scandir symlink of: ", pres->sa.s + pres->name) ;
-            }
-        }
-
-        /**
-         * Module type are not a daemons. We don't need to supervise it. */
-        if (pres->type == E_PARSER_TYPE_MODULE)
-            continue ;
-
-        if (!earlier && !issupervised) {
-            log_warn(name," already initialized -- ignore it") ;
-            msg[c->index] = 1 ;
-            continue ;
-        }
-
-        if (issupervised == -1) {
-
-            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
-            if (!sanitize_scandir(pres, &sta)) {
-                cleanup(toclean, pos) ;
-                log_dieusys(LOG_EXIT_SYS, "sanitize_scandir directory: ", pres->sa.s + pres->live.scandir) ;
-            }
-            state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
-
-            if (pres->type == E_PARSER_TYPE_ONESHOT || pres->type == E_PARSER_TYPE_EVENT) {
-
-                if (!state_write(&sta, pres)) {
-                    cleanup(toclean, pos) ;
-                    log_dieusys(LOG_EXIT_SYS, "write status file of: ", pres->sa.s + pres->name) ;
-                }
-                msg[c->index] = 1 ;
-                continue ;
-            }
-        }
-
-        /* down file */
-        if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
-
-            char downfile[scandirlen + 6] ;
-            auto_strings(downfile, scandir, "/down") ;
-            log_trace("create file: ", downfile) ;
-            if (!file_write(downfile, "", 0)) {
-                cleanup(toclean, pos) ;
-                log_dieusys(LOG_EXIT_SYS, "create file: ", downfile) ;
-            }
-
-            if (issupervised) {
-
-                /* the log pipe is created on demand by 66-execute (fdholder
-                 * get-or-create), so there is nothing to pre-seed here */
-
-                log_trace("create fifo: ", pres->sa.s + pres->live.eventdir) ;
-                if (!event_fifo_make(pres->sa.s + pres->live.eventdir, getgid())) {
-                    cleanup(toclean, pos) ;
-                    log_dieusys(LOG_EXIT_SYS, "create fifo: ", pres->sa.s + pres->live.eventdir) ;
-                }
-            }
-
-        }
-
-        if (!state_write(&sta, pres)) {
-            cleanup(toclean, pos) ;
-            log_dieu(LOG_EXIT_SYS, "write state file of: ", name) ;
-        }
-
-        tosubscribe[nsubscribe++] = hash->res ;
-
+    if (state_read(&sta, res) <= 0) {
+        log_warnusys("read state file of: ", name) ;
+        return -1 ;
     }
 
+    present = access(scandir, F_OK) == 0 ;
+    if (!present && errno != ENOENT) {
+        log_warnusys("check the scandir entry of: ", name) ;
+        return -1 ;
+    }
 
-    /**
-     * scandir is already running, we need to synchronize with it
-     * */
-    if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER) && nsubscribe) {
+    if (!present)
+        bitset32_set(created, index) ;
 
-        char const *eventdirs[nsubscribe] ;
-        size_t neventdirs = 0 ;
-        unsigned int fake = 0 ;
+    if (!sanitize_livestate(res, &sta)) {
+        log_warnu("sanitize state directory: ", name) ;
+        return -1 ;
+    }
 
-        for (pos = 0 ; pos < nsubscribe ; pos++) {
+    if (res->type != E_PARSER_TYPE_CLASSIC && sta.tounsupervise != STATE_FLAGS_TRUE) {
 
-            if (tosubscribe[pos].type == E_PARSER_TYPE_CLASSIC && !tosubscribe[pos].earlier) {
-
-                fake = pos ;
-                eventdirs[neventdirs++] = tosubscribe[pos].sa.s + tosubscribe[pos].live.eventdir ;
-                log_trace("subscribe to fifo: ", eventdirs[neventdirs - 1]) ;
-            }
+        if (!dir_create_parent(res->sa.s + res->live.supervisedir, 0755)) {
+            log_warnusys("create supervise directory of: ", name) ;
+            return -1 ;
         }
 
-        if (neventdirs) {
-
-            event_wait_t fifo ;
-
-            if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_SUPERVISE_UP)) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "subscribe to event fifos") ;
-            }
-
-            state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
-
-            if (!sanitize_scandir(&tosubscribe[fake], &sta)) {
-                event_wait_free(&fifo) ;
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "sanitize scandir directory: ", tosubscribe[fake].sa.s + tosubscribe[fake].live.scandir) ;
-            }
-
-            log_trace("waiting for events on fifo...") ;
-
-            /** TODO
-             * waiting for 3 seconds here,
-             * it should be the -T option if exist.
-            */
-            int w = event_wait_run(&fifo, 3000) ;
-            event_wait_free(&fifo) ;
-
-            if (w < 0) {
-                cleanup(toclean, ntoclean) ;
-                log_dieusys(LOG_EXIT_SYS, "wait for events") ;
-            }
-
-            if (!w) {
-                cleanup(toclean, ntoclean) ;
-                log_die(LOG_EXIT_SYS, "timed out waiting for services to be supervised") ;
-            }
+        if (symlink_atomic_live(res->owner, res->sa.s + res->live.livedir, res->sa.s + res->live.servicedir, scandir) < 0) {
+            log_warnusys("create scandir symlink of: ", name) ;
+            return -1 ;
         }
     }
 
-    /**
-     * We pass through here even for Module and Oneshot.
-     * We need to write the state file anyway. Thus can always
-     * be consider as initialized.
-     * */
-    HASH_FOREACH(&g->g.vertexes, c, tmp) {
+    if (res->type == E_PARSER_TYPE_MODULE)
+        return 1 ;
 
-        ss_state_t sta = STATE_ZERO ;
-        char *name = c->name ;
-        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, c->name) ;
+    if (!res->earlier && present) {
+        log_warn(name, " already initialized -- ignore it") ;
+        bitset32_set(quiet, index) ;
+        return 1 ;
+    }
 
-        if (hash == NULL) {
-            cleanup(toclean, ntoclean) ;
-            log_dieu(LOG_EXIT_SYS, "find hash id of: ", name, " -- please make a bug reports") ;
+    if (!present) {
+
+        state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
+        if (!sanitize_scandir(res, &sta)) {
+            log_warnusys("sanitize scandir directory: ", scandir) ;
+            return -1 ;
         }
-
-        pres = &hash->res ;
-        char *sa = pres->sa.s ;
-
-        if (!state_read(&sta, pres)) {
-            cleanup(toclean, ntoclean) ;
-            log_dieusys(LOG_EXIT_SYS, "read status file of: ", sa + pres->name) ;
-        }
-
-        if (pres->type == E_PARSER_TYPE_CLASSIC) {
-
-            if (!FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
-
-                log_trace("clean event directory: ", sa + pres->live.eventdir) ;
-                if (!event_fifo_clean(sa + pres->live.eventdir))
-                    log_warnu("clean event directory: ", sa + pres->live.eventdir) ;
-            }
-        }
-
-        /** Consider Module as supervised */
         state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
-        state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
 
-        if (pres->has_event && pres->type != E_PARSER_TYPE_EVENT
-            && !FLAGS_ISSET(flag, GRAPH_WANT_EARLIER)) {
+        if (res->type == E_PARSER_TYPE_ONESHOT || res->type == E_PARSER_TYPE_EVENT) {
 
-            if (!svcd_notify(sa + pres->live.eventddir, 'a', who, sa + pres->name))
-                log_warnusys("arm event reactor: ", sa + pres->name) ;
+            if (!state_write(&sta, res)) {
+                log_warnusys("write state file of: ", name) ;
+                return -1 ;
+            }
+
+            bitset32_set(quiet, index) ;
+            return 1 ;
         }
-
-        if (!state_write(&sta, pres)) {
-            cleanup(toclean, ntoclean) ;
-            log_dieusys(LOG_EXIT_SYS, "write status file of: ", sa + pres->name) ;
-        }
-
-        if (!msg[c->index])
-            log_info("Initialized successfully: ", name) ;
     }
+
+    if (!earlier_stage) {
+
+        log_trace("create file: ", scandir, "/down") ;
+        if (!file_create_empty(scandir, "down", 0644) && errno != EEXIST) {
+            log_warnusys("create file: ", scandir, "/down") ;
+            return -1 ;
+        }
+
+        if (!present) {
+
+            log_trace("create fifo: ", res->sa.s + res->live.eventdir) ;
+            if (!event_fifo_make(res->sa.s + res->live.eventdir, getgid())) {
+                log_warnusys("create fifo: ", res->sa.s + res->live.eventdir) ;
+                return -1 ;
+            }
+        }
+    }
+
+    if (!state_write(&sta, res)) {
+        log_warnusys("write state file of: ", name) ;
+        return -1 ;
+    }
+
+    bitset32_set(subscribe, index) ;
+
+    return 1 ;
+}
+
+static int synchronize(selection_service_t const *lot, service_graph_resolve_t *store, bitset32_t const *subscribe)
+{
+    uint32_t n = service_graph_nvertex(lot->g), neventdirs = 0 ;
+    char const *eventdirs[n + 1] ;
+    resolve_service_t *one = 0 ;
+    ss_state_t sta = STATE_ZERO ;
+    event_wait_t fifo ;
+
+    for (uint32_t index = 0 ; index < n ; index++) {
+
+        struct resolve_hash_s *h ;
+
+        if (!bitset32_isvalid(subscribe, index))
+            continue ;
+
+        if (service_graph_resolve_get(store, index, 0, &h) <= 0)
+            return -1 ;
+
+        if (h->res.type != E_PARSER_TYPE_CLASSIC || h->res.earlier)
+            continue ;
+
+        one = &h->res ;
+        eventdirs[neventdirs++] = h->res.sa.s + h->res.live.eventdir ;
+        log_trace("subscribe to fifo: ", eventdirs[neventdirs - 1]) ;
+    }
+
+    if (!neventdirs)
+        return 1 ;
+
+    if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_SUPERVISE_UP)) {
+        log_warnusys("subscribe to event fifos") ;
+        return -1 ;
+    }
+
+    state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
+
+    if (!sanitize_scandir(one, &sta)) {
+        event_wait_free(&fifo) ;
+        log_warnusys("sanitize scandir directory: ", one->sa.s + one->live.scandir) ;
+        return -1 ;
+    }
+
+    log_trace("waiting for events on fifo...") ;
+
+    /** TODO
+     * waiting for 3 seconds here,
+     * it should be the -T option if exist.
+    */
+    int w = event_wait_run(&fifo, 3000) ;
+    event_wait_free(&fifo) ;
+
+    if (w < 0) {
+        log_warnusys("wait for events") ;
+        return -1 ;
+    }
+
+    if (!w) {
+        log_warn("timed out waiting for services to be supervised") ;
+        return (errno = ETIMEDOUT, -1) ;
+    }
+
+    return 1 ;
+}
+
+static int settle(struct resolve_hash_s *h, bool earlier_stage, bool quiet, uint8_t who)
+{
+    resolve_service_t *res = &h->res ;
+    char const *sa = res->sa.s ;
+    ss_state_t sta = STATE_ZERO ;
+
+    if (state_read(&sta, res) <= 0) {
+        log_warnusys("read state file of: ", sa + res->name) ;
+        return -1 ;
+    }
+
+    if (res->type == E_PARSER_TYPE_CLASSIC && !earlier_stage) {
+
+        log_trace("clean event directory: ", sa + res->live.eventdir) ;
+        if (!event_fifo_clean(sa + res->live.eventdir))
+            log_warnu("clean event directory: ", sa + res->live.eventdir) ;
+    }
+
+    state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_FALSE) ;
+    state_set_flag(&sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
+
+    if (res->type != E_PARSER_TYPE_EVENT && !earlier_stage) {
+
+        if (!svcd_notify(sa + res->live.eventddir, 'a', who, sa + res->name)) {
+
+            if (res->has_event)
+                log_warnusys("arm event reactor: ", sa + res->name) ;
+            else
+                log_trace("unable to announce the supervision to 66-eventd of: ", sa + res->name) ;
+        }
+    }
+
+    if (!state_write(&sta, res)) {
+        log_warnusys("write state file of: ", sa + res->name) ;
+        return -1 ;
+    }
+
+    if (!quiet)
+        log_info("Initialized successfully: ", sa + res->name) ;
+
+    return 1 ;
+}
+
+int sanitize_init(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t stage, uint8_t who)
+{
+    log_flow() ;
+
+    bool earlier_stage = stage == SVC_LOT_EARLIER ;
+    bitset32_t created = bitset32_init(SS_MAX_SERVICE) ;
+    bitset32_t subscribe = bitset32_init(SS_MAX_SERVICE) ;
+    bitset32_t quiet = bitset32_init(SS_MAX_SERVICE) ;
+
+    if (stage > SVC_LOT_EARLIER)
+        return (errno = EINVAL, -1) ;
+
+    uint32_t index ;
+
+    FOREACH_SELECTION_MEMBER(lot, index) {
+
+        struct resolve_hash_s *h ;
+
+        if (service_graph_resolve_get(store, index, 0, &h) <= 0 || prepare(h, index, earlier_stage, &created, &subscribe, &quiet) < 0) {
+            cleanup(lot, store, &created) ;
+            return -1 ;
+        }
+    }
+
+    if (!earlier_stage && synchronize(lot, store, &subscribe) < 0) {
+        cleanup(lot, store, &created) ;
+        return -1 ;
+    }
+
+    FOREACH_SELECTION_MEMBER(lot, index) {
+
+        struct resolve_hash_s *h ;
+
+        if (service_graph_resolve_get(store, index, 0, &h) <= 0 || settle(h, earlier_stage, bitset32_isvalid(&quiet, index), who) < 0) {
+            cleanup(lot, store, &created) ;
+            return -1 ;
+        }
+    }
+
+    return 1 ;
 }

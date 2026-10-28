@@ -9,19 +9,20 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <errno.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
 
-void parse_module_check_dir(char const *src,char const *dir)
+int parse_module_check_dir(char const *src, char const *dir)
 {
     log_flow() ;
 
@@ -32,13 +33,15 @@ void parse_module_check_dir(char const *src,char const *dir)
     char t[srclen + dirlen + 1] ;
     auto_strings(t, src, dir) ;
 
-    r = scan_mode(t,S_IFDIR) ;
-    if (r < 0) {
-        errno = EEXIST ;
-        log_diesys(LOG_EXIT_ZERO, "conflicting format of: ", t) ;
-    }
+    r = scan_mode(t, FLAGS_DIR) ;
+    if (r < 0)
+        log_warn_return(LOG_EXIT_ZERO, "conflicting format of: ", t, " -- a directory is expected") ;
 
-    if (!r)
-        if (!dir_create_parent(t, 0755))
-            log_dieusys(LOG_EXIT_ZERO, "create directory: ", t) ;
+    if (!r && errno != ENOENT)
+        return -1 ;
+
+    if (!r && !dir_create_parent(t, 0755))
+        return -1 ;
+
+    return 1 ;
 }

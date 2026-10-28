@@ -77,7 +77,7 @@ static int store_put(parse_store_t *st, uint32_t sid, uint32_t kid, char const *
     uint32_t off = (uint32_t)st->arena.len ;
 
     if (!strbuf_catb(&st->arena, s, slen) || !strbuf_catb(&st->arena, &nul, 1))
-        return 0 ;
+        return -1 ;
 
     st->off[sid][kid] = off ;
     st->len[sid][kid] = (uint32_t)slen ;
@@ -118,7 +118,7 @@ static int store_keys(parse_store_t *st, uint32_t sid, char const *body, resolve
 
         kid = parse_key(&key, &kcfg, table) ;
         if (kid < 0)
-            log_warnu_return(LOG_EXIT_ZERO, "get keys in section: ", enum_str_parser_section[sid]) ;
+            return -1 ;
 
         table.u.parser.id = kid ;
 
@@ -126,11 +126,12 @@ static int store_keys(parse_store_t *st, uint32_t sid, char const *body, resolve
 
             _alloc_sbl_(val, kcfg.slen + 1) ;
 
-            if (!parse_value(&val, &kcfg, table))
-                log_warnu_return(LOG_EXIT_ZERO, "get value of key: ", key.s) ;
+            int r = parse_value(&val, &kcfg, table) ;
+            if (r <= 0)
+                return r ;
 
-            if (!store_put(st, sid, (uint32_t)kid, val.s, val.len))
-                log_warnu_return(LOG_EXIT_ZERO, "store value of key: ", key.s) ;
+            if (store_put(st, sid, (uint32_t)kid, val.s, val.len) < 0)
+                return -1 ;
         }
     }
 
@@ -146,8 +147,9 @@ int parse_store_build(parse_store_t *st, char const *frontend)
     memset(st, 0, sizeof(*st)) ;
     st->frontend = frontend ;
 
-    if (!parse_validator_init(&v, frontend))
-        return 0 ;
+    int r = parse_validator_init(&v, frontend) ;
+    if (r <= 0)
+        return r ;
 
     for (uint32_t sid = 0 ; sid < E_PARSER_SECTION_ENDOFKEY ; sid++) {
 
@@ -160,14 +162,9 @@ int parse_store_build(parse_store_t *st, char const *frontend)
         body[l] = '\n' ; // key lexing looks for '=\n'
         body[l + 1] = 0 ;
 
-        if (sid == E_PARSER_SECTION_ENVIRONMENT) {
-            if (!store_environ(st, body))
-                return 0 ;
-            continue ;
-        }
-
-        if (!store_keys(st, sid, body, store_table(sid)))
-            return 0 ;
+        r = sid == E_PARSER_SECTION_ENVIRONMENT ? store_environ(st, body) : store_keys(st, sid, body, store_table(sid)) ;
+        if (r <= 0)
+            return r ;
     }
 
     return 1 ;

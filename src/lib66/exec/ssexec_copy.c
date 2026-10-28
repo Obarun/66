@@ -27,13 +27,10 @@ void ssexec_copy(ssexec_t *dest, ssexec_t *src)
     auto_strbuf(&dest->scandir, src->scandir.s) ;
     auto_strbuf(&dest->treename, src->treename.s) ;
 
-    dest->treeallow = src->treeallow ;
     dest->owner = src->owner ;
     auto_strings(dest->ownerstr, src->ownerstr) ;
     dest->ownerlen = src->ownerlen ;
     dest->timeout = src->timeout ;
-    dest->opt_verbo = src->opt_verbo ;
-    dest->opt_timeout = src->opt_timeout ;
     dest->opt_color = src->opt_color ;
     dest->skip_opt_tree = src->skip_opt_tree ;
     dest->who = src->who ;

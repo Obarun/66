@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -25,6 +25,8 @@
 #include <66/snapshot.h>
 #include <66/ssexec.h>
 #include <66/constants.h>
+#include <66/graph.h>
+#include <66/command.h>
 
 snapshot_list_t snapshot_root_list[] = {
     { .name = SS_SKEL_DIR },
@@ -146,6 +148,9 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
         if (!str_start_with(snapname, "system@"))
             log_die(LOG_EXIT_USER, "system@ is a reserved prefix for snapshot names -- please select a different one") ;
 
+    if (service_graph_write_begin(info->owner, info->base.s, SS_LIVE) < 0)
+        log_dieusys(LOG_EXIT_SYS, "lock the system") ;
+
     auto_strings(snapdir, info->base.s, SS_SNAPSHOT + 1) ;
 
     len = info->base.len + (SS_SNAPSHOT_LEN - 1) ;
@@ -164,6 +169,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
             log_dieu(LOG_EXIT_USER, "create snapshot: ", snapdir, " -- already exist") ;
         } else {
             log_warn("snapshot: ", snapdir, " already exist -- keeping it") ;
+            command_write_end(0) ;
             return 0 ;
         }
     }
@@ -216,11 +222,14 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
 
         if (!copy_dir(list[pos].name, src, len, info)) {
             snapshot_cleanup(snapdir) ;
+            command_write_end(0) ;
             return LOG_EXIT_SYS ;
         }
 
         pos++ ;
     }
+
+    command_write_end(0) ;
 
     log_info("Successfully created snapshot: ", snapdir) ;
 

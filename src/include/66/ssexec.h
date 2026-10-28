@@ -9,13 +9,14 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_SSEXEC_H
 #define SS_SSEXEC_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <oblibs/types.h>
 
@@ -24,6 +25,11 @@
 
 #include <66/config.h>
 #include <66/status.h>
+
+#define SSEXEC_MSG_UNKNOWN(name) "service: ", (name), " is unknown: no frontend and no service answers to the name -- is its provider enabled?"
+#define SSEXEC_MSG_UNPARSED(name) "service: ", (name), " is not parsed -- parse it with 66 parse ", (name)
+#define SSEXEC_MSG_MEMBER(name, module, verb) "service: ", (name), " is part of a module and cannot be ", (verb), "d alone -- please ", (verb), " the entire module instead using '66 ", (verb), " ", (module), "'"
+#define SSEXEC_MSG_LOGGER(name, service, verb) "service: ", (name), " is a logger and is ", (verb), "d with its service -- please use '66 ", (verb), " ", (service), "'"
 
 typedef struct ssexec_s ssexec_t , *ssexec_t_ref ;
 struct ssexec_s
@@ -34,20 +40,17 @@ struct ssexec_s
     strbuf treename ;
     strbuf environment ;
 
-    uint8_t treeallow ; //1 yes , 0 no
     uid_t owner ;
     char ownerstr[UID_FMT] ;
     size_t ownerlen ;
     uint64_t timeout ;
     // argument passed or not at commandline 0->no,1->yes
-    uint8_t opt_verbo ;
     uint8_t opt_tree ;
-    uint8_t opt_timeout ;
     uint8_t opt_color ;
     // skip option definition 0->no,1-yes
-    uint8_t skip_opt_tree ; // tree,treename, treeallow will not be set. Also, trees permissions is not checked.
+    uint8_t skip_opt_tree ; // tree,treename will not be set. Also, trees permissions is not checked.
     uint8_t who ; // status_who_e: provenance of the command
-    uint8_t target ; // svc_target_e a caller demands of the verb it re-enters, SVC_TARGET_NONE to let the verb decide
+    uint8_t target ; // svc_target_e a caller demands of the command it re-enters, SVC_TARGET_NONE to let the command decide
     uint8_t opt_react ; // set by 66-eventd on a fire-time start: do not pull a reactor's From establishment sources
 } ;
 
@@ -56,14 +59,11 @@ struct ssexec_s
                         .scandir = STRBUF_ZERO, \
                         .treename = STRBUF_ZERO, \
                         .environment = STRBUF_ZERO, \
-                        .treeallow = 0, \
                         .owner = 0, \
                         .ownerstr = { 0 }, \
                         .ownerlen = 0, \
                         .timeout = 0, \
-                        .opt_verbo = 0, \
                         .opt_tree = 0, \
-                        .opt_timeout = 0, \
                         .opt_color = 0, \
                         .skip_opt_tree = 0, \
                         .who = STATUS_WHO_SELF, \

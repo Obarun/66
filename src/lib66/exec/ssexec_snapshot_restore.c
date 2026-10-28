@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <unistd.h>
@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
@@ -27,6 +28,8 @@
 #include <66/ssexec.h>
 #include <66/snapshot.h>
 #include <66/constants.h>
+#include <66/graph.h>
+#include <66/command.h>
 
 static void snapshot_remove_directory(ssexec_t *info, char const *target)
 {
@@ -90,7 +93,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
     if (access(snapdir, F_OK) < 0)
         log_dieusys(LOG_EXIT_SYS, "find snapshot: ", snapdir) ;
 
-    if (!sbl_dir_get(&sa, snapdir, exclude, S_IFDIR))
+    if (!sbl_dir_get(&sa, snapdir, exclude, FLAGS_DIR))
         log_dieusys(LOG_EXIT_SYS, "list snapshot directory: ", snapdir) ;
 
     if (!info->owner) {
@@ -115,6 +118,9 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
 
     dlen = strlen(dst) ;
 
+    if (service_graph_write_begin(info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "lock the system") ;
+
     snapshot_remove_directory(info, dst) ;
 
     FOREACH_SBL(&sa, pos) {
@@ -127,6 +133,8 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
         if (!tree_copy(src, dst))
             log_dieusys(LOG_EXIT_SYS, "copy: ", src," to: ", dst) ;
     }
+
+    command_write_end(0) ;
 
     log_info("Successfully restored snapshot: ", snapname) ;
 

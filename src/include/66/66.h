@@ -37,6 +37,7 @@
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/sanitize.h>
+#include <66/selection.h>
 #include <66/service.h>
 #include <66/shutdown.h>
 #include <66/snapshot.h>
@@ -47,6 +48,7 @@
 #include <66/symlink.h>
 #include <66/tree.h>
 #include <66/utils.h>
+#include <66/command.h>
 #include <66/write.h>
 
 #endif

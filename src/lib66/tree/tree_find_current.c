@@ -20,6 +20,7 @@
 #include <66/resolve.h>
 #include <66/tree.h>
 #include <66/constants.h>
+#include <66/config.h>
 
 int tree_find_current(char *treename, char const *base)
 {
@@ -32,12 +33,9 @@ int tree_find_current(char *treename, char const *base)
     if (resolve_read(wres, base, SS_MASTER + 1) <= 0)
         goto err ;
 
-    if (mres.current) {
-
-        auto_strings(treename, mres.sa.s + mres.current) ;
-        e = 1 ;
-
-    } else e = 0 ;
+    // no current tree: the default one
+    auto_strings(treename, mres.current ? mres.sa.s + mres.current : SS_DEFAULT_TREENAME) ;
+    e = 1 ;
 
     err:
         resolve_free(wres) ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <sys/types.h>
@@ -497,7 +497,11 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
 
     auto_strings(liveenv, livedir, SS_LIVEENV, "/", ownerstr) ;
 
-    if (scan_mode(liveenv, S_IFDIR) > 0)
+    ssize_t live = scan_mode(liveenv, FLAGS_DIR) ;
+    if (!live && errno != ENOENT)
+        log_dieusys(LOG_EXIT_SYS, "check runtime environment directory: ", liveenv) ;
+
+    if (live > 0)
         if (!environ_merge_dir(eram, liveenv))
             log_dieusys(LOG_EXIT_SYS, "merge runtime environment directory: ", liveenv) ;
 
@@ -813,7 +817,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!set_ownersysdir_stack(base, getuid()))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (!resolve_read(wres, base, service))
+    if (resolve_read(wres, base, service) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
 
     /** the execute addon: run/finish scripts, runas, timeouts, privileges, caps */

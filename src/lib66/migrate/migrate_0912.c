@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -30,6 +31,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
+#include <66/command.h>
 
 void migrate_0912_provide_symlink(void)
 {
@@ -47,13 +49,13 @@ void migrate_0912_provide_symlink(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char dir[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + SS_PROVIDE_LEN + 1] ;
 
     auto_strings(dir, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sbl_dir_get_recursive(&sa, dir, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, dir, exclude, FLAGS_LNK, 0))
         log_dieusys(LOG_EXIT_SYS, "get resolve files") ;
 
     auto_strings(dir + info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN, SS_PROVIDE) ;
@@ -96,7 +98,7 @@ void migrate_0912_provide_symlink(void)
         _cleanup_strbuf_ strbuf names = STRBUF_ZERO ;
         size_t npos = 0 ;
 
-        if (!sbl_dir_get_recursive(&names, dir, exclude, S_IFLNK, 0))
+        if (!sbl_dir_get_recursive(&names, dir, exclude, FLAGS_LNK, 0))
             log_dieusys(LOG_EXIT_SYS, "get provided names") ;
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -109,7 +111,7 @@ void migrate_0912_provide_symlink(void)
 
             auto_strings(lnk, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", name) ;
 
-            if (!resolve_check(wres, info.base.s, name))
+            if (resolve_check(wres, info.base.s, name) <= 0)
                 continue ;
 
             log_warn("service: ", name, " has a name a provider claims -- the service keeps it, remove one of them to hand it over") ;
@@ -118,4 +120,6 @@ void migrate_0912_provide_symlink(void)
 
         free(wres) ;
     }
+
+    ssexec_free(&info) ;
 }

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdlib.h> // free
 #include <string.h>
+#include <sys/types.h> // ssize_t
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
@@ -22,6 +23,8 @@
 #include <oblibs/string.h>
 
 #include <66/config.h>
+#include <66/constants.h>
+#include <66/utils.h>
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
@@ -68,12 +71,33 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
         }
 
         _alloc_sbl_(stk, len + 1) ;
-        if (!strbuf_copyb(&stk, v, len))
-            log_die_nomem("strbuf") ;
 
-        if (!parse_list(&stk)) {
+        int r = strbuf_copyb(&stk, v, len) ? parse_list(&stk) : -1 ;
+        if (r <= 0) {
             free(wres) ;
+            if (r < 0)
+                return -1 ;
             parse_error_return(0, 8, table) ;
+        }
+
+        {
+            size_t pos = 0 ;
+
+            FOREACH_SBL(&stk, pos) {
+
+                if (stk.s[pos] == '#')
+                    continue ;
+
+                if (get_rstrlen_until(stk.s + pos, SS_LOG_SUFFIX) >= 0) {
+                    free(wres) ;
+                    log_warn_return(LOG_EXIT_ZERO, "service: ", service, " names: ", stk.s + pos, " -- the suffix " SS_LOG_SUFFIX " is reserved to the loggers") ;
+                }
+
+                if (strlen(stk.s + pos) > SS_MAX_SERVICE_NAME) {
+                    free(wres) ;
+                    log_warn_return(LOG_EXIT_ZERO, "service: ", service, " names: ", stk.s + pos, " -- the name is too long") ;
+                }
+            }
         }
 
         if (alias) {
@@ -86,31 +110,48 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
                 log_warn("service: ", service, " provides its own name -- ignoring it") ;
         }
 
-        if (stk.len)
-            *field = parse_compute_list(wres, &stk, nfield, opts) ;
+        if (stk.len) {
+
+            int off = parse_compute_list(wres, &stk, nfield, opts) ;
+            if (off < 0) {
+                free(wres) ;
+                return -1 ;
+            }
+
+            *field = (uint32_t)off ;
+        }
     }
 
-    /* fold the optional dependencies into the depends list */
+    // fold the optional dependencies into the depends list
     if (dep->noptsdeps) {
+
+        ssize_t off ;
 
         if (dep->ndepends) {
             size_t len = strlen(dep->sa.s + dep->depends) ;
             char t[len + strlen(dep->sa.s + dep->optsdeps) + 2] ;
             auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + dep->optsdeps) ;
-            dep->depends = resolve_add_string(wres, t) ;
+            off = resolve_add_string(wres, t) ;
 
         } else {
 
-            dep->depends = resolve_add_string(wres, dep->sa.s + dep->optsdeps) ;
+            off = resolve_add_string(wres, dep->sa.s + dep->optsdeps) ;
         }
+
+        if (off < 0) {
+            free(wres) ;
+            return -1 ;
+        }
+
+        dep->depends = (uint32_t)off ;
         dep->ndepends += dep->noptsdeps ;
     }
 
-    /* a tick reactor (inotify/timer/schedule) depends on its From source so the
+    /** a tick reactor (inotify/timer/schedule) depends on its From source so the
      * graph arms the passive watch before the reactor wants it: fold From into
-     * depends. A service/signal reactor's From is an *establishment* edge instead
-     * -- read from the event addon at graph build (GRAPH_WANT_EVENTDEPS), never a
-     * depend, so a Do=start reaction never re-pulls (and revives) its source. A
+     * depends. The From of a service or signal reactor is an edge
+     * SERVICE_GRAPH_EDGE_FROM of the graph, read from the event addon, never a
+     * depend, so a Do=start reaction never pulls (and revives) its source. A
      * user reactor is sourceless (no From) and never reaches this fold. */
     if (parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EVENTTYPE) &&
         parse_store_present(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM) &&
@@ -120,28 +161,42 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
         char const *fv = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, &flen) ;
 
         _alloc_sbl_(strb, flen + 1) ;
-        if (!strbuf_copyb(&strb, fv, flen))
-            log_die_nomem("strbuf") ;
 
-        if (!parse_list(&strb)) {
+        int r = strbuf_copyb(&strb, fv, flen) ? parse_list(&strb) : -1 ;
+        if (r <= 0) {
             free(wres) ;
+            if (r < 0)
+                return -1 ;
+            table = (resolve_enum_table_t)E_TABLE_PARSER_SECTION_EVENT_ZERO ;
+            table.u.parser.id = E_PARSER_SECTION_EVENT_FROM ;
             parse_error_return(0, 8, table) ;
         }
 
         if (strb.len) {
 
             uint32_t nfrom = 0 ;
-            uint32_t from = parse_compute_list(wres, &strb, &nfrom, 0) ;
+            ssize_t off ;
+            int from = parse_compute_list(wres, &strb, &nfrom, 0) ;
+
+            if (from < 0) {
+                free(wres) ;
+                return -1 ;
+            }
 
             if (dep->ndepends) {
                 char t[strlen(dep->sa.s + dep->depends) + strlen(dep->sa.s + from) + 2] ;
                 auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + from) ;
-                dep->depends = resolve_add_string(wres, t) ;
+                off = resolve_add_string(wres, t) ;
             } else {
-                char t[strlen(dep->sa.s + from) + 1] ;
-                auto_strings(t, dep->sa.s + from) ;
-                dep->depends = resolve_add_string(wres, t) ;
+                off = resolve_add_string(wres, dep->sa.s + from) ;
             }
+
+            if (off < 0) {
+                free(wres) ;
+                return -1 ;
+            }
+
+            dep->depends = (uint32_t)off ;
             dep->ndepends += nfrom ;
         }
     }

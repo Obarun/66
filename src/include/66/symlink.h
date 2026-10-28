@@ -9,42 +9,30 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_SYMLINK_H
 #define SS_SYMLINK_H
 
-#define SYMLINK_SOURCE 0
-#define SYMLINK_LIVE 1
-
-/** the events that can change who answers to a provided name */
-#define SYMLINK_PROVIDE_PARSE 0
-#define SYMLINK_PROVIDE_ENABLE 1
-#define SYMLINK_PROVIDE_REMOVE 2
-
 #include <stdint.h>
+#include <sys/types.h>
 
 #include <oblibs/hash.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
+#include <66/graph.h>
 
-extern int symlink_switch(resolve_service_t *res, uint8_t flag) ;
-extern int symlink_make(resolve_service_t *res) ;
 extern int symlink_type(const char *path) ;
-extern int symlink_provide_update(const char *base, resolve_service_t *res, uint8_t event) ;
-/** the three below settle a name: 1 when it is free, -1 on system error, and a
- * refusal exits LOG_EXIT_USER where its reason is known */
-extern int symlink_provide_istaken(char const *base, hash_t *hres, struct resolve_hash_s *c) ;
-extern int symlink_provide_isclaimable(char const *base, resolve_service_t *res) ;
-extern int symlink_provide_isavailable(char const *base, char const *name, uid_t owner) ;
-
-/** Create the symbolic link @name pointing to @target, atomically replacing any
- * existing @name. If @name does not exist, symlink() is used directly; otherwise
- * the new link is built under a temporary name in the same directory then
- * rename()d onto @name, so @name appears all-or-nothing and a failure leaves any
- * previous @name untouched.
- * @Return 1 on success
- * @Return 0 on fail and set errno */
+extern int symlink_provide_parse(char const *base, hash_t *hres) ;
+extern int symlink_provide_enable(char const *base, struct resolve_hash_s const *h) ;
+extern int symlink_provide_release(char const *base, char const *service) ;
+extern int symlink_provide_drop(char const *base, char const *name) ;
+extern int symlink_provide_isavailable(char const *base, char const *name, uid_t owner, strbuf *msg) ;
+extern int symlink_provide_claim(service_graph_t const *g, char const *base, hash_t *along, char const *service, char const *name, strbuf *msg) ;
+extern int symlink_provide_isfree(char const *base, char const *service, char const *name, char const *holder, strbuf *msg) ;
+extern int symlink_atomic_at(char const *tmpdir, char const *target, char const *name) ;
+extern int symlink_atomic_live(uid_t owner, char const *live, char const *target, char const *name) ;
 extern int symlink_atomic(char const *target, char const *name) ;
 #endif

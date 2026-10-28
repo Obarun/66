@@ -9,12 +9,14 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
@@ -33,11 +35,13 @@ int env_append_version(strbuf *saversion, char const *svconf, char const *versio
     auto_strings(stk, version) ;
 
     if (!auto_strbuf(saversion,svconf,"/",stk))
-        log_warnusys_return(LOG_EXIT_ZERO,"strbuf") ;
+        return -1 ;
 
-    r = scan_mode(saversion->s,S_IFDIR) ;
-    if (r == -1 || !r)
-        log_warnusys_return(LOG_EXIT_ZERO,"find the versioned directory: ",saversion->s) ;
+    // a version that is no directory is no version
+    r = scan_mode(saversion->s,FLAGS_DIR) ;
 
-    return 1 ;
+    if (!r && errno != ENOENT)
+        return -1 ;
+
+    return r > 0 ? 1 : 0 ;
 }

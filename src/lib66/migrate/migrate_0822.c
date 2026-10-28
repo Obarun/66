@@ -38,6 +38,7 @@
 
 #include <66/migrate_0821.h>
 #include <66/migrate.h>
+#include <66/command.h>
 
 int service_resolve_read_cdb_0821(ocdb *c, resolve_service_t_0821 *res)
 {
@@ -46,11 +47,6 @@ int service_resolve_read_cdb_0821(ocdb *c, resolve_service_t_0821 *res)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (resolve_get_sa(&res->sa,c) <= 0) {
-        free(wres) ;
-        return (errno = EINVAL, 0)  ;
-    }
-
-    if (!res->sa.len) {
         free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
@@ -543,8 +539,6 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
         free(iow) ;
     }
 
-    migrate_ensure_log_owner(&new, &io, &logger) ;
-
     if (new.islog && new.type == E_PARSER_TYPE_CLASSIC) {
 
         resolve_wrapper_t_ref lgw = resolve_set_struct(DATA_SERVICE_LOGGER, &logger) ;
@@ -617,7 +611,7 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
         resolve_free(wlim) ;
     }
 
-    /* the logger addon is transient (only feeds migrate_ensure_log_owner, never
+    /* the logger addon is transient (only feeds compute_log_script(), never
      * written to disk), so nothing else frees its arena -- do it here. */
     strbuf_free(&logger.sa) ;
 
@@ -640,13 +634,13 @@ static void migrate_service_0822(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1] ;
     auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, FLAGS_LNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     FOREACH_SBL(&sa, pos) {
@@ -725,14 +719,13 @@ static void migrate_scandir_resolve(char const *dir, char const *name, uint32_t 
 
     char rdir[strlen(dir) + SS_RESOLVE_LEN + 1] ;
     auto_strings(rdir, dir, SS_RESOLVE) ;
+    _cleanup_strbuf_ strbuf tmpdir = STRBUF_ZERO ;
 
-    char aname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
-    auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
-
-    // resolve_write_at does not create the .resolve directory
+    // resolve_write_at does not create the .resolve directory; a scandir is written through SS_LIVE_TMP
     if (!dir_create_parent(rdir, 0755)
-        || !resolve_write_at(wres, dir, name)
-        || !resolve_write_at(wex, dir, aname))
+        || set_livetmp(&tmpdir, getuid(), SS_LIVE) < 0
+        || !resolve_write_at(wres, dir, name, tmpdir.s)
+        || !resolve_write_at(wex, dir, name, tmpdir.s))
             log_warnusys("write resolve file of service: ", name, MIGRATE_SCANDIR_HINT) ;
 
     resolve_free(wres) ;
@@ -853,7 +846,7 @@ static void migrate_scandir_0822(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char const *live = info.live.s ;
     char const *scandir = info.scandir.s ;

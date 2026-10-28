@@ -16,24 +16,26 @@
  * whose core is complete; each parse_build_<type> composes only the addons its
  * type needs, writing straight into the entry (c->execute, c->io, ...). No addon
  * struct is threaded through arguments: the interdependent readers reach the
- * data through the hash entry. */
+ * data through the hash entry. A step returns 0 on a fault of the frontend and
+ * -1 on a failure of the system: the build names the step that refused, unless
+ * the step wrote its own reason. */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
+#include <oblibs/strbuf.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_parser.h>
-#include <66/state.h> // STATE_FLAGS_FALSE
+#include <66/event_rule.h>
 
 static void addon_init(uint32_t data, void *addon)
 {
-    resolve_wrapper_t_ref w = resolve_set_struct(data, addon) ;
-    resolve_init(w) ;
-    free(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(data, addon) ;
+    resolve_init(&w) ;
 }
 
 static void finalize_dependencies(struct resolve_hash_s *c)
@@ -42,125 +44,129 @@ static void finalize_dependencies(struct resolve_hash_s *c)
                                c->dependencies.ncontents || c->dependencies.nprovide || c->dependencies.nconflict) ? 1 : 0 ;
 }
 
-static void build_supervised(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+static int check(int r, parse_build_ctx_t *ctx, char const *what, char const *name)
+{
+    if (r != 0)
+        return r ;
+
+    return PARSE_REFUSE(ctx, "unable to parse ", what, " of service: ", name) ;
+}
+
+static int build_supervised(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
 
+    int r ;
     char const *name = c->res.sa.s + c->res.name ;
 
     addon_init(DATA_SERVICE_EXECUTE, &c->execute) ;
     addon_init(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
 
-    if (!parse_environ(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse environment of service: ", name) ;
-
-    if (!parse_logger(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse logger of service: ", name) ;
-
-    if (!parse_execute(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse execute of service: ", name) ;
-
-    if (!parse_dependencies(ctx->st, &c->dependencies, name))
-        log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
-
-    if (!parse_interdependences(c, ctx))
-        log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
-
-    if (!parse_io(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse io of service: ", name) ;
-
-    if (!parse_event(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse event of service: ", name) ;
+    if ((r = check(parse_environ(c, ctx), ctx, "environment", name)) <= 0 ||
+        (r = check(parse_logger(c, ctx), ctx, "logger", name)) <= 0 ||
+        (r = check(parse_execute(c, ctx), ctx, "execute", name)) <= 0 ||
+        (r = check(parse_dependencies(ctx->st, &c->dependencies, name), ctx, "dependencies", name)) <= 0 ||
+        (r = check(parse_interdependences(c, ctx), ctx, "dependencies", name)) <= 0 ||
+        (r = check(parse_io(c, ctx), ctx, "io", name)) <= 0 ||
+        (r = check(parse_event(c, ctx), ctx, "event", name)) <= 0)
+            return r ;
 
     /* logger "effective": keep it only if the resolved io is 66log-bound. */
     if (c->res.logger && c->io.fdin.type != E_PARSER_IO_TYPE_66LOG && c->io.fdout.type != E_PARSER_IO_TYPE_66LOG)
         c->res.logger = 0 ;
+
+    /** a start/restart reactor is armed, not launched: force it down so
+     * supervision keeps it offline until an event brings it up */
+    if (c->res.has_event && (c->event.docmd == EVENT_DO_START || c->event.docmd == EVENT_DO_RESTART))
+        c->execute.down = 1 ;
+
+    return 1 ;
 }
 
-static void parse_build_classic(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+static int parse_build_classic(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
 
-    build_supervised(ctx, c) ;
+    int r = build_supervised(ctx, c) ;
+    if (r <= 0)
+        return r ;
 
-    if (c->res.logger && c->io.fdin.type == E_PARSER_IO_TYPE_66LOG && !c->res.inns)
-        parse_create_logger(ctx->hres, c, ctx->info) ;
+    if (c->res.logger && c->io.fdin.type == E_PARSER_IO_TYPE_66LOG && !c->res.inns && parse_create_logger(ctx->hres, c, ctx->info) < 0)
+        return -1 ;
 
     finalize_dependencies(c) ;
+
+    return 1 ;
 }
 
-static void parse_build_oneshot(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+static int parse_build_oneshot(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
 
-    build_supervised(ctx, c) ;
+    int r = build_supervised(ctx, c) ;
+    if (r <= 0)
+        return r ;
 
     c->res.logger = 0 ;
 
     finalize_dependencies(c) ;
+
+    return 1 ;
 }
 
-static void parse_build_event(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+static int parse_build_event(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
 
-    char const *name = c->res.sa.s + c->res.name ;
-
-    if (!parse_event_source(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse event source of service: ", name) ;
+    return check(parse_event_source(c, ctx), ctx, "event source", c->res.sa.s + c->res.name) ;
 }
 
-static void parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
+static int parse_build_module(parse_build_ctx_t *ctx, struct resolve_hash_s *c)
 {
     log_flow() ;
 
+    int r ;
     char const *name = c->res.sa.s + c->res.name ;
+
+    if (c->res.inns)
+        return PARSE_REFUSE(ctx, "service: ", name, " is a module inside the module: ", c->res.sa.s + c->res.inns, " -- a module cannot contain a module") ;
 
     addon_init(DATA_SERVICE_DEPENDENCIES, &c->dependencies) ;
 
-    if (!parse_environ(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse environment of service: ", name) ;
-
-    if (!parse_dependencies(ctx->st, &c->dependencies, name))
-        log_die(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
-
-    if (!parse_interdependences(c, ctx))
-        log_dieu(LOG_EXIT_SYS, "parse dependencies of service: ", name) ;
-
-    if (!parse_regex(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse regex of service: ", name) ;
-
-    if (!parse_event(c, ctx))
-        log_die(LOG_EXIT_SYS, "parse event of service: ", name) ;
-
-    parse_module(c, ctx) ;
+    if ((r = check(parse_environ(c, ctx), ctx, "environment", name)) <= 0 ||
+        (r = check(parse_dependencies(ctx->st, &c->dependencies, name), ctx, "dependencies", name)) <= 0 ||
+        (r = check(parse_interdependences(c, ctx), ctx, "dependencies", name)) <= 0 ||
+        (r = check(parse_regex(c, ctx), ctx, "regex", name)) <= 0 ||
+        (r = check(parse_event(c, ctx), ctx, "event", name)) <= 0 ||
+        (r = check(parse_module(c, ctx), ctx, "module", name)) <= 0)
+            return r ;
 
     finalize_dependencies(c) ;
+
+    return 1 ;
 }
 
-void parse_build(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
+int parse_build(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
     switch (c->res.type) {
 
         case E_PARSER_TYPE_CLASSIC:
-            parse_build_classic(ctx, c) ;
-            break ;
+            return parse_build_classic(ctx, c) ;
 
         case E_PARSER_TYPE_ONESHOT:
-            parse_build_oneshot(ctx, c) ;
-            break ;
+            return parse_build_oneshot(ctx, c) ;
 
         case E_PARSER_TYPE_MODULE:
-            parse_build_module(ctx, c) ;
-            break ;
+            return parse_build_module(ctx, c) ;
 
         case E_PARSER_TYPE_EVENT:
-            parse_build_event(ctx, c) ;
-            break ;
+            return parse_build_event(ctx, c) ;
 
         default:
             break ;
     }
+
+    return 1 ;
 }

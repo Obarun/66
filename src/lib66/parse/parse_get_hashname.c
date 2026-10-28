@@ -12,26 +12,31 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <string.h>
+
 #include <oblibs/hash.h>
 #include <oblibs/string.h>
 
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/config.h>
 
 struct resolve_hash_s *parse_get_hashname(char *store, hash_t *hres, char const *name, char const *ns)
 {
-    struct resolve_hash_s *hash = resolve_hash_search(hres, name) ;
+    size_t len = strlen(name) ;
 
-    if (hash != NULL) {
-        auto_strings(store, name) ;
-        return hash ;
-    }
-
-    if (!ns) {
-        auto_strings(store, name) ;
+    if (len > SS_MAX_SERVICE_NAME) {
+        store[0] = 0 ;
         return 0 ;
     }
+
+    struct resolve_hash_s *hash = resolve_hash_search(hres, name) ;
+
+    auto_strings(store, name) ;
+
+    if (hash != NULL || !ns || strlen(ns) + 1 + len > SS_MAX_SERVICE_NAME)
+        return hash ;
 
     auto_strings(store, ns, ":", name) ;
 

@@ -30,10 +30,10 @@ int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready)
     auto_strings(file, dir, SS_SUPERVISEDIR, "/", SS_STATUS) ;
 
     if (access(file, F_OK) < 0)
-        return 0 ; // no status: the daemon has never been supervised here
+        return 0 ;
 
     service_status_t st = STATUS_ZERO ;
-    if (status_read(&st, file) < 0)
+    if (status_read(&st, file) <= 0)
         return 0 ;
 
     *up = (st.state == STATUS_STATE_STARTING

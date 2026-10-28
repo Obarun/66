@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -28,7 +28,7 @@
 #include <66/event_rule.h>
 #include <66/constants.h>
 
-static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *prefix)
+static int parse_prefix(strbuf *result, strbuf *stk, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
@@ -38,48 +38,53 @@ static void parse_prefix(char *result, strbuf *stk, hash_t *hres, char const *pr
 
     FOREACH_SBL(stk, pos) {
 
-        hash = parse_get_hashname(store, hres, stk->s + pos, prefix) ;
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", stk->s + pos, " not available -- please make a bug report") ;
+        char const *name = stk->s + pos ;
 
         /** a member is always registered namespaced, so the name the selection
          * knows is already the right one: an external dependency keeps its bare
-         * name, a fellow member gets the prefixed one. */
-        auto_strings(result + strlen(result), hash->res.sa.s + hash->res.name, " ") ;
+         * name, a fellow member gets the prefixed one, parse_get_hashname()
+         * never composing a name longer than SS_MAX_SERVICE_NAME. A RequiredBy
+         * is never parsed: a name it gives that is no member stays as written
+         * (contract, parse: RequiredBy naming a service never parsed). */
+        hash = parse_get_hashname(store, hres, name, prefix) ;
+
+        if (!sbl_add(result, hash ? hash->res.sa.s + hash->res.name : name))
+            return -1 ;
     }
 
-    result[strlen(result) - 1] = 0 ;
+    return 1 ;
 }
 
-static void parse_prefix_event(struct resolve_hash_s *c, hash_t *hres, char const *prefix)
+static int parse_prefix_event(struct resolve_hash_s *c, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
-    size_t pos = 0, mlen = strlen(prefix) ;
+    size_t pos = 0 ;
     resolve_service_addon_event_t *ev = &c->event ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
-    _alloc_sbl_(from, strlen(ev->sa.s + ev->from) + 1) ;
-    _alloc_sbl_(renamed, (mlen + 1) * ev->nfrom + strlen(ev->sa.s + ev->from) + 1) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
+    _cleanup_strbuf_ strbuf from = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf renamed = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf on = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf scoped = STRBUF_ZERO ;
 
     if (!sbl_clean_string(&from, ev->sa.s + ev->from))
-        log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
+        return -1 ;
 
-    FOREACH_SBL(&from, pos) {
+    {
+        FOREACH_SBL(&from, pos) {
 
-        char known[SS_MAX_SERVICE_NAME + 1] ;
-        struct resolve_hash_s *hash = parse_get_hashname(known, hres, from.s + pos, prefix) ;
+            char known[SS_MAX_SERVICE_NAME + 1] ;
+            struct resolve_hash_s *hash = parse_get_hashname(known, hres, from.s + pos, prefix) ;
 
-        if (!sbl_add(&renamed, hash ? hash->res.sa.s + hash->res.name : from.s + pos))
-            log_die_nomem("strbuf") ;
+            if (!sbl_add(&renamed, hash ? hash->res.sa.s + hash->res.name : from.s + pos))
+                return -1 ;
+        }
     }
 
     if (ev->type == EVENT_SOURCE_SERVICE && ev->non) {
 
-        _alloc_sbl_(on, strlen(ev->sa.s + ev->on) + 1) ;
-        _alloc_sbl_(scoped, (mlen + 1) * ev->non + strlen(ev->sa.s + ev->on) + 1) ;
-
         if (!sbl_clean_string(&on, ev->sa.s + ev->on))
-            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
+            return -1 ;
 
         pos = 0 ;
 
@@ -103,134 +108,102 @@ static void parse_prefix_event(struct resolve_hash_s *c, hash_t *hres, char cons
             if (!hash) {
 
                 if (!sbl_add(&scoped, token))
-                    log_die_nomem("strbuf") ;
+                    return -1 ;
 
                 continue ;
             }
 
-            char const *name = hash->res.sa.s + hash->res.name ;
-            char n[strlen(name) + strlen(token + slen) + 1] ;
+            _cleanup_strbuf_ strbuf one = STRBUF_ZERO ;
 
-            auto_strings(n, name, token + slen) ; // token + slen points at the ':'
-
-            if (!sbl_add(&scoped, n))
-                log_die_nomem("strbuf") ;
+            if (!auto_strbuf(&one, hash->res.sa.s + hash->res.name, token + slen) || !sbl_add(&scoped, one.s))
+                return -1 ;
         }
 
-        if (!sbl_rebuild_with_delim(&scoped, ' '))
-            log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
-
-        char n[scoped.len + 1] ;
-        auto_strings(n, scoped.s) ;
-
-        ev->on = resolve_add_string(wres, n) ;
+        if (resolve_add_list(&wres, &scoped, &ev->on) < 0)
+            return -1 ;
     }
 
-    if (!sbl_rebuild_with_delim(&renamed, ' '))
-        log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
+    if (resolve_add_list(&wres, &renamed, &ev->from) < 0)
+        return -1 ;
 
-    char n[renamed.len + 1] ;
-    auto_strings(n, renamed.s) ;
-
-    ev->from = resolve_add_string(wres, n) ;
-
-    free(wres) ;
+    return 1 ;
 }
 
-static void parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t *hres, char const *prefix)
+static int parse_prefix_name(resolve_service_addon_dependencies_t *dep, hash_t *hres, char const *prefix)
 {
     log_flow() ;
 
-    size_t mlen = strlen(prefix) ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
+    uint32_t *field[2] = { &dep->depends, &dep->requiredby } ;
+    uint32_t nfield[2] = { dep->ndepends, dep->nrequiredby } ;
 
-    if (dep->ndepends) {
+    for (int i = 0 ; i < 2 ; i++) {
 
-        size_t depslen = strlen(dep->sa.s + dep->depends) ;
-        _alloc_sbl_(stk, depslen + 1) ;
+        _cleanup_strbuf_ strbuf stk = STRBUF_ZERO ;
+        _cleanup_strbuf_ strbuf n = STRBUF_ZERO ;
 
-        if (!sbl_clean_string(&stk, dep->sa.s + dep->depends))
-            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
+        if (!nfield[i])
+            continue ;
 
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->ndepends ;
-        char n[len] ;
+        if (!sbl_clean_string(&stk, dep->sa.s + *field[i]) || parse_prefix(&n, &stk, hres, prefix) < 0)
+            return -1 ;
 
-        memset(n, 0, len * sizeof(char)); ;
-
-        parse_prefix(n, &stk, hres, prefix) ;
-
-        dep->depends = resolve_add_string(wres, n) ;
-
+        if (resolve_add_list(&wres, &n, field[i]) < 0)
+            return -1 ;
     }
 
-    if (dep->nrequiredby) {
-
-        size_t depslen = strlen(dep->sa.s + dep->requiredby) ;
-        _alloc_sbl_(stk, depslen + 1) ;
-
-        if (!sbl_clean_string(&stk, dep->sa.s + dep->requiredby))
-            log_dieusys(LOG_EXIT_SYS, "convert string to strbuf") ;
-
-        size_t len = (mlen + 1 + SS_MAX_TREENAME + 2) * dep->nrequiredby ;
-        char n[len] ;
-
-        memset(n, 0, len * sizeof(char)) ;
-
-        parse_prefix(n, &stk, hres, prefix) ;
-
-        dep->requiredby = resolve_add_string(wres, n) ;
-
-    }
-
-    free(wres) ;
+    return 1 ;
 }
 
-void parse_rename_interdependences(resolve_service_t *res, resolve_service_addon_dependencies_t *dep, char const *prefix, hash_t *hres, ssexec_t *info)
+int parse_rename_interdependences(resolve_service_addon_dependencies_t *dep, char const *prefix, hash_t *hres, ssexec_t *info)
 {
     log_flow() ;
 
     struct resolve_hash_s *c, *tmp ;
-    _alloc_sbl_(stk, resolve_hash_count(hres) * SS_MAX_SERVICE_NAME + 1) ;
-    resolve_wrapper_t_ref wres = 0 ;
+    size_t pos = 0 ;
+    _cleanup_strbuf_ strbuf members = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf stk = STRBUF_ZERO ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
 
     HASH_FOREACH(hres, c, tmp) {
 
-        if (!strcmp(c->res.sa.s + c->res.inns, prefix)) {
-
-            if (c->dependencies.ndepends || c->dependencies.nrequiredby)
-                parse_prefix_name(&c->dependencies, hres, prefix) ;
-
-            if (c->res.has_event && c->event.nfrom)
-                parse_prefix_event(c, hres, prefix) ;
-
-            if (c->res.logger && (c->res.type == E_PARSER_TYPE_CLASSIC || c->res.type == E_PARSER_TYPE_ONESHOT)) {
-
-                size_t namelen = strlen(c->res.sa.s + c->res.name) ;
-                char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
-
-                // the logger name is always <service>-log; the logger config lives
-                // in c->logger, untouched by the rename above.
-                auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
-
-                parse_create_logger(hres, c, info) ;
-
-                if (c->res.type == E_PARSER_TYPE_CLASSIC) {
-                    if (!sbl_add(&stk, logname))
-                        log_die_nomem("strbuf") ;
-                }
-
-            }
-
-            if (sbl_search(&stk, c->res.sa.s + c->res.name) < 0 )
-                if (!sbl_add(&stk, c->res.sa.s + c->res.name))
-                    log_die_nomem("strbuf") ;
-        }
+        if (c->res.inns && !strcmp(c->res.sa.s + c->res.inns, prefix) && !sbl_add(&members, c->name))
+            return -1 ;
     }
 
-    (void)res ;
-    wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+    FOREACH_SBL(&members, pos) {
 
-    dep->contents = parse_compute_list(wres, &stk, &dep->ncontents, 0) ;
+        c = resolve_hash_search(hres, members.s + pos) ;
 
-    free(wres) ;
+        if ((c->dependencies.ndepends || c->dependencies.nrequiredby) && parse_prefix_name(&c->dependencies, hres, prefix) < 0)
+            return -1 ;
+
+        if (c->res.has_event && c->event.nfrom && parse_prefix_event(c, hres, prefix) < 0)
+            return -1 ;
+
+        if (c->res.logger && c->res.type == E_PARSER_TYPE_CLASSIC) {
+
+            size_t namelen = strlen(c->res.sa.s + c->res.name) ;
+            char logname[namelen + SS_LOG_SUFFIX_LEN + 1] ;
+
+            auto_strings(logname, c->res.sa.s + c->res.name, SS_LOG_SUFFIX) ;
+
+            if (parse_create_logger(hres, c, info) < 0)
+                return -1 ;
+
+            if (sbl_search(&stk, logname) < 0 && !sbl_add(&stk, logname))
+                return -1 ;
+        }
+
+        if (sbl_search(&stk, members.s + pos) < 0 && !sbl_add(&stk, members.s + pos))
+            return -1 ;
+    }
+
+    int off = parse_compute_list(&wres, &stk, &dep->ncontents, 0) ;
+    if (off < 0)
+        return -1 ;
+
+    dep->contents = (uint32_t)off ;
+
+    return 1 ;
 }

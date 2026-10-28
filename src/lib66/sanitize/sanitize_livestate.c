@@ -9,18 +9,21 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
+#include <oblibs/strbuf.h>
 
 #include <66/constants.h>
 #include <66/sanitize.h>
@@ -42,9 +45,12 @@ static int sanitize_livestate_directory(resolve_service_t *res)
 
     auto_strings(ste, res->sa.s + res->live.livedir, SS_STATE + 1, "/", res->sa.s + res->ownerstr) ;
 
-    r = scan_mode(ste, S_IFDIR) ;
+    r = scan_mode(ste, FLAGS_DIR) ;
     if (r < 0)
         log_warn_return(LOG_EXIT_ZERO, "conflicting format for: ", ste) ;
+    if (!r && errno != ENOENT)
+        log_warnusys_return(LOG_EXIT_ZERO, "check: ", ste) ;
+
     if (!r) {
 
         log_trace("create directory: ", ste) ;
@@ -92,7 +98,7 @@ static int sanitize_copy_source(resolve_service_t *res)
         log_warnusys_return(LOG_EXIT_ZERO, "remove live directory: ", sym) ;
 
     log_trace("symlink: ", sym, " to: ", dst) ;
-    if (!symlink_atomic(dst, sym))
+    if (symlink_atomic_live(res->owner, res->sa.s + res->live.livedir, dst, sym) < 0)
        log_warnusys_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", dst) ;
 
     return 1 ;

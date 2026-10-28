@@ -9,10 +9,11 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
@@ -20,6 +21,50 @@
 
 #include <66/parse.h>
 #include <66/enum_parser.h>
+
+lexer_config LEXER_CONFIG_QUOTE = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "\"",\
+    .olen = 1,\
+    .close = "\n\"",\
+    .clen = 2,\
+    .skip = 0,\
+    .skiplen = 0,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
+
+lexer_config LEXER_CONFIG_INLINE = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "=",\
+    .olen = 1,\
+    .close = "\n",\
+    .clen = 1,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
 int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
 {
@@ -37,7 +82,7 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
      * through the API so stk grows onto the heap instead of overflowing the seed. */
     if (!strbuf_copyb(&stk, kcfg->str + kcfg->cpos, kcfg->slen - kcfg->cpos) ||
         !strbuf_uncounted(&stk))
-            parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+            return -1 ;
 
     switch(list[kid].expected) {
 
@@ -47,16 +92,26 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
             lexer_reset(&vcfg) ;
             vcfg.str = stk.s ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
-            if (!lexer(store, &vcfg))
+
+            errno = 0 ;
+            if (!lexer(store, &vcfg)) {
+                if (errno == EOVERFLOW)
+                    return -1 ;
                 parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+            }
             kcfg->pos += vcfg.pos - 1 ;
             break ;
 
         case E_PARSER_EXPECT_BRACKET:
 
             pos = 0 ;
-            if (!parse_bracket(store, stk.s, table))
-                parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+            {
+                int r = parse_bracket(store, stk.s, table) ;
+                if (r < 0)
+                    return -1 ;
+                if (!r)
+                    parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+            }
             kcfg->pos += pos  ;
             break ;
 
@@ -68,8 +123,13 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
             lexer_reset(&vcfg) ;
             vcfg.str = stk.s ;
             vcfg.slen = kcfg->slen - kcfg->cpos ;
-            if (!lexer(store, &vcfg))
+
+            errno = 0 ;
+            if (!lexer(store, &vcfg)) {
+                if (errno == EOVERFLOW)
+                    return -1 ;
                 parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+            }
             kcfg->pos += vcfg.pos - 1 ;
             break ;
         default:
@@ -77,7 +137,7 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
     }
 
     if (!strbuf_uncounted(store))
-        log_warnu_return(LOG_EXIT_ZERO, "strbuf") ;
+        return -1 ;
 
     return 1 ;
 }

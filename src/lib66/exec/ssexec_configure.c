@@ -9,11 +9,12 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <sys/stat.h>
 #include <string.h>
+#include <errno.h>
 #include <stdlib.h>//getenv
 #include <unistd.h>//_exit,access
 
@@ -36,9 +37,9 @@
 #include <66/constants.h>
 #include <66/resolve.h>
 #include <66/write.h>
-#include <66/state.h>
 #include <66/service.h>
 #include <66/symlink.h>
+#include <66/command.h>
 
 static char const *EDITOR = 0 ;
 
@@ -60,7 +61,9 @@ static uint8_t check_current_version(char const *svconf,char const *version)
     log_flow() ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    if (!env_find_current_version(&sa,svconf)) log_dieu(LOG_EXIT_SYS,"find current version") ;
+    int r = env_find_current_version(&sa,svconf) ;
+    if (r < 0) log_dieusys(LOG_EXIT_SYS,"find current version") ;
+    if (!r) log_dieu(LOG_EXIT_SYS,"find current version") ;
     char bname[sa.len + 1] ;
     if (!ob_basename(bname,sa.s)) log_dieu(LOG_EXIT_SYS,"get basename of: ",sa.s) ;
 
@@ -76,15 +79,6 @@ static void run_editor(char const *src, char const *sv)
 
     auto_strings(tsrc,src,"/",sv) ;
 
-    if (!EDITOR) {
-
-        EDITOR = getenv("EDITOR") ;
-
-        if (!EDITOR) {
-
-            log_die(LOG_EXIT_SYS,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66 configure -e nano <service>.") ;
-        }
-    }
     char const *const newarg[3] = { EDITOR, tsrc, 0 } ;
     exec_path_die(newarg[0], newarg, (char const *const *)environ) ;
 }
@@ -108,7 +102,12 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     pos = strlen(stk.s) + 1 ;
     dst_version = stk.s + pos ;
 
-    if (!env_import_version_file(svname,svconf,src_version,dst_version,svtype))
+    _cleanup_strbuf_ strbuf dst = STRBUF_ZERO ;
+
+    if (env_append_version(&dst, svconf, dst_version) <= 0)
+        log_dieusys(LOG_EXIT_SYS, "compose the directory of version: ", dst_version) ;
+
+    if (env_import_version_file(svname, svconf, src_version, dst_version, dst.s, svtype) <= 0)
         log_dieu(LOG_EXIT_SYS,"import configuration file from version: ",src_version," to version: ",dst_version) ;
 }
 
@@ -134,7 +133,7 @@ static void write_user_env_file(char const *src, char const *sv)
 
             r = str_contain(sa.s,"[ENDWARN]") ;
             if (r == -1)
-                log_die(LOG_EXIT_SYS,"invalid upstream configuration file! Do you have modified it? Tries to parse the service again.") ;
+                log_die(LOG_EXIT_USER,"invalid upstream configuration file! Do you have modified it? Tries to parse the service again.") ;
 
             r++; // remove the last \n
             if (!write_environ(sv, sa.s + r, src))
@@ -259,7 +258,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     cfg_savar = (strbuf)STRBUF_ZERO ;
     uint8_t todo = opt_todo, current = opt_current ;
     char const *svconf = 0, *import = opt_import ;
-    char sv[SS_MAX_SERVICE_NAME + 1] ;
+    char held[SS_MAX_SERVICE_NAME + 1] ;
     opt_todo = T_UNSET ;
     opt_current = 0 ;
     opt_import = 0 ;
@@ -267,19 +266,22 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if (!service_resolve_provide(sv, *argv, info->base.s))
+    for (int i = 1 ; i < argc ; i++)
+        log_warn("ignoring service: ", argv[i], " -- configure handles the first service only") ;
+
+    r = service_resolve_provide(held, *argv, 0, info->base.s) ;
+    if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
+
+    char const *sv = r ? held : *argv ;
 
     if (todo == T_UNSET && !import && !current) todo = T_EDIT ;
 
-    r = service_is_g(sv, STATE_FLAGS_ISPARSED) ;
-    if (r == -1)
-        log_dieusys(LOG_EXIT_SYS, "get information of service: ", sv, " -- please a bug report") ;
-    else if (!r || r == STATE_FLAGS_FALSE) {
-        log_die(LOG_EXIT_SYS, "service: ", sv, " is not parsed -- try to parse it first using '66 parse ", sv, "'") ;
-    }
+    r = resolve_read(wres, info->base.s, sv) ;
+    if (!r && errno == ENOENT)
+        command_refuse_unknown(sv, info->base.s, info->owner, false) ;
 
-    if (resolve_read(wres, info->base.s, sv) <= 0)
+    if (r <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
     resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
@@ -311,8 +313,12 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     if (satmp.len) {
 
         src.len = 0 ;
-        if (!env_append_version(&src, svconf, satmp.s))
-            log_dieu(LOG_EXIT_ZERO, "append version") ;
+        r = env_append_version(&src, svconf, satmp.s) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "compose the directory of version: ", satmp.s) ;
+
+        if (!r)
+            log_die(LOG_EXIT_USER, "version: ", satmp.s, " of service: ", sv, " does not exist") ;
 
         if (current) {
 
@@ -320,8 +326,8 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
             char sym[conflen + SS_SYM_VERSION_LEN + 1] ;
             auto_strings(sym, svconf, SS_SYM_VERSION) ;
 
-            if (!symlink_atomic(src.s, sym))
-                log_warnu_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", src.s) ;
+            if (symlink_atomic(src.s, sym) < 0)
+                log_dieusys(LOG_EXIT_SYS, "switch the link: ", sym, " to: ", src.s) ;
 
             log_info("Symlink switched successfully to version: ", src.s) ;
 
@@ -339,7 +345,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
         case T_VLIST:
             {
                 char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
-                if (!sbl_dir_get(&satmp, svconf, exclude, S_IFDIR))
+                if (!sbl_dir_get(&satmp, svconf, exclude, FLAGS_DIR))
                     log_dieu(LOG_EXIT_SYS, "get versioned directory of: ", svconf) ;
 
                 pos = 0 ;
@@ -362,7 +368,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
         case T_LIST:
             {
                 char const *exclude[2] = { SS_SYM_VERSION + 1, 0 } ;
-                if (!sbl_dir_get(&satmp, src.s, exclude, S_IFREG))
+                if (!sbl_dir_get(&satmp, src.s, exclude, FLAGS_REG))
                     log_dieu(LOG_EXIT_SYS, "get versioned directory at: ", src.s) ;
 
                 pos = 0 ;
@@ -411,6 +417,13 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
             break ;
 
         case T_EDIT:
+
+            // the editor first: without one, nothing is written
+            if (!EDITOR)
+                EDITOR = getenv("EDITOR") ;
+
+            if (!EDITOR)
+                log_die(LOG_EXIT_USER,"EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66 configure -e nano <service>.") ;
 
             write_user_env_file(src.s,sv) ;
 

@@ -70,9 +70,13 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         _alloc_sbl_(stk, len + 1) ;
 
         if (!strbuf_copyb(&stk, v, len))
-            log_die_nomem("strbuf") ;
+            return -1 ;
 
-        if (!parse_list(&stk))
+        int r = parse_list(&stk) ;
+        if (r < 0)
+            return -1 ;
+
+        if (!r)
             parse_error_return(0, 8, t) ;
 
         size_t pos = 0 ;
@@ -174,7 +178,7 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         int r = get_shebang(&stk, lg->sa.s + lg->execute.run.run_user) ;
         if (r < 0)
-            return 0 ;
+            return -1 ;
         if (r) {
             lg->execute.run.run_user = resolve_add_string(wres, stk.s) ;
             lg->execute.run.build = resolve_add_string(wres, "custom") ;

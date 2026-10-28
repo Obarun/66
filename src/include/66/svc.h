@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_SVC_H
@@ -19,14 +19,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <oblibs/sse.h>
-
 #include <66/service.h>
 #include <66/graph.h>
+#include <66/selection.h>
 #include <66/ssexec.h>
 #include <66/event.h>
-#include <66/status.h>
+#include <66/fdholder.h>
 #include <66/oneshot.h>
+#include <66/status.h>
 
 #define DATASIZE 65
 
@@ -44,20 +44,10 @@
     macro('c', SIGCONT) \
     macro('y', SIGWINCH)
 
-#define SVC_FLAGS_DOWN 1
-#define SVC_FLAGS_UP (1 << 1)
-#define SVC_FLAGS_PROCESSING (1 << 2)
-#define SVC_FLAGS_STARTING (1 << 3)
-#define SVC_FLAGS_STOPPING (1 << 4)
-#define SVC_FLAGS_FAILED (1 << 5)
-#define SVC_FLAGS_WAITING_DEPS (1 << 6)
-#define SVC_FLAGS_TIMEOUT (1 << 7)
-#define SVC_FLAGS_WAITING (1 << 8)
-
-typedef enum svc_target_e svc_target_t ;
+typedef enum svc_target_e svc_target_t, *svc_target_t_ref ;
 enum svc_target_e
 {
-    SVC_TARGET_NONE = 0, // nothing declared: the verb picks its own
+    SVC_TARGET_NONE = 0, // nothing declared: the command picks its own
     SVC_TARGET_FREE,     // neither supervised nor running
     SVC_TARGET_DOWN,     // supervised, no process
     SVC_TARGET_UP,       // supervised and running
@@ -65,123 +55,106 @@ enum svc_target_e
     SVC_TARGET_KEEP      // no state change: deliver a signal and nothing else
 } ;
 
-static inline int svc_target_supervised(uint8_t target)
-{
-    return target != SVC_TARGET_FREE ;
-}
-
 static inline int svc_target_stops(uint8_t target)
 {
     return target == SVC_TARGET_DOWN || target == SVC_TARGET_FREE ;
 }
 
-static inline int svc_target_starts(uint8_t target)
+typedef enum svc_action_e svc_action_t, *svc_action_t_ref ;
+enum svc_action_e
 {
-    return target == SVC_TARGET_UP || target == SVC_TARGET_READY ;
-}
+    SVC_ACTION_START = 0,
+    SVC_ACTION_STOP,
+    SVC_ACTION_SIGNAL // a signal that asks for no state: what it reaches first is what depends
+} ;
 
+typedef struct svc_request_s svc_request_t, *svc_request_t_ref ;
+struct svc_request_s
+{
+    uint8_t action ;
+    uint8_t target ;
+    char const *signal ;
+    char const *wsignal ;
+    char const *verb ;
+    char const *scandir ;
+    uint64_t timeout ;
+    uint8_t who ;
+} ;
+
+#define SVC_REQUEST_ZERO { .action = SVC_ACTION_START, .target = SVC_TARGET_NONE, .signal = 0, .wsignal = 0, .verb = 0, .scandir = 0, .timeout = 0, .who = 0 }
+
+#define SVC_LOT_COMMAND 0 // outside the boot stage: an earlier member of a module is left to the boot
+#define SVC_LOT_BOOT 1 // the boot stage, the scandir running: every member
+#define SVC_LOT_EARLIER 2 // the boot stage before the scandir runs: the earlier members only
+
+#define SVC_CONFLICT_RUNNING 0 // a conflicting service that runs (start)
+#define SVC_CONFLICT_ENABLED 1 // a conflicting service that is enabled (enable)
+
+extern int svc_issupervised(resolve_service_t const *res) ;
+extern int svc_isrunning(struct resolve_hash_s const *h) ;
+extern int svc_isrunning_supervised(struct resolve_hash_s const *h) ;
+
+extern int svc_lot(selection_service_t *lot, selection_service_t const *sel, service_graph_resolve_t *store, uint8_t stage) ;
+
+extern int svc_conflict(selection_service_t const *sel, service_graph_resolve_t *store, char const *base, uint8_t mode, uint32_t *member, uint32_t *other) ;
+extern int svc_send(selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req, bitset32_t *reached) ;
+extern int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who) ;
+
+
+/**
+ *
+ * The launcher of svc_send()
+ *
+ * */
+
+#define SVC_FLAGS_DOWN (1 << 0)
+#define SVC_FLAGS_UP (1 << 1)
+#define SVC_FLAGS_STARTING (1 << 2)
+#define SVC_FLAGS_STOPPING (1 << 3)
+#define SVC_FLAGS_FAILED (1 << 4)
+#define SVC_FLAGS_WAITING_DEPS (1 << 5)
+
+typedef struct svc_ctx_s svc_ctx_t, *svc_ctx_t_ref ;
 struct svc_ctx_s
 {
-    resolve_service_t *res ; // Service resolution data
-    resolve_service_addon_execute_t *execute ; // execute addon (down/timeout/notify)
-    resolve_service_addon_dependencies_t *dependencies ; // dependencies addon (module contents)
-
-    // Watchers
-    sse_watcher_t timeout ; // Timeout watcher
-
-    // ONESHOT services: the run/finish script is run by 66-oneshotd; this is the
-    // async request/response state multiplexed on the manager loop
+    struct resolve_hash_s const *h ;
     oneshot_async_t oneshot ;
 
-    // Native readiness wait (CLASSIC services: no child, transitions read from
-    // the service event fifodir instead of a spawned external wait helper)
-    event_fifo_t fifo ; // subscriber on the service event fifodir
-    event_aggregator_t ag ; // per-source frame aggregator feeding the matcher
-    event_state_t match ; // transition interpreter for this service's wait
-    bool native ; // uses the native CLASSIC path (no child process)
-    bool done ; // completion already emitted (guards event vs timeout)
-    bool waiting ; // armed reactor: it was armed only, its Execute never ran
+    event_fifo_t fifo ;
+    event_aggregator_t ag ;
+    event_state_t match ;
+    bool native ;
 
-    // State management
-    uint16_t state ; // Current state
-    uint8_t target ; // svc_target_e: state this service must reach
+    bool done ; // its completion is told, the event and the deadline race for it
+    bool waiting ; // a reactor armed only, its Execute never ran
 
-    // Dependencies
-    uint32_t index ; // vertex index of the service
-    vertex_t *depends[SS_MAX_SERVICE] ; // Services depends
+    bool supervised ; // a supervisor held it when svc_init_ctx() read its state
+    uint16_t state ; // SVC_FLAGS_*
+    uint8_t target ; // svc_target_e it must reach
+
+    uint32_t index ; // its vertex
     uint32_t ndepends ;
-    vertex_t *requiredby[SS_MAX_SERVICE] ; // requiredby dependencies of the service
     uint32_t nrequiredby ;
 
-    // Runtime data
-    int exitcode ; // Last exit code
+    uint8_t result ; // status_result_e
+    uint32_t code ; // read per result: the exit code (EXITED), the signal (SIGNALED)
 } ;
-typedef struct svc_ctx_s svc_ctx_t ;
 
-#define SVC_CTX_ZERO { \
-    .res = NULL, \
-    .execute = NULL, \
-    .dependencies = NULL, \
-    .timeout = {0}, \
-    .oneshot = {0}, \
-    .native = false, \
-    .done = false, \
-    .waiting = false, \
-    .state = 0, \
-    .target = SVC_TARGET_UP, \
-    .index = 0, \
-    .depends = { NULL }, \
-    .ndepends = 0, \
-    .requiredby = { NULL }, \
-    .nrequiredby = 0, \
-    .exitcode = 0 \
-}
+#define SVC_CTX_ZERO { .h = 0, .oneshot = { 0 }, .native = false, .done = false, .waiting = false, .supervised = false, .state = 0, .target = SVC_TARGET_NONE, .index = 0, .ndepends = 0, .nrequiredby = 0, .result = STATUS_RESULT_SUCCESS, .code = 0 }
 
-struct svc_manager_s
-{
-    sse_epoll_t loop ; // Main event loop
-    svc_ctx_t *asvc ; // Service array
-    uint32_t nsvc ; // Number of services
+extern int svc_init_ctx(svc_ctx_t *asvc, selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req) ;
+extern int svc_launch(svc_ctx_t *asvc, selection_service_t const *lot, svc_request_t const *req) ;
+extern int svc_unsupervise_one(resolve_service_t *res, fdholder_client_t *a, bool *started, uint8_t who) ;
 
-    // Global watchers
-    sse_watcher_t signalfd ; // Global signal handler
-    sse_watcher_t notifier ; // Internal notifier pipe
-    sse_watcher_t deadline ; // Global deadline timer if any
-
-    // notifier mechanism
-    int notifd[2] ; // Internal event notifier pipe
-
-    // State
-    bool shutdown_requested ; // Shutdown in progress
-    int exitcode ; // first service that missed its target
-
-    // Configuration
-    ssexec_t *info ;
-    uint64_t timeout ; // Global operation timeout
-    uint8_t target ; // svc_target_e the batch was asked for; each svc_ctx_t resolves its own
-    bool propagate ; // Propagate failures to dependents
-
-    char signal[DATASIZE + 1] ; // signal to sent
-    char wsignal[4] ; // -w svc signal
-    bool woption ; // -w is used or not
-    char *cmdmsg ; // echo restart or reload
-} ;
-typedef struct svc_manager_s svc_manager_t ;
-
-extern void svc_init_ctx(svc_ctx_t *asvc, service_graph_t *g, uint8_t requiredby, uint32_t flag, uint8_t target) ;
-extern int svc_launch(svc_ctx_t *asvc, uint32_t nsvc, uint8_t target, ssexec_t *info, char const *wsignal, uint8_t woption, char const *signal, char *cmdmsg, uint8_t propagate) ;
-extern int svc_compute_ns(svc_manager_t *mgr, uint32_t id) ;
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who) ;
 extern int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name) ;
-extern int svc_send(char const *const *argv, int argc, ssexec_t *info, uint8_t target, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate) ;
-extern void svc_unsupervise(service_graph_t *g, uint8_t who) ;
-extern void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
+
+extern int svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
-extern int svc_status(resolve_service_t *res, service_status_t *st) ;
-extern int svc_is_up(char const *name) ;
-extern int svc_reactor_armed_idle(resolve_service_t *res) ;
-extern uint8_t svc_status_effective(resolve_service_t *res, service_status_t const *st) ;
+extern int svc_status(resolve_service_t const *res, service_status_t *st) ;
+extern int svc_reactor_armed_idle(struct resolve_hash_s const *h) ;
+extern uint8_t svc_status_effective(struct resolve_hash_s const *h, service_status_t const *st) ;
 
 #endif

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_CONSTANTS_H
@@ -72,12 +72,18 @@
 #define SS_LIVEENV_LEN (sizeof SS_LIVEENV - 1)
 #define SS_LIVE_TMP "tmp"
 #define SS_LIVE_TMP_LEN (sizeof SS_LIVE_TMP - 1)
+#define SS_LIVEGRAPH "graph"
+#define SS_LIVEGRAPH_LEN (sizeof SS_LIVEGRAPH - 1)
+#define SS_LIVEGRAPH_FILE "system"
+#define SS_LIVEGRAPH_FILE_LEN (sizeof SS_LIVEGRAPH_FILE - 1)
 #define SS_LIVEENV_EVENT "env."
 #define SS_LIVEENV_EVENT_LEN (sizeof SS_LIVEENV_EVENT - 1)
 #define SS_LIVEENV_EVENT_GONE "unenv."
 #define SS_LIVEENV_EVENT_GONE_LEN (sizeof SS_LIVEENV_EVENT_GONE - 1)
 #define SS_STATUS "status"
 #define SS_STATUS_LEN (sizeof SS_STATUS - 1)
+#define SS_TMPDIR "/.tmp"
+#define SS_TMPDIR_LEN (sizeof SS_TMPDIR - 1)
 
 #define SS_RESOLVE "/.resolve"
 #define SS_RESOLVE_LEN (sizeof SS_RESOLVE - 1)

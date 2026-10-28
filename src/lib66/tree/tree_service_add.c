@@ -9,73 +9,39 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <string.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sbl.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
 #include <66/ssexec.h>
 
-void tree_service_add(char const *treename, char const *service, ssexec_t *info)
+int tree_service_add(char const *treename, char const *service, ssexec_t *info)
 {
     log_flow() ;
 
-    size_t len = strlen(service) ;
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
+    int r = tree_isvalid(info->base.s, treename) ;
+    if (r < 0)
+        return -1 ;
 
-    if (!tree_isvalid(info->base.s, treename)) {
+    if (!r) {
 
         char const *newargv[2] = { treename, 0 } ;
 
         char const *prog = PROG ;
         PROG = "tree" ;
-        if (ssexec_tree_admin(1, newargv, info))
-            log_dieusys(LOG_EXIT_SYS, "create tree: ", treename) ;
+        r = ssexec_tree_admin(1, newargv, info) ;
         PROG = prog ;
 
-    }
-
-    if (resolve_read(wres, info->base.s, treename) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
-
-    _alloc_sbl_(stk, strlen(tres.sa.s + tres.contents) + len + 3) ;
-
-    if (tres.ncontents) {
-
-        if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
-            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
-
-        if (sbl_search(&stk, service) < 0) {
-            if (!sbl_add(&stk, service))
-                log_dieusys(LOG_EXIT_SYS, "add service: ", service, " to tree: ", treename) ;
+        if (r) {
+            log_warnu("create tree: ", treename) ;
+            return -1 ;
         }
-
-    } else {
-
-        if (!sbl_add(&stk, service))
-            log_dieu(LOG_EXIT_SYS, "add string to sbl") ;
-
     }
 
-    tres.ncontents = sbl_count(&stk) ;
-
-    if (!sbl_rebuild_with_delim(&stk, ' '))
-        log_dieu(LOG_EXIT_SYS, "convert sbl to string") ;
-
-    table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
-
-    if (!resolve_modify_field_by(wres, table, stk.s))
-        log_dieusys(LOG_EXIT_SYS, "modify resolve file of tree: ", treename) ;
-
-    if (!resolve_write(wres, info->base.s, treename))
-        log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
-
-    resolve_free(wres) ;
+    return tree_contents_edit(info->base.s, treename, service, true) <= 0 ? -1 : 1 ;
 }

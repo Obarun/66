@@ -21,15 +21,16 @@
 #include <66/service.h>
 #include <66/enum_parser.h>
 
-uint8_t svc_status_effective(resolve_service_t *res, service_status_t const *st)
+uint8_t svc_status_effective(struct resolve_hash_s const *h, service_status_t const *st)
 {
     log_flow() ;
 
     /* a oneshot/module reactor records its waiting state itself; a classic one
      * cannot -- 66-supervise keeps its status binary up/down -- so the event
-     * meaning of a down armed reactor is derived here instead. */
-    if (st->state == STATUS_STATE_DOWN && res->type == E_PARSER_TYPE_CLASSIC
-        && svc_reactor_armed_idle(res))
+     * meaning of a down armed reactor is derived here instead. An event addon
+     * not read is no reactor known: the state is shown as it is. */
+    if (st->state == STATUS_STATE_DOWN && h->res.type == E_PARSER_TYPE_CLASSIC
+        && svc_reactor_armed_idle(h) > 0)
             return STATUS_STATE_WAITING ;
 
     return st->state ;

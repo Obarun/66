@@ -9,10 +9,11 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -25,63 +26,20 @@ int resolve_check(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
+    char const *suffix = resolve_addon_suffix(wres->type) ;
+
+    if (!suffix)
+        return (errno = EINVAL, -1) ;
+
     char path[SS_MAX_PATH_LEN] ;
-    char lname[SS_MAX_SERVICE_NAME + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ; // longest addon suffix
+    char lname[strlen(name) + strlen(suffix) + 1] ;
 
-    auto_strings(lname, name) ;
-
-    if (wres->type == DATA_SERVICE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-    } else if (wres->type == DATA_SERVICE_LIMIT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_ENVIRON) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_ENVIRON_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_IO) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_IO_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_EXECUTE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_EXECUTE_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_DEPENDENCIES_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_REGEX) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_REGEX_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_EVENT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_EVENT_SUFFIX) ;
-
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
-
+    if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER)
         auto_strings(path, base, SS_SYSTEM) ;
+    else
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
 
-    } else return 0 ;
+    auto_strings(lname, name, suffix) ;
 
     return resolve_check_at(path, lname) ;
-
 }

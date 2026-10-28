@@ -34,6 +34,7 @@
 
 #include <66/migrate_0821.h>
 #include <66/migrate.h>
+#include <66/command.h>
 
 static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
 {
@@ -69,13 +70,13 @@ static void migrate_service_0821(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1] ;
     auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, FLAGS_LNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     FOREACH_SBL(&sa, pos) {

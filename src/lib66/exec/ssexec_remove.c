@@ -9,337 +9,29 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <string.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/string.h>
-#include <oblibs/types.h>
-#include <oblibs/sbl.h>
+#include <oblibs/bits.h>
 #include <oblibs/strbuf.h>
-#include <oblibs/directory.h>
-#include <oblibs/hash.h>
-#include <oblibs/files.h>
+#include <oblibs/string.h>
 
-#include <66/state.h>
-#include <66/enum_parser.h>
 #include <66/ssexec.h>
-#include <66/resolve.h>
+#include <66/graph.h>
+#include <66/selection.h>
 #include <66/service.h>
-#include <66/tree.h>
-#include <66/constants.h>
 #include <66/svc.h>
-#include <66/symlink.h>
-
-static void auto_remove(char const *path)
-{
-    log_trace("remove directory: ", path) ;
-    if (!dir_destroy(path))
-        log_dieusys(LOG_EXIT_SYS, "remove directory: ", path) ;
-}
-
-static void compute_deps(resolve_service_t *res, hash_t *hres, strbuf *sa, ssexec_t *info, uint8_t propagate)
-{
-    log_flow() ;
-
-    if (!res->has_dependencies)
-        return ;
-
-    resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t_ref dw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
-    if (resolve_read(dw, info->base.s, res->sa.s + res->name) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", res->sa.s + res->name) ;
-    free(dw) ;
-
-    if (!dep.nrequiredby) {
-        strbuf_free(&dep.sa) ;
-        return ;
-    }
-
-    int r ;
-    unsigned int pos = 0 ;
-    ss_state_t ste = STATE_ZERO ;
-    resolve_wrapper_t_ref wres = 0 ;
-    _alloc_sbl_(stk, strlen(dep.sa.s + dep.requiredby) + 1) ;
-
-    if (!sbl_clean_string(&stk, dep.sa.s + dep.requiredby))
-        log_dieu(LOG_EXIT_SYS, "convert string") ;
-
-    if (propagate)
-        log_warn("service: ", res->sa.s + res->name," is needed by its required-by dependencies: ", dep.sa.s + dep.requiredby) ;
-
-    strbuf_free(&dep.sa) ;
-
-    FOREACH_SBL(&stk, pos) {
-
-        resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        wres = resolve_set_struct(DATA_SERVICE, &dres) ;
-
-        r = resolve_read(wres, info->base.s, stk.s + pos) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", stk.s + pos) ;
-
-        if (!r) {
-            if (!propagate)
-                log_warn("service: ", stk.s + pos, " doesn't exist -- ignoring it") ;
-            resolve_free(wres) ;
-            continue ;
-        }
-
-        if (!res->islog) {
-
-            if (!state_read(&ste, &dres))
-                log_dieusys(LOG_EXIT_SYS, "read state file of: ", stk.s + pos, " -- please make a bug report") ;
-
-            if (ste.issupervised == STATE_FLAGS_TRUE && !propagate)
-                if (!sbl_add(sa, stk.s + pos))
-                    log_dieusys(LOG_EXIT_SYS, "add service: ", stk.s + pos, " to stop selection") ;
-
-            if (!propagate) {
-                log_trace("add service: ", stk.s + pos, " to the service selection") ;
-                if (!resolve_hash_add(hres, stk.s + pos, dres))
-                    log_dieu(LOG_EXIT_SYS, "append service selection with: ", stk.s + pos) ;
-            }
-
-            if (dres.has_dependencies && !propagate)
-                compute_deps(&dres, hres, sa, info, propagate) ;
-        }
-
-        free(wres) ;
-    }
-}
-
-static void remove_provide(resolve_service_t *res, ssexec_t *info)
-{
-    log_flow() ;
-
-    if (!symlink_provide_update(info->base.s, res, SYMLINK_PROVIDE_REMOVE))
-        log_dieu(LOG_EXIT_SYS, "release the provided names of: ", res->sa.s + res->name) ;
-}
-
-static void clean_depends(resolve_service_t *res, ssexec_t *info, uint8_t propagate)
-{
-    log_flow() ;
-
-    if (!res->has_dependencies || propagate)
-        return ;
-
-    resolve_service_addon_dependencies_t rdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t_ref rdw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &rdep) ;
-    if (resolve_read(rdw, info->base.s, res->sa.s + res->name) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", res->sa.s + res->name) ;
-
-    if (!rdep.ndepends) {
-        resolve_free(rdw) ;
-        return ;
-    }
-
-    int r ;
-    size_t pos = 0 ;
-    resolve_wrapper_t_ref wres = 0 ;
-    _alloc_sbl_(stk, strlen(rdep.sa.s + rdep.depends)) ;
-
-    if (!sbl_clean_string(&stk, rdep.sa.s + rdep.depends))
-        log_dieusys(LOG_EXIT_SYS, "clean string") ;
-
-    resolve_free(rdw) ;
-
-    FOREACH_SBL(&stk, pos) {
-
-        char *name = stk.s + pos ;
-        resolve_service_t dres = RESOLVE_SERVICE_ZERO ;
-        wres = resolve_set_struct(DATA_SERVICE, &dres) ;
-
-        r = resolve_read(wres, info->base.s, name) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", name) ;
-
-        if (!r || dres.islog || !dres.has_dependencies) {
-            resolve_free(wres) ;
-            continue ;
-        }
-
-        resolve_service_addon_dependencies_t ddep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-        resolve_wrapper_t_ref ddw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &ddep) ;
-        if (resolve_read(ddw, info->base.s, name) <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", name) ;
-
-        if (ddep.nrequiredby) {
-
-            resolve_enum_table_t table = E_TABLE_SERVICE_DEPS_ZERO ;
-            _alloc_sbl_(deps, strlen(ddep.sa.s + ddep.requiredby)) ;
-
-            if (!sbl_clean_string(&deps, ddep.sa.s + ddep.requiredby))
-                log_dieusys(LOG_EXIT_SYS, "clean string") ;
-
-            if (!sbl_remove(&deps, res->sa.s + res->name))
-                log_dieu(LOG_EXIT_SYS, "remove service: ", res->sa.s + res->name, " from requiredby dependencies list of: ", name) ;
-
-
-            if (!deps.len) {
-
-                ddep.nrequiredby = 0 ;
-                ddep.requiredby = 0 ;
-
-            } else {
-
-                if (!sbl_rebuild_with_delim(&deps, ' '))
-                    log_dieu(LOG_EXIT_SYS, "convert strbuf to string") ;
-
-                table.u.service.id = E_RESOLVE_SERVICE_DEPS_REQUIREDBY ;
-
-                if (!resolve_modify_field_by(ddw, table, deps.len ? deps.s : ""))
-                    log_dieusys(LOG_EXIT_SYS, "modify dependencies of service: ", dres.sa.s + dres.name) ;
-            }
-
-            dres.has_dependencies = (ddep.ndepends || ddep.nrequiredby || ddep.noptsdeps ||
-                                     ddep.ncontents || ddep.nprovide || ddep.nconflict) ? 1 : 0 ;
-
-            if (!resolve_write(wres, info->base.s, dres.sa.s + dres.name))
-                log_dieusys(LOG_EXIT_SYS, "write resolve file of service: ", dres.sa.s + dres.name) ;
-
-            if (dres.has_dependencies && !resolve_write(ddw, info->base.s, dres.sa.s + dres.name))
-                log_dieusys(LOG_EXIT_SYS, "write dependencies addon of service: ", dres.sa.s + dres.name) ;
-        }
-        free(ddw) ;
-        strbuf_free(&ddep.sa) ;
-        resolve_free(wres) ;
-    }
-}
-
-static void remove_logger(resolve_service_t *res, ssexec_t *info)
-{
-    log_flow() ;
-
-    int r ;
-    char logname[strlen(res->sa.s + res->name) + SS_LOG_SUFFIX_LEN + 1] ;
-    auto_strings(logname, res->sa.s + res->name, SS_LOG_SUFFIX) ;
-    char *name = logname ;
-    resolve_service_t lres = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref lwres = resolve_set_struct(DATA_SERVICE, &lres) ;
-
-    if (res->type == E_PARSER_TYPE_ONESHOT) {
-
-        resolve_service_addon_io_t rio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t_ref riow = resolve_set_struct(DATA_SERVICE_IO, &rio) ;
-        if (res->has_io && resolve_read(riow, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && rio.fdout.type == E_PARSER_IO_TYPE_66LOG) {
-            auto_remove(rio.sa.s + rio.fdout.destination) ;
-            log_info("Removed successfully logger of: ", res->sa.s + res->name) ;
-        }
-        resolve_free(riow) ;
-        resolve_free(lwres) ;
-        return ;
-
-    }
-
-    r = resolve_read(lwres, info->base.s, name) ;
-    if (r <= 0) {
-        log_warn("service: ", name, " is already removed -- ignoring it") ;
-        resolve_free(lwres) ;
-        return ;
-    }
-
-    char sym[strlen(lres.sa.s + lres.path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(lres.sa.s + lres.name) + 1] ;
-
-    auto_strings(sym, lres.sa.s + lres.path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", lres.sa.s + lres.name) ;
-
-    auto_remove(lres.sa.s + lres.path.servicedir) ;
-
-    {
-        resolve_service_addon_io_t lio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t_ref liow = resolve_set_struct(DATA_SERVICE_IO, &lio) ;
-        if (lres.has_io && resolve_read(liow, lres.sa.s + lres.path.home, lres.sa.s + lres.name) > 0)
-            auto_remove(lio.sa.s + lio.fdout.destination) ;
-        resolve_free(liow) ;
-    }
-
-    tree_service_remove(info->base.s, lres.sa.s + lres.treename, lres.sa.s + lres.name) ;
-
-    log_trace("remove symlink: ", sym) ;
-    file_tryunlink(sym) ;
-
-    log_trace("remove symlink: ", lres.sa.s + lres.live.scandir) ;
-    file_tryunlink(lres.sa.s + lres.live.scandir) ;
-
-    log_info("Removed successfully: ", lres.sa.s + lres.name) ;
-
-    resolve_free(lwres) ;
-}
-
-static void remove_service(resolve_service_t *res, ssexec_t *info, uint8_t propagate)
-{
-    log_flow() ;
-
-    if (res->islog)
-        return ;
-
-    if (res->has_dependencies)
-        remove_provide(res, info) ;
-
-    if (res->logger || res->type == E_PARSER_TYPE_ONESHOT)
-        remove_logger(res, info) ;
-
-    if (res->has_dependencies)
-        clean_depends(res, info, propagate) ;
-
-    char sym[strlen(res->sa.s + res->path.home) + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
-
-    auto_remove(res->sa.s + res->path.servicedir) ;
-
-    if (res->has_environ) {
-        resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-        resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
-        if (resolve_read(we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 && e.envdir)
-            auto_remove(e.sa.s + e.envdir) ;
-        resolve_free(we) ;
-    }
-
-    tree_service_remove(info->base.s, res->sa.s + res->treename, res->sa.s + res->name) ;
-
-    auto_strings(sym, res->sa.s + res->path.home, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", res->sa.s + res->name) ;
-
-    log_trace("remove symlink: ", sym) ;
-    file_tryunlink(sym) ;
-
-    log_trace("remove symlink: ", res->sa.s + res->live.scandir) ;
-    file_tryunlink(res->sa.s + res->live.scandir) ;
-
-    log_info("Removed successfully: ", res->sa.s + res->name) ;
-}
+#include <66/tree.h>
+#include <66/command.h>
 
 static opt_t const opts_remove[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
-    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate signal to its dependencies at stop process" },
-    { .id = 'f',         .shortname = 'f',                             .arg = OPT_NONE, .help = "force removal of a service that is part of a module", .hidden = true },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
 } ;
-
-static uint8_t opt_nopropagate = 0 ;
-static uint8_t opt_force = 0 ; // force is an inner option used by parse_module to delete service inside module
-
-static int on_remove(int id, char const *arg, void *data)
-{
-    (void)arg ; (void)data ;
-
-    switch (id) {
-
-        case 'P' :
-
-            opt_nopropagate = 1 ;
-            break ;
-
-        case 'f' :
-
-            opt_force = 1 ;
-            break ;
-    }
-
-    return 0 ;
-}
 
 opt_cmd_t const cmd_remove = {
     .name = "66 remove",
@@ -347,9 +39,97 @@ opt_cmd_t const cmd_remove = {
     .operands = "service...",
     .opts = opts_remove,
     .nopts = OPT_COUNT(opts_remove),
-    .on_option = &on_remove,
+    .on_option = 0,
     .fn = &ssexec_remove,
 } ;
+
+static int select_removed(selection_service_t *sel, command_graph_t *d, char const *const *argv, int argc, ssexec_t *info, strbuf *frontends)
+{
+    int r, unknown = 0 ;
+    bitset32_t named ;
+    service_graph_t const *g = &d->g ;
+    selection_service_policy_t policy = command_policy(SELECTION_SERVICE_PROPAGATE_REQUIREDBY, false, false, true) ;
+
+    r = selection_service_names(&named, g, info->base.s, argv, argc, false, &unknown) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "find the services named") ;
+
+    if (!r)
+        command_refuse_unknown(argv[unknown], info->base.s, info->owner, true) ;
+
+    *sel = (selection_service_t)SELECTION_SERVICE_ZERO ;
+    selection_service_propagate(sel, g, &named, &policy) ;
+
+    command_refuse_logger(g, &sel->named, "remove") ;
+
+    command_refuse_selection(sel, frontends, SELECTION_SERVICE_REFUSE_MET_INVALID) ;
+
+    if (service_graph_warn_invalid(g, frontends, &sel->member) < 0)
+        log_dieusys(LOG_EXIT_SYS, "warn about the invalid services") ;
+
+    if (service_graph_resolve_init(&d->store, g, info->base.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "initialize the store of services") ;
+
+    return command_resolve_load(d, sel) ;
+}
+
+static int free_removed(selection_service_t const *sel, service_graph_resolve_t *store, ssexec_t *info, strbuf *up, strbuf *down)
+{
+    int r, e ;
+
+    r = svc_scandir_ok(info->scandir.s) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "check the scandir: ", info->scandir.s) ;
+
+    if (!r)
+        return 0 ;
+
+    e = command_free_lot(sel, store, info, up, down) ;
+    if (e)
+        return e ;
+
+    return command_free_unreadable(sel, info, up, down) ;
+}
+
+static void warn_requiredby(selection_service_t const *sel, uint32_t index)
+{
+    service_graph_t const *g = sel->g ;
+    uint32_t pos = 0, n = service_graph_vertex(g, index)->ndepends ;
+    uint32_t const *depends = service_graph_depends(g, index) ;
+    uint8_t const *origin = service_graph_dorigin(g, index) ;
+    _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
+
+    for (; pos < n ; pos++) {
+
+        if (!(origin[pos] & SERVICE_GRAPH_EDGE_REQUIREDBY) || bitset32_isvalid(&sel->member, depends[pos]))
+            continue ;
+
+        if (!auto_strbuf(&list, list.len ? " " : "", service_graph_name(g, depends[pos])))
+            log_die_nomem("strbuf") ;
+    }
+
+    if (list.len)
+        log_warn("service: ", service_graph_name(g, index), " is removed, the RequiredBy of: ", list.s, " still names it") ;
+}
+
+static void remove_one(selection_service_t const *sel, uint32_t index, ssexec_t *info)
+{
+    service_graph_t const *g = sel->g ;
+    uint32_t parent = service_graph_logparent(g, index) ;
+
+    warn_requiredby(sel, index) ;
+
+    if (parent != SERVICE_GRAPH_NOINDEX && bitset32_isvalid(&sel->member, parent))
+        return ;
+
+    if (selection_service_carried(sel, index))
+        return ;
+
+    if (service_remove_one(info->base.s, info->owner, service_graph_name(g, index)) < 0)
+        log_dieusys(LOG_EXIT_SYS, "remove service: ", service_graph_name(g, index)) ;
+
+    log_info("Removed successfully: ", service_graph_name(g, index)) ;
+}
 
 int ssexec_remove(int argc, char const *const *argv, void *data)
 {
@@ -357,151 +137,52 @@ int ssexec_remove(int argc, char const *const *argv, void *data)
 
     ssexec_t *info = data ;
 
-    /* drain option state into locals, then reset the statics for re-entrancy. */
-    int r ;
-    int pos = 0 ;
-    uint8_t propagate = opt_nopropagate ;
-    uint8_t force = opt_force ;
-    opt_nopropagate = 0 ;
-    opt_force = 0 ;
-    ss_state_t ste = STATE_ZERO ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    resolve_wrapper_t_ref wres = 0 ;
-    hash_t hres = HASH_ZERO ;
-    struct resolve_hash_s *c, *tmp ;
-    char holder[SS_MAX_SERVICE_NAME + 1] ;
+    int e ;
+    uint32_t pos, index ;
+    command_graph_t d = COMMAND_GRAPH_ZERO ;
+    selection_service_t sel = SELECTION_SERVICE_ZERO ;
+    strbuf frontends = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf up = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf down = STRBUF_ZERO ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if (!hash_init(&hres, 0, offsetof(struct resolve_hash_s, node)))
-        log_dieusys(LOG_EXIT_SYS, "initialize hash table") ;
+    command_refuse_member(argv, argc, "remove") ;
 
-    for(; pos < argc ; pos++) {
+    if (service_graph_load(&d.g, info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "load the graph of the system") ;
 
-        resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    while (!select_removed(&sel, &d, argv, argc, info, &frontends))
+        command_graph_reload(&d, info, true) ;
 
-        r = resolve_read(wres, info->base.s, argv[pos]) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", argv[pos]) ;
-
-        if (!r) {
-
-            if (!service_resolve_provide(holder, argv[pos], info->base.s))
-                log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", argv[pos]) ;
-
-            if (strcmp(holder, argv[pos]))
-                log_die(LOG_EXIT_USER, "name: ", argv[pos], " is provided by: ", holder, " -- '66 remove -P ", holder, "' instead") ;
-
-            log_dieu(LOG_EXIT_USER, "find service: ", argv[pos], " -- did you parse it?") ;
-        }
-
-        if (res.inns && !force)
-            log_die(LOG_EXIT_USER, "service: ", argv[pos]," is part of a module and cannot be removed alone -- please remove the entire module instead using '66 remove ", res.sa.s + res.inns, "'") ;
-
-        if (!res.islog) {
-
-            if (!state_read(&ste, &res)) {
-                /** Considere it down. We are on remove command, it should success
-                 * whatever its state*/
-                log_warnusys("read state file of: ", argv[pos], " -- ignoring its state") ;
-                goto add ;
-            }
-
-            if (ste.issupervised == STATE_FLAGS_TRUE) {
-                /** services of group boot cannot be stopped, the changes will appear only at
-                 * next reboot.*/
-                r = tree_ongroups(res.sa.s + res.path.home, res.sa.s + res.treename, TREE_GROUPS_BOOT) ;
-
-                if (r < 0)
-                    log_dieu(LOG_EXIT_SYS, "get groups of service: ", argv[pos]) ;
-
-                if (!r)
-                    if (!sbl_add(&sa, argv[pos]))
-                        log_dieusys(LOG_EXIT_SYS, "add service: ", argv[pos], " to stop selection") ;
-            }
-        add:
-            log_trace("add service: ", argv[pos], " to the service selection") ;
-            if (!resolve_hash_add(&hres, argv[pos], res))
-                log_dieu(LOG_EXIT_SYS, "append service selection with: ", argv[pos]) ;
-
-            compute_deps(&res, &hres, &sa, info, propagate) ;
-        }
+    e = free_removed(&sel, &d.store, info, &up, &down) ;
+    if (e) {
+        command_put_back(&up, &down, &d.g, info, &frontends, false) ;
+        log_dieu(LOG_EXIT_SYS, "stop the services to remove") ;
     }
 
-    r = svc_scandir_ok(info->scandir.s) ;
-    if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
+    strbuf_free(&frontends) ;
 
-    if (sa.len && r) {
+    if (service_graph_write_begin(info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "lock the system") ;
 
-        pos = 0 ;
-        char const *prog = PROG ;
-        int nargc = 2 + propagate + sbl_count(&sa) ;
-        char const *newargv[nargc] ;
-        unsigned int m = 0 ;
+    // in the stop order: what is out of the order first, then what depends before its dependency
+    FOREACH_SELECTION_UNORDERED(&sel, index)
+        remove_one(&sel, index, info) ;
 
-        newargv[m++] = "stop" ;
-        newargv[m++] = "-u" ;
-        if (propagate)
-            newargv[m++] = "-P" ;
+    FOREACH_SELECTION_REVERSE(&sel, pos, index)
+        remove_one(&sel, index, info) ;
 
-        FOREACH_SBL(&sa, pos)
-            newargv[m++] = sa.s + pos ;
+    // a named absent service has nothing to remove: what depended on it is gone
+    for (index = 0 ; index < service_graph_nvertex(&d.g) ; index++)
+        if (bitset32_isvalid(&sel.named, index) && service_graph_state(&d.g, index) == SERVICE_GRAPH_STATE_ABSENT)
+            log_info("Removed successfully: ", service_graph_name(&d.g, index)) ;
 
-        newargv[m] = 0 ;
+    command_write_end(0) ;
 
-        PROG = "stop" ;
-        /** TODO, it should be a new process
-         * to avoid to crash. This is the remove process,
-         * and should always return true as the main goal is
-         * to remove the service. */
-        if (opt_dispatch(nargc, newargv, &cmd_stop, info))
-            log_dieu(LOG_EXIT_SYS, "stop service selection") ;
-        PROG = prog ;
-    }
-
-    HASH_FOREACH(&hres, c, tmp) {
-
-        resolve_service_addon_dependencies_t mdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-        resolve_wrapper_t_ref mdw = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &mdep) ;
-
-        /** the addon lives inside the service directory that remove_service()
-         * destroys, so the contents list must be read before it disappears. */
-        if (c->res.type == E_PARSER_TYPE_MODULE && c->res.has_dependencies)
-            if (resolve_read(mdw, info->base.s, c->res.sa.s + c->res.name) <= 0)
-                log_dieusys(LOG_EXIT_SYS, "read dependencies addon of: ", c->res.sa.s + c->res.name) ;
-
-        remove_service(&c->res, info, propagate) ;
-
-        if (mdep.ncontents) {
-
-            size_t pos = 0 ;
-            resolve_service_t mres = RESOLVE_SERVICE_ZERO ;
-            resolve_wrapper_t_ref dwres = resolve_set_struct(DATA_SERVICE, &mres) ;
-            _alloc_sbl_(stk, strlen(mdep.sa.s + mdep.contents) + 1) ;
-
-            if (!sbl_clean_string(&stk, mdep.sa.s + mdep.contents))
-                log_dieu(LOG_EXIT_SYS, "convert string") ;
-
-            FOREACH_SBL(&stk, pos) {
-
-                r = resolve_read(dwres, info->base.s, stk.s + pos) ;
-                if (r <= 0) {
-                    log_warnusys("read resolve file of: ", stk.s + pos) ;
-                    continue ;
-                }
-
-                remove_service(&mres, info, propagate) ;
-            }
-            resolve_free(dwres) ;
-        }
-        resolve_free(mdw) ;
-    }
-
-    resolve_hash_free(&hres) ;
-    free(wres) ;
+    service_graph_resolve_free(&d.store) ;
+    service_graph_free(&d.g) ;
 
     return 0 ;
 }

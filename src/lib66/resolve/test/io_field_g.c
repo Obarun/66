@@ -28,6 +28,7 @@
 #include <oblibs/types.h>
 
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/enum_service.h>
@@ -77,6 +78,9 @@ int main(void)
     char base[64] = "/tmp/66-iofieldg.XXXXXX" ;
     assert(mkdtemp(base)) ;
     strcat(base, "/") ;
+
+    // resolve_write() writes the system: the test holds its write transaction
+    assert(service_graph_write_begin(getuid(), base, base) == 1) ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
@@ -131,6 +135,8 @@ int main(void)
     }
     get_field(&sa, base, "plain", E_RESOLVE_SERVICE_IO_STDOUTDEST) ;
     assert(!strcmp(sa.s, "/var/log/66/plain")) ;
+
+    assert(service_graph_write_end(0) == 1) ;
 
     printf("All tests passed!\n") ;
     return 0 ;

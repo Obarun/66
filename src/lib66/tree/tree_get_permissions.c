@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <errno.h>
 #include <unistd.h>
 #include <stddef.h>
 
@@ -38,26 +39,28 @@ int tree_get_permissions(char const *base, char const *treename)
     if (resolve_read(wres, base, treename) <= 0)
         goto freed ;
 
-    if (tres.nallow) {
+    e = 0 ;
 
-        if (!sbl_clean_string(&sa, tres.sa.s + tres.allow))
+    if (!tres.nallow)
+        goto freed ;
+
+    if (!sbl_clean_string(&sa, tres.sa.s + tres.allow)) {
+        e = -1 ;
+        goto freed ;
+    }
+
+    FOREACH_SBL(&sa, pos) {
+
+        if (!u32_scan_strict(sa.s + pos, &treeuid)) {
+            errno = EINVAL ;
+            e = -1 ;
             goto freed ;
-
-        FOREACH_SBL(&sa, pos) {
-
-            if (!u32_scan_strict(sa.s + pos, &treeuid))
-                goto freed ;
-
-            if (uid == treeuid) {
-                e = 1 ;
-                goto freed ;
-            }
         }
 
-    } else {
-
-        e = 0 ;
-        goto freed ;
+        if (uid == treeuid) {
+            e = 1 ;
+            goto freed ;
+        }
     }
 
     freed:

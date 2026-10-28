@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stddef.h>
@@ -147,7 +147,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
                 log_dieu(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
 
             if (!r)
-                log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
+                log_dieu(LOG_EXIT_USER, "find tree: ", treename) ;
         }
 
         if (resolve_read(wres, info->base.s, treename) <= 0)

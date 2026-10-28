@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -24,7 +24,6 @@
 #include <66/config.h>
 #include <66/write.h>
 #include <66/utils.h>
-#include <66/parse.h>
 
 #ifndef FAKELEN
 #define FAKELEN strlen(run)
@@ -32,7 +31,7 @@
 
 /** Destination -> /var/lib/66/system/service/svc/<name> */
 
-void write_logger(resolve_service_t *res, resolve_service_addon_execute_t *ex, char const *destination, uint8_t force)
+int write_logger(resolve_service_addon_execute_t *ex, char const *destination)
 {
     log_flow() ;
 
@@ -42,25 +41,12 @@ void write_logger(resolve_service_t *res, resolve_service_addon_execute_t *ex, c
     char *logrunner = ex->run.runas ? ex->sa.s + ex->run.runas : SS_LOGGER_RUNNER ;
 
     if (!youruid(&log_uid, logrunner) || !yourgid(&log_gid, log_uid)) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", logrunner) ;
+        log_warnusys("get uid and gid of: ", logrunner) ;
+        return -1 ;
     }
 
     /** The creation of the log destination directory is made by the 66-execute program */
 
-    char write[strlen(destination) + 10] ;
-
     /** run script */
-    log_trace("write file: ", destination, "/run") ;
-    if (!file_write_at(destination, "run", ex->sa.s + ex->run.run, strlen(ex->sa.s + ex->run.run))) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "write: ", destination, "/run.user") ;
-    }
-
-    auto_strings(write, destination, "/run") ;
-
-    if (chmod(write, 0755) < 0) {
-        parse_cleanup(res, destination, force) ;
-        log_dieusys(LOG_EXIT_SYS, "chmod", write) ;
-    }
+    return write_execute_scripts("run", ex->sa.s + ex->run.run, destination, 0) ;
 }

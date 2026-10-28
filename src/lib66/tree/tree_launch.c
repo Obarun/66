@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
@@ -23,7 +23,6 @@
 #include <signal.h>
 
 #include <oblibs/log.h>
-#include <oblibs/opt.h>
 #include <oblibs/graph.h>
 #include <oblibs/io.h>
 #include <oblibs/string.h>
@@ -36,10 +35,13 @@
 #include <66/resolve.h>
 #include <66/tree.h>
 #include <66/service.h>
-#include <66/state.h>
 #include <66/constants.h>
 #include <66/config.h> // SS_MAX_SERVICE
 #include <66/ssexec.h>
+#include <66/svc.h>
+#include <66/utils.h>
+#include <66/status.h>
+#include <66/command.h>
 
 // Internal event types for coordination
 enum tree_event_type_e
@@ -169,7 +171,12 @@ static void announce(uint32_t id, bool success)
 
     } else {
 
-        flog_warnu("%s tree: %s -- exited with signal: %d", pmanager->cmdmsg, treename, tree->exitcode) ;
+        if (tree->termsig)
+            flog_warnu("%s tree: %s -- killed by signal %d", pmanager->cmdmsg, treename, tree->termsig) ;
+        else if (tree->exitcode)
+            flog_warnu("%s tree: %s -- exited with code %d", pmanager->cmdmsg, treename, tree->exitcode) ;
+        else
+            log_warnu(pmanager->cmdmsg, " tree: ", treename) ;
 
         if (!pmanager->exitcode)
             pmanager->exitcode = tree->exitcode ? tree->exitcode : LOG_EXIT_SYS ;
@@ -179,65 +186,81 @@ static void announce(uint32_t id, bool success)
 
 }
 
+static int tree_services(strbuf *t, strbuf *stk, ssexec_t *info, uint8_t operation)
+{
+    size_t pos = 0 ;
+
+    FOREACH_SBL(stk, pos) {
+
+        int r ;
+        char const *name = stk->s + pos ;
+        struct resolve_hash_s h = RESOLVE_HASH_ZERO ;
+
+        r = service_read(&h, info->base.s, name, 0) ;
+        if (r < 0)
+            return -1 ;
+
+        if (!r) {
+
+            if (errno == EINVAL) {
+                service_read_free(&h) ;
+                if (!sbl_add(t, name))
+                    return -1 ;
+                continue ;
+            }
+
+            log_warnu("read resolve file of: ", name, " -- leaving it out") ;
+            service_read_free(&h) ;
+            continue ;
+        }
+
+        if (h.res.islog) {
+            service_read_free(&h) ;
+            continue ;
+        }
+
+        if (!operation)
+            r = h.res.enabled ? 1 : 0 ;
+        else
+            r = h.res.earlier ? 0 : svc_issupervised(&h.res) ;
+
+        if (r > 0 && !h.res.inns && !sbl_add(t, name))
+            r = -1 ;
+
+        service_read_free(&h) ;
+
+        if (r < 0)
+            return -1 ;
+    }
+
+    return 1 ;
+}
+
 static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t *info)
 {
     log_flow() ;
 
-    int r ;
-    size_t pos = 0, len = stk->len ;
-    ss_state_t ste = STATE_ZERO ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    _alloc_sbl_(t, stk->len) ;
+    size_t pos = 0, len = 0 ;
+    _cleanup_strbuf_ strbuf t = STRBUF_ZERO ;
 
-
-    /** only deal with enabled service at up time and
-     * supervised service at down time */
-    {
-        FOREACH_SBL(stk, pos) {
-
-            char *name = stk->s + pos ;
-
-            r = resolve_read(wres, info->base.s, name) ;
-            if (r == -1)
-                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name) ;
-            if (!r)
-                log_dieu(LOG_EXIT_SYS, "read resolve file of: ", name, " -- please make a bug report") ;
-
-            if (!state_read(&ste, &res))
-                log_dieu(LOG_EXIT_SYS, "read state file of: ", name, " -- please make a bug report") ;
-
-            if (!pmanager->operation ? res.enabled : ste.issupervised == STATE_FLAGS_TRUE && !res.earlier) {
-
-                if (get_rstrlen_until(name, SS_LOG_SUFFIX) < 0 && !res.inns)
-                    if (!sbl_add(&t, name))
-                        log_dieu(LOG_EXIT_SYS, "add string") ;
-            }
-        }
-    }
-
-    resolve_free(wres) ;
+    if (tree_services(&t, stk, info, pmanager->operation) < 0)
+        log_warnusys_return(LOG_EXIT_LESSONE, "read the services of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
     if (!t.len)
         return 0 ;
 
-    pos = 0, len = sbl_count(&t) ;
+    len = sbl_count(&t) ;
 
-    int n = pmanager->operation == 2 ? 3 : 2 ;
-    int nargc = n + len ;
+    int nargc = len + 1 ;
     char const *newargv[nargc] ;
     unsigned int m = 0 ;
-
-    newargv[m++] = !pmanager->operation ? "start" : "stop" ;
-    if (pmanager->operation == 2)
-        newargv[m++] = "-u" ;
 
     FOREACH_SBL(&t, pos)
         newargv[m++] = t.s + pos ;
 
     newargv[m] = 0 ;
 
-    log_trace("sending ", newargv[0], " command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
+    log_trace("sending ", !pmanager->operation ? "start" : "stop", " command to service of tree: ", tree->tres->sa.s + tree->tres->name) ;
 
     /* fork (not exec): the child inherits info -- and thus who -- in memory, and
      * runs the start/stop command directly. Preserving the caller's ssexec_t is
@@ -259,8 +282,12 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
         close(pmanager->notifd[0]) ;
         close(pmanager->notifd[1]) ;
 
-        opt_cmd_t const *cmd = !pmanager->operation ? &cmd_start : &cmd_stop ;
-        _exit(opt_dispatch(m, newargv, cmd, info)) ;
+        strbuf frontends = STRBUF_ZERO ;
+
+        if (!pmanager->operation)
+            _exit(command_up(newargv, m, info, &frontends, info->target, false, info->who == STATUS_WHO_BOOT ? SVC_LOT_BOOT : SVC_LOT_COMMAND, true, false)) ;
+
+        _exit(command_down(newargv, m, info, &frontends, false, pmanager->operation == 2, true, false)) ;
     }
 
     if (!sse_start_child(&pmanager->loop, &tree->child, child_cb, (void*)(uintptr_t)id, tree->pid, 2, true)) {
@@ -271,11 +298,22 @@ static int ssexec_callback(tree_ctx_t *tree, uint32_t id, strbuf *stk, ssexec_t 
     }
 
     if (pmanager->timeout) {
-        if (!sse_start_timer(&pmanager->loop, &tree->timeout, timeout_cb, (void*)(uintptr_t)id, pmanager->timeout, 0, 1))
-            log_warnusys_return(LOG_EXIT_LESSONE, "start timer watcher for tree: ",  tree->tres->sa.s + tree->tres->name) ;
+
+        if (!sse_start_timer(&pmanager->loop, &tree->timeout, timeout_cb, (void*)(uintptr_t)id, pmanager->timeout, 0, 1)) {
+            log_warnusys("start timer watcher for tree: ",  tree->tres->sa.s + tree->tres->name) ;
+            kill(tree->pid, SIGKILL) ;
+        }
     }
 
     return 1 ;
+}
+
+static int launch_failed(uint32_t id, ssexec_t *sinfo)
+{
+    ssexec_free(sinfo) ;
+    npid-- ;
+    announce(id, false) ;
+    return 0 ;
 }
 
 static int launch_tree(uint32_t id)
@@ -296,11 +334,20 @@ static int launch_tree(uint32_t id)
         log_die_nomem("strbuf") ;
 
     r = tree_sethome(&sinfo) ;
-    if (r <= 0)
-        log_warnu_return(LOG_EXIT_ONE, "find tree: ", sinfo.treename.s) ;
+    if (r <= 0) {
+        log_warnu("find tree: ", sinfo.treename.s) ;
+        return launch_failed(id, &sinfo) ;
+    }
 
-    if (!tree_get_permissions(sinfo.base.s, sinfo.treename.s))
-        log_warn_return(LOG_EXIT_ONE, "You're not allowed to use the tree: ", sinfo.treename.s) ;
+    r = tree_get_permissions(sinfo.base.s, sinfo.treename.s) ;
+    if (r < 0) {
+        log_warnusys("read the permissions of tree: ", sinfo.treename.s) ;
+        return launch_failed(id, &sinfo) ;
+    }
+    if (!r) {
+        log_warn("You're not allowed to use the tree: ", sinfo.treename.s) ;
+        return launch_failed(id, &sinfo) ;
+    }
 
     if (!tree->tres->ncontents) {
 
@@ -313,8 +360,10 @@ static int launch_tree(uint32_t id)
 
     _alloc_sbl_(stk, strlen(tree->tres->sa.s + tree->tres->contents) + 1) ;
 
-    if (!sbl_clean_string(&stk, tree->tres->sa.s + tree->tres->contents))
-        log_warn_return(LOG_EXIT_ONE, "clean string") ;
+    if (!sbl_clean_string(&stk, tree->tres->sa.s + tree->tres->contents)) {
+        log_warnusys("clean string") ;
+        return launch_failed(id, &sinfo) ;
+    }
 
     r = ssexec_callback(tree, id, &stk, &sinfo) ;
     ssexec_free(&sinfo) ;
@@ -504,7 +553,8 @@ static void child_cb(sse_watcher_t *w, void *cbdata, int event)
         int wstat = data->status ;
         npid-- ;
 
-        tree->exitcode = WEXITSTATUS(wstat) ;
+        tree->exitcode = WIFSIGNALED(wstat) ? 0 : WEXITSTATUS(wstat) ;
+        tree->termsig = WIFSIGNALED(wstat) ? WTERMSIG(wstat) : 0 ;
 
         bool success = !WIFSIGNALED(wstat) && !WEXITSTATUS(wstat) ;
         announce(id, success) ;
@@ -553,7 +603,6 @@ static int tree_manager_init(tree_ctx_t *atree, uint32_t ntree, uint8_t operatio
 
     pmanager->atree = atree ;
     pmanager->ntree = ntree ;
-    pmanager->shutdown_requested = false ;
     pmanager->exitcode = 0 ;
     pmanager->info = info ;
     pmanager->timeout = (uint64_t)info->timeout ;

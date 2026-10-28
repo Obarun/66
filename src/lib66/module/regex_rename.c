@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -24,19 +24,19 @@
 
 #include <66/module.h>
 
-void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t element)
+int regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t element)
 {
     log_flow() ;
 
     if (!element)
-        return ;
+        return 1 ;
 
     size_t pos = 0, idx = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     _alloc_sbl_(stk, strlen(rx->sa.s + element)) ;
 
     if (!sbl_clean_string(&stk, rx->sa.s + element))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
+        return -1 ;
 
     FOREACH_SBL(&stk, pos) {
 
@@ -45,11 +45,9 @@ void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t elem
         _alloc_sbl_(key, strlen(line) + 1) ;
         _alloc_sbl_(val, strlen(line) + 1) ;
 
-        if (!environ_get_key(&key, line))
-            log_dieusys(LOG_EXIT_SYS, "get key at line: ",  line) ;
-
-        if (!environ_get_value(&val, line))
-            log_dieusys(LOG_EXIT_SYS, "get value at line: ",  line) ;
+        // a line of the frontend without its key=value form is its fault
+        if (!environ_get_key(&key, line) || !environ_get_value(&val, line))
+            log_warn_return(LOG_EXIT_ZERO, "invalid format of the line: ", line, " -- expected key=value") ;
 
         FOREACH_SBL(list, idx) {
 
@@ -58,21 +56,14 @@ void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t elem
             size_t len = strlen(str) ;
             char dname[len + 1] ;
 
-            if (!ob_dirname(dname, str))
-                log_dieu(LOG_EXIT_SYS, "get dirname of: ", str) ;
-
             char bname[len + 1] ;
-            if (!ob_basename(bname, str))
-                log_dieu(LOG_EXIT_SYS, "get basename of: ", str) ;
 
-            if (!strbuf_copys(&sa, bname) || !strbuf_terminate(&sa))
-                log_die_nomem("strbuf") ;
+            if (!ob_dirname(dname, str) || !ob_basename(bname, str))
+                return -1 ;
 
-            if (!sbl_replace(&sa, key.s, val.s))
-                log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", str) ;
-
-            if (!strbuf_terminate(&sa))
-                log_die_nomem("strbuf") ;
+            if (!strbuf_copys(&sa, bname) || !strbuf_terminate(&sa) ||
+                !sbl_replace(&sa, key.s, val.s) || !strbuf_terminate(&sa))
+                    return -1 ;
 
             char new[len + sa.len + 1] ;
             auto_strings(new, dname, sa.s) ;
@@ -80,13 +71,15 @@ void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t elem
             /** do not try to rename the same directory */
             if (strcmp(str, new)) {
 
+                // inside the temporary copy of the module, which nobody reads
                 log_trace("rename: ", str, " to: ", new) ;
                 if (rename(str, new) == -1)
-                    //log_warnusys( "rename: ", str, " to: ", new) ;
-                    log_dieusys(LOG_EXIT_SYS, "rename: ", str, " to: ", new) ;
+                    return -1 ;
 
                 break ;
             }
         }
     }
+
+    return 1 ;
 }

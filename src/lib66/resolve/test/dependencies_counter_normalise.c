@@ -34,6 +34,7 @@
 #include <oblibs/types.h>
 
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/service.h>
 #include <66/constants.h>
 
@@ -76,6 +77,9 @@ int main(void)
     char base[64] = "/tmp/66-depnorm.XXXXXX" ;
     assert(mkdtemp(base)) ;
     strcat(base, "/") ;
+
+    // resolve_write() writes the system: the test holds its write transaction
+    assert(service_graph_write_begin(getuid(), base, base) == 1) ;
 
     /* the state a pre-sentinel version left on disk: every count set, every
      * offset still unset */
@@ -135,6 +139,8 @@ int main(void)
         assert(dep.noptsdeps == 0 && dep.nprovide == 0 && dep.nconflict == 0) ;
         strbuf_free(&dep.sa) ;
     }
+
+    assert(service_graph_write_end(0) == 1) ;
 
     printf("All tests passed!\n") ;
     return 0 ;

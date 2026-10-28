@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  * */
 
 #include <stdint.h>
@@ -24,7 +24,6 @@
 #include <66/utils.h>
 #include <66/resolve.h>
 #include <66/constants.h>
-#include <66/state.h>
 #include <66/status.h>
 #include <66/enum_parser.h>
 
@@ -38,27 +37,33 @@ int info_graph_display_service(char const *name)
     char str_pid[PID_FMT] ;
     char const *ppid ;
 
-    ss_state_t sta = STATE_ZERO ;
+    int r ;
     service_status_t st = STATUS_ZERO ;
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    struct resolve_hash_s h = RESOLVE_HASH_ZERO ;
+    resolve_service_t const *pres = &h.res ;
 
     char base[SS_MAX_PATH_LEN + SS_SYSTEM_LEN + 1] ;
 
     if (!set_ownersysdir_stack(base, getuid()))
         log_warn_return(LOG_EXIT_ZERO, "set owner directory") ;
 
-    if (resolve_read(wres, base, name) <= 0) {
-        log_warnu("read resolve file of: ",name) ;
+    // the event addon tells an armed reactor
+    r = service_read(&h, base, name, SERVICE_READ_EVENT) ;
+    if (r < 0) {
+        log_warnusys("read resolve file of: ", name) ;
         goto freed ;
     }
 
-    if (!state_read(&sta, &res)) {
-        log_warnusys("read state of: ", name) ;
+    // an invalid service, named at verbosity 2 by the command: its name alone
+    if (!r) {
+        if (ostream_puts(ostream_1, name))
+            err = 1 ;
         goto freed ;
     }
 
-    svc_status(&res, &st) ;
+    // no status record reads as down, one that does not read is said
+    if (svc_status(pres, &st) < 0)
+        log_warnusys("read status of: ", name) ;
 
     if (st.pid > 0) {
 
@@ -66,7 +71,7 @@ int info_graph_display_service(char const *name)
         str_pid[pid_format(str_pid, st.pid)] = 0 ;
         ppid = &str_pid[0] ;
 
-    } else switch (svc_status_effective(&res, &st)) {
+    } else switch (svc_status_effective(&h, &st)) {
 
         /* the graph shows a compact state: up/done/waiting, failed, everything else
          * as down. An armed reactor that already fired carries the run it did, which
@@ -92,29 +97,29 @@ int info_graph_display_service(char const *name)
         "=", \
         ppid, \
 
-        res.enabled ? log_color->valid : log_color->warning, \
+        pres->enabled ? log_color->valid : log_color->warning, \
         "state", \
         log_color->off, \
         "=", \
-        res.enabled ? "Enabled" : "Disabled", \
+        pres->enabled ? "Enabled" : "Disabled", \
 
         log_color->blue, \
         "type",
         log_color->off, \
         "=", \
-        enum_to_key(enum_list_parser_type,res.type), \
+        enum_to_key(enum_list_parser_type,pres->type), \
 
         log_color->magenta, \
         "tree", \
         log_color->off, \
         "=", \
-        res.sa.s + res.treename))
+        pres->sa.s + pres->treename))
             goto freed ;
 
     err = 1 ;
 
     freed:
-        resolve_free(wres) ;
+        service_read_free(&h) ;
 
     return err ;
 }

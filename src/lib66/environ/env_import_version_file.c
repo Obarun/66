@@ -9,12 +9,14 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <sys/stat.h>
 #include <string.h>
+#include <errno.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/directory.h>
@@ -25,18 +27,19 @@
 #include <66/environ.h>
 #include <66/enum_parser.h>
 #include <66/utils.h>
+#include <66/constants.h>
+#include <66/graph.h>
 
 
-int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion, int svtype)
+int env_import_version_file(char const *svname, char const *svconf, char const *sversion, char const *dversion, char const *dst, int svtype)
 {
     log_flow() ;
 
     int r ;
     struct stat st ;
-    size_t pos = 0, svname_len = strlen(svname) ;
+    size_t pos = 0, svname_len = strlen(svname), dstlen = strlen(dst) ;
     _cleanup_strbuf_ strbuf salist = STRBUF_ZERO ;
     _cleanup_strbuf_ strbuf src_ver = STRBUF_ZERO ;
-    _cleanup_strbuf_ strbuf dst_ver = STRBUF_ZERO ;
 
     char svname_dot[svname_len + 1 + 1] ;
 
@@ -44,22 +47,32 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
 
     r = version_compare(sversion,dversion) ;
 
-    if (!r)
-        log_warn_return(LOG_EXIT_ONE,"same configuration file version for: ",svname," -- nothing to import") ;
+    if (!r) {
+        log_warn("same configuration file version for: ",svname," -- nothing to import") ;
+        return 1 ;
+    }
 
-    if (r == -2)
-        log_warn_return(LOG_EXIT_ZERO,"compare ",svname," version: ",sversion," vs: ",dversion) ;
-
-    if (r == 1)
-        log_warn_return(LOG_EXIT_ONE,"configuration file version regression for ",svname," -- ignoring importation request") ;
-
-    if (!env_append_version(&src_ver,svconf,sversion) ||
-        !env_append_version(&dst_ver,svconf,dversion))
+    if (r == -2) {
+        log_warn("compare ",svname," version: ",sversion," vs: ",dversion) ;
         return 0 ;
+    }
+
+    if (r == 1) {
+        log_warn("configuration file version regression for ",svname," -- ignoring importation request") ;
+        return 1 ;
+    }
+
+    r = env_append_version(&src_ver,svconf,sversion) ;
+    if (r <= 0) {
+        // no version to import from: nothing to read
+        if (!r)
+            errno = ENOENT ;
+        return -1 ;
+    }
 
     char const *exclude[2] = { svname_dot, 0 } ;
-    if (!sbl_dir_get(&salist,src_ver.s,exclude,S_IFREG))
-        log_warnusys_return(LOG_EXIT_ZERO,"get configuration file from directory: ",src_ver.s) ;
+    if (!sbl_dir_get(&salist,src_ver.s,exclude,FLAGS_REG))
+        return -1 ;
 
     FOREACH_SBL(&salist,pos) {
 
@@ -69,16 +82,17 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         char s[src_ver.len + 1 + namelen + 1] ;
         auto_strings(s,src_ver.s,"/",name) ;
 
-        char d[dst_ver.len + 1 + namelen + 1] ;
-        auto_strings(d,dst_ver.s,"/",name) ;
+        char d[dstlen + 1 + namelen + 1] ;
+        auto_strings(d,dst,"/",name) ;
 
         if (lstat(s, &st) < 0)
-            log_warnusys_return(LOG_EXIT_ZERO,"stat: ",s) ;
+            return -1 ;
 
-        log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
+        log_trace("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
-        if (!file_copy(s, d, st.st_mode))
-            log_warnusys_return(LOG_EXIT_ZERO,"copy: ", s," to: ",d) ;
+        // created at the mode of its source, never wider: a file of secrets stays one
+        if (!file_copy(s, d, st.st_mode & 07777))
+            return -1 ;
     }
 
     /** A module type can have multiple sub-modules. Copy these directories
@@ -92,9 +106,9 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
         salist.len = 0 ;
         pos = 0 ;
 
-        char const *exclude[1] = { 0 } ;
-        if (!sbl_dir_get(&salist,src_ver.s,exclude,S_IFDIR))
-            log_warnusys_return(LOG_EXIT_ZERO,"get configuration directories from directory: ",src_ver.s) ;
+        char const *nexclude[1] = { 0 } ;
+        if (!sbl_dir_get(&salist,src_ver.s,nexclude,FLAGS_DIR))
+            return -1 ;
 
         FOREACH_SBL(&salist,pos) {
 
@@ -104,15 +118,14 @@ int env_import_version_file(char const *svname, char const *svconf, char const *
             char s[src_ver.len + 1 + namelen + 1] ;
             auto_strings(s,src_ver.s,"/",name) ;
 
-            char d[dst_ver.len + 1 + namelen + 1] ;
-            auto_strings(d,dst_ver.s,"/",name) ;
+            char d[dstlen + 1 + namelen + 1] ;
+            auto_strings(d,dst,"/",name) ;
 
-            log_info("Imports ",svname," configuration file from: ",s," to: ",d) ;
+            log_trace("Imports ",svname," configuration file from: ",s," to: ",d) ;
 
             if (!tree_copy(s,d))
-                log_warnusys_return(LOG_EXIT_ZERO,"copy: ",s," to: ",d) ;
+                return -1 ;
         }
-
     }
 
     return 1 ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -29,7 +29,7 @@
 #include <66/caps.h>
 #include <66/enum.h>
 
-void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
+int parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
 {
     size_t pos = 0 ;
     bool todel = false, has_dflags = false ;
@@ -52,11 +52,11 @@ void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
         }
 
         tflag = key_to_enum(table.u.parser.list, t) ;
-        if (tflag < 0) {
-            log_die(LOG_EXIT_SYS, "unknown capability flag: ", t) ;
-        } else if (tflag >= CAPS_MYLAST_CAP) {
-            log_die(LOG_EXIT_SYS, "capability out of range: ", t);
-        }
+        if (tflag < 0)
+            log_warn_return(LOG_EXIT_ZERO, "unknown capability flag: ", t) ;
+
+        if (tflag >= CAPS_MYLAST_CAP)
+            log_warn_return(LOG_EXIT_ZERO, "capability out of range: ", t) ;
 
         bitset32_set(&aflags, (uint32_t)tflag) ;
 
@@ -74,7 +74,7 @@ void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
                  continue ;
 
             if (!sbl_add(result, *table.u.parser.list[cap].name))
-                log_die_nomem("sbl") ;
+                return -1 ;
         }
 
     } else {
@@ -83,15 +83,17 @@ void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps)
 
             if (bitset32_isvalid(&aflags, cap))
                 if (!sbl_add(result, *table.u.parser.list[cap].name))
-                    log_die_nomem("sbl") ;
+                    return -1 ;
         }
     }
 
     if (result->len) {
         (*ncaps) = sbl_count(result) ;
         if (!sbl_rebuild_with_delim(result, ' '))
-            log_dieusys(LOG_EXIT_SYS, "rebuild sbl") ;
+            return -1 ;
     }
+
+    return 1 ;
 }
 
 static int cap_set(cap_user_header_t header, const cap_user_data_t data)

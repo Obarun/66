@@ -21,10 +21,31 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+#include <oblibs/io.h>
+#include <oblibs/fd.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/enum_parser.h>
+
+// resolve_write_cdb() writes on a descriptor: the file <dir><name> is made here
+static int write_cdb(resolve_wrapper_t *w, char const *dir, char const *name)
+{
+    char file[strlen(dir) + strlen(name) + 1] ;
+    strcpy(file, dir) ;
+    strcat(file, name) ;
+
+    int fd = (int)io_open_mode(file, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600) ;
+    if (fd < 0)
+        return 0 ;
+
+    int r = resolve_write_cdb(w, fd) ;
+    close_fd(fd) ;
+
+    return r ;
+}
 
 static void test_roundtrip(char const *dir)
 {
@@ -55,7 +76,7 @@ static void test_roundtrip(char const *dir)
     ex.capsbound = resolve_add_string(w, "cap_net_bind_service") ;
     ex.ncapsbound = 1 ;
 
-    if (!resolve_write_cdb(w, dir, "svc.execute")) {
+    if (!write_cdb(w, dir, "svc.execute")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }

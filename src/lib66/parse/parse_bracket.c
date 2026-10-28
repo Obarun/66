@@ -9,11 +9,12 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -81,8 +82,12 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
     cfg.kclose = 0 ;
     cfg.style = 0 ;
 
-    if (!lexer(store, &cfg) || !strbuf_uncounted(store))
-        return 0 ;
+    errno = 0 ;
+    if (!lexer(store, &cfg))
+        return errno == EOVERFLOW ? -1 : 0 ;
+
+    if (!strbuf_uncounted(store))
+        return -1 ;
 
     if (!cfg.found)
         return 0 ;
@@ -332,8 +337,11 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
 
     store->len = 0 ;
 
-    if (!sbl_addb(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)))
+    if ((size_t)lvp <= cfg.opos + 1)
         return 0 ;
+
+    if (!sbl_addb(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)))
+        return -1 ;
 
     return 1 ;
 }

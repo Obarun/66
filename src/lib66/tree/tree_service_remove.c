@@ -9,64 +9,26 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <string.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/sbl.h>
 
 #include <66/resolve.h>
 #include <66/tree.h>
 
-void tree_service_remove(char const *base, char const *treename, char const *service)
+int tree_service_remove(char const *base, char const *treename, char const *service)
 {
     log_flow() ;
 
-    resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
-    resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
-    char *str = 0 ;
+    int r = tree_contents_edit(base, treename, service, false) ;
 
-    if (resolve_read(wres, base, treename) <= 0)
-        log_dieusys(LOG_EXIT_SYS, "read resolve file of tree: ", treename) ;
+    // a tree gone holds nothing to remove
+    if (!r && errno == ENOENT)
+        return 1 ;
 
-    if (tres.ncontents) {
-
-        size_t clen = strlen(tres.sa.s + tres.contents) ;
-        _alloc_sbl_(stk, clen + 1) ;
-
-        if (!sbl_clean_string(&stk, tres.sa.s + tres.contents))
-            log_dieusys(LOG_EXIT_SYS, "convert string to sbl") ;
-
-        if (!sbl_remove(&stk, service))
-            log_dieu(LOG_EXIT_SYS, "remove service: ", service, " from selection") ;
-
-        if (stk.len) {
-
-            // count first: rebuilding collapses the list into a single string
-            tres.ncontents = sbl_count(&stk) ;
-
-            if (!sbl_rebuild_with_delim(&stk, ' '))
-                log_dieu(LOG_EXIT_SYS, "convert sbl to string") ;
-
-            str = stk.s ;
-
-        } else {
-
-            tres.ncontents = 0 ;
-            str = "" ;
-        }
-
-        table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
-
-        if (!resolve_modify_field_by(wres, table, str))
-            log_dieusys(LOG_EXIT_SYS, "modify resolve file of: ", treename) ;
-
-        if (!resolve_write(wres, base, treename))
-            log_dieusys(LOG_EXIT_SYS, "write resolve file of tree: ", treename) ;
-    }
-
-    resolve_free(wres) ;
+    return r <= 0 ? -1 : 1 ;
 }

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -32,22 +32,18 @@ int env_make_symlink(resolve_service_t *res, resolve_service_addon_environ_t *e)
     char *version = res->sa.s + res->version ;
     size_t version_len = strlen(version), svconf_len = strlen(svconf) ;
     char sym_version[svconf_len + SS_SYM_VERSION_LEN + 1] ;
-
     char dst[svconf_len + 1 + version_len + 1] ;
 
-    auto_strings(dst,svconf,"/",version) ;
-
-    auto_strings(sym_version,svconf,SS_SYM_VERSION) ;
+    auto_strings(dst, svconf, "/", version) ;
+    auto_strings(sym_version, svconf, SS_SYM_VERSION) ;
 
     log_trace("create directory: ", dst) ;
-    if (!dir_create_parent(dst,0755))
-        log_warnsys_return(LOG_EXIT_ZERO,"create directory: ",dst) ;
+    if (!dir_create_parent(dst, 0755))
+        return -1 ;
 
-    /** symlink_atomic check if exist
-     * if it doesn't exist, it create it*/
     log_trace("point symlink: ", sym_version, " to ", dst) ;
-    if (!symlink_atomic(dst,sym_version))
-        log_warnu_return(LOG_EXIT_ZERO,"symlink: ",sym_version," to: ",dst) ;
+    if (symlink_atomic(dst, sym_version) < 0)
+        return -1 ;
 
     return 1 ;
 }

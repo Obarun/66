@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
@@ -17,20 +17,20 @@
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/hash.h>
-#include <oblibs/types.h>
-#include <oblibs/environ.h>
+#include <oblibs/bits.h>
 #include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
-#include <66/service.h>
 #include <66/graph.h>
-#include <66/config.h>
+#include <66/selection.h>
+#include <66/service.h>
+#include <66/svc.h>
+#include <66/command.h>
 
 static opt_t const opts_disable[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
     { .id = 'S',         .shortname = 'S', .longname = "stop", .arg = OPT_NONE, .help = "also stop the service immediately" },
-    { .id = 'P',         .shortname = 'P',                     .arg = OPT_NONE, .help = "do not propagate to its requiredby", .hidden = true },
+    { .id = 'P',         .shortname = 'P',                     .arg = OPT_NONE, .help = "do not propagate to its requiredby" },
 } ;
 
 static uint8_t opt_stop = 0 ;
@@ -60,83 +60,75 @@ opt_cmd_t const cmd_disable = {
     .fn = &ssexec_disable,
 } ;
 
+static int select_disable(selection_service_t *sel, command_graph_t *d, char const *const *argv, int argc, ssexec_t *info, strbuf *frontends, bool nopropagate)
+{
+    selection_service_policy_t policy = command_policy(SELECTION_SERVICE_PROPAGATE_REQUIREDBY, nopropagate, false, !nopropagate) ;
+
+    if (!command_argv_to_select(sel, d, argv, argc, info, &policy, frontends, SELECTION_SERVICE_REFUSE_NAMED_ABSENT | SELECTION_SERVICE_REFUSE_NAMED_INVALID | SELECTION_SERVICE_REFUSE_MET_INVALID))
+        return 0 ;
+
+    if (service_graph_warn_invalid(&d->g, frontends, &sel->member) < 0)
+        log_dieusys(LOG_EXIT_SYS, "warn about the invalid services") ;
+
+    return 1 ;
+}
+
 int ssexec_disable(int argc, char const *const *argv, void *data)
 {
+    log_flow() ;
+
     ssexec_t *info = data ;
 
     /* drain option state into locals, then reset the statics for re-entrancy. */
-    uint8_t stop_opt = opt_stop, nopropagate = opt_nopropagate ;
+    bool stop = opt_stop, nopropagate = opt_nopropagate ;
     opt_stop = 0 ;
     opt_nopropagate = 0 ;
 
-    log_flow() ;
-
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    bool stop = false, action = false ;
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    vertex_t *c, *tmp ;
-    int e = 1 ;
-    uint32_t flag = GRAPH_WANT_REQUIREDBY, nservice = 0 ;
-
-    if (stop_opt)
-        stop = true ;
-
-    if (nopropagate)
-        FLAGS_CLEAR(flag, GRAPH_WANT_REQUIREDBY) ;
+    int e = 0 ;
+    uint32_t supervised = 0 ;
+    command_graph_t d = COMMAND_GRAPH_ZERO ;
+    selection_service_t sel = SELECTION_SERVICE_ZERO ;
+    selection_service_t sup = SELECTION_SERVICE_ZERO ;
+    strbuf frontends = STRBUF_ZERO ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
+    command_refuse_member(argv, argc, "disable") ;
 
-    if (!environ_import_arguments(&sa, argv, argc))
-        log_dieusys(LOG_EXIT_SYS, "import arguments") ;
+    if (service_graph_load(&d.g, info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "load the graph of the system") ;
 
-    nservice = service_graph_build_list(&graph, sa.s, sa.len, info, flag) ;
+    while (!select_disable(&sel, &d, argv, argc, info, &frontends, nopropagate))
+        command_graph_reload(&d, info, true) ;
 
-    if (!nservice)
-        log_die(LOG_EXIT_USER, "services selection is not available -- try to parse it first") ;
+    if (service_graph_write_begin(info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "lock the system") ;
 
-    resolve_hash_reset_visit(&graph.hres) ;
+    if (service_enable_selection(&sel, &d.store, false, 0) < 0)
+        log_dieusys(LOG_EXIT_SYS, "disable the services of the selection") ;
 
-    nservice = 0 ;
-    FOREACH_GRAPH_SORT(service_graph_t, &graph, nservice) {
+    command_write_end(0) ;
 
-        uint32_t index = graph.g.sort[nservice] ;
-        vertex_t *v = graph.g.sindex[index] ;
-        char *name = v->name ;
-        struct resolve_hash_s *hash = resolve_hash_search(&graph.hres, name) ;
+    if (stop) {
 
-        if (hash == NULL)
-            log_die(LOG_EXIT_SYS, "get information of service: ", name, " -- please make a bug report") ;
+        command_refuse_scandir(info) ;
 
-        if (!hash->visit)
-            service_enable_disable(&graph, hash, action, info, &sa) ;
+        if (selection_svc_supervised(&sup, &sel, &d.store) < 0)
+            log_dieusys(LOG_EXIT_SYS, "read the state of the selection") ;
+
+        supervised = sup.member.count ;
     }
 
-    e = 0 ;
+    service_graph_resolve_free(&d.store) ;
+    service_graph_free(&d.g) ;
 
-    if (stop && graph.g.nvertexes) {
+    if (stop && !supervised)
+        log_info("no services found to handle") ;
+    else if (stop)
+        e = command_down(argv, argc, info, &frontends, nopropagate, true, false, false) ;
 
-        int nargc = 3 + graph.g.nvertexes ;
-        char const *prog = PROG ;
-        char const *newargv[nargc] ;
-        unsigned int m = 0 ;
-
-        newargv[m++] = "stop" ;
-        newargv[m++] = "-u" ;
-        HASH_FOREACH(&graph.g.vertexes, c, tmp)
-            newargv[m++] = c->name ;
-        newargv[m] = 0 ;
-
-        PROG = "stop" ;
-        e = opt_dispatch(m, newargv, &cmd_stop, info) ;
-        PROG = prog ;
-    }
-
-    service_graph_destroy(&graph) ;
+    strbuf_free(&frontends) ;
 
     return e ;
 }
-

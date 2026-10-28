@@ -9,8 +9,10 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
+
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
@@ -23,16 +25,22 @@ int resolve_get_sa(strbuf *sa, const ocdb *c)
     ocdb_data cdata ;
     sa->len = 0 ;
     int r = ocdb_find(c, &cdata, "sa", 2) ;
-    if (r == -1)
-        log_warnusys_return(LOG_EXIT_ZERO,"search on cdb key: sa") ;
 
-    if (!r)
-        log_warn_return(LOG_EXIT_ZERO,"unknown cdb key: sa") ;
+    if (r < 0) {
+        log_warnusys("search on cdb key: sa") ;
+        return (errno = EINVAL, 0) ;
+    }
+
+    if (!r) {
+        log_warn("unknown cdb key: sa") ;
+        return (errno = EINVAL, 0) ;
+    }
+
+    if (!cdata.len)
+        return (errno = EINVAL, 0) ;
 
     if (!strbuf_copyb(sa, cdata.s, cdata.len))
-        return 0 ;
-
-    sa->len = cdata.len ;
+        return -1 ;
 
     return 1 ;
 }

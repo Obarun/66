@@ -9,10 +9,11 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -22,6 +23,28 @@
 
 #include <66/parse.h>
 #include <66/enum_parser.h>
+
+lexer_config LEXER_CONFIG_SECTION = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "[",\
+    .olen = 1,\
+    .close = "]",\
+    .clen = 1,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 0,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
 int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len)
 {
@@ -38,8 +61,12 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
         cfg.pos = pos ;
         stk.len = 0 ;
 
-        if (!lexer(&stk, &cfg) || !strbuf_uncounted(&stk))
-            return 0 ;
+        errno = 0 ;
+        if (!lexer(&stk, &cfg))
+            return errno == EOVERFLOW ? -1 : 0 ;
+
+        if (!strbuf_uncounted(&stk))
+            return -1 ;
 
         if (cfg.found) {
 

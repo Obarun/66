@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/environ.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
@@ -31,16 +32,16 @@ int env_runtime_publish(char const *dir, char const *key, char const *value)
     log_flow() ;
 
     if (!env_runtime_key_isvalid(key))
-        return 0 ;
+        return (errno = EINVAL, -1) ;
 
     if (!value || !*value)
-        return (errno = EINVAL, 0) ;
+        return (errno = EINVAL, -1) ;
 
     /** the runtime directory is merged before environ_clean_unexport, so an
      * exclamation mark would reach the service as part of the value instead of
      * unexporting the key. */
     if (*value == SS_VAR_UNEXPORT)
-        return (errno = EINVAL, 0) ;
+        return (errno = EINVAL, -1) ;
 
     size_t dirlen = strlen(dir) ;
 
@@ -48,29 +49,27 @@ int env_runtime_publish(char const *dir, char const *key, char const *value)
         char const *exclude[] = { 0 } ;
         _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
 
-        if (!sbl_dir_get(&list, dir, exclude, S_IFREG))
-            return 0 ;
+        if (!sbl_dir_get(&list, dir, exclude, FLAGS_REG))
+            return -1 ;
 
         // the cap only bites for a new key: replacing one leaves the count where it was
-        if (sbl_search(&list, key) < 0 && sbl_count(&list) >= MAXFILE) {
-            errno = E2BIG ;
-            flog_warn_return(LOG_EXIT_ZERO, "runtime environment directory: %s is full -- it can not hold more than %d variables", dir, MAXFILE) ;
-        }
+        if (sbl_search(&list, key) < 0 && sbl_count(&list) >= MAXFILE)
+            return (errno = E2BIG, 0) ;
     }
 
     _cleanup_strbuf_ strbuf out = STRBUF_ZERO ;
 
     if (!environ_untrim_kv(&out, key, value))
-        return 0 ;
+        return -1 ;
 
     char tmpdir[dirlen + 1] ;
 
     if (!ob_dirname(tmpdir, dir))
-        return 0 ;
+        return -1 ;
 
     size_t len = strlen(key) ;
     char dst[dirlen + 1 + len + 1] ;
     auto_strings(dst, dir, "/", key) ;
 
-    return file_write_atomic_at(tmpdir, dst, out.s, out.len) ;
+    return file_write_atomic_at(tmpdir, dst, out.s, out.len) ? 1 : -1 ;
 }

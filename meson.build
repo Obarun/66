@@ -13,6 +13,7 @@ project('66',
           'max-service-size=256',
           'max-tree-name-size=256',
           'default-tree-name=global',
+          'default-stop-timeout=10000',
           'skeleton-dir=/etc/66',
           'system-dir=/var/lib/66',
           'system-log-dir=/var/log/66',
@@ -105,6 +106,7 @@ max_path_size = get_option('max-path-size')
 max_service_size = get_option('max-service-size')
 max_tree_name_size = get_option('max-tree-name-size')
 default_tree_name = get_option('default-tree-name')
+default_stop_timeout = get_option('default-stop-timeout')
 skeleton_dir = get_option('skeleton-dir')
 system_dir = get_option('system-dir')
 system_log_dir = get_option('system-log-dir')

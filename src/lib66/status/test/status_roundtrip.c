@@ -117,7 +117,7 @@ static void test_write_read_identity(void)
     TEST_END() ;
 }
 
-/* absent file -> clean DOWN, return 1. */
+/* absent file -> clean DOWN, return 0, errno ENOENT. */
 static void test_absent_is_down(void)
 {
     TEST_START("test_absent_is_down") ;
@@ -129,13 +129,13 @@ static void test_absent_is_down(void)
     errno = 0 ;
     int rc = status_read(&out, p) ;
 
-    TEST_ASSERT(rc == 1, "absent file should return 1 (DOWN nominal)") ;
+    TEST_ASSERT(rc == 0 && errno == ENOENT, "absent file should return 0, errno ENOENT") ;
     TEST_ASSERT(status_equal(&out, &service_status_zero), "absent should re-init to zero") ;
     TEST_ASSERT(out.state == STATUS_STATE_DOWN, "absent state should be DOWN") ;
     TEST_END() ;
 }
 
-/* wrong size -> reject, return 0, re-init. */
+/* wrong size -> reject, return -1 EINVAL, re-init. */
 static void test_wrong_size_rejected(void)
 {
     TEST_START("test_wrong_size_rejected") ;
@@ -151,7 +151,7 @@ static void test_wrong_size_rejected(void)
     service_status_t out = reference() ;
     int rc = status_read(&out, p) ;
 
-    TEST_ASSERT(rc == 0, "short file should return 0") ;
+    TEST_ASSERT(rc == -1 && errno == EINVAL, "short file should return -1, errno EINVAL") ;
     TEST_ASSERT(status_equal(&out, &service_status_zero), "short file should re-init to zero") ;
 
     /* oversized file is rejected too. */
@@ -162,14 +162,14 @@ static void test_wrong_size_rejected(void)
 
     out = reference() ;
     rc = status_read(&out, p) ;
-    TEST_ASSERT(rc == 0, "oversized file should return 0") ;
+    TEST_ASSERT(rc == -1 && errno == EINVAL, "oversized file should return -1, errno EINVAL") ;
     TEST_ASSERT(status_equal(&out, &service_status_zero), "oversized should re-init to zero") ;
 
     unlink(p) ;
     TEST_END() ;
 }
 
-/* unknown version -> reject, return 0, re-init. */
+/* unknown version -> reject, return -1 EINVAL, re-init. */
 static void test_unknown_version_rejected(void)
 {
     TEST_START("test_unknown_version_rejected") ;
@@ -186,7 +186,7 @@ static void test_unknown_version_rejected(void)
     service_status_t out = reference() ;
     int rc = status_read(&out, p) ;
 
-    TEST_ASSERT(rc == 0, "unknown version should return 0") ;
+    TEST_ASSERT(rc == -1 && errno == EINVAL, "unknown version should return -1, errno EINVAL") ;
     TEST_ASSERT(status_equal(&out, &service_status_zero), "unknown version should re-init to zero") ;
 
     unlink(p) ;

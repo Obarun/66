@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -73,6 +73,12 @@ int ssexec_fdholder_signal(int argc, char const *const *argv, void *data)
 
     log_trace(fdh_signame, " fdholder service: ", dir) ;
 
-    svc_send_daemon(dir, control, STATUS_WHO_USER, wanted, (int)fdh_sig_timeout) ;
+    int r = svc_send_daemon(dir, control, STATUS_WHO_USER, wanted, (int)fdh_sig_timeout) ;
+    if (r < 0)
+        log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
+
+    if (!r && wanted != EVENT_DOWN_READY)
+        log_dieu(LOG_EXIT_SYS, "daemon did not reach the wanted state: ", dir) ;
+
     return 0 ;
 }

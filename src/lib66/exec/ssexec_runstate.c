@@ -14,6 +14,7 @@
 
 #include <oblibs/string.h>
 #include <stddef.h>
+#include <errno.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -26,8 +27,8 @@
 #include <66/status.h>
 #include <66/info.h>
 #include <66/svc.h>
-#include <66/state.h>
 #include <66/ssexec.h>
+#include <66/command.h>
 
 static char const *opt_field = 0 ;
 static uint8_t opt_noname = 0 ;
@@ -100,28 +101,28 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
             log_dieusys(LOG_EXIT_SYS, "access status file: ", svname) ;
 
         r = status_read(&st, svname) ;
-        if (r < 0)
-            log_dieusys(LOG_EXIT_SYS, "read status file: ", svname) ;
-        else if (!r)
+        if (r < 0 && errno == EINVAL)
             log_die(LOG_EXIT_USER, "invalid status file: ", svname) ;
+        else if (r <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read status file: ", svname) ;
 
     } else {
 
-        if (!service_resolve_provide(svname, *argv, info->base.s))
+        r = service_resolve_provide(svname, *argv, 0, info->base.s) ;
+        if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
-        r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-        if (r == -1)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-        else if (!r || r == STATE_FLAGS_FALSE)
-            log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
+        char const *sv = r ? svname : *argv ;
 
-        r = resolve_read(wres, info->base.s, svname) ;
-        if (r <= 0)
-            log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
+        r = resolve_read(wres, info->base.s, sv) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
+
+        if (!r)
+            command_refuse_unknown(sv, info->base.s, info->owner, false) ;
 
         if (svc_status(&res, &st) < 0)
-            log_dieusys(LOG_EXIT_SYS, "read status of: ", svname) ;
+            log_dieusys(LOG_EXIT_SYS, "read status of: ", sv) ;
     }
 
     info_status_display(&st, field, noname) ;

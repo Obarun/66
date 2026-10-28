@@ -23,6 +23,7 @@
 #include <oblibs/strbuf.h>
 #include <oblibs/types.h>
 
+#include <66/config.h>
 #include <66/parse.h>
 #include <66/resolve.h>
 #include <66/service.h>
@@ -35,7 +36,7 @@ static int store_list_sid(strbuf *stk, parse_store_t *st, uint32_t sid, uint32_t
     char const *v = parse_store_get(st, sid, kid, &len) ;
 
     if (!strbuf_copyb(stk, v, len))
-        log_die_nomem("strbuf") ;
+        return -1 ;
 
     return parse_list(stk) ;
 }
@@ -67,7 +68,7 @@ static int execute_shebang(resolve_service_addon_execute_t *ex, resolve_wrapper_
 
     int r = get_shebang(&stk, ex->sa.s + script->run_user) ;
     if (r < 0)
-        return 0 ;
+        return -1 ;
     if (r) {
         script->run_user = resolve_add_string(wres, stk.s) ;
         script->build = resolve_add_string(wres, "custom") ;
@@ -148,13 +149,17 @@ static int parse_execute_main(parse_store_t *st, resolve_service_t *res, resolve
 
                     _alloc_sbl_(stk, len + 1) ;
 
-                    if (!store_list_sid(&stk, st, E_PARSER_SECTION_MAIN, kid))
+                    int r = store_list_sid(&stk, st, E_PARSER_SECTION_MAIN, kid) ;
+                    if (r < 0)
+                        return -1 ;
+
+                    if (!r)
                         parse_error_return(0, 8, table) ;
 
                     size_t pos = 0 ;
                     FOREACH_SBL(&stk, pos) {
 
-                        int r = key_to_enum(enum_list_parser_flags, stk.s + pos) ;
+                        r = key_to_enum(enum_list_parser_flags, stk.s + pos) ;
 
                         if (r == -1)
                             parse_error_return(0, 0, table) ;
@@ -265,14 +270,20 @@ static int parse_execute_section(parse_store_t *st, resolve_service_t *res, reso
 
                     _alloc_sbl_(store, len + 1) ;
 
-                    if (!store_list_sid(&store, st, E_PARSER_SECTION_EXECUTE, kid))
+                    int r = store_list_sid(&store, st, E_PARSER_SECTION_EXECUTE, kid) ;
+                    if (r < 0)
+                        return -1 ;
+
+                    if (!r)
                         parse_error_return(0, 8, table) ;
 
                     if (store.len && !res->owner) {
 
                         _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
 
-                        parse_store_caps(&stk, &store, &ex->ncapsbound) ;
+                        r = parse_store_caps(&stk, &store, &ex->ncapsbound) ;
+                        if (r <= 0)
+                            return r ;
 
                         if (stk.len)
                             ex->capsbound = resolve_add_string(wres, stk.s) ;
@@ -286,14 +297,20 @@ static int parse_execute_section(parse_store_t *st, resolve_service_t *res, reso
 
                     _alloc_sbl_(store, len + 1) ;
 
-                    if (!store_list_sid(&store, st, E_PARSER_SECTION_EXECUTE, kid))
+                    int r = store_list_sid(&store, st, E_PARSER_SECTION_EXECUTE, kid) ;
+                    if (r < 0)
+                        return -1 ;
+
+                    if (!r)
                         parse_error_return(0, 8, table) ;
 
                     if (store.len) {
 
                         _alloc_sbl_(stk, 2048) ; // ~ (70 CAPS * 30)
 
-                        parse_store_caps(&stk, &store, &ex->ncapsambient) ;
+                        r = parse_store_caps(&stk, &store, &ex->ncapsambient) ;
+                        if (r <= 0)
+                            return r ;
 
                         if (stk.len)
                             ex->capsambient = resolve_add_string(wres, stk.s) ;
@@ -437,8 +454,8 @@ static int parse_execute_startstop(parse_store_t *st, resolve_service_t *res, re
     if (sid == E_PARSER_SECTION_START && !script->run_user)
         log_warn_return(LOG_EXIT_ZERO, "key Execute at section [Start] must be set") ;
 
-    if (!execute_shebang(ex, wres, script))
-        return 0 ;
+    if (execute_shebang(ex, wres, script) < 0)
+        return -1 ;
 
     if (script->run_user)
         parse_compute_script(res, ex, runorfinish) ;
@@ -457,20 +474,31 @@ int parse_execute(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
     uint8_t has_limit = 0 ;
 
-    if (!parse_execute_main(st, res, ex)) { free(wres) ; return 0 ; }
+    // a [Stop] Timeout the frontend does not write is the general stop delay
+    ex->timeout.stop = SS_DEFAULT_STOP_TIMEOUT ;
 
-    if (!parse_execute_section(st, res, ex, wres)) { free(wres) ; return 0 ; }
+    int r = parse_execute_main(st, res, ex) ;
 
-    if (!parse_limit(st, l, &has_limit)) { free(wres) ; return 0 ; }
-    res->has_limit = has_limit ;
+    if (r > 0)
+        r = parse_execute_section(st, res, ex, wres) ;
 
-    if (res->type != E_PARSER_TYPE_MODULE) {
-        if (!parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_START) ||
-            !parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_STOP)) {
-                free(wres) ;
-                return 0 ;
-        }
+    if (r > 0)
+        r = parse_limit(st, l, &has_limit) ;
+
+    if (r > 0 && res->type != E_PARSER_TYPE_MODULE) {
+
+        r = parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_START) ;
+
+        if (r > 0)
+            r = parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_STOP) ;
     }
+
+    if (r <= 0) {
+        free(wres) ;
+        return r ;
+    }
+
+    res->has_limit = has_limit ;
 
     free(wres) ;
 

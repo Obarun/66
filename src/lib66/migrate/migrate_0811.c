@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>//strlen
@@ -39,6 +39,7 @@
 #include <66/migrate_0811.h>
 #include <66/migrate_0821.h>
 #include <66/migrate.h>
+#include <66/command.h>
 
 static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
 {
@@ -47,11 +48,6 @@ static int service_resolve_read_cdb_0811(ocdb *c, resolve_service_t_0811 *res)
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
 
     if (resolve_get_sa(&res->sa,c) <= 0) {
-        free(wres) ;
-        return (errno = EINVAL, 0)  ;
-    }
-
-    if (!res->sa.len) {
         free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
@@ -512,13 +508,13 @@ static void migrate_service_0811(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1] ;
     auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, FLAGS_LNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     FOREACH_SBL(&sa, pos) {

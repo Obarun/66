@@ -31,6 +31,7 @@
 #include <66/service.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
+#include <66/command.h>
 
 /* 0.9.0.0 wrote the event addon without eventpropagate. Reading it with the
  * current reader fails on the missing key, and every graph build that touches a
@@ -40,7 +41,7 @@ static int read_addon_event_0900(ocdb *c, resolve_service_addon_event_t *ev)
 {
     log_flow() ;
 
-    if (resolve_get_sa(&ev->sa, c) <= 0 || !ev->sa.len)
+    if (resolve_get_sa(&ev->sa, c) <= 0)
         return (errno = EINVAL, 0) ;
 
     if (!resolve_get_key_u32(c, "rversion", &ev->rversion) ||
@@ -114,13 +115,13 @@ void migrate_0900(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char path[info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + SS_MAX_SERVICE_NAME + SS_RESOLVE_LEN + 1 + 1] ;
     auto_strings(path, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/") ;
     size_t len = info.base.len + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 ;
 
-    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFLNK, 0))
+    if (!sbl_dir_get_recursive(&sa, path, exclude, FLAGS_LNK, 0))
         log_dieu(LOG_EXIT_SYS, "get resolve files") ;
 
     FOREACH_SBL(&sa, pos) {

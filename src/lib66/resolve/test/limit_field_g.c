@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 /* The generic by-name field API (resolve_get_field / _modify_field_g)
@@ -29,6 +29,7 @@
 #include <oblibs/types.h>
 
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/enum_service.h>
@@ -83,6 +84,9 @@ int main(void)
     assert(mkdtemp(base)) ;
     strcat(base, "/") ;
 
+    // resolve_write() writes the system: the test holds its write transaction
+    assert(service_graph_write_begin(getuid(), base, base) == 1) ;
+
     /* a service that carries a limit addon (LimitNOFILE=4096) */
     make_layout(base, "withlim") ;
     write_core(base, "withlim", 1) ;
@@ -127,6 +131,8 @@ int main(void)
         resolve_free(w) ;
     }
     assert(get_nofile(base, "plain") == 512) ;
+
+    assert(service_graph_write_end(0) == 1) ;
 
     printf("All tests passed!\n") ;
     return 0 ;

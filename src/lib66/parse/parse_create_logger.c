@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -31,7 +31,7 @@
 #define FAKELEN strlen(run)
 #endif
 
-uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination)
+ssize_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination)
 {
     log_flow() ;
 
@@ -48,7 +48,7 @@ uint32_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, con
             char home[syslen + 1 + strlen(SS_LOGGER_USERDIR) + 1] ;
 
             if (!set_ownerhome_stack(home))
-                log_dieusys(LOG_EXIT_SYS,"set home directory") ;
+                return -1 ;
 
             auto_strings(dstlog, home, SS_LOGGER_USERDIR, res->sa.s + res->name) ;
 
@@ -150,12 +150,12 @@ static void compute_log_script(resolve_service_t *log, resolve_service_addon_exe
     free(wres) ;
 }
 
-static void compute_logger(resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
+static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
 {
     log_flow() ;
 
     if (!res->logger)
-        return ;
+        return 1 ;
 
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
     resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, logexec) ;
@@ -202,20 +202,15 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, resol
     logexec->run.build = lg->execute.run.build ? resolve_add_string(exwres, lg->sa.s + lg->execute.run.build) : 0 ;
     logexec->run.runas = resolve_add_string(exwres, lg->sa.s + lg->execute.run.runas) ;
     logexec->timeout.start = lg->execute.timeout.start ;
-    logexec->timeout.stop = lg->execute.timeout.stop ;
+    logexec->timeout.stop = SS_DEFAULT_STOP_TIMEOUT ; // a logger has no [Stop]: the general stop delay
     logexec->down = lg->execute.down ;
     logexec->downsignal = lg->execute.downsignal ;
 
-    log->live.livedir = resolve_add_string(wres, info->live.s) ;
-    log->live.status = compute_status(wres, info) ;
-    log->live.servicedir = compute_live_servicedir(wres, info) ;
-    log->live.scandir = compute_scan_dir(wres, info) ;
-    log->live.statedir = compute_state_dir(wres, info, SS_STATE + 1) ;
-    log->live.eventdir = compute_state_dir(wres, info, SS_EVENTDIR + 1) ;
-    log->live.supervisedir = compute_state_dir(wres, info, SS_SUPERVISEDIR + 1) ;
-    log->live.fdholderdir = compute_pipe_service(wres, info, SS_FDHOLDER) ;
-    log->live.oneshotddir = compute_pipe_service(wres, info, SS_ONESHOTD) ;
-    log->live.eventddir = compute_pipe_service(wres, info, SS_EVENTD) ;
+    if (parse_compute_live(wres, info) < 0) {
+        free(exwres) ;
+        free(wres) ;
+        return -1 ;
+    }
 
     {
         resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, logio) ;
@@ -245,9 +240,10 @@ static void compute_logger(resolve_service_t *res, resolve_service_t *log, resol
     free(exwres) ;
     free(wres) ;
 
+    return 1 ;
 }
 
-void parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
+int parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
 {
     log_flow() ;
 
@@ -295,7 +291,8 @@ void parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
 
         free(depwres) ;
 
-        compute_logger(res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) ;
+        if (compute_logger(res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) < 0)
+            goto err ;
 
         /** keep the derived run scripts on the parent's logger addon (dump/reference) */
         {
@@ -305,18 +302,29 @@ void parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
             free(lgwres) ;
         }
 
-        if (resolve_hash_count(hres) > SS_MAX_SERVICE)
-            log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
-
         log_trace("add service: ", logname, " to the service selection") ;
         if (!resolve_hash_add(hres, logname, lres))
-            log_dieu(LOG_EXIT_SYS, "append service selection with: ", logname) ;
+            goto err ;
 
         hash = resolve_hash_search(hres, logname) ;
         hash->io = logio ;
         hash->dependencies = logdep ;
         hash->execute = logexec ;
+
+    } else {
+        strbuf_free(&logexec.sa) ;
+        strbuf_free(&logdep.sa) ;
     }
 
     free(wres) ;
+
+    return 1 ;
+
+    err:
+        strbuf_free(&lres.sa) ;
+        strbuf_free(&logio.sa) ;
+        strbuf_free(&logexec.sa) ;
+        strbuf_free(&logdep.sa) ;
+        free(wres) ;
+        return -1 ;
 }

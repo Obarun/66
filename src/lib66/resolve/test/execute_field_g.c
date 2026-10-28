@@ -30,6 +30,7 @@
 #include <oblibs/types.h>
 
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/service.h>
 #include <66/constants.h>
 #include <66/enum_service.h>
@@ -90,6 +91,9 @@ int main(void)
     assert(mkdtemp(base)) ;
     strcat(base, "/") ;
 
+    // resolve_write() writes the system: the test holds its write transaction
+    assert(service_graph_write_begin(getuid(), base, base) == 1) ;
+
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     /* a service carrying an execute addon (runas + downsignal + notify) */
@@ -141,6 +145,8 @@ int main(void)
     modify_field(base, "plain", E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS, "freshuser") ;
     get_field(&sa, base, "plain", E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS) ;
     assert(!strcmp(sa.s, "freshuser")) ;
+
+    assert(service_graph_write_end(0) == 1) ;
 
     printf("All tests passed!\n") ;
     return 0 ;

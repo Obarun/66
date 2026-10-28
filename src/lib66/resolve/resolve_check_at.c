@@ -9,11 +9,12 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -32,7 +33,7 @@ int resolve_check_at(char const *base, char const *name)
     auto_strings(file, base, SS_RESOLVE, "/", name) ;
 
     if (access(file, F_OK) < 0)
-        return 0 ;
+        return errno == ENOENT ? 0 : -1 ;
 
     return 1 ;
 }

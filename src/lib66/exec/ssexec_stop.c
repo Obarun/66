@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
@@ -18,13 +18,12 @@
 #include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/hash.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
-#include <66/graph.h>
 #include <66/service.h>
 #include <66/svc.h>
-#include <66/config.h>
+#include <66/command.h>
 
 static uint8_t opt_unsupervise = 0 ;
 static uint8_t opt_nopropagate = 0 ;
@@ -73,56 +72,18 @@ int ssexec_stop(int argc, char const *const *argv, void *data)
     ssexec_t *info = data ;
 
     /* drain option state into locals, then reset the statics for re-entrancy. */
-    uint8_t unsupervise = opt_unsupervise, nopropagate = opt_nopropagate ;
+    bool unsupervise = opt_unsupervise, nopropagate = opt_nopropagate ;
     opt_unsupervise = 0 ;
     opt_nopropagate = 0 ;
 
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    vertex_t *c, *tmp ;
-    int e = 0 ;
-    uint32_t flag = GRAPH_WANT_SUPERVISED, nservice = 0 ;
-
-    /* the requiredby closure is only consumed by svc_unsupervise: svc_send
-     * re-collects it on its own for the plain down signal. Build it only when
-     * the unsupervise path actually walks the graph. */
-    if (unsupervise) {
-        FLAGS_SET(flag, GRAPH_WANT_LOGGER) ;
-        if (!nopropagate)
-            FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
-    }
+    int e ;
+    strbuf frontends = STRBUF_ZERO ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if ((svc_scandir_ok(info->scandir.s)) != 1)
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
-
-    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
-
-    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
-    if (!nservice && errno == EINVAL)
-        log_die(LOG_EXIT_USER, "services selection is not available -- did you start it first?") ;
-
-    if (!graph.g.nsort)
-        log_warn_return(e,"no services found to handle") ;
-
-    char const *nargv[nservice + 1] ;
-    nservice = 0 ;
-    HASH_FOREACH(&graph.g.vertexes, c, tmp)
-        nargv[nservice++] = c->name ;
-
-    nargv[nservice] = 0 ;
-
-    e = svc_send(nargv, nservice, info, unsupervise ? SVC_TARGET_FREE : SVC_TARGET_DOWN, "-d", "-wD", 1, nopropagate ? 0 : 1) ;
-
-    if (e)
-        return e ;
-
-    if (unsupervise)
-        svc_unsupervise(&graph, info->who) ;
-
-    service_graph_destroy(&graph) ;
+    e = command_down(argv, argc, info, &frontends, nopropagate, unsupervise, false, unsupervise) ;
+    strbuf_free(&frontends) ;
 
     return e ;
 }
@@ -135,7 +96,7 @@ static uint8_t opt_free_nopropagate = 0 ;
 
 static opt_t const opts_free[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",         .arg = OPT_NONE, .help = "print this help" },
-    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate to its requiredby", .hidden = true },
+    { .id = 'P',         .shortname = 'P', .longname = "no-propagate", .arg = OPT_NONE, .help = "do not propagate to its requiredby" },
 } ;
 
 static int on_free(int id, char const *arg, void *data)

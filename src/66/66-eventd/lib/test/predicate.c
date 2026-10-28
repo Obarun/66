@@ -12,12 +12,14 @@
 #include <signal.h>
 #include <sys/stat.h>
 
+#include <errno.h>
 #include <string.h>
 
 #include "eventd.h"
 #include <66/event.h>
 #include <66/status.h>
 #include <66/resolve.h>
+#include <66/graph.h>
 #include <66/service.h>
 #include <66/constants.h>
 
@@ -398,6 +400,9 @@ static void test_load_roundtrip(void)
     snprintf(bs, sizeof bs, "%s/", base) ;
 
     make_service_dirs(bs, "svc") ;
+
+    // resolve_write() writes the system: the test holds its write transaction
+    T_ASSERT(service_graph_write_begin(getuid(), bs, bs) == 1, "write transaction held") ;
     write_core(bs, "svc") ;
 
     // write the .event addon through the real resolve API (as the parser would)
@@ -413,6 +418,7 @@ static void test_load_roundtrip(void)
     r.docmd = EVENT_DO_RESTART ;
     T_ASSERT(resolve_write(w, bs, "svc") == 1, "event addon written") ;
     resolve_free(w) ;
+    T_ASSERT(service_graph_write_end(0) == 1, "write transaction ended") ;
 
     // load it back and assert the fields round-trip EXACTLY (by effect)
     resolve_service_addon_event_t out = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
@@ -455,7 +461,7 @@ static void test_load_corrupt(void)
     snprintf(bs, sizeof bs, "%s/", base) ;
 
     make_service_dirs(bs, "bad") ;
-    // an empty .event file is not a valid CDB: resolve_open_cdb -> -1 (error path)
+    // an empty .event file is not a valid CDB: it does not read, resolve_open_cdb -> 0, errno EINVAL
     char f[SS_MAX_PATH_LEN] ;
     snprintf(f, sizeof f, "%ssystem/.resolve/service/bad/.resolve/bad.event", bs) ;
     int fd = open(f, O_CREAT | O_WRONLY, 0644) ;
@@ -463,8 +469,10 @@ static void test_load_corrupt(void)
     close(fd) ;
 
     resolve_service_addon_event_t out = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+    errno = 0 ;
     int ret = eventd_rule_load(bs, "bad", &out) ;
-    T_ASSERT_EQ(-1, ret, "load returns -1 on a corrupt (unreadable-as-cdb) addon") ;
+    T_ASSERT_EQ(0, ret, "load returns 0 on a corrupt (unreadable-as-cdb) addon") ;
+    T_ASSERT_EQ(EINVAL, errno, "a corrupt addon says EINVAL, not a fault of the system") ;
     eventd_rule_free(&out) ;
 }
 

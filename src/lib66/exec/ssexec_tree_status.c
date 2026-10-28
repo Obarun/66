@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <sys/stat.h>
@@ -23,6 +23,7 @@
 
 #include <oblibs/sbl.h>
 #include <oblibs/log.h>
+#include <oblibs/bits.h>
 #include <oblibs/opt.h>
 #include <oblibs/account.h>
 #include <oblibs/types.h>
@@ -368,12 +369,16 @@ static void info_display_requiredby(char const *field, resolve_tree_t *res)
         tree_graph_destroy(&graph) ;
 }
 
+// the graph of the system, loaded once for the contents of every tree shown
+static service_graph_t TG = SERVICE_GRAPH_ZERO ;
+static int TGLOADED = 0 ;
+
 static void info_display_contents(char const *field, resolve_tree_t *res)
 {
 
     size_t padding = 1 ;
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_COLLECT_PARSE, nservice = 0 ;
+    size_t pos = 0 ;
+    bitset32_t set = bitset32_init(SS_MAX_SERVICE) ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
     if (NOFIELD) padding = info_display_field_name(field) ;
@@ -385,28 +390,26 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
     if (!sbl_clean_string(&sa, res->sa.s + res->contents))
         log_dieu(LOG_EXIT_SYS, "clean string") ;
 
-    if (!service_graph_new(&graph, SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
-
-    nservice = service_graph_build_list(&graph, sa.s, sa.len, pinfo, flag) ;
-
-    if (!nservice && errno == EINVAL)
-        log_dieusys(LOG_EXIT_SYS, "build the graph") ;
-
-    if (!nservice)
-        goto empty ;
-
     if (GRAPH) {
+
+        // the first level is the services of the tree, each one followed by what it depends on
+        FOREACH_SBL(&sa, pos) {
+
+            uint32_t index = service_graph_find(&TG, sa.s + pos) ;
+
+            if (index != SERVICE_GRAPH_NOINDEX)
+                bitset32_set(&set, index) ;
+        }
 
         if (!ostream_fmt(ostream_1,"%s\n","\\"))
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
         depth_t d = info_graph_init() ;
 
-        if (!service_info_walk(&graph, 0, res->sa.s + res->name, 0, REVERSE, &d, padding, T_STYLE, pinfo))
+        if (!service_info_walk_set(&TG, &set, 0, REVERSE, &d, padding, T_STYLE))
             log_dieu(LOG_EXIT_SYS,"display the graph dependencies") ;
 
-        goto freed ;
+        return ;
 
     } else {
 
@@ -416,7 +419,7 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
 
         info_display_list(field,&sa) ;
 
-        goto freed ;
+        return ;
     }
 
     empty:
@@ -434,9 +437,6 @@ static void info_display_contents(char const *field, resolve_tree_t *res)
             if (!ostream_fmt(ostream_1,"%s%s%s\n",log_color->warning,"None",log_color->off))
                 log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         }
-
-    freed:
-        service_graph_destroy(&graph) ;
 }
 
 static void info_display_all(const char *treename,int *what)
@@ -547,16 +547,34 @@ int ssexec_tree_status(int argc, char const *const *argv, void *data)
 
         auto_strings(src, info->base.s, SS_SYSTEM) ;
 
-        if (!scan_mode(src, S_IFDIR)) {
+        if (!scan_mode(src, FLAGS_DIR)) {
+            if (errno != ENOENT)
+                log_dieusys(LOG_EXIT_SYS, "check system directory: ", src) ;
             log_info("No tree exist yet") ;
             goto end ;
         }
     }
 
+    if (service_graph_load(&TG, info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "load the graph of the system") ;
+
+    TGLOADED = 1 ;
+
+    strbuf frontends = STRBUF_ZERO ;
+
+    if (service_graph_warn_invalid(&TG, &frontends, 0) < 0)
+        log_dieusys(LOG_EXIT_SYS, "warn about the invalid services") ;
+
+    strbuf_free(&frontends) ;
+
     if (treename) {
 
-        if (!tree_isvalid(info->base.s, treename))
-            log_dieusys(LOG_EXIT_SYS, "find tree: ", treename) ;
+        int r = tree_isvalid(info->base.s, treename) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "check validity of tree: ", treename) ;
+
+        if (!r)
+            log_dieu(LOG_EXIT_USER, "find tree: ", treename) ;
 
         if (!strcmp(treename, SS_MASTER + 1))
             log_die(LOG_EXIT_USER, "you can not view the status of the Master tree -- please use \'66 tree resolve Master\' instead") ;
@@ -605,6 +623,11 @@ int ssexec_tree_status(int argc, char const *const *argv, void *data)
 
 
     end:
+
+    if (TGLOADED) {
+        service_graph_free(&TG) ;
+        TGLOADED = 0 ;
+    }
 
     return 0 ;
 }

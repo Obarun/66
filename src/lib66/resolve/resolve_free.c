@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdlib.h>
@@ -26,9 +26,7 @@ void resolve_free(resolve_wrapper_t *wres)
 {
     log_flow() ;
 
-    RESOLVE_SET_SBWRES(wres) ;
-
-    strbuf_free(sbwres) ;
+    resolve_free_obj(wres) ;
 
     free(wres) ;
 }

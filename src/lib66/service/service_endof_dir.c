@@ -12,9 +12,11 @@
  * except according to the terms contained in the LICENSE file./
  */
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <string.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/string.h>
@@ -30,7 +32,10 @@ int service_endof_dir(char const *dir, char const *name)
     char t[dirlen + 1 + namelen + 1] ;
     auto_strings(t, dir, "/", name) ;
 
-    int r = scan_mode(t,S_IFREG) ;
+    int r = scan_mode(t,FLAGS_REG) ;
+
+    if (!r && errno != ENOENT)
+        return -1 ;
 
     if (!ob_basename(t,dir))
         return -1 ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_UTILS_H
@@ -26,6 +26,7 @@
 #define YOURUID(passto,owner) youruid(passto,owner)
 #define MYGID getgid()
 #define YOURGID(passto,owner) yourgid(passto,owner)
+#define TMPDIR_GETLEN(baselen) ((baselen) + SS_TMPDIR_LEN - 1)
 
 /** ss_utils.c file */
 extern char const *get_userhome(uid_t myuid) ;
@@ -36,13 +37,16 @@ extern int set_liveenviron(strbuf *live,uid_t owner) ;
 extern int set_ownerhome(strbuf *base,uid_t owner) ;
 extern int set_ownersysdir(strbuf *base,uid_t owner) ;
 extern int set_environment(strbuf *env,uid_t owner) ;
+extern int set_livetmp(strbuf *dir, uid_t owner, char const *live) ;
 extern int read_svfile(strbuf *sasv,char const *name,char const *src) ;
-extern void name_isvalid(char const *name) ;
+extern int name_isvalid(char const *name, strbuf *msg) ;
+extern int name_inlist(char const *list, char const *name) ;
+extern void tmpdir_destroy(char const *dir) ;
 extern int set_ownerhome_stack(char *store) ;
 extern int set_ownersysdir_stack(char *base, uid_t owner) ;
 extern int set_ownerhome_stack_byuid(char *store, uid_t owner) ;
-extern void set_treeinfo(ssexec_t *info) ;
-extern void set_info(ssexec_t *info) ;
+extern int set_treeinfo(ssexec_t *info, strbuf *msg) ;
+extern int set_info(ssexec_t *info, strbuf *msg) ;
 extern int notifier_isvalid(const char *str) ;
 
 /**

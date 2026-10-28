@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 /* Round-trip the service resolve CDB: build a resolve_service_t in memory,
@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+#include <oblibs/io.h>
+#include <oblibs/fd.h>
 
 #include <66/resolve.h>
 #include <66/service.h>
@@ -42,6 +46,23 @@
     } \
 } while (0)
 
+// resolve_write_cdb() writes on a descriptor: the file <dir><name> is made here
+static int write_cdb(resolve_wrapper_t *w, char const *dir, char const *name)
+{
+    char file[strlen(dir) + strlen(name) + 1] ;
+    strcpy(file, dir) ;
+    strcat(file, name) ;
+
+    int fd = (int)io_open_mode(file, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600) ;
+    if (fd < 0)
+        return 0 ;
+
+    int r = resolve_write_cdb(w, fd) ;
+    close_fd(fd) ;
+
+    return r ;
+}
+
 static void test_roundtrip(char const *dir)
 {
     printf("Running test_roundtrip\n") ;
@@ -59,7 +80,7 @@ static void test_roundtrip(char const *dir)
     res.type = E_PARSER_TYPE_CLASSIC ;
     res.enabled = 1 ;
 
-    if (!resolve_write_cdb(wres, dir, "svc")) {
+    if (!write_cdb(wres, dir, "svc")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }

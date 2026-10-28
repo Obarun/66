@@ -26,6 +26,7 @@
 #include <66/migrate.h>
 #include <66/ssexec.h>
 #include <66/utils.h>
+#include <66/command.h>
 
 /** The control scripts of a scandir are written once, when the scandir is
  * created, and live in /run until the next boot. Those of the previous release
@@ -95,7 +96,7 @@ void migrate_0920(void)
     if (!set_ownersysdir(&info.base, info.owner))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    set_info(&info) ;
+    command_set_info(&info) ;
 
     char sig[info.scandir.len + SS_SVSCAN_LEN + MIGRATE_CONTROL_NAME_MAX + 1] ;
     char shut[info.scandir.len + 1 + SS_BOOT_SHUTDOWND_LEN + 4 + 1] ;

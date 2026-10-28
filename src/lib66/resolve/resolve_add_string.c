@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -38,6 +38,18 @@ ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data)
     }
 
     size_t datalen = strlen(data) ;
+
+    /** @data may lie in the sa itself: strbuf_catb() grows the sa before it
+     * reads @data, so it is grown first and @data found again in it */
+    if (data >= sbwres->s && data < sbwres->s + sbwres->len) {
+
+        size_t off = (size_t)(data - sbwres->s) ;
+
+        if (!strbuf_reserve(sbwres, sbwres->len + datalen + 1))
+            log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;
+
+        data = sbwres->s + off ;
+    }
 
     if (!strbuf_catb(sbwres,data,datalen + 1))
         log_warnusys_return(LOG_EXIT_LESSONE,"strbuf") ;

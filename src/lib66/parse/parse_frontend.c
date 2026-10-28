@@ -9,104 +9,91 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdint.h>
 #include <string.h>
-#include <stdlib.h> //free
-#include <sys/stat.h>
-
+#include <unistd.h> // getuid
 
 #include <oblibs/log.h>
-#include <oblibs/files.h>
-#include <oblibs/sbl.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 
 #include <66/utils.h>
 #include <66/constants.h>
-#include <66/ssexec.h>
-#include <66/service.h>
-#include <66/symlink.h>
 #include <66/config.h>
+#include <66/service.h>
 #include <66/resolve.h>
-#include <66/enum_parser.h>
-#include <66/state.h> // service_is_g flag
 #include <66/parse.h>
-#include <66/module.h>
 #include <66/instance.h>
 
-static void parse_read_instance(strbuf *frontend, char const *svsrc, char const *sv, int insta)
+static int parse_read_instance(strbuf *frontend, char const *svsrc, char const *sv, int insta)
 {
     log_flow() ;
 
+    int r ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
+    uint8_t exlen = 0 ;
     char const *exclude[1] = { 0 } ;
 
     if (!instance_splitname(&sa, sv, insta, SS_INSTANCE_TEMPLATE))
-        log_die(LOG_EXIT_SYS, "split instance service of: ", sv) ;
+        return -1 ;
 
     log_trace("read frontend service at: ", svsrc, sa.s) ;
 
-    if (read_svfile(frontend, sa.s, svsrc) <= 0) {
+    r = read_svfile(frontend, sa.s, svsrc) ;
+    if (!r)
+        return -1 ;
 
-        char instaname[sa.len + 1] ;
-        auto_strings(instaname, sa.s) ;
-        sa.len = 0 ;
-        /** in module the template service may not exist e.g.
-         * module which call another module. In this case
-         * follow the classic way */
-        int r = service_frontend_path(&sa, sv, getuid(), 0, exclude, exlen) ;
-        if (r < 1)
-            log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", sv) ;
+    if (r > 0)
+        return 1 ;
 
-        char svsrc[sa.len + 1] ;
+    char instaname[sa.len + 1] ;
+    auto_strings(instaname, sa.s) ;
+    sa.len = 0 ;
 
-        if (!ob_dirname(svsrc, sa.s))
-            log_dieu(LOG_EXIT_SYS, "get dirname of: ", sa.s) ;
+    r = service_frontend_path(&sa, sv, getuid(), 0, exclude, exlen) ;
+    if (r <= 0)
+        return r ;
 
-        if (read_svfile(frontend, instaname, svsrc) <= 0)
-            log_dieusys(LOG_EXIT_SYS, "read frontend service at: ", svsrc, instaname) ;
-    }
+    char dir[sa.len + 1] ;
 
+    if (!ob_dirname(dir, sa.s))
+        return -1 ;
+
+    r = read_svfile(frontend, instaname, dir) ;
+    if (!r)
+        return -1 ;
+
+    return r > 0 ? 1 : 0 ;
 }
-
-/* @sv -> name of the service to parse with
- * the path of the frontend file source
- * @Die on fail
- * @Return 1 on success
- * @Return 2 -> already parsed */
 
 int parse_frontend(char const *sv, parse_build_ctx_t ctx)
 {
     log_flow() ;
 
-    int insta, isparsed ;
+    int insta, r ;
     size_t svlen = strlen(sv) ;
     char svname[svlen + 1], svsrc[svlen + 1], instaname[svlen + 1] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     struct resolve_hash_s *hash ;
 
-    if (!ob_basename(svname, sv))
-        log_dieu(LOG_EXIT_SYS, "get basename of: ", sv) ;
-
-    if (!ob_dirname(svsrc, sv))
-        log_dieu(LOG_EXIT_SYS, "get dirname of: ", sv) ;
+    if (!ob_basename(svname, sv) || !ob_dirname(svsrc, sv))
+        return -1 ;
 
     char known[(ctx.inns ? strlen(ctx.inns) + 1 : 0) + svlen + 1] ;
 
     hash = parse_get_hashname(known, ctx.hres, svname, ctx.inns) ;
-    if (hash != NULL)
-        log_warn_return(2, "ignoring: ", known, " service -- already appended to the selection") ;
+    if (hash != NULL) {
+        log_trace("ignoring: ", known, " service -- already appended to the selection") ;
+        return 1 ;
+    }
+
+    r = name_isvalid(svname, ctx.msg) ;
+    if (r <= 0)
+        return r ;
 
     log_trace("parse service: ", sv) ;
-
-    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-
-    resolve_init(wres) ;
 
     insta = instance_check(svname) ;
 
@@ -115,70 +102,76 @@ int parse_frontend(char const *sv, parse_build_ctx_t ctx)
         auto_strings(instaname, svname) ;
         instaname[insta + 1] = 0 ;
 
-        parse_read_instance(&sa, svsrc, svname, insta) ;
+        r = parse_read_instance(&sa, svsrc, svname, insta) ;
 
     } else {
 
         log_trace("read frontend service at: ", sv) ;
 
-        if (read_svfile(&sa, svname, svsrc) <= 0)
-            log_dieu(LOG_EXIT_SYS, "read frontend service at: ", sv) ;
+        r = read_svfile(&sa, svname, svsrc) ;
+        // an empty frontend is refused (-1), one that does not open fails (0)
+        r = !r ? -1 : r < 0 ? 0 : 1 ;
     }
+
+    if (r < 0)
+        return -1 ;
+
+    if (!r)
+        return PARSE_REFUSE(&ctx, "unable to parse the frontend of service: ", svname) ;
 
     if (!identifier_replace(&sa, svname))
-        log_dieu(LOG_EXIT_SYS, "replace regex for service: ", svname) ;
-
-    isparsed = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-    if (isparsed == -1)
-        log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please make a bug report") ;
-    else if (!isparsed)
-        isparsed = STATE_FLAGS_FALSE ;
-
-    if (isparsed == STATE_FLAGS_TRUE && !ctx.force) {
-        resolve_free(wres) ;
-        log_warn_return(2, "ignoring service: ", svname, " -- already parsed") ;
-    }
+        return PARSE_REFUSE(&ctx, "unable to parse the identifiers of service: ", svname) ;
 
     parse_store_t st ;
-    if (!parse_store_build(&st, sa.s))
-        log_die(LOG_EXIT_SYS, "build parse store of service: ", svname) ;
+
+    r = parse_store_build(&st, sa.s) ;
+    if (r <= 0) {
+        parse_store_free(&st) ;
+        return r < 0 ? -1 : PARSE_REFUSE(&ctx, "unable to parse service: ", svname) ;
+    }
+
+    _cleanup_strbuf_ strbuf copyfrom = STRBUF_ZERO ;
 
     ctx.st = &st ;
-    ctx.frontend = sa.s ;
-    ctx.isparsed = isparsed ;
+    ctx.copyfrom = &copyfrom ;
 
-    int r = parse_core(&res, sv, svname, svsrc, svlen, insta, instaname, &ctx) ;
-    if (!r) {
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+
+    resolve_init(&wres) ;
+
+    r = parse_core(&res, sv, svname, svsrc, svlen, insta, instaname, &ctx) ;
+    if (r <= 0 || r == 2) {
         parse_store_free(&st) ;
-        resolve_free(wres) ;
-        log_die(LOG_EXIT_SYS, "parse core of service: ", svname) ;
+        resolve_free_obj(&wres) ;
+        // a directory that is no module is listed by service_frontend_path(), not parsed
+        return r == 2 ? 1 : r < 0 ? -1 : PARSE_REFUSE(&ctx, "unable to parse service: ", svname) ;
     }
-
-    if (r == 2) {
-        parse_store_free(&st) ;
-        resolve_free(wres) ;
-        return 1 ;
-    }
-
-    if (resolve_hash_count(ctx.hres) > SS_MAX_SERVICE)
-        log_die(LOG_EXIT_SYS, "too many services to parse -- compile again 66 changing the --max-service options") ;
 
     char *name = res.sa.s + res.name ;
-    log_trace("add service: ", name, " to the service selection") ;
-    if (!resolve_hash_add(ctx.hres, name, res))
-        log_dieu(LOG_EXIT_SYS, "append service selection with: ", name) ;
 
-    free(wres) ;
+    r = name_isvalid(name, ctx.msg) ;
+    if (r <= 0) {
+        parse_store_free(&st) ;
+        resolve_free_obj(&wres) ;
+        return r < 0 ? -1 : PARSE_REFUSE(&ctx, "unable to parse service: ", svname) ;
+    }
+
+    log_trace("add service: ", name, " to the service selection") ;
+    if (!resolve_hash_add(ctx.hres, name, res)) {
+        parse_store_free(&st) ;
+        resolve_free_obj(&wres) ;
+        return -1 ;
+    }
 
     struct resolve_hash_s *c = resolve_hash_search(ctx.hres, name) ;
 
-    parse_build(c, &ctx) ;
+    c->copyfrom = copyfrom ;
+    copyfrom = (strbuf)STRBUF_ZERO ;
 
-    if (symlink_provide_istaken(ctx.info->base.s, ctx.hres, c) < 0)
-        log_dieu(LOG_EXIT_SYS, "settle the name of service: ", name) ;
+    r = parse_build(c, &ctx) ;
 
     parse_store_free(&st) ;
 
-    return 1 ;
+    return r ;
 }
-

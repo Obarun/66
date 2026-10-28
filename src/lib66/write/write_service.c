@@ -9,63 +9,45 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 
 
-#include <string.h>
 #include <stdint.h>
+#include <errno.h>
 
-#include <oblibs/string.h>
 #include <oblibs/log.h>
 
 #include <66/service.h>
 #include <66/enum.h>
 #include <66/enum_parser.h>
 #include <66/write.h>
-#include <66/constants.h>
-#include <66/parse.h>
 
-/** @Return 0 on fail
- * @Return 1 on success
- * @Return 2 if the service is ignored
- * */
-void write_services(resolve_service_t *res, resolve_service_addon_execute_t *ex, resolve_service_addon_environ_t *e, char const *workdir, uint8_t force)
+int write_services(resolve_service_t *res, resolve_service_addon_execute_t *ex, strbuf const *copyfrom, char const *workdir)
 {
     log_flow() ;
 
     char *name = res->sa.s + res->name ;
-    uint32_t type = res->type ;
-    ssize_t logname = get_rstrlen_until(name, SS_LOG_SUFFIX) ;
-    if (logname > 0)
-        type = 10 ;
 
     log_trace("write service: ", name) ;
 
-    switch(type) {
+    if (res->islog)
+        return write_logger(ex, workdir) ;
+
+    switch(res->type) {
 
         case E_PARSER_TYPE_MODULE:
         case E_PARSER_TYPE_EVENT:
-            break ;
+            return 1 ;
 
         case E_PARSER_TYPE_CLASSIC:
         case E_PARSER_TYPE_ONESHOT:
-            write_common(res, ex, e, workdir, force) ;
-            break ;
-
-        case 10:
-
-            write_logger(res, ex, workdir, force) ;
-            break ;
+            return write_common(ex, copyfrom, workdir) ;
 
         default:
-            parse_cleanup(res, workdir, force) ;
-            log_die(LOG_EXIT_SYS, "unkown type: ", enum_to_key(enum_list_parser_section_main, type)) ;
+            break ;
     }
 
+    return (errno = EINVAL, -1) ;
 }
-
-
-
-

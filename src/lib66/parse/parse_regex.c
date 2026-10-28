@@ -73,9 +73,13 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                                        kid == E_PARSER_SECTION_REGEX_FILES       ? &rx->nfiles : &rx->ninfiles ;
 
                     _alloc_sbl_(stk, len + 1) ;
-                    if (!strbuf_copyb(&stk, v, len))
-                        log_die_nomem("strbuf") ;
-                    if (!parse_list(&stk)) { free(wres) ; parse_error_return(0, 8, table) ; }
+                    int r = strbuf_copyb(&stk, v, len) ? parse_list(&stk) : -1 ;
+                    if (r <= 0) {
+                        free(wres) ;
+                        if (r < 0)
+                            return -1 ;
+                        parse_error_return(0, 8, table) ;
+                    }
                     if (stk.len)
                         *field = parse_compute_list(wres, &stk, nfield, 0) ;
                 }

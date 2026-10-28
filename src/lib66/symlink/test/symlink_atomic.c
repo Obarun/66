@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 /* Tests for symlink_atomic: the created link points to exactly @target (byte
@@ -133,9 +133,48 @@ static void test_fail_no_dir(void)
     sprintf(p, "%s/nope/link", tdir) ;
 
     errno = 0 ;
-    TEST_ASSERT(symlink_atomic("/target", p) == 0, "should fail on missing dir") ;
+    TEST_ASSERT(symlink_atomic("/target", p) == -1, "should fail on missing dir") ;
     TEST_ASSERT(errno != 0, "errno should be set on failure") ;
     TEST_ASSERT(count_entries() == 0, "nothing should have been created") ;
+
+    TEST_END() ;
+}
+
+/* symlink_atomic_at: the link made under a temporary name in the directory
+ * given, then renamed: no residue there, the link replaced, and a missing
+ * temporary directory fails with -1, @name untouched. */
+static void test_at(void)
+{
+    TEST_START("test_at") ;
+    char dir[256], tmp[256], p[512] ;
+    sprintf(dir, "%s/at", tdir) ;
+    sprintf(tmp, "%s/at.tmp", tdir) ;
+    sprintf(p, "%s/link", dir) ;
+
+    TEST_ASSERT(mkdir(dir, 0755) == 0 && mkdir(tmp, 0755) == 0, "mkdir failed") ;
+
+    TEST_ASSERT(symlink_atomic_at(tmp, "/first", p) == 1, "create failed") ;
+    assert_points_to(p, "/first") ;
+    TEST_ASSERT(symlink_atomic_at(tmp, "/second", p) == 1, "replace failed") ;
+    assert_points_to(p, "/second") ;
+
+    DIR *d = opendir(tmp) ;
+    TEST_ASSERT(d != NULL, "opendir failed") ;
+    struct dirent *de ;
+    int n = 0 ;
+    while ((de = readdir(d)))
+        if (strcmp(de->d_name, ".") && strcmp(de->d_name, ".."))
+            n++ ;
+    closedir(d) ;
+    TEST_ASSERT(n == 0, "a temporary left in the temporary directory") ;
+
+    char gone[512] ;
+    sprintf(gone, "%s/gone", tdir) ;
+    errno = 0 ;
+    TEST_ASSERT(symlink_atomic_at(gone, "/third", p) == -1 && errno == ENOENT, "a missing temporary directory must fail") ;
+    assert_points_to(p, "/second") ;
+
+    TEST_ASSERT(unlink(p) == 0 && rmdir(dir) == 0 && rmdir(tmp) == 0, "cleanup failed") ;
 
     TEST_END() ;
 }
@@ -150,6 +189,7 @@ int main(void)
     test_replace_symlink() ;
     test_replace_regular() ;
     test_fail_no_dir() ;
+    test_at() ;
 
     rmdir(tdir) ;
     printf("\nAll tests passed.\n") ;

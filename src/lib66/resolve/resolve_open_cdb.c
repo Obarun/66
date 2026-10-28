@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -34,22 +34,29 @@ int resolve_open_cdb(int *fd, ocdb *c, const char *path, const char *name)
 
     auto_strings(file, path, name) ;
 
-    (*fd) = io_open(file, O_RDONLY | O_NONBLOCK) ;
-    if ((*fd) >= 0 && !io_set_block(*fd)) {
-        close_fd(*fd) ;
-        (*fd) = -1 ;
-    }
+    (*fd) = io_open(file, O_RDONLY | O_CLOEXEC) ;
+    if ((*fd) < 0) {
 
-    if ((*fd) < 0)
-        log_warnusys_return(errno == ENOENT ? 0 : -1, "open: ",file) ;
+        if (errno == ENOENT)
+            return 0 ;
+
+        int e = errno ;
+        log_warnusys("open: ", file) ;
+        errno = e ;
+        return -1 ;
+    }
 
     errno = err ;
 
     if (!ocdb_init_fromfd(c, (*fd))) {
+        /** mmap refuses a length of 0 with EINVAL, its only EINVAL for a
+         * read-only shared map of a whole file: an empty file, which does not
+         * read, not a fault of the system */
+        int r = errno == EINVAL ? 0 : -1 ;
         log_warnusys("cdb_init: ", file) ;
         close_fd((*fd)) ;
         ocdb_free(c) ;
-        return -1 ;
+        return r ;
     }
 
     return 1 ;

@@ -9,13 +9,14 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/sbl.h>
@@ -26,83 +27,89 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 #include <66/parse.h>
+#include <66/utils.h>
 #include <66/service.h>
 #include <66/ssexec.h>
 
-static void parse_module_dependencies(strbuf *list, resolve_service_t *res, resolve_service_addon_dependencies_t *dep, uint8_t requiredby, parse_build_ctx_t *ctx)
+static int parse_module_dependencies(strbuf *list, resolve_service_t *res, resolve_service_addon_dependencies_t *dep, uint8_t requiredby, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
     if (!list->len)
-        return ;
+        return 1 ;
 
+    int r ;
     char *name = res->sa.s + res->name ;
     size_t pos = 0 ;
-    uint8_t opt_tree = ctx->info->opt_tree ;
-    _alloc_sbl_(stk, list->len + 1) ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf stk = STRBUF_ZERO ;
     uint32_t *field = !requiredby ? &dep->depends : &dep->requiredby ;
     uint32_t *nfield = !requiredby ? &dep->ndepends : &dep->nrequiredby ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
-    uint8_t exlen = 3 ;
-    char const *exclude[3] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1, SS_MODULE_CONFIG_DIR + 1 } ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
 
-    ctx->info->opt_tree = 0 ;
+    if (*field && dep->sa.s[*field] && !sbl_clean_string(&stk, dep->sa.s + *field))
+        return -1 ;
 
     FOREACH_SBL(list, pos) {
 
-        sa.len = 0 ;
-        char fname[strlen(list->s + pos)] ;
+        char fname[strlen(list->s + pos) + 1] ;
 
         if (!ob_basename(fname, list->s + pos))
-            log_dieusys(LOG_EXIT_SYS, "basename of: ", list->s + pos) ;
+            return -1 ;
 
         /** cannot call itself */
         if (!strcmp(name, fname))
-            log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
-
-        if (!service_frontend_path(&sa, fname, ctx->info->owner, 0, exclude, exlen))
-            log_dieu(LOG_EXIT_USER, "find service frontend file of: ", fname) ;
+            return PARSE_REFUSE(ctx, "unable to parse module: ", name, " -- it names itself") ;
 
         if (!sbl_add(&stk, fname))
-            log_dieusys(LOG_EXIT_SYS, "handle service dependencies list") ;
+            return -1 ;
 
         (*nfield)++ ;
+    }
 
+    if (resolve_add_list(&wres, &stk, field) < 0)
+        return -1 ;
+
+    if (requiredby)
+        return 1 ;
+
+    {
+        uint8_t opt_tree = ctx->info->opt_tree ;
         parse_build_ctx_t dctx = *ctx ;
+
         dctx.forced_directory = 0 ;
-        dctx.main = fname ;
         dctx.inns = 0 ;
         dctx.intree = 0 ;
         dctx.moduleres = res ;
-        parse_frontend(sa.s, dctx) ;
 
+        ctx->info->opt_tree = 0 ;
+
+        pos = 0 ;
+        FOREACH_SBL(list, pos) {
+
+            char fname[strlen(list->s + pos) + 1] ;
+
+            if (!ob_basename(fname, list->s + pos))
+                r = -1 ;
+            else
+                r = parse_dependency_name(fname, name, &dctx) ;
+
+            if (r <= 0) {
+                ctx->info->opt_tree = opt_tree ;
+                return r ;
+            }
+        }
+
+        ctx->info->opt_tree = opt_tree ;
     }
 
-    ctx->info->opt_tree = opt_tree ;
-
-    if (!sbl_rebuild_with_delim(&stk, ' '))
-        log_dieusys(LOG_EXIT_SYS, "rebuild stack list") ;
-
-    if (*nfield) {
-
-        size_t len = strlen(dep->sa.s + *field) ;
-        char tmp[len + stk.len + 2] ;
-        auto_strings(tmp, dep->sa.s + *field, " ", stk.s) ;
-        (*field) = resolve_add_string(wres, tmp) ;
-
-    } else {
-
-        (*field) = resolve_add_string(wres, stk.s) ;
-    }
-
-    free(wres) ;
+    return 1 ;
 }
 
-static void parse_module_regex(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, char *dir, size_t copylen, ssexec_t *info)
+static int parse_module_regex(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, char *dir, size_t copylen, ssexec_t *info)
 {
     log_flow() ;
 
+    int r ;
     char *name = res->sa.s + res->name ;
     _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
 
@@ -112,8 +119,13 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_reg
 
         char const *exclude[1] = { 0 } ;
 
-        get_list(&list, dir, name, S_IFREG, exclude) ;
-        regex_replace(&list, rx, res) ;
+        list.len = 0 ;
+        if (!sbl_dir_get_recursive(&list, dir, exclude, FLAGS_REG, 1))
+            return -1 ;
+
+        r = regex_replace(&list, rx, res) ;
+        if (r <= 0)
+            return r ;
     }
 
     {
@@ -122,74 +134,163 @@ static void parse_module_regex(resolve_service_t *res, resolve_service_addon_reg
         char const *exclude[4] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, SS_MODULE_CONFIG_DIR + 1, 0 } ;
 
         /** directories */
-        get_list(&list, dir, name, S_IFDIR, exclude) ;
-        regex_rename(&list, rx, rx->directories) ;
+        list.len = 0 ;
+        if (!sbl_dir_get_recursive(&list, dir, exclude, FLAGS_DIR, 1))
+            return -1 ;
+
+        r = regex_rename(&list, rx, rx->directories) ;
+        if (r <= 0)
+            return r ;
 
         /** filename */
-        get_list(&list, dir, name, S_IFREG, exclude) ;
-        regex_rename(&list, rx, rx->files) ;
+        list.len = 0 ;
+        if (!sbl_dir_get_recursive(&list, dir, exclude, FLAGS_REG, 1))
+            return -1 ;
+
+        r = regex_rename(&list, rx, rx->files) ;
+        if (r <= 0)
+            return r ;
     }
 
     /** configure script */
-    regex_configure(res, rx, e, info, dir, name) ;
+    return regex_configure(res, rx, e, info, dir, name) ;
 }
 
-void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
+static int parse_module_members(strbuf *activated, resolve_service_t *res, char *tmpdir, size_t tmplen, parse_build_ctx_t *ctx)
 {
     log_flow() ;
 
+    int r ;
+    size_t pos = 0 ;
+    ssexec_t *info = ctx->info ;
+    char const *name = res->sa.s + res->name ;
+    uint8_t exlen = 0 ;
+    char const *exclude[1] = { 0 } ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+
+    auto_strings(tmpdir + tmplen, SS_MODULE_FRONTEND) ;
+
+    FOREACH_SBL(activated, pos) {
+
+        sa.len = 0 ;
+        char fname[strlen(activated->s + pos) + 1] ;
+
+        if (!ob_basename(fname, activated->s + pos))
+            return -1 ;
+
+        /** cannot call itself */
+        if (!strcmp(name, fname))
+            return PARSE_REFUSE(ctx, "unable to parse module: ", name, " -- it activates itself") ;
+
+        r = service_frontend_path(&sa, fname, info->owner, tmpdir, exclude, exlen) ;
+        if (r < 0)
+            return -1 ;
+
+        if (!r) {
+
+            tmpdir[tmplen] = 0 ;
+            char deps[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
+            char require[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
+
+            auto_strings(deps, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
+            auto_strings(require, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
+
+            log_warn("you can not activate the service ", fname, " without providing its frontend file at ", tmpdir, \
+                ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
+                deps, " or ", require) ;
+
+            return PARSE_REFUSE(ctx, "unable to parse module: ", name, " -- an activated service has no frontend in the module") ;
+        }
+
+        parse_build_ctx_t dctx = *ctx ;
+        dctx.forced_directory = tmpdir ;
+        dctx.inns = name ;
+        dctx.intree = res->intree ? res->sa.s + res->intree : 0 ;
+        dctx.moduleres = res ;
+
+        r = parse_frontend(sa.s, dctx) ;
+        if (r <= 0)
+            return r ;
+    }
+
+    return 1 ;
+}
+
+int parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
+{
+    log_flow() ;
+
+    int r = -1 ;
     ssexec_t *info = ctx->info ;
     resolve_service_t *res = &c->res ;
     resolve_service_addon_environ_t *e = &c->environ ;
     resolve_service_addon_dependencies_t *dep = &c->dependencies ;
     resolve_service_addon_regex_t *rx = &c->regex ;
-    size_t pos = 0, tmplen = 0, namelen = strlen(res->sa.s + res->name) ;
+    size_t tmplen = 0, namelen = strlen(res->sa.s + res->name) ;
     uint8_t opt_tree = info->opt_tree ;
     char name[namelen + 1] ;
     char dirname[strlen(res->sa.s + res->path.frontend) + 1] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    char tmpdir[namelen + 12 + strlen(SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) + 1 + SS_MAX_SERVICE_NAME + 1] ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    _cleanup_strbuf_ strbuf treename = STRBUF_ZERO ;
+    char tmpdir[5 + namelen + 7 + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + SS_MAX_SERVICE_NAME + 1] ;
 
-    auto_strings(name,res->sa.s + res->name) ;
+    auto_strings(name, res->sa.s + res->name) ;
 
     log_trace("parse module: ", name) ;
 
     if (!ob_dirname(dirname, res->sa.s + res->path.frontend))
-        log_dieu(LOG_EXIT_SYS, "get directory name of: ", res->sa.s + res->path.frontend) ;
+        return -1 ;
 
-    /** check mandatory directories */
-    parse_module_check_dir(dirname, SS_MODULE_CONFIG_DIR) ;
-    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED) ;
-    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
-    parse_module_check_dir(dirname, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
-    parse_module_check_dir(dirname, SS_MODULE_FRONTEND) ;
+    {
+        _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
 
-    auto_strings(tmpdir, "/tmp/", name, ":XXXXXX") ;
+        if (!dir_create_tmp(&tmp, "/tmp", name))
+            return -1 ;
 
-    if (!mkdtemp(tmpdir))
-        log_dieusys(LOG_EXIT_SYS, "create temporary directory") ;
-
-    tmplen = strlen(tmpdir) ;
+        auto_strings(tmpdir, tmp.s) ;
+        tmplen = strlen(tmpdir) ;
+    }
 
     log_trace("copy: ", dirname, " to: ", tmpdir) ;
     if (!tree_copy(dirname, tmpdir))
-        log_dieusys(LOG_EXIT_SYS, "copy: ", dirname, " to: ", tmpdir) ;
+        goto end ;
 
-    parse_module_regex(res, rx, e, tmpdir, tmplen, info) ;
+    /** check mandatory directories */
+    if ((r = parse_module_check_dir(tmpdir, SS_MODULE_CONFIG_DIR)) <= 0 ||
+        (r = parse_module_check_dir(tmpdir, SS_MODULE_ACTIVATED)) <= 0 ||
+        (r = parse_module_check_dir(tmpdir, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS)) <= 0 ||
+        (r = parse_module_check_dir(tmpdir, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY)) <= 0 ||
+        (r = parse_module_check_dir(tmpdir, SS_MODULE_FRONTEND)) <= 0)
+            goto end ;
 
-    /** handle new activated depends/requiredby service.*/
+    r = parse_module_regex(res, rx, e, tmpdir, tmplen, info) ;
+    if (r <= 0)
+        goto end ;
+
     {
         char const *exclude[1] = { 0 } ;
-        auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
-        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
 
-        parse_module_dependencies(&sa, res, dep, 0, ctx) ;
+        auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS) ;
+        sa.len = 0 ;
+        if (!sbl_dir_get_recursive(&sa, tmpdir, exclude, FLAGS_REG, 1)) {
+            r = -1 ;
+            goto end ;
+        }
+
+        r = parse_module_dependencies(&sa, res, dep, 0, ctx) ;
+        if (r <= 0)
+            goto end ;
 
         auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY) ;
-        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
+        sa.len = 0 ;
+        if (!sbl_dir_get_recursive(&sa, tmpdir, exclude, FLAGS_REG, 1)) {
+            r = -1 ;
+            goto end ;
+        }
 
-        parse_module_dependencies(&sa, res, dep, 1, ctx) ;
+        r = parse_module_dependencies(&sa, res, dep, 1, ctx) ;
+        if (r <= 0)
+            goto end ;
     }
 
     auto_strings(tmpdir + tmplen, SS_MODULE_ACTIVATED) ;
@@ -197,95 +298,38 @@ void parse_module(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     {
         char const *exclude[3] = { SS_MODULE_DEPENDS + 1, SS_MODULE_REQUIREDBY + 1, 0 } ;
 
-        get_list(&sa, tmpdir, name, S_IFREG, exclude) ;
-    }
-
-    auto_strings(tmpdir + tmplen, SS_MODULE_FRONTEND) ;
-
-    {
-        /* parse each activated services */
-        size_t len = sa.len ;
-        uint8_t exlen = 0 ; // see service_frontend_path file and compute_exclude()
-        char const *exclude[1] = { 0 } ;
-        _alloc_sbl_(stk, len + 1) ;
-
-        if (!strbuf_copyb(&stk, sa.s, sa.len))
-            log_die_nomem("strbuf") ;
-
-        FOREACH_SBL(&stk, pos) {
-
-            sa.len = 0 ;
-            char fname[strlen(stk.s + pos) + 1] ;
-
-            if (!ob_basename(fname, stk.s + pos))
-                log_dieusys(LOG_EXIT_ZERO, "basename of: ", stk.s + pos) ;
-
-            /** cannot call itself */
-            if (!strcmp(name, fname))
-                log_die(LOG_EXIT_SYS, "cyclic call detected -- ", name, " call ", fname) ;
-
-            /** Search first inside the module directory.
-             * If not found, warn user about what to do.*/
-            if (!service_frontend_path(&sa, fname, info->owner, tmpdir, exclude, exlen)) {
-
-                tmpdir[tmplen] = 0 ;
-                char deps[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_DEPENDS_LEN + 1 + strlen(fname) + 1] ;
-                char require[tmplen + SS_MODULE_ACTIVATED_LEN + SS_MODULE_REQUIREDBY_LEN + 1 + strlen(fname) + 1] ;
-
-                auto_strings(deps, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_DEPENDS, "/", fname) ;
-                auto_strings(require, tmpdir, SS_MODULE_ACTIVATED SS_MODULE_REQUIREDBY, "/", fname) ;
-                log_die(LOG_EXIT_USER, "you can not activate the service ", fname, " without providing its frontend file at ",tmpdir, \
-                                    ". If you want to add an depends/requiredby service to the module, consider creating a named empty file at ", \
-                                    deps, " or ", require) ;
-
-            }
-
-            info->opt_tree = 1 ;
-            info->treename.len = 0 ;
-            if (!auto_strbuf(&info->treename, res->sa.s + res->treename))
-                log_die_nomem("strbuf") ;
-
-            parse_build_ctx_t dctx = *ctx ;
-            dctx.forced_directory = tmpdir ;
-            dctx.main = fname ;
-            dctx.inns = name ;
-            dctx.intree = res->intree ? res->sa.s + res->intree : 0 ;
-            dctx.moduleres = res ;
-            parse_frontend(sa.s, dctx) ;
-
-            info->opt_tree = opt_tree ;
+        sa.len = 0 ;
+        if (!sbl_dir_get_recursive(&sa, tmpdir, exclude, FLAGS_REG, 1)) {
+            r = -1 ;
+            goto end ;
         }
-
     }
 
-    /** append the module name at each inner depends/requiredby dependencies service name
-     * and define contents field.*/
-    parse_rename_interdependences(res, dep, name, ctx->hres, info) ;
+    if (!auto_strbuf(&treename, info->treename.s ? info->treename.s : "")) {
+        r = -1 ;
+        goto end ;
+    }
 
-    /** Remove the module name from requiredby field
-     * of the dependencies if the service disappears with the
-     * fresh parse process.
-     *
-     * The Module enable the service by the configure script
-     * through the activated/requiredby directory.
-     * It will mark the module name as requiredby dependencies
-     * for the service.
-     *
-     * Then the module deactivate the service. In this case
-     * if the corresponding service resolve field is not corrected, the sanitize_graph
-     * function will found a module name as requiredby by the service
-     * which is not valid with the new state of the module.
-     *
-     * As long as the user asked for the force option, we can retrieve
-     * and read the old resolve file (meaning the current in use) to
-     * compare it with the new one.*/
-    parse_db_migrate(res, dep, info) ;
+    info->opt_tree = 1 ;
+    info->treename.len = 0 ;
+    if (!auto_strbuf(&info->treename, res->sa.s + res->treename)) {
+        r = -1 ;
+    } else {
+        r = parse_module_members(&sa, res, tmpdir, tmplen, ctx) ;
+    }
 
-    /** do not die here, just warn the user */
-    tmpdir[tmplen] = 0 ;
-    log_trace("remove temporary directory: ", tmpdir) ;
-    if (!dir_destroy(tmpdir))
-        log_warnu("remove temporary directory: ", tmpdir) ;
+    info->opt_tree = opt_tree ;
+    info->treename.len = 0 ;
+    if (!auto_strbuf(&info->treename, treename.s) && r > 0)
+        r = -1 ;
 
-    free(wres) ;
+    if (r <= 0)
+        goto end ;
+
+    r = parse_rename_interdependences(dep, name, ctx->hres, info) ;
+
+    end:
+        tmpdir[tmplen] = 0 ;
+        tmpdir_destroy(tmpdir) ;
+        return r ;
 }

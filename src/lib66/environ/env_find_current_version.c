@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -33,9 +34,10 @@ int env_find_current_version(strbuf *sa,char const *svconf)
 
     auto_strings(tmp,svconf,SS_SYM_VERSION) ;
 
-    /** symlink may no exist yet e.g first activation of the service */
+    /** symlink may no exist yet e.g first activation of the service; any
+     * other failure is no answer */
     if (lstat(tmp,&st) == -1)
-        return 0 ;
+        return errno == ENOENT ? 0 : -1 ;
 
     {
         char lnk[SS_MAX_PATH + 1] ;
@@ -47,7 +49,7 @@ int env_find_current_version(strbuf *sa,char const *svconf)
     }
 
     if (!strbuf_terminate(sa))
-        log_warnusys_return(LOG_EXIT_ZERO,"strbuf") ;
+        return -1 ;
 
     return 1 ;
 }

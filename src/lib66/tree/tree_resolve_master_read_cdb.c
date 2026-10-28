@@ -34,11 +34,6 @@ int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres)
         return (errno = EINVAL, 0)  ;
     }
 
-    if (!mres->sa.len) {
-        free(wres) ;
-        return (errno = EINVAL, 0)  ;
-    }
-
     /* configuration */
     if (!resolve_get_key_u32(c, "rversion", &mres->rversion)) {
         free(wres) ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_MODULE_H
@@ -34,12 +34,12 @@
 #define SS_MODULE_REQUIREDBY "/requiredby"
 #define SS_MODULE_REQUIREDBY_LEN (sizeof SS_MODULE_REQUIREDBY - 1)
 
-extern void parse_module_check_dir(char const *src,char const *dir) ;
+extern int parse_module_check_dir(char const *src,char const *dir) ;
 
-extern void regex_configure(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name) ;
-extern void regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t element) ;
-extern void regex_replace(strbuf *list, resolve_service_addon_regex_t *rx, resolve_service_t *res) ;
+extern int regex_configure(resolve_service_t *res, resolve_service_addon_regex_t *rx, resolve_service_addon_environ_t *e, ssexec_t *info, char const *path, char const *name) ;
+extern int regex_rename(strbuf *list, resolve_service_addon_regex_t *rx, uint32_t element) ;
+extern int regex_replace(strbuf *list, resolve_service_addon_regex_t *rx, resolve_service_t *res) ;
 extern uint32_t regex_get_file_name(strbuf *filename, char const *str) ;
+extern int module_getname(char *module, char const *name) ;
 
-extern void get_list(strbuf *list, char const *src, char const *name, mode_t mode, char const **exclude) ;
 #endif

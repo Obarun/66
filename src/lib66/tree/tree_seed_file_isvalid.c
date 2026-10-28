@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
@@ -34,7 +35,7 @@ int tree_seed_file_isvalid(char const *seedpath, char const *treename)
     char seed[slen + tlen + 1] ;
     auto_strings(seed, seedpath, treename) ;
 
-    r = scan_mode(seed, S_IFREG) ;
+    r = scan_mode(seed, FLAGS_REG) ;
 
     return r ;
 }

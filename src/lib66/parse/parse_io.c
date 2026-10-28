@@ -28,7 +28,19 @@
 #include <66/constants.h>
 #include <66/ssexec.h>
 
-static void io_compute_stdin(resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info, char const *line, uint32_t type)
+// the log directory of @res in @field: 1 on success, -1 on a system error
+static int set_logdir(uint32_t *field, resolve_wrapper_t_ref w, resolve_service_t *res, char const *destination)
+{
+    ssize_t r = compute_log_dir(w, res, destination) ;
+    if (r < 0)
+        return -1 ;
+
+    *field = (uint32_t)r ;
+
+    return 1 ;
+}
+
+static int io_compute_stdin(resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info, char const *line, uint32_t type)
 {
     log_flow() ;
 
@@ -38,7 +50,7 @@ static void io_compute_stdin(resolve_service_addon_io_t *io, resolve_wrapper_t_r
 
         case E_PARSER_IO_TYPE_TTY:
             if (line[0] != '/')
-               log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+               log_warn_return(LOG_EXIT_ZERO, "path must be absolute: ", line) ;
             io->fdin.destination = resolve_add_string(w, line) ;
             break ;
 
@@ -62,9 +74,11 @@ static void io_compute_stdin(resolve_service_addon_io_t *io, resolve_wrapper_t_r
             io->fdin.type = E_PARSER_IO_TYPE_NOTSET ;
             break ;
     }
+
+    return 1 ;
 }
 
-static void io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, char const *line, uint32_t type)
+static int io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, char const *line, uint32_t type)
 {
     log_flow() ;
 
@@ -75,7 +89,7 @@ static void io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t
         case E_PARSER_IO_TYPE_TTY:
         case E_PARSER_IO_TYPE_FILE:
             if (line[0] != '/')
-                log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+                log_warn_return(LOG_EXIT_ZERO, "path must be absolute: ", line) ;
             io->fdout.destination = resolve_add_string(w, line) ;
             break ;
 
@@ -86,10 +100,9 @@ static void io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t
         case E_PARSER_IO_TYPE_66LOG:
             // "s6log" is the deprecated spelling of "66log" -- both mean the bare keyword (default dir)
             if (!strcmp(line, enum_str_parser_io_type[E_PARSER_IO_TYPE_66LOG]) || !strcmp(line, "s6log"))
-                io->fdout.destination = compute_log_dir(w, res, 0) ;
-            else
-                io->fdout.destination = compute_log_dir(w, res, line) ;
-            break ;
+                return set_logdir(&io->fdout.destination, w, res, 0) ;
+
+            return set_logdir(&io->fdout.destination, w, res, line) ;
 
         case E_PARSER_IO_TYPE_NULL:
             io->fdout.destination = resolve_add_string(w, "/dev/null") ;
@@ -108,9 +121,11 @@ static void io_compute_stdout(resolve_service_t *res, resolve_service_addon_io_t
             io->fdout.type = E_PARSER_IO_TYPE_NOTSET ;
             break ;
     }
+
+    return 1 ;
 }
 
-static void io_compute_stderr(resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, char const *line, uint32_t type)
+static int io_compute_stderr(resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, char const *line, uint32_t type)
 {
     log_flow() ;
 
@@ -121,7 +136,7 @@ static void io_compute_stderr(resolve_service_addon_io_t *io, resolve_wrapper_t_
         case E_PARSER_IO_TYPE_TTY:
         case E_PARSER_IO_TYPE_FILE:
             if (line[0] != '/')
-                log_dieusys(LOG_EXIT_SYS, "path must be absolute: ", line) ;
+                log_warn_return(LOG_EXIT_ZERO, "path must be absolute: ", line) ;
             io->fderr.destination = resolve_add_string(w, line) ;
             break ;
 
@@ -147,6 +162,8 @@ static void io_compute_stderr(resolve_service_addon_io_t *io, resolve_wrapper_t_
             io->fderr.type = E_PARSER_IO_TYPE_NOTSET ;
             break ;
     }
+
+    return 1 ;
 }
 
 static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info, resolve_enum_table_t table, char const *line)
@@ -186,10 +203,10 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
 
     if (delim > 0) {
         if (!sbl_addb(&stk, line + delim + 1, len - delim + 1))
-            log_die_nomem("strbuf") ;
+            return -1 ;
     } else {
         if (!sbl_addb(&stk, line, len))
-            log_die_nomem("strbuf") ;
+            return -1 ;
     }
 
     switch(table.u.parser.sid) {
@@ -197,16 +214,13 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
         case E_PARSER_SECTION_MAIN:
             switch(table.u.parser.id) {
                 case E_PARSER_SECTION_MAIN_STDIN:
-                    io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
 
                 case E_PARSER_SECTION_MAIN_STDOUT:
-                    io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
 
                 case E_PARSER_SECTION_MAIN_STDERR:
-                    io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
 
                 default: break ;
             }
@@ -216,16 +230,13 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
             switch(table.u.parser.id) {
 
                 case E_PARSER_SECTION_EXECUTE_STDIN:
-                    io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stdin(io, w, info, stk.s, (uint32_t)type) ;
 
                 case E_PARSER_SECTION_EXECUTE_STDOUT:
-                    io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stdout(res, io, w, stk.s, (uint32_t)type) ;
 
                 case E_PARSER_SECTION_EXECUTE_STDERR:
-                    io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
-                    break ;
+                    return io_compute_stderr(io, w, stk.s, (uint32_t)type) ;
 
                 default: break ;
             }
@@ -237,7 +248,7 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
     return 1 ;
 }
 
-void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info)
+int parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info)
 {
     log_flow() ;
 
@@ -260,8 +271,8 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
 
             in->type = out->type = E_PARSER_IO_TYPE_66LOG ;
             in->destination = compute_pipe_service(w, info, SS_FDHOLDER) ;
-            if (!out->destination)
-                out->destination = compute_log_dir(w, res, 0) ;
+            if (!out->destination && set_logdir(&out->destination, w, res, 0) < 0)
+                return -1 ;
 
             err->type = E_PARSER_IO_TYPE_INHERIT ;
             err->destination = out->destination ;
@@ -300,8 +311,8 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
 
         if (in->type == E_PARSER_IO_TYPE_66LOG) {
             out->type = in->type ;
-            if (!out->destination)
-                out->destination = compute_log_dir(w, res, 0) ;
+            if (!out->destination && set_logdir(&out->destination, w, res, 0) < 0)
+                return -1 ;
         }
 
         {
@@ -329,9 +340,16 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
                     break ;
 
                 case E_PARSER_IO_TYPE_NOTSET:
-                    if (in->type == E_PARSER_IO_TYPE_TTY || in->type == E_PARSER_IO_TYPE_66LOG) {
+                    if (in->type == E_PARSER_IO_TYPE_TTY) {
                         out->type = in->type ;
-                        out->destination = (in->type == E_PARSER_IO_TYPE_TTY) ? in->destination : compute_log_dir(w, res, 0) ;
+                        out->destination = in->destination ;
+                        break ;
+                    }
+
+                    if (in->type == E_PARSER_IO_TYPE_66LOG) {
+                        out->type = in->type ;
+                        if (set_logdir(&out->destination, w, res, 0) < 0)
+                            return -1 ;
                         break ;
                     }
 
@@ -351,7 +369,8 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
                     }
 
                     out->type = in->type = E_PARSER_IO_TYPE_66LOG ;
-                    out->destination = compute_log_dir(w, res, 0) ;
+                    if (set_logdir(&out->destination, w, res, 0) < 0)
+                        return -1 ;
                     in->destination = compute_pipe_service(w, info, SS_FDHOLDER) ;
 
                 default:
@@ -394,6 +413,8 @@ void parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, re
             }
         }
     }
+
+    return 1 ;
 }
 
 int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
@@ -429,7 +450,11 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
             table.u.parser.id = main_keys[i] ;
 
-            if (!io_parse_one(res, io, w, info, table, v)) { free(w) ; return 0 ; }
+            int r = io_parse_one(res, io, w, info, table, v) ;
+            if (r <= 0) {
+                free(w) ;
+                return r ;
+            }
         }
 
         if (parse_store_present(st, E_PARSER_SECTION_EXECUTE, keys[i])) {
@@ -438,11 +463,18 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             resolve_enum_table_t table = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;
             table.u.parser.id = keys[i] ;
 
-            if (!io_parse_one(res, io, w, info, table, v)) { free(w) ; return 0 ; }
+            int r = io_parse_one(res, io, w, info, table, v) ;
+            if (r <= 0) {
+                free(w) ;
+                return r ;
+            }
         }
     }
 
-    parse_io_resolve(res, io, w, info) ;
+    if (parse_io_resolve(res, io, w, info) < 0) {
+        free(w) ;
+        return -1 ;
+    }
 
     /* a 66log destination directory must be owned by the logger runas: keep it on
      * the io addon so 66-execute can chown the directory (classic and oneshot),

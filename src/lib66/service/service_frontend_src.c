@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/string.h>
@@ -23,15 +24,11 @@
 #include <66/service.h>
 #include <66/instance.h>
 
-int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude)
+int service_frontend_list(strbuf *list, char const *src, char const **exclude)
 {
     log_flow() ;
 
-    int insta, equal = 0, e = -1, r = 0, found = 0 ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    size_t pos = 0, dpos = 0, pathlen = strlen(src), namelen = strlen(name) ;
-    char instaname[strlen(name) + 1] ;
-
+    size_t pathlen = strlen(src) ;
     char path[pathlen + 1] ;
 
     auto_strings(path, src) ;
@@ -40,18 +37,21 @@ int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char 
     if (path[pathlen - 1] == '/')
         path[pathlen - 1] = 0 ;
 
-    if (!sbl_dir_get_recursive(&sa, path, exclude, S_IFREG|S_IFDIR, 1))
-        return e ;
+    return sbl_dir_get_recursive(list, path, exclude, FLAGS_REG|FLAGS_DIR, 1) ? 1 : -1 ;
+}
 
-    size_t len = sa.len ;
-    char tmp[len + 1] ;
-    sbl_to_char(tmp, &sa) ;
+int service_frontend_search(strbuf *sasrc, char const *name, strbuf const *list, size_t start, size_t end, char const **exclude)
+{
+    log_flow() ;
+
+    int insta, equal = 0, e = -1, r = 0, found = 0 ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+    size_t pos = start, dpos = 0, namelen = strlen(name) ;
+    char instaname[strlen(name) + 1] ;
 
     insta = instance_check(name) ;
     if (!insta)
         log_warn_return(e,"invalid instance name: ", name) ;
-
-    sa.len = 0 ;
 
     if (insta > 0) {
         /** search for the template name */
@@ -63,16 +63,12 @@ int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char 
         auto_strings(instaname, name) ;
     }
 
-    for (; pos < len ; pos += strlen(tmp + pos) + 1) {
+    for (; pos < end ; pos += strlen(list->s + pos) + 1) {
 
         sa.len = 0 ;
-        char *dname = tmp + pos ;
+        char const *dname = list->s + pos ;
 
         struct stat st ;
-        /** use stat instead of lstat to accept symlink */
-        if (stat(dname,&st) == -1)
-            return e ;
-
         size_t dnamelen = strlen(dname) ;
         char bname[dnamelen + 1] ;
         char srcname[dnamelen + 1] ;
@@ -80,12 +76,12 @@ int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char 
         if (!ob_basename(bname,dname))
             return e ;
 
-        if (!ob_dirname(srcname, dname))
-            return e ;
-
         equal = strcmp(instaname, bname) ;
 
         if (!equal) {
+
+            if (stat(dname,&st) == -1 || !ob_dirname(srcname, dname))
+                return e ;
 
             found = 1 ;
 
@@ -118,7 +114,7 @@ int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char 
                      * inside the directory */
                     sa.len = 0 ;
 
-                    if (!sbl_dir_get_recursive(&sa, dname, exclude, S_IFREG|S_IFDIR, 0))
+                    if (!sbl_dir_get_recursive(&sa, dname, exclude, FLAGS_REG|FLAGS_DIR, 0))
                         return e ;
 
                     /** directory may be empty. */
@@ -147,4 +143,16 @@ int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char 
     e = found ;
 
     return e ;
+}
+
+int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude)
+{
+    log_flow() ;
+
+    _cleanup_strbuf_ strbuf list = STRBUF_ZERO ;
+
+    if (service_frontend_list(&list, src, exclude) < 0)
+        return -1 ;
+
+    return service_frontend_search(sasrc, name, &list, 0, list.len, exclude) ;
 }

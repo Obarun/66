@@ -15,8 +15,10 @@
 #include <stdlib.h> // free
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/files.h>
 #include <oblibs/sbl.h>
@@ -39,8 +41,12 @@ static int env_import_field(resolve_service_addon_environ_t *e, resolve_wrapper_
     size_t pos = 0 ;
     uint32_t n = 0 ;
 
-    if (!environ_merge_string(&sa, store->s))
-        log_warnusys_return(LOG_EXIT_SYS, "merge environment string") ;
+    errno = 0 ;
+    if (!environ_merge_string(&sa, store->s)) {
+        if (errno == EOVERFLOW || errno == ENOMEM)
+            return -1 ;
+        log_warnu_return(LOG_EXIT_ZERO, "parse the [Environment] section") ;
+    }
 
     FOREACH_SBL(&sa, pos) {
 
@@ -48,34 +54,38 @@ static int env_import_field(resolve_service_addon_environ_t *e, resolve_wrapper_
         _alloc_sbl_(key, strlen(line)) ;
 
         if (!environ_get_key(&key, line))
-            return 0 ;
+            return -1 ;
 
         if (!strcmp(key.s, enum_str_parser_section_environ[E_PARSER_SECTION_ENVIRON_IMPORTFILE])) {
 
             _alloc_sbl_(val, strlen(line)) ;
 
             if (!environ_get_value(&val, line))
-                return 0 ;
+                return -1 ;
 
             if (val.s[0] != '/')
                 log_warnu_return(LOG_EXIT_ZERO, "ImportFile must be an absolute path: ", val.s) ;
 
-            if (scan_mode(val.s, S_IFDIR) > 0)
+            ssize_t isdir = scan_mode(val.s, FLAGS_DIR) ;
+            if (!isdir && errno != ENOENT)
+                return -1 ;
+
+            if (isdir > 0)
                 log_warnu_return(LOG_EXIT_ZERO, "ImportFile is a directory: ", val.s, " -- only file are allowed") ;
 
             if (!sbl_add(&list, val.s))
-                return 0 ;
+                return -1 ;
 
             n++ ;
 
         } else if (!sbl_add(&clean, line))
-            return 0 ;
+            return -1 ;
     }
 
     if (list.len) {
 
         if (!sbl_rebuild_oneline(&list))
-            return 0 ;
+            return -1 ;
 
         e->nimportfile = n ;
         e->importfile = resolve_add_string(ewres, list.s) ;
@@ -84,7 +94,7 @@ static int env_import_field(resolve_service_addon_environ_t *e, resolve_wrapper_
     store->len = 0 ;
 
     if (!environ_untrim(store, &clean) || !strbuf_uncounted(store))
-        return 0 ;
+        return -1 ;
 
     return 1 ;
 }
@@ -110,23 +120,24 @@ int parse_environ(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     _cleanup_strbuf_ strbuf store = STRBUF_ZERO ;
     if (!strbuf_copyb(&store, raw, len) || !strbuf_uncounted(&store))
-        return 0 ;
+        return -1 ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_wrapper_t_ref ewres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
 
     resolve_init(ewres) ; // offset 0 = "" convention
 
-    if (!env_import_field(e, ewres, &store)) {
+    int r = env_import_field(e, ewres, &store) ;
+    if (r <= 0) {
         free(ewres) ;
-        return 0 ;
+        return r ;
     }
 
     e->env = resolve_add_string(ewres, store.s) ;
 
     if (!env_resolve_conf(&sa, res)) {
         free(ewres) ;
-        return 0 ;
+        return -1 ;
     }
 
     e->envdir = resolve_add_string(ewres, sa.s) ;

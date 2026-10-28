@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
@@ -46,7 +47,7 @@ int ssexec_snapshot_list(int argc, char const *const *argv, void *data)
         return 0 ;
     }
 
-    if (!sbl_dir_get(&sa, snapdir, exclude, S_IFDIR))
+    if (!sbl_dir_get(&sa, snapdir, exclude, FLAGS_DIR))
         log_dieusys(LOG_EXIT_SYS, "list snapshot from: ", snapdir) ;
 
     if (!sa.len) {

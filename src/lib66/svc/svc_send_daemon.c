@@ -9,15 +9,16 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include "66/constants.h"
 #include <string.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 
+#include <66/constants.h>
 #include <66/event.h>
 #include <66/svc.h>
 
@@ -40,10 +41,11 @@ static int in_state(event_t wanted, int have, unsigned char up, unsigned char re
     return event_state_satisfied(&s) ;
 }
 
-void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
+int svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
 {
     log_flow() ;
 
+    int r, e ;
     unsigned char up = 0, ready = 0 ;
     int have = svc_status_state(dir, &up, &ready) ;
 
@@ -51,8 +53,8 @@ void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t 
     if (in_state(wanted, have, up, ready)) {
         // an up target is still (idempotently) asserted; a down target is not.
         if (!is_down(wanted) && !svc_control_send(dir, control, strlen(control), who))
-            log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
-        return ;
+            return -1 ;
+        return 1 ;
     }
 
     char eventdir[strlen(dir) + SS_EVENTDIR_LEN + 1] ;
@@ -61,27 +63,29 @@ void svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t 
 
     event_wait_t w ;
     if (!event_wait_init(&w, dirs, 1, wanted))
-        log_dieusys(LOG_EXIT_SYS, "subscribe to event dir: ", eventdir) ;
+        log_warnusys_return(LOG_EXIT_LESSONE, "subscribe to event dir: ", eventdir) ;
 
     if (!svc_control_send(dir, control, strlen(control), who)) {
+        e = errno ;
         event_wait_free(&w) ;
-        log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
+        errno = e ;
+        return -1 ;
     }
 
-    int r = event_wait_run(&w, timeout_ms) ;
+    r = event_wait_run(&w, timeout_ms) ;
     event_wait_free(&w) ;
 
     if (r == 1)
-        return ; // confirmed by the event
+        return 1 ; // confirmed by the event
 
     // timeout or permanent failure: reconcile against the real status.
     up = ready = 0 ;
     have = svc_status_state(dir, &up, &ready) ;
     if (in_state(wanted, have, up, ready))
-        return ;
+        return 1 ;
 
     if (is_down(wanted))
         log_warn("daemon did not confirm down within timeout: ", dir) ;
-    else
-        log_dieu(LOG_EXIT_SYS, "daemon did not reach the wanted state: ", dir) ;
+
+    return 0 ;
 }

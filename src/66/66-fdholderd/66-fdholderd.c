@@ -621,7 +621,7 @@ static int client_create(int fd)
 
     if (hash_count(&fdh.conns) >= FDHOLDER_MAXCLIENTS_DEFAULT) {
         close_fd(fd) ;
-        log_warnusys_return(LOG_EXIT_ZERO, "too many clients - refusing connection") ;
+        log_warnsys_return(LOG_EXIT_ZERO, "too many clients - refusing connection") ;
     }
 
     fdholder_clientcom_t *conn = calloc(1, sizeof(*conn)) ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -39,6 +39,7 @@
 #include <66/graph.h>
 #include <66/sanitize.h>
 #include <66/enum_tree.h>
+#include <66/command.h>
 
 #define TREE_COLON_DELIM ':'
 #define TREE_COMMA_DELIM ','
@@ -506,7 +507,7 @@ void tree_master_modify_contents(char const *base)
 
     auto_strings(solve, base, SS_SYSTEM, SS_RESOLVE) ;
 
-    if (!sbl_dir_get(&sa, solve, exclude, S_IFREG))
+    if (!sbl_dir_get(&sa, solve, exclude, FLAGS_REG))
         log_dieu(LOG_EXIT_SYS, "get trees resolve files") ;
 
     size_t ncontents = sa.len ? sbl_count(&sa) : 0 ;
@@ -902,7 +903,7 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
     resolve_enum_table_t stable = E_TABLE_SERVICE_CONFIG_ZERO ;
     stable.u.service.id = E_RESOLVE_SERVICE_CONFIG_TREENAME ;
 
-    if (!resolve_get_field(&sa, wres, base, treesrc, table))
+    if (resolve_get_field(&sa, wres, base, treesrc, table) <= 0)
         log_dieu(LOG_EXIT_SYS, "get contents list of tree: ", treesrc) ;
 
     FOREACH_SBL(&sa, pos) {
@@ -920,7 +921,8 @@ static void tree_service_switch_contents(char const *base, char const *treesrc, 
         if (!r)
             continue ;
 
-        tree_service_add(treedst, sa.s + pos, info) ;
+        if (tree_service_add(treedst, sa.s + pos, info) < 0)
+            log_dieusys(LOG_EXIT_SYS, "add service: ", sa.s + pos, " to tree: ", treedst) ;
 
         if (!resolve_modify_field(swres, base, sa.s + pos, stable, treedst))
             log_dieu(LOG_EXIT_SYS, "modify resolve file of: ", sa.s + pos) ;
@@ -934,7 +936,6 @@ void tree_remove(tree_graph_t *g, char const *base, char const *treename, ssexec
 {
     log_flow() ;
 
-    int r ;
     char tree[SS_MAX_TREENAME + 1] ;
     char *current = SS_DEFAULT_TREENAME ;
 
@@ -962,14 +963,10 @@ void tree_remove(tree_graph_t *g, char const *base, char const *treename, ssexec
 
     } else {
 
-        r = tree_find_current(tree, base) ;
-        if (r < 0)
+        if (tree_find_current(tree, base) < 0)
             log_dieu(LOG_EXIT_SYS, "find default tree") ;
 
-        if (r)
-            current = tree ;
-        else
-            current = SS_DEFAULT_TREENAME ;
+        current = tree ;
     }
 
     tree_service_switch_contents(base, treename, current, info) ;
@@ -1081,6 +1078,9 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing tree argument") ;
 
+    if (service_graph_write_begin(info->owner, info->base.s, SS_LIVE) < 0)
+        log_dieusys(LOG_EXIT_SYS, "lock the system") ;
+
     if (!tree_graph_new(&graph, SS_MAX_SERVICE))
         log_dieusys(LOG_EXIT_SYS, "initiate the graph") ;
 
@@ -1116,11 +1116,14 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
         what.create = 0 ;
     }
 
+    if (!r && what.create && info->treename.s[0] == '.')
+        log_die(LOG_EXIT_USER, "tree name: ", info->treename.s, ": starts with a dot") ;
+
     if(!r && what.create)
         tree_create(&graph, info, &what) ;
 
     if (!r && what.remove)
-        log_dieusys(LOG_EXIT_SYS,"find tree: ", info->treename.s) ;
+        log_dieu(LOG_EXIT_USER, "find tree: ", info->treename.s) ;
 
     ntree = tree_graph_build_master(&graph, info, flag) ;
 
@@ -1208,6 +1211,7 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
 
         tree_graph_destroy(&graph) ;
 
+        command_write_end(0) ;
 
     return 0 ;
 }

@@ -32,11 +32,6 @@ int tree_resolve_read_cdb(ocdb *c, resolve_tree_t *tres)
         return (errno = EINVAL, 0)  ;
     }
 
-    if (!tres->sa.len) {
-        free(wres) ;
-        return (errno = EINVAL, 0) ;
-    }
-
     /* configuration */
     if (!resolve_get_key_u32(c, "rversion", &tres->rversion)) {
         free(wres) ;

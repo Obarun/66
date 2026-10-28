@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/sbl.h>
@@ -111,7 +112,7 @@ int log_source_logdir(log_source_t *src, char const *name, char const *logdir)
     uint8_t has_current = 0 ;
     size_t pos = 0 ;
 
-    if (!sbl_dir_get(&names, logdir, exclude, S_IFREG)) {
+    if (!sbl_dir_get(&names, logdir, exclude, FLAGS_REG)) {
         if (errno == ENOENT)
             return 1 ;
         return 0 ;

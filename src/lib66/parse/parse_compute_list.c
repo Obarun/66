@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -37,13 +37,11 @@ int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res,
         return resolve_add_string(wres, "") ;
 
     int r, found = 0 ;
-    size_t len = store->len, pos = 0 ;
-    size_t nelement = sbl_count(store) ;
-    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
+    size_t pos = 0 ;
+     uint32_t off ;
     char const *exclude[2] = { SS_MODULE_ACTIVATED + 1, SS_MODULE_FRONTEND + 1 } ;
-    char f[len + nelement + 2] ;
-
-    memset(f, 0, (len + nelement + 2) * sizeof(char)) ;
+    _cleanup_strbuf_ strbuf tmp = STRBUF_ZERO ;
+    _cleanup_strbuf_ strbuf kept = STRBUF_ZERO ;
 
     FOREACH_SBL(store, pos) {
 
@@ -55,8 +53,8 @@ int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res,
             tmp.len = 0 ;
 
             r = service_frontend_path(&tmp, store->s + pos, getuid(), 0, exclude, 2) ;
-            if (r == -1)
-                log_dieu(LOG_EXIT_SYS, "get frontend service file of: ", store->s + pos) ;
+            if (r < 0)
+                return -1 ;
 
             if (!r)
                 continue ;
@@ -65,7 +63,8 @@ int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res,
 
         }
 
-        auto_strings(f + strlen(f), store->s + pos, " ") ;
+        if (!sbl_add(&kept, store->s + pos))
+            return -1 ;
 
         (*res)++ ;
 
@@ -76,8 +75,6 @@ int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res,
     if (!(*res))
         return 0 ;
 
-    f[strlen(f) - 1] = 0 ;
-
-    return resolve_add_string(wres, f) ;
+    return resolve_add_list(wres, &kept, &off) < 0 ? -1 : (int)off ;
 }
 

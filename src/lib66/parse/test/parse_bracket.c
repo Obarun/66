@@ -427,6 +427,20 @@ void invalid_section(resolve_enum_table_t table)
     assert(strcmp(stk.s, b) == 0) ;
 }
 
+void empty_bracket(resolve_enum_table_t table)
+{
+    printf("Running test empty_bracket...\n") ;
+
+    int r ;
+    const char *a = "= ()\n" ;
+
+    _alloc_sbl_(stk, strlen(a) + 1) ;
+
+    // nothing between the brackets: a fault of the frontend, not of the system
+    r = parse_bracket(&stk, a, table) ;
+    assert(r == 0) ;
+}
+
 int main(void) {
 
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
@@ -453,6 +467,7 @@ int main(void) {
     eof_invalid(table) ;
     valid_section(table) ;
     invalid_section(table) ;
+    empty_bracket(table) ;
 
     printf("All tests passed successfully.\n") ;
 

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <66/constants.h>
@@ -30,7 +30,9 @@
 #include <66/utils.h>
 #include <66/sanitize.h>
 #include <66/shutdown.h>
+#include <66/graph.h>
 #include <66/config.h>
+#include <66/command.h>
 
 static opt_t const opts_main[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",      .arg = OPT_NONE,                                .help = "print this help" },
@@ -50,7 +52,6 @@ static int on_global(int id, char const *arg, void *data)
 
             if (!u32_scan_strict(arg, &VERBOSITY))
                 log_die(LOG_EXIT_USER, "invalid verbosity level: ", arg) ;
-            info->opt_verbo = 1 ;
             break ;
 
         case 't' :
@@ -67,7 +68,6 @@ static int on_global(int id, char const *arg, void *data)
 
             if (!u64_scan_strict(arg, &info->timeout))
                 log_die(LOG_EXIT_USER, "invalid timeout: ", arg) ;
-            info->opt_timeout = 1 ;
             break ;
 
         case 'z' :
@@ -185,6 +185,65 @@ static void cmd_build(void)
     }
 }
 
+static int version_read(strbuf *sa, char const *dst)
+{
+    sa->len = 0 ;
+
+    if (strbuf_read_file(sa, dst))
+        return 1 ;
+
+    if (errno != ENOENT)
+        log_dieusys(LOG_EXIT_SYS, "read system version file: ", dst) ;
+
+    return 0 ;
+}
+
+static void version_sync(ssexec_t *info)
+{
+    int r ;
+    _cleanup_strbuf_ strbuf version = STRBUF_ZERO ;
+    char dst[info->base.len + SS_SYSTEM_LEN + 9 + 1] ;
+    char tmp[TMPDIR_GETLEN(info->base.len) + 1] ;
+
+    auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
+    auto_strings(tmp, info->base.s, SS_TMPDIR + 1) ;
+
+    r = version_read(&version, dst) ;
+    if (r && !version_compare(version.s, SS_VERSION))
+        return ;
+
+    if (service_graph_write_begin(info->owner, info->base.s, SS_LIVE) < 0) {
+
+        if (r)
+            log_dieusys(LOG_EXIT_SYS, "lock the system") ;
+
+        log_warnusys("lock the system") ;
+        return ;
+    }
+
+    if (!version_read(&version, dst)) {
+
+        /** Best-effort: a container boot skips sanitize, so the system
+         * directory may not exist yet (it is created a bit later by the
+         * spawned scandir/tree commands, or was never writable). Do not
+         * abort here -- the marker is written once the state is set up. */
+        log_trace("initialize system version file with version: ", SS_VERSION) ;
+        if (!file_write_atomic_at(tmp, dst, SS_VERSION, strlen(SS_VERSION)))
+            log_warnusys("write system version file: ", dst) ;
+
+    } else if ((r = sanitize_migrate(info, version.s))) {
+
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "migrate the system of: ", info->base.s) ;
+
+        log_trace("write system version file with version: ", SS_VERSION) ;
+        if (!file_write_atomic_at(tmp, dst, SS_VERSION, strlen(SS_VERSION)))
+            log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
+    }
+
+    command_write_end(0) ;
+}
+
 static uint8_t cmd_skips_sanitize(char const *cmd)
 {
     static char const *const skip[] = { "boot", "snapshot", "poweroff", "reboot", "halt", "suspend", "hibernate", 0 } ;
@@ -268,44 +327,13 @@ int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
         if (cmd_skips_tree(cmd))
             info->skip_opt_tree = 1 ;
 
-        if (!cmd_skips_sanitize(cmd))
-            sanitize_system(info) ;
+        if (!cmd_skips_sanitize(cmd) && sanitize_system(info) < 0)
+            log_dieusys(LOG_EXIT_SYS, "sanitize the system of: ", info->base.s) ;
 
-        if (strcmp(cmd, "snapshot")) {
+        if (strcmp(cmd, "snapshot"))
+            version_sync(info) ;
 
-            // migration process
-            char dst[info->base.len + SS_SYSTEM_LEN + 9 + 1] ;
-            auto_strings(dst, info->base.s, SS_SYSTEM, "/.version") ;
-
-            if (access(dst, F_OK) < 0) {
-
-                if (errno != ENOENT)
-                    log_dieusys(LOG_EXIT_SYS, "access system version file: ", dst) ;
-
-                /* Best-effort: a container boot skips sanitize, so the system
-                 * directory may not exist yet (it is created a bit later by the
-                 * spawned scandir/tree commands, or was never writable). Do not
-                 * abort here -- the marker is written once the state is set up. */
-                log_trace("initialize system version file with version: ", SS_VERSION) ;
-                if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-                    log_warnusys("write system version file: ", dst) ;
-
-            } else {
-
-                ssize_t len = file_get_size(dst) ;
-                _alloc_strbuf_(file, len + 1) ;
-                if (!strbuf_read_file(&file, dst))
-                    log_dieu(LOG_EXIT_SYS, "read system version file: ", dst) ;
-
-                if (sanitize_migrate(info, file.s)) {
-                    log_trace("write system version file with version: ", SS_VERSION) ;
-                    if (!file_write(dst, SS_VERSION, strlen(SS_VERSION)))
-                        log_dieusys(LOG_EXIT_SYS, "write system version file: ", dst) ;
-                }
-            }
-        }
-
-        set_info(info) ;
+        command_set_info(info) ;
     }
 
     return opt_dispatch(argc, argv, &global_cmd, info) ;

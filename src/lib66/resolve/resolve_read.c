@@ -9,11 +9,13 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -21,69 +23,43 @@
 #include <66/resolve.h>
 #include <66/constants.h>
 #include <66/service.h>
+#include <66/symlink.h>
 
 int resolve_read(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
-    if (!resolve_check(wres, base, name))
-        return 0 ;
+    char const *suffix = resolve_addon_suffix(wres->type) ;
 
+    if (!suffix)
+        return (errno = EINVAL, -1) ;
+
+    int r ;
+    bool tree = wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER ;
     char path[SS_MAX_PATH_LEN] ;
-    char lname[SS_MAX_PATH_LEN + 1] ;
+    char lname[strlen(name) + strlen(suffix) + 1] ;
 
-    auto_strings(lname, name) ;
-
-    if (wres->type == DATA_SERVICE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-    } else if (wres->type == DATA_SERVICE_LIMIT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_LIMIT_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_ENVIRON) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_ENVIRON_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_IO) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_IO_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_EXECUTE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_EXECUTE_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_DEPENDENCIES_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_REGEX) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_REGEX_SUFFIX) ;
-
-    } else if (wres->type == DATA_SERVICE_EVENT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-        auto_strings(lname + strlen(lname), SS_ADDON_EVENT_SUFFIX) ;
-
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
-
+    if (tree)
         auto_strings(path, base, SS_SYSTEM) ;
+    else
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+    auto_strings(lname, name, suffix) ;
+
+    // the open tells a missing file apart, no check made before it
+    r = resolve_read_at(wres, path, lname) ;
+
+    /** the link of the service stands and leads to something that is no
+     * directory: its resolve file stands on disk and does not read (contract,
+     * Invalid service; reconfigure -c repairs it). A base that is no directory
+     * stays a system error */
+    if (r < 0 && errno == ENOTDIR && !tree) {
+
+        if (symlink_type(path))
+            return (errno = EINVAL, 0) ;
+
+        errno = ENOTDIR ;
     }
 
-    return resolve_read_at(wres, path, lname) ;
+    return r ;
 }

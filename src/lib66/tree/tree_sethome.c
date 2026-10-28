@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <errno.h>
@@ -38,21 +38,13 @@ int tree_sethome(ssexec_t *info)
     if (!info->opt_tree) {
 
         char t[SS_MAX_TREENAME + 1] ;
-        r = tree_find_current(t, base) ;
 
-        if (r < 0)
+        if (tree_find_current(t, base) < 0)
             return -1 ;
 
         info->treename.len = 0 ;
-        if (!r) {
-            /** no current tree found. Use the default one.*/
-            if (!auto_strbuf(&info->treename, SS_DEFAULT_TREENAME))
-                return -1 ;
-        } else {
-
-            if (!auto_strbuf(&info->treename, t))
-                return -1 ;
-        }
+        if (!auto_strbuf(&info->treename, t))
+            return -1 ;
 
     } else {
 

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -34,7 +35,7 @@ uint32_t tree_graph_build_system(tree_graph_t *g, ssexec_t *info, uint32_t flag)
 
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE) ;
 
-    if (!sbl_dir_get(&sa, solve, exclude, S_IFREG))
+    if (!sbl_dir_get(&sa, solve, exclude, FLAGS_REG))
         log_warnu_return(LOG_EXIT_ZERO, "get resolve files") ;
 
     return tree_graph_build_list(g, sa.s, sa.len, info, flag) ;

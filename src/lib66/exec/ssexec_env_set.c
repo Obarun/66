@@ -14,6 +14,7 @@
 
 #include <string.h>
 
+#include <oblibs/environ.h>
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/string.h>
@@ -63,8 +64,11 @@ int ssexec_env_set(int argc, char const *const *argv, void *data)
         if (*value == SS_VAR_UNEXPORT)
             log_die(LOG_EXIT_USER, "value of variable: ", key, " starts with an exclamation mark -- the runtime environment is published verbatim") ;
 
-        if (!env_runtime_publish(dir.s, key, value))
+        int r = env_runtime_publish(dir.s, key, value) ;
+        if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "publish variable: ", key) ;
+        if (!r)
+            flog_die(LOG_EXIT_USER, "runtime environment directory: %s is full -- it can not hold more than %d variables", dir.s, MAXFILE) ;
 
         log_info("Published variable: ", key) ;
 

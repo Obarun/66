@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_CAPS_H
@@ -31,7 +31,7 @@
 #define SYS_capget __NR_capget
 #endif
 
-extern void parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps) ;
+extern int parse_store_caps(strbuf *result, strbuf *store, uint32_t *ncaps) ;
 extern void execute_caps(resolve_service_t *res, resolve_service_addon_execute_t *ex) ;
 
 /** Complete list of Linux capabilities (up to CAP_LAST_CAP = CAP_PERFMON, kernel 6.11)

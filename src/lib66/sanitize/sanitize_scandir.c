@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -18,6 +18,7 @@
 #include <oblibs/log.h>
 #include <oblibs/string.h>
 #include <oblibs/files.h>
+#include <oblibs/strbuf.h>
 
 #include <66/service.h>
 #include <66/sanitize.h>
@@ -26,16 +27,19 @@
 #include <66/state.h>
 #include <66/svc.h>
 #include <66/symlink.h>
+#include <66/utils.h>
 
-static void scandir_to_livestate(resolve_service_t *res)
+static int scandir_to_livestate(resolve_service_t *res)
 {
     log_flow() ;
 
     char const *sym = res->sa.s + res->live.scandir ;
 
     log_trace("symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
-    if (!symlink_atomic(res->sa.s + res->live.servicedir, sym))
-       log_dieu(LOG_EXIT_SYS, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
+    if (symlink_atomic_live(res->owner, res->sa.s + res->live.livedir, res->sa.s + res->live.servicedir, sym) < 0)
+        log_warnusys_return(LOG_EXIT_ZERO, "symlink: ", sym, " to: ", res->sa.s + res->live.servicedir) ;
+
+    return 1 ;
 }
 
 int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
@@ -52,19 +56,16 @@ int sanitize_scandir(resolve_service_t *res, ss_state_t *sta)
     r = access(res->sa.s + res->live.scandir, F_OK) ;
     if (r == -1 && (sta->toinit == STATE_FLAGS_TRUE || res->earlier)) {
 
-        if (res->type == E_PARSER_TYPE_CLASSIC)
-            scandir_to_livestate(res) ;
+        if (res->type == E_PARSER_TYPE_CLASSIC && !scandir_to_livestate(res))
+            return 0 ;
 
         state_set_flag(sta, STATE_FLAGS_ISSUPERVISED, STATE_FLAGS_TRUE) ;
         state_set_flag(sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_FALSE) ;
 
     } else {
 
-        if (sta->toinit == STATE_FLAGS_TRUE) {
-
-            file_tryunlink(res->sa.s + res->live.scandir) ;
-            scandir_to_livestate(res) ;
-        }
+        if (sta->toinit == STATE_FLAGS_TRUE && !scandir_to_livestate(res))
+            return 0 ;
 
         if (sta->tounsupervise == STATE_FLAGS_TRUE) {
 

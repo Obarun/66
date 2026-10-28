@@ -9,14 +9,13 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/files.h>
 
 #include <66/state.h>
 #include <66/constants.h>
@@ -25,17 +24,9 @@ int state_read_remote(ss_state_t *sta, char const *dst)
 {
     log_flow() ;
 
-    int r ;
-    char pack[STATE_STATE_SIZE] ;
-    char dir[strlen(dst) + 1 + SS_STATUS_LEN + 1];
+    char file[strlen(dst) + 1 + SS_STATUS_LEN + 1] ;
 
-    auto_strings(dir, dst, "/", SS_STATUS) ;
+    auto_strings(file, dst, "/", SS_STATUS) ;
 
-    r = file_read(dir, pack, STATE_STATE_SIZE) ;
-    if (r < STATE_STATE_SIZE || r < 0)
-        return 0 ;
-
-    state_unpack(pack, sta) ;
-
-    return 1 ;
+    return state_read_file(sta, file) ;
 }

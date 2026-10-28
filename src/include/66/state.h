@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_STATE_H
@@ -70,11 +70,10 @@ extern void state_rmfile(resolve_service_t *res) ;
 extern void state_pack(char *base, ss_state_t *sta) ;
 extern void state_unpack(char *pack, ss_state_t *sta) ;
 extern void state_set_flag(ss_state_t *sta, int flags,int flags_val) ;
-extern int state_check(resolve_service_t *res) ;
 extern int state_write(ss_state_t *sta, resolve_service_t *res) ;
 extern int state_write_remote(ss_state_t *sta, char const *tmp) ;
-extern int state_read(ss_state_t *sta, resolve_service_t *res) ;
+extern int state_read(ss_state_t *sta, resolve_service_t const *res) ;
+extern int state_read_file(ss_state_t *sta, char const *file) ;
 extern int state_read_remote(ss_state_t *sta, char const *dst) ;
-extern int state_messenger(resolve_service_t *res, uint32_t flag, uint32_t value) ;
 
 #endif

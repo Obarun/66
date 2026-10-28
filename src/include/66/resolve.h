@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_RESOLVE_H
@@ -60,13 +60,17 @@ struct resolve_wrapper_s
     else if (wres->type == DATA_SERVICE_EVENT) sbwres = (&((resolve_service_addon_event_t *)wres->obj)->sa) ;
 #endif
 
+#define RESOLVE_WRAPPER(type_, obj_) { .type = (type_), .obj = (obj_) }
+
 /**
  *
  * Freed
  *
  * */
 
+
 extern void resolve_free(resolve_wrapper_t *wres) ;
+extern void resolve_free_obj(resolve_wrapper_t *wres) ;
 
 /**
  *
@@ -96,6 +100,8 @@ extern void resolve_remove(char const *base, char const *name, uint8_t data_type
 extern int resolve_get_field(strbuf *sa, resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table) ;
 extern int resolve_modify_field(resolve_wrapper_t_ref wres, char const *base, char const *name, resolve_enum_table_t table, char const *value) ;
 extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
+extern int resolve_add_list(resolve_wrapper_t *wres, strbuf const *list, uint32_t *field) ;
+extern char const *resolve_addon_suffix(uint8_t type) ;
 
 /**
  *
@@ -105,12 +111,12 @@ extern ssize_t resolve_add_string(resolve_wrapper_t *wres, char const *data) ;
 
 extern int resolve_check_at(char const *base, char const *name) ;
 extern int resolve_read_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
-extern int resolve_write_at(resolve_wrapper_t *wres, char const *base, char const *name) ;
+extern int resolve_write_at(resolve_wrapper_t *wres, char const *base, char const *name, char const *tmpdir) ;
 extern void resolve_remove_at(char const *base, char const *name) ;
 extern int resolve_get_field_from(strbuf *sa, resolve_wrapper_t_ref wres, resolve_enum_table_t table) ;
 extern int resolve_modify_field_by(resolve_wrapper_t_ref wres, resolve_enum_table_t table, char const *by) ;
 extern int resolve_read_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
-extern int resolve_write_cdb(resolve_wrapper_t *wres, const char *path, const char *name) ;
+extern int resolve_write_cdb(resolve_wrapper_t *wres, int fd) ;
 extern int resolve_add_cdb(ocdbmaker *c, char const *key, char const *str, uint32_t element, uint8_t check) ;
 extern int resolve_add_cdb_uint(ocdbmaker *c, char const *key, uint32_t data) ;
 extern int resolve_add_cdb_uint64(ocdbmaker *c, char const *key, uint64_t data) ;

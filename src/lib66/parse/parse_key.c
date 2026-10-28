@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <oblibs/log.h>
@@ -19,6 +19,28 @@
 
 #include <66/parse.h>
 #include <66/enum.h>
+
+lexer_config LEXER_CONFIG_KEY = { \
+    .str = 0,\
+    .slen = 0,\
+    .open = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",\
+    .olen = 26,\
+    .close = "=\n",\
+    .clen = 2,\
+    .skip = " \t\r",\
+    .skiplen = 3,\
+    .kopen = 1,\
+    .kclose = 0,\
+    .style = 0,\
+    .forceopen = 0,\
+    .forceclose = 0,\
+    .pos = 0,\
+    .opos = 0,\
+    .cpos = 0,\
+    .invalue = 0,\
+    .found = 0,\
+    .exitcode = 0,\
+} ;
 
 int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
 {

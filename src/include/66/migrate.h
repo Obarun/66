@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_MIGRATE_H
@@ -26,7 +26,6 @@
 #include <66/migrate_0821.h>
 
 extern void migrate_create_snap(ssexec_t *info, const char *version) ;
-extern void migrate_ensure_log_owner(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_service_addon_logger_t *lg) ;
 extern void migrate_0802() ;
 extern void migrate_0811() ;
 extern void migrate_0821() ;
@@ -36,6 +35,11 @@ extern void migrate_0920() ;
 
 // only valuable till the version < 0920 is supported
 extern void migrate_0912_provide_symlink(void) ;
+
+extern int migrate_0920_dependencies(void) ;
+extern int migrate_0920_logsuffix(void) ;
+extern int migrate_0920_runas(void) ;
+
 extern int migrate_write_frozen_0821(resolve_service_t_0821 *res, char const *base, char const *name) ;
 extern int service_resolve_read_cdb_0821(ocdb *c, resolve_service_t_0821 *res) ;
 

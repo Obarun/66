@@ -16,57 +16,41 @@
 #include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/types.h>
+#include <oblibs/bits.h>
 
+#include <66/config.h>
 #include <66/svc.h>
 #include <66/graph.h>
-#include <66/ssexec.h>
-#include <66/config.h>
+#include <66/selection.h>
+#include <66/service.h>
 
-int svc_send(char const *const *argv, int argc, ssexec_t *info, uint8_t target, char const *signal, char const *wsignal, uint8_t woption, uint8_t propagate)
+int svc_send(selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req, bitset32_t *reached)
 {
     log_flow() ;
 
     int r ;
-    char *cmdmsg = 0 ;
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    uint32_t flag = GRAPH_SKIP_MODULECONTENTS, nservice = 0 ;
+    uint16_t flag = req->action == SVC_ACTION_STOP ? SVC_FLAGS_DOWN : SVC_FLAGS_UP ;
 
-    uint8_t requiredby = svc_target_starts(target) ? 0 : 1 ;
+    if (req->action > SVC_ACTION_SIGNAL || req->target == SVC_TARGET_NONE || !req->signal)
+        return (errno = EINVAL, -1) ;
 
-    if (signal[1] == 'r')
-        cmdmsg = "restart" ;
-    else if (signal[1] == 'l')
-        cmdmsg = "reload" ;
+    if (reached)
+        *reached = bitset32_init(SS_MAX_SERVICE) ;
 
-    if (propagate) {
-        if (requiredby) {
-            FLAGS_SET(flag, GRAPH_WANT_REQUIREDBY) ;
-        } else FLAGS_SET(flag, GRAPH_WANT_DEPENDS) ;
-    }
+    if (!lot->member.count)
+        return 1 ;
 
-    if ((svc_scandir_ok(info->scandir.s)) != 1)
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s," is not running") ;
+    svc_ctx_t asvc[lot->member.count] ;
 
-    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "allocate the graph") ;
+    if (svc_init_ctx(asvc, lot, store, req) < 0)
+        return -1 ;
 
-    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
+    r = svc_launch(asvc, lot, req) ;
 
-    if (!nservice) {
-        if (errno == EINVAL)
-            log_dieusys(LOG_EXIT_USER, "build the graph") ;
-
-        log_die(LOG_EXIT_USER, "services selection is not supervised -- initiate its first") ;
-    }
-
-    svc_ctx_t asvc[graph.g.nsort] ;
-
-    svc_init_ctx(asvc, &graph, requiredby, flag, target) ;
-
-    r = svc_launch(asvc, graph.g.nsort, target, info, wsignal, woption, signal, cmdmsg, propagate) ;
-
-    service_graph_destroy(&graph) ;
+    if (r >= 0 && reached)
+        for (uint32_t pos = 0 ; pos < lot->member.count ; pos++)
+            if (FLAGS_ISSET(asvc[pos].state, flag))
+                bitset32_set(reached, asvc[pos].index) ;
 
     return r ;
 }

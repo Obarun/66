@@ -9,23 +9,25 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdint.h>
-#include <errno.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/types.h>
-#include <oblibs/hash.h>
+#include <oblibs/bits.h>
+#include <oblibs/strbuf.h>
 
 #include <66/ssexec.h>
 #include <66/config.h>
 #include <66/graph.h>
+#include <66/selection.h>
 #include <66/svc.h>
 #include <66/service.h>
-#include <66/enum_parser.h>
+#include <66/command.h>
 
 static uint8_t opt_nopropagate = 0 ;
 
@@ -60,6 +62,68 @@ opt_cmd_t const cmd_reload = {
     .fn = &ssexec_reload,
 } ;
 
+static int select_back(selection_service_t *back, selection_service_t const *run, command_graph_t *d, ssexec_t *info, strbuf *frontends)
+{
+    uint32_t index = 0 ;
+    selection_service_t up = SELECTION_SERVICE_ZERO, uprun = SELECTION_SERVICE_ZERO ;
+    selection_service_t down = SELECTION_SERVICE_ZERO ;
+    selection_service_policy_t policy = command_policy(SELECTION_SERVICE_PROPAGATE_DEPENDS, false, !info->opt_react, false) ;
+
+    selection_service_propagate(&up, &d->g, &run->member, &policy) ;
+
+    if (!command_resolve_load(d, &up))
+        return 0 ;
+
+    command_refuse_selection(&up, frontends, SELECTION_SERVICE_REFUSE_MET_ABSENT | SELECTION_SERVICE_REFUSE_MET_INVALID) ;
+
+    if (selection_svc_filter(&uprun, &up, &d->store, SERVICE_READ_EVENT, svc_isrunning) < 0)
+        log_dieusys(LOG_EXIT_SYS, "read the state of the selection") ;
+
+    down = up ;
+
+    FOREACH_SELECTION_MEMBER(&uprun, index)
+        selection_service_remove(&down, index) ;
+
+    if (svc_lot(back, &down, &d->store, SVC_LOT_COMMAND) < 0)
+        log_dieusys(LOG_EXIT_SYS, "select the services to bring back up") ;
+
+    return command_refuse_conflict(back, d, info, SVC_CONFLICT_RUNNING) ;
+}
+
+static int select_lot(selection_service_t *lot, selection_service_t *back, command_graph_t *d, char const *const *argv, int argc, ssexec_t *info, strbuf *frontends, bool nopropagate)
+{
+    uint32_t pos = 0, index = 0 ;
+    selection_service_t sel, sup = SELECTION_SERVICE_ZERO, run = SELECTION_SERVICE_ZERO ;
+    selection_service_policy_t policy = command_policy(SELECTION_SERVICE_PROPAGATE_REQUIREDBY, nopropagate, false, false) ;
+
+    *back = (selection_service_t)SELECTION_SERVICE_ZERO ;
+
+    if (!command_argv_to_select(&sel, d, argv, argc, info, &policy, frontends, SELECTION_SERVICE_REFUSE_NAMED_ABSENT | SELECTION_SERVICE_REFUSE_MET_ABSENT | SELECTION_SERVICE_REFUSE_NAMED_INVALID | SELECTION_SERVICE_REFUSE_MET_INVALID))
+        return 0 ;
+
+    if (svc_lot(lot, &sel, &d->store, SVC_LOT_COMMAND) < 0)
+        log_dieusys(LOG_EXIT_SYS, "select the services to reload") ;
+
+    command_refuse_unsupervised(&sup, lot, &d->store) ;
+
+    if (selection_svc_filter(&run, &sup, &d->store, SERVICE_READ_EVENT, svc_isrunning_supervised) < 0)
+        log_dieusys(LOG_EXIT_SYS, "read the state of the selection") ;
+
+    FOREACH_SELECTION(lot, pos, index) {
+
+        if (bitset32_isvalid(&lot->named, index) && !bitset32_isvalid(&run.member, index))
+            log_die(LOG_EXIT_USER, "service: ", service_graph_name(&d->g, index), " is not running -- start it first") ;
+    }
+
+    if (!nopropagate && !select_back(back, &run, d, info, frontends))
+        return 0 ;
+
+    if (service_graph_warn_invalid(&d->g, frontends, &sel.member) < 0)
+        log_dieusys(LOG_EXIT_SYS, "warn about the invalid services") ;
+
+    return 1 ;
+}
+
 int ssexec_reload(int argc, char const *const *argv, void *data)
 {
     log_flow() ;
@@ -67,72 +131,48 @@ int ssexec_reload(int argc, char const *const *argv, void *data)
     ssexec_t *info = data ;
 
     /* drain option state into locals, then reset the statics for re-entrancy. */
-    uint8_t nopropagate = opt_nopropagate ;
+    bool nopropagate = opt_nopropagate ;
     opt_nopropagate = 0 ;
 
-    int r, nargc = 0 ;
-    char const *nargv[argc] ;
-    vertex_t *c, *tmp ;
-    service_graph_t graph = GRAPH_SERVICE_ZERO ;
-    uint32_t flag = GRAPH_WANT_SUPERVISED|GRAPH_WANT_DEPENDS, nservice = 0 ;
-
-    unsigned int m = 0 ;
-
-    if (nopropagate)
-        FLAGS_CLEAR(flag, GRAPH_WANT_DEPENDS) ;
+    int r, e ;
+    bitset32_t reached ;
+    command_graph_t d = COMMAND_GRAPH_ZERO ;
+    selection_service_t lot = SELECTION_SERVICE_ZERO, back = SELECTION_SERVICE_ZERO ;
+    strbuf frontends = STRBUF_ZERO ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
 
-    if ((svc_scandir_ok(info->scandir.s)) !=  1 )
-        log_diesys(LOG_EXIT_SYS,"scandir: ", info->scandir.s, " is not running") ;
+    command_refuse_scandir(info) ;
 
-    if (!service_graph_new(&graph, (uint32_t)SS_MAX_SERVICE))
-        log_dieusys(LOG_EXIT_SYS, "allocate the service graph") ;
+    if (service_graph_load(&d.g, info->owner, info->base.s, info->live.s) < 0)
+        log_dieusys(LOG_EXIT_SYS, "load the graph of the system") ;
 
-    nservice = service_graph_build_arguments(&graph, argv, argc, info, flag) ;
+    while (!select_lot(&lot, &back, &d, argv, argc, info, &frontends, nopropagate))
+        command_graph_reload(&d, info, true) ;
 
-    if (!nservice) {
-        if (errno == EINVAL)
-            log_dieusys(LOG_EXIT_SYS, "build the graph") ;
-        log_warn_return(LOG_EXIT_ZERO, "service selection is not supervised -- try to start it first") ;
+    strbuf_free(&frontends) ;
+
+    e = command_lot_start(&back, &d.store, info, SVC_TARGET_READY, SVC_LOT_COMMAND, &reached) ;
+
+    command_drop_waiters(&lot, &back, &reached) ;
+
+    if (lot.member.count) {
+
+        svc_request_t req = command_request(info, SVC_ACTION_SIGNAL, SVC_TARGET_KEEP, "-l") ;
+
+        req.verb = "reload" ;
+
+        r = svc_send(&lot, &d.store, &req, 0) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "send the reload to the services of the selection") ;
+
+        if (!r)
+            e = LOG_EXIT_SYS ;
     }
 
-    r = svc_send(argv, argc, info, SVC_TARGET_KEEP, "-l", "-w ", 0, nopropagate ? 0 : 1) ;
-    if (r) {
-        service_graph_destroy(&graph) ;
-        return r ;
-    }
+    service_graph_resolve_free(&d.store) ;
+    service_graph_free(&d.g) ;
 
-    /** the supervisor does not deal with oneshot services:
-     * the previous send command will bring it down but
-     * the supervisor will not bring it up automatically.
-     * Well, do it manually */
-
-    HASH_FOREACH(&graph.g.vertexes, c, tmp) {
-
-        struct resolve_hash_s *h = NULL ;
-        h = resolve_hash_search(&graph.hres, c->name) ;
-        if (h == NULL)
-            log_dieusys(LOG_EXIT_SYS, "find service: ", c->name, " -- please make a bug report") ;
-
-        if (h->res.type == E_PARSER_TYPE_ONESHOT) {
-            nargc++ ;
-            nargv[m++] = c->name ;
-        }
-
-    }
-
-    if (nargc) {
-
-        nargv[m] = 0 ;
-        int verbo = VERBOSITY ;
-        VERBOSITY = 0 ;
-        r = svc_send(nargv, nargc, info, SVC_TARGET_UP, "-u", "-wU", 1, nopropagate ? 0 : 1) ;
-        VERBOSITY = verbo ;
-    }
-
-    service_graph_destroy(&graph) ;
-
-    return r ;
+    return e ;
 }

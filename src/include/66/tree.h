@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <oblibs/hash.h>
 #include <oblibs/sse.h>
@@ -145,6 +146,7 @@ struct tree_ctx_s
 
     // Runtime data
     int exitcode ; // Last exit code
+    int termsig ; // signal that killed the child, 0 when it exited
 } ;
 typedef struct tree_ctx_s tree_ctx_t ;
 
@@ -160,7 +162,8 @@ typedef struct tree_ctx_s tree_ctx_t ;
     .ndepends = 0, \
     .requiredby = { NULL }, \
     .nrequiredby = 0, \
-    .exitcode = 0 \
+    .exitcode = 0, \
+    .termsig = 0 \
 }
 
 struct tree_manager_s
@@ -178,7 +181,6 @@ struct tree_manager_s
     int notifd[2] ; // Internal event notifier pipe
 
     // State
-    bool shutdown_requested ; // Shutdown in progress
     int exitcode ; // first tree that missed its state
 
     // Configuration
@@ -197,8 +199,17 @@ extern int tree_isvalid(char const *base, char const *treename) ;
 
 /** Append @tree with the name of the current tree
  * @Return 1 on success
- * @Return 0 on fail */
+ * @Return -1 when the Master resolve file does not read, errno set */
 extern int tree_find_current(char *tree, char const *base) ;
+
+/**
+ * The tree of @name, found without its resolve file: the tree whose contents
+ * name it.
+ * @Return 1 when found, in @tree
+ * @Return 0 when no tree names it
+ * @Return -1 on a system error, errno set
+ */
+extern int tree_find_service(strbuf *tree, char const *base, char const *name) ;
 
 /** @Return 1 on success
  * @Return 0 if not valid
@@ -238,8 +249,10 @@ extern int tree_resolve_write_cdb(ocdbmaker *c, resolve_tree_t *tres) ;
 extern void tree_resolve_sanitize(resolve_tree_t *tres) ;
 extern void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const *data) ;
 extern int tree_resolve_get_field_tosa(strbuf *sa, resolve_tree_t *tres, resolve_tree_enum_table_t table) ;
-extern void tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
-extern void tree_service_remove(char const *base, char const *treename, char const *service) ;
+extern int tree_contents_edit(char const *base, char const *treename, char const *services, bool add) ;
+extern int tree_contents_batch(char const *base, strbuf *pairs, bool add) ;
+extern int tree_service_add(char const *treename, char const *service, ssexec_t *info) ;
+extern int tree_service_remove(char const *base, char const *treename, char const *service) ;
 /** Master */
 extern int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres) ;
 extern int tree_resolve_master_write_cdb(ocdbmaker *c, resolve_tree_master_t *mres) ;

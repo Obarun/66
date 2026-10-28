@@ -43,6 +43,13 @@ type: 'string',
 value: 'global',
 description: 'Name of the default tree')
 
+option('default-stop-timeout',
+type: 'integer',
+min: 0,
+max: 4294967295,
+value: 10000,
+description: 'General stop delay in milliseconds: the [Stop] Timeout of a service whose frontend writes none, and the stop delay of every logger (0 means without end)')
+
 option('skeleton-dir',
 type: 'string',
 value: '/etc/66',

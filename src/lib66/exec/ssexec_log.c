@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -19,6 +20,7 @@
 #include <regex.h>
 #include <sys/stat.h>
 
+#include <oblibs/types.h>
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
 #include <oblibs/string.h>
@@ -32,6 +34,7 @@
 #include <66/enum_parser.h>
 #include <66/service.h>
 #include <66/resolve.h>
+#include <66/command.h>
 
 static char const *arg_since = 0 ;
 static char const *arg_until = 0 ;
@@ -106,7 +109,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
 
     auto_strings(solve, info->base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE) ;
 
-    if (!sbl_dir_get_recursive(&names, solve, exclude, S_IFLNK, 0) && errno != ENOENT)
+    if (!sbl_dir_get_recursive(&names, solve, exclude, FLAGS_LNK, 0) && errno != ENOENT)
         log_dieusys(LOG_EXIT_SYS, "list resolve directory: ", solve) ;
 
     src = malloc((sbl_count(&names) + 1) * sizeof(log_source_t)) ;
@@ -129,8 +132,17 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
         uint8_t io_ok = res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0 ;
 
         char const *dest = io_ok ? io.sa.s + io.fdout.destination : 0 ;
+        uint8_t logdir = io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_66LOG ;
+        uint8_t logfile = io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_FILE ;
+        ssize_t found = 0 ;
 
-        if (io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_66LOG && scan_mode(dest, S_IFDIR) == 1) {
+        if (logdir || logfile) {
+            found = scan_mode(dest, logdir ? FLAGS_DIR : FLAGS_REG) ;
+            if (!found && errno != ENOENT)
+                log_dieusys(LOG_EXIT_SYS, "check the log of: ", name) ;
+        }
+
+        if (logdir && found == 1) {
 
             src[n] = (log_source_t)LOG_SOURCE_ZERO ;
             if (!log_source_logdir(&src[n], name, dest))
@@ -138,7 +150,7 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
 
             n++ ;
 
-        } else if (io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_FILE && scan_mode(dest, S_IFREG) == 1) {
+        } else if (logfile && found == 1) {
 
             src[n] = (log_source_t)LOG_SOURCE_ZERO ;
             if (!log_source_file(&src[n], name, dest))
@@ -154,7 +166,11 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
     char p[info->live.len + SS_LOG_LEN + 1 + info->ownerlen + 1] ;
     auto_strings(p, info->live.s, SS_LOG, "/", info->ownerstr) ;
 
-    if (scan_mode(p, S_IFDIR) == 1) {
+    ssize_t found = scan_mode(p, FLAGS_DIR) ;
+    if (!found && errno != ENOENT)
+        log_dieusys(LOG_EXIT_SYS, "check system log directory: ", p) ;
+
+    if (found == 1) {
 
         src[n] = (log_source_t)LOG_SOURCE_ZERO ;
         if (!log_source_logdir(&src[n], SS_SYSTEM, p))
@@ -192,17 +208,20 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
     log_source_t *src = 0 ;
-    char sv[SS_MAX_SERVICE_NAME + 1] ;
+    char held[SS_MAX_SERVICE_NAME + 1] ;
     int r ;
 
-    if (!service_resolve_provide(sv, name, info->base.s))
+    int held_r = service_resolve_provide(held, name, 0, info->base.s) ;
+    if (held_r < 0)
         log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", name) ;
+
+    char const *sv = held_r ? held : name ;
 
     r = resolve_read(wres, info->base.s, sv) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
-        log_die(LOG_EXIT_USER, "unknown service: ", sv) ;
+        command_refuse_unknown(name, info->base.s, info->owner, false) ;
 
     src = malloc(sizeof(log_source_t)) ;
     if (!src)
@@ -251,16 +270,19 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    char sv[SS_MAX_SERVICE_NAME + 1] ;
+    char held[SS_MAX_SERVICE_NAME + 1] ;
 
-    if (!service_resolve_provide(sv, target, info->base.s))
+    int held_r = service_resolve_provide(held, target, 0, info->base.s) ;
+    if (held_r < 0)
         log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", target) ;
+
+    char const *sv = held_r ? held : target ;
 
     int r = resolve_read(wres, info->base.s, sv) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
-        log_die(LOG_EXIT_USER, "unknown service: ", sv) ;
+        command_refuse_unknown(target, info->base.s, info->owner, false) ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;

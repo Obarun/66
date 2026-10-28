@@ -12,9 +12,11 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <oblibs/types.h>
 #include <oblibs/files.h>
 #include <oblibs/log.h>
 #include <oblibs/strbuf.h>
@@ -33,9 +35,11 @@ void env_runtime_setdir(strbuf *dir, uid_t owner)
 
     /** the directory is created and destroyed along with the scandir it belongs
      * to; 66 env never creates it, so its absence is a real error to report. */
-    r = scan_mode(dir->s, S_IFDIR) ;
+    r = scan_mode(dir->s, FLAGS_DIR) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "conflicting format of: ", dir->s) ;
+    if (!r && errno != ENOENT)
+        log_dieusys(LOG_EXIT_SYS, "check runtime environment directory: ", dir->s) ;
     if (!r)
         log_die(LOG_EXIT_USER, "no runtime environment directory: ", dir->s, " -- create a scandir first") ;
 }

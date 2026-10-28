@@ -9,10 +9,13 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -28,6 +31,7 @@
 #include <oblibs/files.h>
 
 #include <66/ssexec.h>
+#include <66/graph.h>
 #include <66/svc.h>
 #include <66/utils.h>
 #include <66/constants.h>
@@ -65,6 +69,16 @@ static inline unsigned int parse_signal (char const *signal)
     return i ;
 }
 
+static void send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, bool stop)
+{
+    int r = svc_send_daemon(dir, control, who, wanted, 3000) ;
+    if (r < 0)
+        log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
+
+    if (!r && !stop)
+        log_dieu(LOG_EXIT_SYS, "daemon did not reach the wanted state: ", dir) ;
+}
+
 static void send_fdholder(char const *scandir, uint8_t down)
 {
     char fdholder[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
@@ -75,13 +89,13 @@ static void send_fdholder(char const *scandir, uint8_t down)
 
      if (!down) {
 
-        svc_send_daemon(fdholder, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, 3000) ;
-        svc_send_daemon(oneshotd, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, 3000) ;
+        send_daemon(fdholder, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, true) ;
+        send_daemon(oneshotd, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, true) ;
 
     } else {
 
-        svc_send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_UP_READY, 3000) ;
-        svc_send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_UP_READY, 3000) ;
+        send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_UP_READY, false) ;
+        send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_UP_READY, false) ;
     }
 }
 
@@ -198,6 +212,17 @@ static void scandir_up(char const *scandir, unsigned int timeout, unsigned int n
             log_dieusys(LOG_EXIT_SYS, "setuid for: ", info->ownerstr) ;
 
     }
+
+    /** the graph of the owner built again as its scandir comes up, by the
+     * owner itself after the setuid of -o: a failure is said, the scandir
+     * comes up all the same */
+    service_graph_t g = SERVICE_GRAPH_ZERO ;
+    _cleanup_strbuf_ strbuf base = STRBUF_ZERO ;
+
+    if (!set_ownersysdir(&base, info->owner) || service_graph_reload(&g, info->owner, base.s, info->live.s) < 0)
+        log_warnusys("build the graph of the system of: ", info->ownerstr) ;
+
+    service_graph_free(&g) ;
 
     if (!identifier_replace_block(env, 0))
         log_warnusys("replace identifier at scandir environment value") ;
@@ -364,9 +389,12 @@ int ssexec_scandir_signal(int argc, char const *const *argv, void *data)
         auto_strings(scandir, info->scandir.s) ;
 
         int r ;
-        r = scan_mode(scandir, S_IFDIR) ;
+        r = scan_mode(scandir, FLAGS_DIR) ;
         if (r < 0)
            log_die(LOG_EXIT_SYS, scandir, " conflicted format") ;
+
+        if (!r && errno != ENOENT)
+            log_dieusys(LOG_EXIT_SYS, "check scandir: ", scandir) ;
 
         if (!r) {
 

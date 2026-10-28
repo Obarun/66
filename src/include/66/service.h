@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_SERVICE_H
@@ -25,8 +25,13 @@
 #include <66/ssexec.h>
 #include <66/resolve.h>
 #include <66/graph.h>
+#include <66/selection.h>
 #include <66/config.h>
 #include <66/enum_service.h>
+
+/* avoid circular dependencies by prototyping the ss_state_t instead
+ * of calling the state.h header file*/
+typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
 
 typedef struct resolve_service_addon_path_s resolve_service_addon_path_t, *resolve_service_addon_path_t_ref ;
 struct resolve_service_addon_path_s
@@ -321,7 +326,7 @@ extern const resolve_service_t service_resolve_zero ;
 
 struct resolve_hash_s {
 	char name[SS_MAX_SERVICE_NAME + 1] ; // name as key
-	uint8_t visit ;
+	uint32_t read ; // the SERVICE_READ_* addons read in by service_read()
 	resolve_service_t res ;
 	resolve_service_addon_limit_t limit ;
 	resolve_service_addon_environ_t environ ;
@@ -331,27 +336,39 @@ struct resolve_hash_s {
 	resolve_service_addon_dependencies_t dependencies ;
 	resolve_service_addon_regex_t regex ;
 	resolve_service_addon_event_t event ;
+	strbuf copyfrom ;
+	resolve_service_t before ;
+	resolve_service_addon_dependencies_t beforedeps ;
+	uint8_t beforeread ; // 1 when parse_check() read before and beforedeps
 	hash_node_t node ;
 
 } ;
 
-#define RESOLVE_HASH_ZERO { 0, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, RESOLVE_SERVICE_ADDON_REGEX_ZERO, RESOLVE_SERVICE_ADDON_EVENT_ZERO, HASH_NODE_ZERO }
+#define RESOLVE_HASH_ZERO { { 0 }, 0, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_LIMIT_ZERO, RESOLVE_SERVICE_ADDON_ENVIRON_ZERO, RESOLVE_SERVICE_ADDON_IO_ZERO, RESOLVE_SERVICE_ADDON_LOGGER_ZERO, RESOLVE_SERVICE_ADDON_EXECUTE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, RESOLVE_SERVICE_ADDON_REGEX_ZERO, RESOLVE_SERVICE_ADDON_EVENT_ZERO, STRBUF_ZERO, RESOLVE_SERVICE_ZERO, RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO, 0, HASH_NODE_ZERO }
+
+#define SERVICE_READ_DEPENDENCIES (1 << 0)
+#define SERVICE_READ_EVENT (1 << 1)
+#define SERVICE_READ_EXECUTE (1 << 2)
+#define SERVICE_READ_IO (1 << 3)
+#define SERVICE_READ_ENVIRON (1 << 4)
+#define SERVICE_READ_LOGGER (1 << 5)
+#define SERVICE_READ_LIMIT (1 << 6)
+#define SERVICE_READ_REGEX (1 << 7)
+#define SERVICE_READ_ALL ((1 << 8) - 1)
 
 extern int service_cmp_basedir(char const *dir) ;
 extern int service_endof_dir(char const *dir, char const *name) ;
 extern int service_frontend_path(strbuf *sasrc,char const *sv, uid_t owner,char const *directory_forced, char const **exclude, uint8_t exlen) ;
 extern int service_frontend_src(strbuf *sasrc, char const *name, char const *src, char const **exclude) ;
-extern int service_is_g(char const *name, uint32_t flag) ;
+extern int service_frontend_list(strbuf *list, char const *src, char const **exclude) ;
+extern int service_frontend_search(strbuf *sasrc, char const *name, strbuf const *list, size_t start, size_t end, char const **exclude) ;
+extern int service_frontend_walk(strbuf *sasrc, char const *sv, strbuf *list, char const **exclude, uint8_t exlen) ;
 extern int service_isenabled(char const *base, char const *name) ;
-extern int service_get_treename(char *atree, char const *name) ;
 extern void service_resolve_sanitize(resolve_service_t *res) ;
 extern int service_resolve_get_field_tosa(strbuf *sa, resolve_service_t *res, resolve_service_enum_table_t table) ;
 extern void service_resolve_modify_field(resolve_service_t *res, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_read_cdb(ocdb *c, resolve_service_t *res) ;
-extern void service_resolve_write(resolve_service_t *res) ;
-extern void service_resolve_write_remote(resolve_service_t *res, char const *dst, uint8_t force) ;
 extern int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *sres) ;
-
 extern int service_resolve_write_addon_limit_cdb(ocdbmaker *c, resolve_service_addon_limit_t *l) ;
 extern int service_resolve_read_addon_limit_cdb(ocdb *c, resolve_service_addon_limit_t *l) ;
 extern void service_resolve_sanitize_addon_limit(resolve_service_addon_limit_t *l) ;
@@ -387,21 +404,17 @@ extern int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_e
 extern void service_resolve_sanitize_addon_event(resolve_service_addon_event_t *ev) ;
 extern void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resolve_service_enum_table_t table, char const *data) ;
 extern int service_resolve_get_event_field(strbuf *sa, resolve_service_addon_event_t *ev, resolve_service_enum_table_t table) ;
-extern void service_enable_disable(service_graph_t *g, struct resolve_hash_s *hash, bool action, ssexec_t *info, strbuf *argv) ;
-extern void service_switch_tree(resolve_service_t *res, char const *totreename, ssexec_t *info) ;
-extern void service_db_migrate(resolve_service_t *old, resolve_service_addon_dependencies_t *olddep, resolve_service_t *new, resolve_service_addon_dependencies_t *newdep, char const *base, uint8_t requiredby) ;
+extern int service_switch_tree(resolve_service_t *res, char const *totreename, char const *base) ;
 extern int service_resolve_symlink(char const *base, char *path, char *name) ;
-extern int service_resolve_provide(char *dst, char const *src, char const *base) ;
+extern int service_resolve_provide(char *dst, char const *src, hash_t *overlay, char const *base) ;
+extern int service_resolve_provide_along(struct resolve_hash_s **holder, hash_t *along, struct resolve_hash_s const *except, char const *name) ;
+extern int service_read(struct resolve_hash_s *h, char const *base, char const *name, uint32_t addons) ;
+extern void service_read_free(struct resolve_hash_s *h) ;
+extern int service_enable_selection(selection_service_t const *sel, service_graph_resolve_t *store, bool enable, char const *tree) ;
+extern int service_remove_one(char const *base, uid_t owner, char const *name) ;
 
-/* avoid circular dependencies by prototyping the ss_state_t instead
- * of calling the state.h header file*/
-typedef struct ss_state_s ss_state_t, *ss_state_t_ref ;
-
-/** Hash */
 extern int resolve_hash_add(hash_t *hres, char const *name, resolve_service_t res) ;
 extern struct resolve_hash_s *resolve_hash_search(hash_t *hres, char const *name) ;
-extern int resolve_hash_count(hash_t *hres) ;
 extern void resolve_hash_free(hash_t *hres) ;
-extern void resolve_hash_reset_visit(hash_t *hres) ;
 
 #endif

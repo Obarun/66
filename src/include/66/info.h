@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #ifndef SS_INFO_H
@@ -18,6 +18,7 @@
 #include <wchar.h>
 
 #include <oblibs/strbuf.h>
+#include <oblibs/bits.h>
 
 #include <66/service.h>
 #include <66/status.h>
@@ -151,7 +152,11 @@ extern void info_resolve_display(void const *base, char const *blob, info_field_
 extern void info_status_display(service_status_t const *st, char const *select, uint8_t noname) ;
 
 extern depth_t info_graph_init(void) ;
-extern int service_info_walk(service_graph_t *g, char const *name, char const *treename, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style, ssexec_t *info) ;
+
+extern int service_info_walk(service_graph_t const *g, uint32_t index, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style) ;
+extern int service_info_walk_set(service_graph_t const *g, bitset32_t const *set, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style) ;
+extern uint32_t service_info_order(uint32_t *list, service_graph_t const *g, bitset32_t const *set, uint8_t requiredby) ;
+
 extern int tree_info_walk(tree_graph_t *g, char const *name, uint8_t requiredby, uint8_t reverse, depth_t *depth, int padding, info_graph_style *style, ssexec_t *info) ;
 extern int info_graph_display(char const *name, info_graph_func *func, depth_t *depth, int last, int padding, info_graph_style *style) ;
 extern int info_graph_display_service(char const *name) ;

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stdlib.h>//free
@@ -29,11 +29,9 @@ int service_resolve_read_cdb(ocdb *c, resolve_service_t *res)
     log_flow() ;
 
 
-    if (resolve_get_sa(&res->sa,c) <= 0)
-        return (errno = EINVAL, 0)  ;
-
-    if (!res->sa.len)
-        return (errno = EINVAL, 0)  ;
+    int r = resolve_get_sa(&res->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     /* configuration */
     if (!resolve_get_key_u32(c, "rversion", &res->rversion))
@@ -89,8 +87,9 @@ int service_resolve_read_addon_limit_cdb(ocdb *c, resolve_service_addon_limit_t 
 {
     log_flow() ;
 
-    if (resolve_get_sa(&l->sa, c) <= 0 || !l->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&l->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &l->rversion) ||
         !resolve_get_key_u64(c, "limitas", &l->limitas) ||
@@ -117,8 +116,9 @@ int service_resolve_read_addon_environ_cdb(ocdb *c, resolve_service_addon_enviro
 {
     log_flow() ;
 
-    if (resolve_get_sa(&e->sa, c) <= 0 || !e->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&e->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &e->rversion) ||
         !resolve_get_key_u32(c, "env", &e->env) ||
@@ -135,8 +135,9 @@ int service_resolve_read_addon_io_cdb(ocdb *c, resolve_service_addon_io_t *io)
 {
     log_flow() ;
 
-    if (resolve_get_sa(&io->sa, c) <= 0 || !io->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&io->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &io->rversion) ||
         !resolve_get_key_u32(c, "stdintype", &io->fdin.type) ||
@@ -155,8 +156,9 @@ int service_resolve_read_addon_execute_cdb(ocdb *c, resolve_service_addon_execut
 {
     log_flow() ;
 
-    if (resolve_get_sa(&ex->sa, c) <= 0 || !ex->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&ex->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &ex->rversion) ||
         !resolve_get_key_u32(c, "notify", &ex->notify) ||
@@ -193,8 +195,9 @@ int service_resolve_read_addon_dependencies_cdb(ocdb *c, resolve_service_addon_d
 {
     log_flow() ;
 
-    if (resolve_get_sa(&dep->sa, c) <= 0 || !dep->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&dep->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &dep->rversion) ||
         !resolve_get_key_u32(c, "depends", &dep->depends) ||
@@ -231,8 +234,9 @@ int service_resolve_read_addon_regex_cdb(ocdb *c, resolve_service_addon_regex_t 
 {
     log_flow() ;
 
-    if (resolve_get_sa(&rx->sa, c) <= 0 || !rx->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&rx->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &rx->rversion) ||
         !resolve_get_key_u32(c, "configure", &rx->configure) ||
@@ -251,8 +255,9 @@ int service_resolve_read_addon_event_cdb(ocdb *c, resolve_service_addon_event_t 
 {
     log_flow() ;
 
-    if (resolve_get_sa(&ev->sa, c) <= 0 || !ev->sa.len)
-        return (errno = EINVAL, 0) ;
+    int r = resolve_get_sa(&ev->sa, c) ;
+    if (r <= 0)
+        return r ;
 
     if (!resolve_get_key_u32(c, "rversion", &ev->rversion) ||
         !resolve_get_key_u32(c, "eventtype", &ev->type) ||

@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -26,7 +26,7 @@
 #include <66/constants.h>
 #include <66/module.h>
 
-void regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_service_t *res)
+int regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_service_t *res)
 {
     log_flow() ;
 
@@ -34,13 +34,13 @@ void regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_
     size_t pos = 0, idx = 0 ;
 
     if (!rx->ninfiles)
-        return ;
+        return 1 ;
 
     _cleanup_strbuf_ strbuf frontend = STRBUF_ZERO ;
     _alloc_sbl_(infiles, strlen(rx->sa.s + rx->infiles)) ;
 
     if (!sbl_clean_string(&infiles, rx->sa.s + rx->infiles))
-        log_dieu(LOG_EXIT_SYS, "clean string") ;
+        return -1 ;
 
     FOREACH_SBL(filelist, pos) {
 
@@ -50,23 +50,20 @@ void regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_
         char bname[len + 1] ;
         char dname[len + 1] ;
 
-        if (!ob_basename(bname, file))
-            log_dieu(LOG_EXIT_SYS, "get basename of: ", file) ;
+        if (!ob_basename(bname, file) || !ob_dirname(dname, file))
+            return -1 ;
 
-        if (!ob_dirname(dname, file))
-            log_dieu(LOG_EXIT_SYS, "get dirname of: ", file) ;
-
-        //log_trace("read service file of: ", dname, bname) ;
+        // an empty file has nothing to replace
         r = read_svfile(&frontend, bname, dname) ;
         if (!r)
-            log_dieusys(LOG_EXIT_SYS, "read file: ", file) ;
+            return -1 ;
         else if (r == -1)
             continue ;
 
         {
             FOREACH_SBL(&infiles, idx) {
 
-                uint8_t r = 0 ;
+                uint32_t off = 0 ;
                 char const *line = infiles.s + idx ;
                 size_t linelen = strlen(line) ;
                 _alloc_sbl_(filename, linelen + 1) ;
@@ -74,30 +71,26 @@ void regex_replace(strbuf *filelist, resolve_service_addon_regex_t *rx, resolve_
                 _alloc_sbl_(val, linelen + 1) ;
 
                 if (linelen >= SS_MAX_PATH_LEN)
-                    log_die(LOG_EXIT_SYS, "limit exceeded in service: ", res->sa.s + res->name) ;
+                    log_warn_return(LOG_EXIT_ZERO, "limit exceeded in service: ", res->sa.s + res->name) ;
 
                 if ((line[0] != ':') || (get_sep_before(line + 1, ':', '=') < 0))
-                    log_die(LOG_EXIT_SYS, "bad format in line: ", line, " of key InFiles field") ;
+                    log_warn_return(LOG_EXIT_ZERO, "bad format in line: ", line, " of key InFiles field") ;
 
-                r = (int)regex_get_file_name(&filename, line) ;
-                if (!r)
-                    log_dieusys(LOG_EXIT_SYS, "get file name at line: ",  line) ;
-
-                if (!environ_get_key(&key, line + r))
-                    log_dieusys(LOG_EXIT_SYS, "get key at line: ",  line + r) ;
-
-                if (!environ_get_value(&val, line + r))
-                    log_dieusys(LOG_EXIT_SYS, "get value at line: ",  line + r) ;
+                // the format is checked above: what fails now is the system
+                off = regex_get_file_name(&filename, line) ;
+                if (!off || !environ_get_key(&key, line + off) || !environ_get_value(&val, line + off))
+                    return -1 ;
 
                 if (!strcmp(bname, filename.s) || !filename.len) {
 
-                    if (!sbl_replace_nline(&frontend, key.s, val.s))
-                        log_dieu(LOG_EXIT_SYS, "replace: ", key.s, " by: ", val.s, " in file: ", file) ;
-
-                    if (!file_write_at(dname, bname, frontend.s, frontend.len))
-                        log_dieusys(LOG_EXIT_SYS, "write: ", dname, "/", bname) ;
+                    // inside the temporary copy of the module, which nobody reads
+                    if (!sbl_replace_nline(&frontend, key.s, val.s) ||
+                        !file_write_at(dname, bname, frontend.s, frontend.len))
+                            return -1 ;
                 }
             }
         }
     }
+
+    return 1 ;
 }

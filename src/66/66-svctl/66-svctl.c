@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 /* Low-level, resolve-independent control primitive: write raw command bytes to a
@@ -232,7 +232,12 @@ int main (int argc, char const *const *argv)
 
         if (wait) {
             event_t wanted = downgrade_if_no_notif(argv[i], wait_to_event(wait)) ;
-            svc_send_daemon(argv[i], data, STATUS_WHO_USER, wanted, (int)timeout) ;
+            int r = svc_send_daemon(argv[i], data, STATUS_WHO_USER, wanted, (int)timeout) ;
+            if (r < 0)
+                log_dieu(LOG_EXIT_SYS, "send control ", data, " to daemon: ", argv[i]) ;
+
+            if (!r && wait != 'd' && wait != 'D')
+                log_dieu(LOG_EXIT_SYS, "daemon did not reach the wanted state: ", argv[i]) ;
         }
         else if (!svc_control_send(argv[i], data, dlen, STATUS_WHO_USER))
             e = LOG_EXIT_SYS ;

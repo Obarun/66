@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <stddef.h>
@@ -44,6 +44,8 @@ int resolve_hash_add(hash_t *hash, char const *name, resolve_service_t res)
 	s->dependencies = (resolve_service_addon_dependencies_t)RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
 	s->regex = (resolve_service_addon_regex_t)RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
 	s->event = (resolve_service_addon_event_t)RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
+	s->before = (resolve_service_t)RESOLVE_SERVICE_ZERO ;
+	s->beforedeps = (resolve_service_addon_dependencies_t)RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
 	auto_strings(s->name, name) ;
 	s->res = res ;
 
@@ -62,11 +64,6 @@ struct resolve_hash_s *resolve_hash_search(hash_t *hash, char const *name)
 	return hash_find(hash, name, strlen(name)) ;
 }
 
-int resolve_hash_count(hash_t *hash)
-{
-	return hash_count(hash) ;
-}
-
 void resolve_hash_free(hash_t *hash)
 {
     log_flow() ;
@@ -74,24 +71,9 @@ void resolve_hash_free(hash_t *hash)
 	struct resolve_hash_s *c, *tmp ;
 
 	HASH_FOREACH(hash, c, tmp) {
-		strbuf_free(&c->res.sa) ;
-		strbuf_free(&c->limit.sa) ;
-		strbuf_free(&c->environ.sa) ;
-		strbuf_free(&c->io.sa) ;
-		strbuf_free(&c->logger.sa) ;
-		strbuf_free(&c->execute.sa) ;
-		strbuf_free(&c->dependencies.sa) ;
-		strbuf_free(&c->regex.sa) ;
-		strbuf_free(&c->event.sa) ;
+		service_read_free(c) ;
 		free(c) ;
 	}
 
 	hash_free(hash) ;
-}
-
-void resolve_hash_reset_visit(hash_t *hash)
-{
-    struct resolve_hash_s *c, *tmp ;
-    HASH_FOREACH(hash, c, tmp)
-        c->visit = 0 ;
 }

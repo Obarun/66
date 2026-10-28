@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <string.h>
@@ -21,6 +21,8 @@
 #include <66/resolve.h>
 #include <66/service.h>
 #include <66/constants.h>
+#include <66/graph.h>
+#include <66/utils.h>
 
 static int core_set_has(char const *base, char const *name, uint8_t type)
 {
@@ -61,79 +63,30 @@ int resolve_write(resolve_wrapper_t *wres, char const *base, char const *name)
 {
     log_flow() ;
 
+    char const *suffix = resolve_addon_suffix(wres->type) ;
+
+    if (!suffix)
+        return (errno = EINVAL, 0) ;
+
     size_t baselen = strlen(base) ;
-    size_t namelen = strlen(name) ;
+    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + strlen(name) + 1] ;
+    char tmpdir[TMPDIR_GETLEN(baselen) + 1] ;
 
-    char path[baselen + SS_SYSTEM_LEN + SS_RESOLVE_LEN + SS_SERVICE_LEN + 1 + namelen + 1] ;
-    char aname[namelen + SS_ADDON_DEPENDENCIES_SUFFIX_LEN + 1] ; // longest addon suffix
-
-    auto_strings(aname, name) ;
-
-    if (wres->type == DATA_SERVICE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-
-    } else if (wres->type == DATA_SERVICE_LIMIT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_LIMIT_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_ENVIRON) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_ENVIRON_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_IO) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_IO_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_EXECUTE) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_EXECUTE_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_DEPENDENCIES) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_DEPENDENCIES_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_REGEX) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_REGEX_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_SERVICE_EVENT) {
-
-        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
-        auto_strings(aname, name, SS_ADDON_EVENT_SUFFIX) ;
-
-        if (!core_set_has(base, name, wres->type))
-            return (errno = EINVAL, 0) ;
-
-    } else if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
+    if (wres->type == DATA_TREE || wres->type == DATA_TREE_MASTER) {
 
         auto_strings(path, base, SS_SYSTEM) ;
 
-    } else return 0 ;
+    } else {
 
-    return resolve_write_at(wres, path, aname) ;
+        auto_strings(path, base, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, "/", name) ;
+
+        // an addon is declared by the has_ field of its resolve file
+        if (wres->type != DATA_SERVICE && !core_set_has(base, name, wres->type))
+            return 0 ;
+    }
+
+    // the cdb is prepared in <base>/.tmp, then renamed onto <path>/.resolve/<name><suffix>
+    auto_strings(tmpdir, base, SS_TMPDIR + 1) ;
+
+    return resolve_write_at(wres, path, name, tmpdir) ;
 }

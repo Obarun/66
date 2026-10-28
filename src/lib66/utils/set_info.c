@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <oblibs/log.h>
@@ -21,21 +21,23 @@
 #include <66/utils.h>
 
 
-void set_info(ssexec_t *info)
+int set_info(ssexec_t *info, strbuf *msg)
 {
     log_flow() ;
 
-    if (!info->skip_opt_tree)
-        set_treeinfo(info) ;
+    if (!info->skip_opt_tree) {
+
+        int r = set_treeinfo(info, msg) ;
+        if (r <= 0)
+            return r ;
+    }
 
     info->live.len = 0 ;
 
-    if (!auto_strbuf(&info->live, SS_LIVE))
-        log_die_nomem("strbuf") ;
+    if (!auto_strbuf(&info->live, SS_LIVE) ||
+        !set_livescan(&info->scandir, info->owner) ||
+        !set_environment(&info->environment, info->owner))
+            return -1 ;
 
-    if (!set_livescan(&info->scandir, info->owner))
-        log_die_nomem("strbuf") ;
-
-    if (!set_environment(&info->environment, info->owner))
-        log_dieusys(LOG_EXIT_ZERO, "set environment") ;
+    return 1 ;
 }

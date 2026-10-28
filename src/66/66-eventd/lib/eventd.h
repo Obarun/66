@@ -76,7 +76,8 @@ extern int eventd_rule_match(resolve_service_addon_event_t const *r, char const 
  * @param[in]  name The service name.
  * @param[out] out  Zeroed addon to fill (RESOLVE_SERVICE_ADDON_EVENT_ZERO). Its `sa`
  *                  is released with `eventd_rule_free`.
- * @return 1 if a rule was loaded, 0 if the service has no rule, -1 on error.
+ * @return 1 if a rule was loaded, 0 if the service has no rule (errno ENOENT)
+ *         or one that does not read (errno EINVAL), -1 on error, errno set.
  */
 extern int eventd_rule_load(char const *base, char const *name, resolve_service_addon_event_t *out) ;
 

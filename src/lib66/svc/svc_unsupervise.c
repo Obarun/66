@@ -9,123 +9,68 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
-#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include <oblibs/log.h>
-#include <oblibs/hash.h>
-#include <oblibs/sbl.h>
+#include <oblibs/bits.h>
 
 #include <66/fdholder.h>
-
 #include <66/service.h>
-#include <66/state.h>
-#include <66/sanitize.h>
-#include <66/symlink.h>
 #include <66/graph.h>
+#include <66/selection.h>
 #include <66/svc.h>
-#include <66/enum_parser.h>
 
-static void sanitize_it(resolve_service_t *res, fdholder_client_t *a, uint8_t who)
+static int one(service_graph_resolve_t *store, uint32_t index, fdholder_client_t *a, bool *started, uint8_t who)
 {
-    log_flow() ;
+    struct resolve_hash_s *h ;
 
-    if (res->has_event && !svcd_notify(res->sa.s + res->live.eventddir, 'd', who, res->sa.s + res->name))
-        log_warnusys("disarm event reactor: ", res->sa.s + res->name) ;
+    int r = service_graph_resolve_get(store, index, 0, &h) ;
+    if (r < 0)
+        return -1 ;
+    if (!r)
+        return 1 ;
 
-    ss_state_t sta = STATE_ZERO ;
+    r = svc_issupervised(&h->res) ;
+    if (r <= 0)
+        return r ;
 
-    if (!state_read(&sta, res))
-        log_dieu(LOG_EXIT_SYS, "read state file of: ", res->sa.s + res->name) ;
-
-    if (!sanitize_fdholder(res, a, &sta, STATE_FLAGS_FALSE, 0))
-        log_warnusys("sanitize fdholder") ;
-
-    state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
-
-    if (!sanitize_scandir(res, &sta))
-        log_warnusys("sanitize scandir") ;
-
-    state_set_flag(&sta, STATE_FLAGS_TOUNSUPERVISE, STATE_FLAGS_TRUE) ;
-
-    if (!sanitize_livestate(res, &sta))
-        log_warnusys("sanitize livestate") ;
-
-    if (!symlink_switch(res, SYMLINK_SOURCE))
-        log_dieusys(LOG_EXIT_SYS, "switch service symlink to source for: ", res->sa.s + res->name) ;
-
-    log_info("Unsupervised successfully: ", res->sa.s + res->name) ;
+    return svc_unsupervise_one(&h->res, a, started, who) ;
 }
 
-/** this function assume that the services is already down */
-void svc_unsupervise(service_graph_t *g, uint8_t who)
+int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who)
 {
     log_flow() ;
 
-    uint32_t pos = 0 ;
-    size_t bpos = 0 ;
-    char *fdholderdir = 0 ;
-    bool isstarted = false ;
+    int r = 1 ;
+    uint32_t pos = 0, index = 0 ;
+    bool started = false ;
     fdholder_client_t a ;
 
-    resolve_hash_reset_visit(&g->hres) ;
-
-    FOREACH_GRAPH_SORT(service_graph_t, g, pos) {
-
-        uint32_t index = g->g.sort[pos] ;
-        vertex_t *v = g->g.sindex[index] ;
-        char *name = v->name ;
-
-        struct resolve_hash_s *hash = resolve_hash_search(&g->hres, name) ;
-
-        if (hash == NULL)
-            log_die(LOG_EXIT_USER, "service: ", name, " not available -- please make a bug report") ;
-
-        if (hash->visit)
-            continue ;
-
-        hash->visit = 1 ;
-
-        fdholderdir = hash->res.sa.s + hash->res.live.fdholderdir ;
-
-        if (!isstarted) {
-
-            if (!sanitize_fdholder_start(&a, fdholderdir))
-                log_dieu(LOG_EXIT_SYS, "start fdholder: ", fdholderdir) ;
-
-            isstarted = true ;
-        }
-
-        sanitize_it(&hash->res, &a, who) ;
-
-        if (hash->res.type == E_PARSER_TYPE_MODULE && hash->dependencies.ncontents) {
-
-            bpos = 0 ;
-
-            _alloc_sbl_(stk, strlen(hash->dependencies.sa.s + hash->dependencies.contents) + 1) ;
-
-            if (!sbl_clean_string(&stk, hash->dependencies.sa.s + hash->dependencies.contents))
-                log_dieusys(LOG_EXIT_SYS, "clean string") ;
-
-            FOREACH_SBL(&stk, bpos) {
-
-                struct resolve_hash_s *h = resolve_hash_search(&g->hres, stk.s + bpos) ;
-                if (h == NULL)
-                    log_dieu(LOG_EXIT_SYS,"find hash id of: ", stk.s + bpos, " -- please make a bug reports") ;
-
-                if (h->visit)
-                    continue ;
-
-                h->visit = 1 ;
-
-                sanitize_it(&h->res, &a, who) ;
-            }
-        }
+    FOREACH_SELECTION_UNORDERED(lot, index) {
+        r = one(store, index, &a, &started, who) ;
+        if (r < 0)
+            goto end ;
     }
 
-    if (isstarted)
-        fdholder_client_end(&a) ;
-}
+    FOREACH_SELECTION_REVERSE(lot, pos, index) {
+        r = one(store, index, &a, &started, who) ;
+        if (r < 0)
+            goto end ;
+    }
 
+    r = 1 ;
+
+    end:
+        if (started) {
+            int e = errno ;
+            fdholder_client_end(&a) ;
+            errno = e ;
+        }
+
+        return r ;
+}

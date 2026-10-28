@@ -9,7 +9,7 @@
  * the LICENSE file found in the top-level directory of this
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
- * except according to the terms contained in the LICENSE file./
+ * except according to the terms contained in the LICENSE file.
  */
 
 #include <oblibs/string.h>
@@ -18,7 +18,6 @@
 
 #include <oblibs/log.h>
 #include <oblibs/opt.h>
-#include <oblibs/files.h>
 
 #include <66/info.h>
 #include <66/resolve.h>
@@ -27,6 +26,7 @@
 #include <66/state.h>
 #include <66/config.h>
 #include <66/ssexec.h>
+#include <66/command.h>
 
 /* One row per state flag, in display order -- the key is what -f selects. */
 
@@ -107,33 +107,26 @@ int ssexec_state(int argc, char const *const *argv, void *data)
 
     if (*argv[0] == '/') {
 
-        auto_strings(svname, *argv) ;
-
-        char pack[STATE_STATE_SIZE] ;
-
-        r = file_read(svname, pack, STATE_STATE_SIZE) ;
-            if (r < STATE_STATE_SIZE || r < 0)
-                log_dieusys(LOG_EXIT_SYS, "read status file") ;
-
-        state_unpack(pack, &sta) ;
+        if (state_read_file(&sta, *argv) <= 0)
+            log_dieusys(LOG_EXIT_SYS, "read status file") ;
 
     } else {
 
-        if (!service_resolve_provide(svname, *argv, info->base.s))
+        r = service_resolve_provide(svname, *argv, 0, info->base.s) ;
+        if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "resolve provide alias: ", *argv) ;
 
-        r = service_is_g(svname, STATE_FLAGS_ISPARSED) ;
-        if (r == -1)
-            log_dieusys(LOG_EXIT_SYS, "get information of service: ", svname, " -- please a bug report") ;
-        else if (!r || r == STATE_FLAGS_FALSE)
-            log_die(LOG_EXIT_USER, "service: ", svname, " is not parsed -- try to parse it using '66 parse ", svname, "'") ;
+        char const *sv = r ? svname : *argv ;
 
-        r = resolve_read(wres, info->base.s, svname) ;
-        if (r <= 0)
-            log_dieu(LOG_EXIT_SYS, "read resolve file: ", svname) ;
+        r = resolve_read(wres, info->base.s, sv) ;
+        if (r < 0)
+            log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
 
-        if (!state_read(&sta, &res))
-            log_dieusys(111,"read state file of: ", svname) ;
+        if (!r)
+            command_refuse_unknown(sv, info->base.s, info->owner, false) ;
+
+        if (state_read(&sta, &res) <= 0)
+            log_dieusys(111,"read state file of: ", sv) ;
     }
 
     info_resolve_display(&sta, 0, fields_state, OPT_COUNT(fields_state), field, noname, 0, 0) ;
