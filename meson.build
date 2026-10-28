@@ -101,6 +101,14 @@ shebangdir = get_option('shebangdir')
 execline_bindir = get_option('execline-bindir')
 execline_extbindir = get_option('execline-extbindir')
 livedir = get_option('livedir')
+# Nothing overrides the live directory at runtime, so a wrong value can only be
+# caught here.
+if not livedir.startswith('/')
+  error('livedir must be an absolute path, got: ' + livedir)
+endif
+if livedir.endswith('/')
+  livedir = livedir.substring(0, -1)
+endif
 max_service = get_option('max-service')
 max_path_size = get_option('max-path-size')
 max_service_size = get_option('max-service-size')
