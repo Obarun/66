@@ -25,10 +25,7 @@ void state_unpack(char *pack,ss_state_t *sta)
 
     uint32_t toinit ;
     uint32_t toreload ;
-    uint32_t torestart ;
     uint32_t tounsupervise ;
-    uint32_t toparse ;
-    uint32_t isparsed ;
     uint32_t issupervised ;
 
     u32_unpack_big(pack, &toinit) ;
@@ -37,18 +34,9 @@ void state_unpack(char *pack,ss_state_t *sta)
     u32_unpack_big(pack + 4, &toreload) ;
     sta->toreload = toreload ;
 
-    u32_unpack_big(pack + 8, &torestart) ;
-    sta->torestart = torestart ;
-
-    u32_unpack_big(pack + 12, &tounsupervise) ;
+    u32_unpack_big(pack + 8, &tounsupervise) ;
     sta->tounsupervise = tounsupervise ;
 
-    u32_unpack_big(pack + 16, &toparse) ;
-    sta->toparse = toparse ;
-
-    u32_unpack_big(pack + 20, &isparsed) ;
-    sta->isparsed = isparsed ;
-
-    u32_unpack_big(pack + 24, &issupervised) ;
+    u32_unpack_big(pack + 12, &issupervised) ;
     sta->issupervised = issupervised ;
 }

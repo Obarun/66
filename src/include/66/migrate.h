@@ -39,6 +39,7 @@ extern void migrate_0912_provide_symlink(void) ;
 extern int migrate_0920_dependencies(void) ;
 extern int migrate_0920_logsuffix(void) ;
 extern int migrate_0920_runas(void) ;
+extern int migrate_0920_state(void) ;
 
 extern int migrate_write_frozen_0821(resolve_service_t_0821 *res, char const *base, char const *name) ;
 extern int service_resolve_read_cdb_0821(ocdb *c, resolve_service_t_0821 *res) ;

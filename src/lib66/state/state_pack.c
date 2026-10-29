@@ -23,9 +23,6 @@ void state_pack(char *pack, ss_state_t *sta)
 
     u32_pack_big(pack, sta->toinit) ;
     u32_pack_big(pack + 4, sta->toreload) ;
-    u32_pack_big(pack + 8, sta->torestart) ;
-    u32_pack_big(pack + 12, sta->tounsupervise) ;
-    u32_pack_big(pack + 16, sta->toparse) ;
-    u32_pack_big(pack + 20, sta->isparsed) ;
-    u32_pack_big(pack + 24, sta->issupervised) ;
+    u32_pack_big(pack + 8, sta->tounsupervise) ;
+    u32_pack_big(pack + 12, sta->issupervised) ;
 }

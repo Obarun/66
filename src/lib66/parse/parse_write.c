@@ -153,8 +153,6 @@ static int write_servicedir(struct resolve_hash_s *c, char const *base, char con
     auto_strings(state, tmp.s, SS_STATE) ;
 
     state_set_flag(&sta, STATE_FLAGS_TOINIT, STATE_FLAGS_TRUE) ;
-    state_set_flag(&sta, STATE_FLAGS_TOPARSE, STATE_FLAGS_FALSE) ;
-    state_set_flag(&sta, STATE_FLAGS_ISPARSED, STATE_FLAGS_TRUE) ;
 
     if (write_services(&c->res, &c->execute, &c->copyfrom, tmp.s) < 0 ||
         !state_write_remote(&sta, state) ||

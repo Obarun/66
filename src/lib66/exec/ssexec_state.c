@@ -33,10 +33,7 @@
 static info_field_t const fields_state[] = {
     { "toinit",        INFO_FIELD_FLAG, offsetof(ss_state_t, toinit),        0 },
     { "toreload",      INFO_FIELD_FLAG, offsetof(ss_state_t, toreload),      0 },
-    { "torestart",     INFO_FIELD_FLAG, offsetof(ss_state_t, torestart),     0 },
     { "tounsupervise", INFO_FIELD_FLAG, offsetof(ss_state_t, tounsupervise), 0 },
-    { "toparse",       INFO_FIELD_FLAG, offsetof(ss_state_t, toparse),       0 },
-    { "isparsed",      INFO_FIELD_FLAG, offsetof(ss_state_t, isparsed),      0 },
     { "issupervised",  INFO_FIELD_FLAG, offsetof(ss_state_t, issupervised),  0 },
 } ;
 
@@ -80,8 +77,7 @@ opt_cmd_t const cmd_state = {
     .fn = &ssexec_state,
     .epilog =
         "field:\n"
-        "    toinit          toreload        torestart\n"
-        "    tounsupervise   toparse         isparsed\n"
+        "    toinit          toreload        tounsupervise\n"
         "    issupervised",
 } ;
 

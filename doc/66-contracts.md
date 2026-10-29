@@ -676,5 +676,6 @@ Every named frontend is checked before anything is stopped: a refusal of the par
 
 - A service parsed before 0.9.2.0 under a name ending with `-log` and that is no logger is removed, see [Names](#names).
 - The `runas` of a logger, and the `runas` of the io of its service, left implicit by the frontend are written again as the user of the loggers chosen at the build of 66, whatever their value; a `runas` the frontend names explicitly is kept. The migration leaves the log directory and its content as they are, with the owner the previous release gave them.
+- The state file of each service, and its copy under the live directory, is written again without the `toparse`, `isparsed` and `torestart` fields, which nothing read.
 - The stop delay of each service is written again from its frontend: the general stop delay when `[Stop] Timeout` is not written, `0` when it is written `0`.
 - The dependencies addon of each service is written again from its frontend: what 66 deduced and wrote in it before is dropped. The frontends are parsed as `66 parse` does: the `configure` script of a module runs.

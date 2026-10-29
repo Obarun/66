@@ -215,6 +215,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
 
             case VERSION_0920:
                 migrate_0920() ;
+                if (migrate_0920_state() < 0)
+                    return -1 ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
                 if (migrate_0920_logsuffix() < 0 || migrate_0920_dependencies() < 0 || migrate_0920_runas() < 0)

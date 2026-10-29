@@ -354,15 +354,12 @@ Some precision is needed here:
 
 #### %%system_dir%%/system/service/svc/\<service\>/state
 
-This directory houses a *binary* file named `status`, which `66` uses to track the service's *management* state — what has been parsed, supervised, or is pending. Running `66 state <service>` displays output similar to the following
+This directory houses a *binary* file named `status`, which `66` uses to track the service's *management* state — what is supervised or pending. Running `66 state <service>` displays output similar to the following
 
 ```
 toinit          : 0
 toreload        : 0
-torestart       : 0
 tounsupervise   : 0
-toparse         : 0
-isparsed        : 1
 issupervised    : 1
 ```
 
@@ -370,7 +367,7 @@ For instance, when executing `66 free <service>`, the `tounsupervise` field swit
 
 This *management* state is distinct from the *runtime* state — whether the process is actually running right now, since when, and with which result. The runtime state is a separate binary record written by [66-supervise](66-supervise.html) under the live directory, at `%%livedir%%/state/UID/<service>/supervise/status`. A service is therefore described by three complementary views:
 
-- [66 state](66-state.html) — the *management* flags shown above (parsed, supervised, pending actions).
+- [66 state](66-state.html) — the *management* flags shown above (supervised, pending actions).
 - [66 runstate](66-runstate.html) — the raw *runtime* record (`state`, `result`, `who`, `pid`, `code`, timestamps, `ndeaths`).
 - [66 status](66-status.html) — a human-readable summary combining both.
 
