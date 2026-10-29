@@ -24,8 +24,8 @@
 # collapses every member of a module onto the module itself.
 
 # Frontends: what a command that accepts a not-yet-parsed service takes.
-# Those are the commands carrying GRAPH_COLLECT_PARSE (they parse the frontend
-# on the fly), plus 66 parse itself.
+# Those are the commands that parse a frontend named on their command line
+# (parse, start, enable, reconfigure).
 (( $+functions[_66_frontends] )) || _66_frontends() {
     local -a dirs frontends
     local -aU names
@@ -119,7 +119,7 @@
 
 (( $+functions[_66_state_fields] )) || _66_state_fields() {
     # fields_state[] in ssexec_state.c
-    _values -s , 'field' toinit toreload torestart tounsupervise toparse isparsed issupervised
+    _values -s , 'field' toinit toreload tounsupervise issupervised
 }
 
 (( $+functions[_66_runstate_fields] )) || _66_runstate_fields() {
@@ -149,7 +149,7 @@
         limitmsgqueue limitnice limitnofile limitnproc limitrtprio limitrttime \
         limitsigpending limitstack \
         eventtype eventfrom neventfrom eventon neventon eventcombine eventdo \
-        eventemit eventwatch eventexpression eventtimezone eventinterval \
+        eventemit eventwatch eventexpression eventtimezone eventinterval eventpropagate \
         rversion
 }
 
@@ -162,7 +162,7 @@
 
 (( $+functions[_66_tree_status_fields] )) || _66_tree_status_fields() {
     # fields_tree[] in ssexec_tree_status.c
-    _values -s , 'field' name current enabled allowed groups depends requiredby contents
+    _values -s , 'field' name current enabled init allowed groups depends requiredby contents
 }
 
 (( $+functions[_66_tree_groups] )) || _66_tree_groups() {
@@ -395,13 +395,15 @@
     _arguments -s '(-h --help)'{-h,--help}'[print this help]'
 }
 
-(( $+functions[_66_cmd_suspend] )) || _66_cmd_suspend() {
-    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
+# suspend and hibernate share opts_sleep in ssexec_sleep_wrapper.c.
+(( $+functions[_66_sleep_args] )) || _66_sleep_args() {
+    _arguments -s \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-a --access)'{-a,--access}'[use access control]'
 }
 
-(( $+functions[_66_cmd_hibernate] )) || _66_cmd_hibernate() {
-    _arguments -s '(-h --help)'{-h,--help}'[print this help]'
-}
+(( $+functions[_66_cmd_suspend] ))   || _66_cmd_suspend()   { _66_sleep_args }
+(( $+functions[_66_cmd_hibernate] )) || _66_cmd_hibernate() { _66_sleep_args }
 
 # poweroff, reboot and halt share opts_shutdown in ssexec_shutdown_wrapper.c.
 (( $+functions[_66_shutdown_args] )) || _66_shutdown_args() {
