@@ -139,13 +139,13 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wex = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
     _cleanup_strbuf_ strbuf tmpdir = STRBUF_ZERO ;
-    resolve_init(wres) ;
-    resolve_init(wex) ;
+    resolve_init(&wres) ;
+    resolve_init(&wex) ;
 
-    res.name = resolve_add_string(wres, name) ;
+    res.name = resolve_add_string(&wres, name) ;
     res.type = E_PARSER_TYPE_CLASSIC ;
     res.has_execute = 1 ;
     ex.notify = notify ;
@@ -161,15 +161,15 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
         log_dieusys(LOG_EXIT_SYS, "set the temporary directory of: ", SS_LIVE) ;
 
     log_trace("write resolve of: ", name, " at: ", dir) ;
-    if (!resolve_write_at(wres, dir, name, tmpdir.s))
+    if (!resolve_write_at(&wres, dir, name, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "write resolve of: ", name) ;
 
     log_trace("write resolve of: ", name, SS_ADDON_EXECUTE_SUFFIX, " at: ", dir) ;
-    if (!resolve_write_at(wex, dir, name, tmpdir.s))
+    if (!resolve_write_at(&wex, dir, name, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
 
-    resolve_free(wres) ;
-    resolve_free(wex) ;
+    resolve_free_obj(&wres) ;
+    resolve_free_obj(&wex) ;
 }
 
 inline static void auto_fifo(char const *str)

@@ -585,12 +585,12 @@ static int reactor_source_status(char const *svc, size_t svclen, event_frame_t *
     name[svclen] = 0 ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     service_status_t st = STATUS_ZERO ;
-    int ok = resolve_read(wres, sysdir, name) == 1 && svc_status(&res, &st) >= 0 ;
+    int ok = resolve_read(&wres, sysdir, name) == 1 && svc_status(&res, &st) >= 0 ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     if (!ok)
         return 0 ;
@@ -636,9 +636,9 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     }
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    if (resolve_read(wres, sysdir, re->name) != 1) {
-        resolve_free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    if (resolve_read(&wres, sysdir, re->name) != 1) {
+        resolve_free_obj(&wres) ;
         log_warnu("read resolve of reactor: ", re->name) ;
         return ;
     }
@@ -655,7 +655,7 @@ static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_fra
     else
         log_info("reactor ", re->name, ": ", doname, " inhibited (state ", status_state_to_string(st.state), ")") ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 }
 
 static void reactor_run(uint8_t kind, char const *source, event_frame_t const *f)
@@ -777,14 +777,14 @@ static int reactor_supervised(char const *name)
     log_flow() ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
     ss_state_t ste = STATE_ZERO ;
 
-    int ok = resolve_read(wres, sysdir, name) == 1
+    int ok = resolve_read(&wres, sysdir, name) == 1
           && state_read(&ste, &res) > 0
           && ste.issupervised == STATE_FLAGS_TRUE ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return ok ;
 }
@@ -986,13 +986,13 @@ static void source_fail(eventd_source_t *s)
     log_flow() ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    if (resolve_read(wres, sysdir, s->name) == 1)
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    if (resolve_read(&wres, sysdir, s->name) == 1)
         source_write_status(&res, STATUS_STATE_FAILED, STATUS_WHO_SELF) ;
     else
         log_warnu("read resolve to fail event source: ", s->name) ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     log_warn("event source watcher died, marking failed: ", s->name) ;
     source_destroy(s) ; // frees the watcher and removes the source
@@ -1235,9 +1235,9 @@ static void repopulate(char const *scandir)
         }
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
-        if (resolve_read(wres, sysdir, name) == 1) {
+        if (resolve_read(&wres, sysdir, name) == 1) {
             // a source carries has_event too, so test the type first
             if (res.type == E_PARSER_TYPE_EVENT)
                 eventd_arm_source(&res, source_get_who(&res)) ;
@@ -1245,7 +1245,7 @@ static void repopulate(char const *scandir)
                 eventd_arm_reactor(name) ;
         }
 
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         errno = 0 ;
     }
 
@@ -1285,8 +1285,8 @@ static void client_dispatch(eventd_client_t *conn)
     if (verb == 'a' || verb == 'd') {
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-        int known = resolve_read(wres, sysdir, name) == 1 ;
+        resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+        int known = resolve_read(&wres, sysdir, name) == 1 ;
 
         if (known && res.type == E_PARSER_TYPE_EVENT) {
 
@@ -1295,12 +1295,12 @@ static void client_dispatch(eventd_client_t *conn)
             else
                 eventd_disarm_source(&res, who) ;
 
-            resolve_free(wres) ;
+            resolve_free_obj(&wres) ;
             return ;
         }
 
         int reactor = res.has_event ;
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
 
         /** 66 announces every service it puts under supervision: it may be
          * the source of a reactor. Only a reactor has a rule to arm. */

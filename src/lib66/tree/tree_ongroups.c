@@ -30,17 +30,17 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
     size_t pos = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
 
-    if (resolve_read(wres, base, treename) <= 0){
-        resolve_free(wres) ;
+    if (resolve_read(&wres, base, treename) <= 0){
+        resolve_free_obj(&wres) ;
         return -1 ;
     }
 
     if (tres.ngroups) {
 
         if (!sbl_clean_string(&sa, tres.sa.s + tres.groups)) {
-            resolve_free(wres) ;
+            resolve_free_obj(&wres) ;
             return -1 ;
         }
 
@@ -56,6 +56,6 @@ int tree_ongroups(char const *base, char const *treename, char const *group)
 
     } else e = 0 ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
     return e ;
 }

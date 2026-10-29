@@ -58,8 +58,8 @@ static void test_roundtrip(char const *dir)
     printf("Running limit addon round-trip\n") ;
 
     resolve_service_addon_limit_t l = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-    resolve_wrapper_t *wl = resolve_set_struct(DATA_SERVICE_LIMIT, &l) ;
-    resolve_init(wl) ;
+    resolve_wrapper_t wl = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &l) ;
+    resolve_init(&wl) ;
 
     l.limitas = 1000000 ;
     l.limitnofile = 2048 ;
@@ -68,14 +68,14 @@ static void test_roundtrip(char const *dir)
     l.limitrtprio = 100 ;
     /* limitcpu, limitdata, ... left at 0 (unset) */
 
-    if (!write_cdb(wl, dir, "svc.limit")) {
+    if (!write_cdb(&wl, dir, "svc.limit")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_limit_t back = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_LIMIT, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.limit") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.limit") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -91,8 +91,8 @@ static void test_roundtrip(char const *dir)
     ASSERT_EQ(back.limitdata, 0, "limitdata") ;
     ASSERT_EQ(back.limitsigpending, 0, "limitsigpending") ;
 
-    resolve_free(wback) ;
-    resolve_free(wl) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&wl) ;
 
     printf(" PASS\n") ;
 }

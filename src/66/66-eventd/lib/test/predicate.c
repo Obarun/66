@@ -185,12 +185,12 @@ static uint32_t add_list(resolve_wrapper_t_ref w, char const *const *items, uint
 static void test_single_any(void)
 {
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "auth", "db" } ;
     char const *on[] = { "up", "down" } ;
-    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.from = add_list(&w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
 
     r.combine = EVENT_COMBINE_ANY ;
     event_frame_t up = tframe(STATUS_STATE_UP, 0, 0) ;
@@ -200,23 +200,23 @@ static void test_single_any(void)
 
     /* SINGLE with one condition */
     char const *on2[] = { "up" } ;
-    r.on = add_list(w, on2, 1) ; r.non = 1 ;
+    r.on = add_list(&w, on2, 1) ; r.non = 1 ;
     r.combine = EVENT_COMBINE_ANY ;
     T_ASSERT(eventd_rule_match(&r, "db", &up), "SINGLE up: UP from db matches") ;
     T_ASSERT(!eventd_rule_match(&r, "db", &stopping), "SINGLE up: STOPPING no match") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_per_source(void)
 {
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "auth", "db" } ;
     char const *on[] = { "auth:up", "db:down" } ;
-    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.from = add_list(&w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ALL ;
 
     event_frame_t up = tframe(STATUS_STATE_UP, 0, 0) ;
@@ -229,18 +229,18 @@ static void test_per_source(void)
     /* a frame from a source not carrying an applicable token fires nothing */
     T_ASSERT(!eventd_rule_match(&r, "other", &up), "no applicable token for 'other'") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_per_source_namespaced(void)
 {
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "evt@test:auth", "evt@test:db" } ;
     char const *on[] = { "evt@test:auth:up", "evt@test:db:down" } ;
-    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.from = add_list(&w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ALL ;
 
     event_frame_t up = tframe(STATUS_STATE_UP, 0, 0) ;
@@ -252,18 +252,18 @@ static void test_per_source_namespaced(void)
     // the bare member name is not the name the source is registered under
     T_ASSERT(!eventd_rule_match(&r, "auth", &up), "no applicable token for the bare member name") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_per_source_arg(void)
 {
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "web", "evt@test:web" } ;
     char const *on[] = { "web:exited:0", "evt@test:web:signaled:SIGKILL" } ;
-    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.from = add_list(&w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ANY ;
 
     event_frame_t e0 = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 0) ;
@@ -278,19 +278,19 @@ static void test_per_source_arg(void)
     // each token stays scoped to its own source
     T_ASSERT(!eventd_rule_match(&r, "web", &k), "the namespaced token does not apply to web") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_arg_token_is_not_per_source(void)
 {
     /* exited:0 has a colon but 'exited' is not a source name: it is a bare arg token */
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "web" } ;
     char const *on[] = { "exited:0" } ;
-    r.from = add_list(w, from, 1) ; r.nfrom = 1 ;
-    r.on = add_list(w, on, 1) ; r.non = 1 ;
+    r.from = add_list(&w, from, 1) ; r.nfrom = 1 ;
+    r.on = add_list(&w, on, 1) ; r.non = 1 ;
     r.combine = EVENT_COMBINE_ANY ;
 
     event_frame_t e0 = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 0) ;
@@ -298,7 +298,7 @@ static void test_arg_token_is_not_per_source(void)
     event_frame_t e1 = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 1) ;
     T_ASSERT(!eventd_rule_match(&r, "web", &e1), "exited:0 does not match code 1") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 /* combine ALL over two bare tokens applicable to the same frame: every applicable
@@ -306,10 +306,10 @@ static void test_arg_token_is_not_per_source(void)
 static void test_combine_all_multi(void)
 {
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *on[] = { "down", "exited:0" } ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ALL ;
 
     event_frame_t both = tframe(STATUS_STATE_DOWN, STATUS_RESULT_EXITED, 0) ;
@@ -325,7 +325,7 @@ static void test_combine_all_multi(void)
     r.combine = EVENT_COMBINE_ANY ;
     T_ASSERT(eventd_rule_match(&r, "web", &other), "ANY(down,exited:0): exited:0 alone fires") ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_empty_on(void)
@@ -345,12 +345,11 @@ static void test_free(void)
     // build a rule that owns a heap sa, then free it: the sa is released (LSan
     // would flag a leak if strbuf_free were skipped) and every field is zeroed.
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *on[] = { "up", "down" } ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ALL ;
-    free(w) ; // release only the wrapper; the sa is owned by r and freed below
 
     T_ASSERT(r.sa.s != 0, "precondition: the rule owns a heap sa") ;
     eventd_rule_free(&r) ;
@@ -385,11 +384,11 @@ static void make_service_dirs(char const *base, char const *name)
 static void write_core(char const *base, char const *name)
 {
     resolve_service_t core = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE, &core) ;
-    resolve_init(w) ;
-    core.name = (uint32_t)resolve_add_string(w, name) ;
-    T_ASSERT(resolve_write(w, base, name) == 1, "core service resolve written") ;
-    resolve_free(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &core) ;
+    resolve_init(&w) ;
+    core.name = (uint32_t)resolve_add_string(&w, name) ;
+    T_ASSERT(resolve_write(&w, base, name) == 1, "core service resolve written") ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_load_roundtrip(void)
@@ -407,17 +406,17 @@ static void test_load_roundtrip(void)
 
     // write the .event addon through the real resolve API (as the parser would)
     resolve_service_addon_event_t r = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_EVENT, &r) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &r) ;
+    resolve_init(&w) ;
     char const *from[] = { "auth", "db" } ;
     char const *on[] = { "auth:up", "db:down" } ;
-    r.from = add_list(w, from, 2) ; r.nfrom = 2 ;
-    r.on = add_list(w, on, 2) ; r.non = 2 ;
+    r.from = add_list(&w, from, 2) ; r.nfrom = 2 ;
+    r.on = add_list(&w, on, 2) ; r.non = 2 ;
     r.combine = EVENT_COMBINE_ALL ;
     r.type = EVENT_SOURCE_SERVICE ;
     r.docmd = EVENT_DO_RESTART ;
-    T_ASSERT(resolve_write(w, bs, "svc") == 1, "event addon written") ;
-    resolve_free(w) ;
+    T_ASSERT(resolve_write(&w, bs, "svc") == 1, "event addon written") ;
+    resolve_free_obj(&w) ;
     T_ASSERT(service_graph_write_end(0) == 1, "write transaction ended") ;
 
     // load it back and assert the fields round-trip EXACTLY (by effect)

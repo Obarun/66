@@ -25,7 +25,7 @@ int tree_switch_current(char const *base, char const *treename)
     int e = 0 ;
 
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, &mres) ;
     resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CURRENT ;
 
@@ -34,7 +34,7 @@ int tree_switch_current(char const *base, char const *treename)
         goto freed ;
     }
 
-    if (!resolve_modify_field(wres, base, SS_MASTER + 1, table,  treename)) {
+    if (!resolve_modify_field(&wres, base, SS_MASTER + 1, table,  treename)) {
         log_warnu("modify field: ", enum_to_key(table.u.tree.list, table.u.tree.id)," of Master resolve file with value: ", treename) ;
         goto freed ;
     }
@@ -42,6 +42,6 @@ int tree_switch_current(char const *base, char const *treename)
     e = 1 ;
 
     freed:
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return e ;
 }

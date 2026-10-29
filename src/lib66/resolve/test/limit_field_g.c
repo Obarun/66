@@ -50,13 +50,13 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name, uint32_t has_limit)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_limit = has_limit ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static uint64_t get_nofile(char const *base, char const *name)
@@ -65,14 +65,14 @@ static uint64_t get_nofile(char const *base, char const *name)
     t.u.service.id = E_RESOLVE_SERVICE_LIMIT_NOFILE ;
 
     resolve_service_addon_limit_t l = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_LIMIT, &l) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &l) ;
 
     strbuf sa = STRBUF_ZERO ;
-    assert(resolve_get_field(&sa, w, base, name, t) > 0) ;
+    assert(resolve_get_field(&sa, &w, base, name, t) > 0) ;
     uint64_t v = 0 ;
     assert(u64_scan_strict(sa.s, &v)) ;
     strbuf_free(&sa) ;
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
     return v ;
 }
 
@@ -92,11 +92,11 @@ int main(void)
     write_core(base, "withlim", 1) ;
     {
         resolve_service_addon_limit_t l = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_LIMIT, &l) ;
-        resolve_init(w) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &l) ;
+        resolve_init(&w) ;
         l.limitnofile = 4096 ;
-        assert(resolve_write(w, base, "withlim") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_write(&w, base, "withlim") > 0) ;
+        resolve_free_obj(&w) ;
     }
 
     /* read the addon field through the generic by-name path */
@@ -106,11 +106,11 @@ int main(void)
      * generic by-name path reads .limit, mutates in memory, and writes it back. */
     {
         resolve_service_addon_limit_t l = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_LIMIT, &l) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &l) ;
         resolve_enum_table_t t = E_TABLE_SERVICE_LIMIT_ZERO ;
         t.u.service.id = E_RESOLVE_SERVICE_LIMIT_NOFILE ;
-        assert(resolve_modify_field(w, base, "withlim", t, "2048") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_modify_field(&w, base, "withlim", t, "2048") > 0) ;
+        resolve_free_obj(&w) ;
     }
     assert(get_nofile(base, "withlim") == 2048) ;
 
@@ -124,11 +124,11 @@ int main(void)
      * addon on disk and the manifest flag. */
     {
         resolve_service_addon_limit_t l = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_LIMIT, &l) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &l) ;
         resolve_enum_table_t t = E_TABLE_SERVICE_LIMIT_ZERO ;
         t.u.service.id = E_RESOLVE_SERVICE_LIMIT_NOFILE ;
-        assert(resolve_modify_field(w, base, "plain", t, "512") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_modify_field(&w, base, "plain", t, "512") > 0) ;
+        resolve_free_obj(&w) ;
     }
     assert(get_nofile(base, "plain") == 512) ;
 

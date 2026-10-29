@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 
@@ -31,16 +30,14 @@ void service_resolve_sanitize_addon_io(resolve_service_addon_io_t *io)
 
     io->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_IO, io) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_IO, io) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
     io->rversion = 0 ;
     // string fields only; the fd types are integers
-    io->fdin.destination = io->fdin.destination ? resolve_add_string(wres, stk + io->fdin.destination) : 0 ;
-    io->fdout.destination = io->fdout.destination ? resolve_add_string(wres, stk + io->fdout.destination) : 0 ;
-    io->fderr.destination = io->fderr.destination ? resolve_add_string(wres, stk + io->fderr.destination) : 0 ;
-    io->runas = io->runas ? resolve_add_string(wres, stk + io->runas) : 0 ;
-
-    free(wres) ;
+    io->fdin.destination = io->fdin.destination ? resolve_add_string(&wres, stk + io->fdin.destination) : 0 ;
+    io->fdout.destination = io->fdout.destination ? resolve_add_string(&wres, stk + io->fdout.destination) : 0 ;
+    io->fderr.destination = io->fderr.destination ? resolve_add_string(&wres, stk + io->fderr.destination) : 0 ;
+    io->runas = io->runas ? resolve_add_string(&wres, stk + io->runas) : 0 ;
 }

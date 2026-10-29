@@ -49,13 +49,13 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name, uint32_t has_io)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_io = has_io ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void get_field(strbuf *out, char const *base, char const *name, uint32_t id)
@@ -64,11 +64,11 @@ static void get_field(strbuf *out, char const *base, char const *name, uint32_t 
     t.u.service.id = id ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
 
     out->len = 0 ;
-    assert(resolve_get_field(out, w, base, name, t) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_get_field(out, &w, base, name, t) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 int main(void)
@@ -89,12 +89,12 @@ int main(void)
     write_core(base, "withio", 1) ;
     {
         resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-        resolve_init(w) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+        resolve_init(&w) ;
         io.fdout.type = E_PARSER_IO_TYPE_66LOG ;
-        io.fdout.destination = resolve_add_string(w, "/var/log/66/withio") ;
-        assert(resolve_write(w, base, "withio") > 0) ;
-        resolve_free(w) ;
+        io.fdout.destination = resolve_add_string(&w, "/var/log/66/withio") ;
+        assert(resolve_write(&w, base, "withio") > 0) ;
+        resolve_free_obj(&w) ;
     }
 
     get_field(&sa, base, "withio", E_RESOLVE_SERVICE_IO_STDOUTDEST) ;
@@ -109,11 +109,11 @@ int main(void)
     /* modify the string field through the generic by-name path */
     {
         resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
         resolve_enum_table_t t = E_TABLE_SERVICE_IO_ZERO ;
         t.u.service.id = E_RESOLVE_SERVICE_IO_STDOUTDEST ;
-        assert(resolve_modify_field(w, base, "withio", t, "/var/log/66/moved") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_modify_field(&w, base, "withio", t, "/var/log/66/moved") > 0) ;
+        resolve_free_obj(&w) ;
     }
     get_field(&sa, base, "withio", E_RESOLVE_SERVICE_IO_STDOUTDEST) ;
     assert(!strcmp(sa.s, "/var/log/66/moved")) ;
@@ -127,11 +127,11 @@ int main(void)
     /* modify on that service CREATES the addon and sets core has_io */
     {
         resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
         resolve_enum_table_t t = E_TABLE_SERVICE_IO_ZERO ;
         t.u.service.id = E_RESOLVE_SERVICE_IO_STDOUTDEST ;
-        assert(resolve_modify_field(w, base, "plain", t, "/var/log/66/plain") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_modify_field(&w, base, "plain", t, "/var/log/66/plain") > 0) ;
+        resolve_free_obj(&w) ;
     }
     get_field(&sa, base, "plain", E_RESOLVE_SERVICE_IO_STDOUTDEST) ;
     assert(!strcmp(sa.s, "/var/log/66/plain")) ;

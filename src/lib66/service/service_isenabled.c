@@ -23,15 +23,15 @@ int service_isenabled(char const *base, char const *name)
 
     int e = -1 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
-    int r = resolve_read(wres, base, name) ;
+    int r = resolve_read(&wres, base, name) ;
 
     if (r > 0)
         e = res.enabled ? 1 : 0 ;
     else if (!r)
         e = 0 ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
     return e ;
 }

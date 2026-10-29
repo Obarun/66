@@ -20,7 +20,6 @@
 #include <sys/ioctl.h>
 #include <sys/resource.h> // limit
 #include <stdint.h>
-#include <stdlib.h> // free
 #include <sys/prctl.h>
 
 #include <oblibs/log.h>
@@ -454,8 +453,8 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
     log_flow() ;
 
     resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
-    uint8_t loaded = res->has_environ && resolve_read(we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
+    resolve_wrapper_t we = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, &e) ;
+    uint8_t loaded = res->has_environ && resolve_read(&we, res->sa.s + res->path.home, res->sa.s + res->name) > 0 ;
 
     if (!environ_import_environ(eram, env))
         log_dieusys(LOG_EXIT_SYS, "import the inherited environment") ;
@@ -486,7 +485,7 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         }
     }
 
-    resolve_free(we) ;
+    resolve_free_obj(&we) ;
 
     // The runtime environment
     char *livedir = res->sa.s + res->live.livedir ;
@@ -571,15 +570,15 @@ static void execute_io(resolve_service_t *res)
     log_flow() ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    if (!res->has_io || resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    if (!res->has_io || resolve_read(&w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read io addon of: ", res->sa.s + res->name) ;
 
     io_setup_stdin(res, &io) ;
     io_setup_stdout(res, &io) ;
     io_setup_stderr(res, &io) ;
 
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
 }
 
 static void execute_uidgid(resolve_service_t *res, resolve_service_addon_execute_t *ex)
@@ -660,12 +659,10 @@ static void execute_limit(resolve_service_t *res)
     log_flow() ;
 
     resolve_service_addon_limit_t la = RESOLVE_SERVICE_ADDON_LIMIT_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_LIMIT, &la) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &la) ;
 
-    if (res->has_limit && resolve_read(w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
+    if (res->has_limit && resolve_read(&w, res->sa.s + res->path.home, res->sa.s + res->name) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read limit addon of: ", res->sa.s + res->name) ;
-
-    free(w) ;
 
 #ifdef RLIMIT_AS
     limit_setup(res, RLIMIT_AS, la.limitas ? la.limitas : 0) ;
@@ -775,7 +772,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     subst_t info = SUBST_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     PROG = "66-execute" ;
     {
@@ -817,16 +814,15 @@ int main(int argc, char const *const *argv, char const *const *envp)
     if (!set_ownersysdir_stack(base, getuid()))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
-    if (resolve_read(wres, base, service) <= 0)
+    if (resolve_read(&wres, base, service) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
 
     /** the execute addon: run/finish scripts, runas, timeouts, privileges, caps */
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     {
-        resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-        if (res.has_execute && resolve_read(wex, res.sa.s + res.path.home, res.sa.s + res.name) <= 0)
+        resolve_wrapper_t wex = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
+        if (res.has_execute && resolve_read(&wex, res.sa.s + res.path.home, res.sa.s + res.name) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read execute addon of: ", service) ;
-        free(wex) ;
     }
 
     run = (action == EXECUTE_START) ? "/run" : "/finish" ;

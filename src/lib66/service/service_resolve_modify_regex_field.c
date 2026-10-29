@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,24 +25,24 @@ void service_resolve_modify_regex_field(resolve_service_addon_regex_t *rx, resol
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, rx) ;
 
     switch (table.id) {
 
         case E_RESOLVE_SERVICE_REGEX_CONFIGURE:
-            rx->configure = resolve_add_string(wres, data) ;
+            rx->configure = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_DIRECTORIES:
-            rx->directories = resolve_add_string(wres, data) ;
+            rx->directories = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_FILES:
-            rx->files = resolve_add_string(wres, data) ;
+            rx->files = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_INFILES:
-            rx->infiles = resolve_add_string(wres, data) ;
+            rx->infiles = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_REGEX_NDIRECTORIES:
@@ -61,8 +60,6 @@ void service_resolve_modify_regex_field(resolve_service_addon_regex_t *rx, resol
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_regex(rx) ;
 }

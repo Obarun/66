@@ -92,8 +92,8 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         }
     }
 
-    _cleanup_wres_ resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
-    resolve_init(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_LOGGER, lg) ;
+    resolve_init(&wres) ;
 
     for (uint32_t kid = 0 ; kid < E_PARSER_SECTION_LOGGER_ENDOFKEY ; kid++) {
 
@@ -119,12 +119,12 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                     if (!parse_clean_runas(tmp, t))
                         return 0 ;
 
-                    lg->execute.run.runas = resolve_add_string(wres, tmp) ;
+                    lg->execute.run.runas = resolve_add_string(&wres, tmp) ;
                 }
                 break ;
 
             case E_PARSER_SECTION_LOGGER_EXEC :
-                lg->execute.run.run_user = resolve_add_string(wres, v) ;
+                lg->execute.run.run_user = resolve_add_string(&wres, v) ;
                 break ;
 
             case E_PARSER_SECTION_LOGGER_TIMEOUT :
@@ -169,7 +169,7 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     // default runner when the user did not set Runas
     if (!lg->execute.run.runas)
-        lg->execute.run.runas = resolve_add_string(wres, SS_LOGGER_RUNNER) ;
+        lg->execute.run.runas = resolve_add_string(&wres, SS_LOGGER_RUNNER) ;
 
     if (lg->execute.run.run_user) {
 
@@ -180,8 +180,8 @@ int parse_logger(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         if (r < 0)
             return -1 ;
         if (r) {
-            lg->execute.run.run_user = resolve_add_string(wres, stk.s) ;
-            lg->execute.run.build = resolve_add_string(wres, "custom") ;
+            lg->execute.run.run_user = resolve_add_string(&wres, stk.s) ;
+            lg->execute.run.build = resolve_add_string(&wres, "custom") ;
         }
     }
 

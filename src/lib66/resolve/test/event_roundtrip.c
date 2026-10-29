@@ -51,31 +51,31 @@ static void test_roundtrip(char const *dir)
     printf("Running event addon round-trip\n") ;
 
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &ev) ;
+    resolve_init(&w) ;
 
     ev.type = EVENT_SOURCE_SCHEDULE ;
-    ev.from = resolve_add_string(w, "svc1 svc2") ;
+    ev.from = resolve_add_string(&w, "svc1 svc2") ;
     ev.nfrom = 2 ;
-    ev.on = resolve_add_string(w, "up down") ;
+    ev.on = resolve_add_string(&w, "up down") ;
     ev.non = 2 ;
     ev.combine = EVENT_COMBINE_ALL ;
     ev.docmd = EVENT_DO_RESTART ;
-    ev.emit = resolve_add_string(w, "cert-renewed") ;
-    ev.watch = resolve_add_string(w, "/etc/resolv.conf") ;
-    ev.expression = resolve_add_string(w, "0 0 3 * * ?") ;
-    ev.timezone = resolve_add_string(w, "Europe/Paris") ;
+    ev.emit = resolve_add_string(&w, "cert-renewed") ;
+    ev.watch = resolve_add_string(&w, "/etc/resolv.conf") ;
+    ev.expression = resolve_add_string(&w, "0 0 3 * * ?") ;
+    ev.timezone = resolve_add_string(&w, "Europe/Paris") ;
     ev.interval = 60000 ;
     ev.propagate = 1 ;
 
-    if (!write_cdb(w, dir, "svc.event")) {
+    if (!write_cdb(&w, dir, "svc.event")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_event_t back = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_EVENT, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.event") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.event") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -107,8 +107,8 @@ static void test_roundtrip(char const *dir)
     assert(back.interval == 60000) ;
     assert(back.propagate == 1) ;
 
-    resolve_free(wback) ;
-    resolve_free(w) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&w) ;
 
     printf(" PASS\n") ;
 }

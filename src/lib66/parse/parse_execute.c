@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 #include <string.h>
 #include <sys/resource.h>
 
@@ -471,7 +470,7 @@ int parse_execute(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     resolve_service_t *res = &c->res ;
     resolve_service_addon_execute_t *ex = &c->execute ;
     resolve_service_addon_limit_t *l = &c->limit ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
     uint8_t has_limit = 0 ;
 
     // a [Stop] Timeout the frontend does not write is the general stop delay
@@ -480,27 +479,24 @@ int parse_execute(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     int r = parse_execute_main(st, res, ex) ;
 
     if (r > 0)
-        r = parse_execute_section(st, res, ex, wres) ;
+        r = parse_execute_section(st, res, ex, &wres) ;
 
     if (r > 0)
         r = parse_limit(st, l, &has_limit) ;
 
     if (r > 0 && res->type != E_PARSER_TYPE_MODULE) {
 
-        r = parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_START) ;
+        r = parse_execute_startstop(st, res, ex, &wres, E_PARSER_SECTION_START) ;
 
         if (r > 0)
-            r = parse_execute_startstop(st, res, ex, wres, E_PARSER_SECTION_STOP) ;
+            r = parse_execute_startstop(st, res, ex, &wres, E_PARSER_SECTION_STOP) ;
     }
 
     if (r <= 0) {
-        free(wres) ;
         return r ;
     }
 
     res->has_limit = has_limit ;
-
-    free(wres) ;
 
     res->has_execute = 1 ;
 

@@ -27,10 +27,10 @@
 static int core_set_has(char const *base, char const *name, uint8_t type)
 {
     resolve_service_t core = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &core) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &core) ;
 
-    if (resolve_read(wres, base, name) <= 0) {
-        resolve_free(wres) ;
+    if (resolve_read(&wres, base, name) <= 0) {
+        resolve_free_obj(&wres) ;
         return 0 ;
     }
 
@@ -51,10 +51,10 @@ static int core_set_has(char const *base, char const *name, uint8_t type)
     int r = 1 ;
     if (has && !*has) {
         *has = 1 ;
-        r = resolve_write(wres, base, name) ;
+        r = resolve_write(&wres, base, name) ;
     }
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return r ;
 }

@@ -12,8 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 
-#include <stdlib.h>
-
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
 
@@ -24,9 +22,8 @@ static void add_version(resolve_service_t *res)
 {
     log_flow() ;
     log_trace("resolve file version for: ", res->sa.s + res->name, " set to: ", SS_VERSION) ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
-    res->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, res) ;
+    res->rversion = resolve_add_string(&wres, SS_VERSION) ;
 }
 
 int service_resolve_write_cdb(ocdbmaker *c, resolve_service_t *res)
@@ -88,9 +85,8 @@ int service_resolve_write_addon_limit_cdb(ocdbmaker *c, resolve_service_addon_li
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_LIMIT, l) ;
-    l->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, l) ;
+    l->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, l->sa.s, l->sa.len))
         return 0 ;
@@ -120,9 +116,8 @@ int service_resolve_write_addon_environ_cdb(ocdbmaker *c, resolve_service_addon_
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
-    e->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, e) ;
+    e->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, e->sa.s, e->sa.len))
         return 0 ;
@@ -142,9 +137,8 @@ int service_resolve_write_addon_io_cdb(ocdbmaker *c, resolve_service_addon_io_t 
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_IO, io) ;
-    io->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_IO, io) ;
+    io->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, io->sa.s, io->sa.len))
         return 0 ;
@@ -166,9 +160,8 @@ int service_resolve_write_addon_execute_cdb(ocdbmaker *c, resolve_service_addon_
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
-    ex->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
+    ex->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, ex->sa.s, ex->sa.len))
         return 0 ;
@@ -208,9 +201,8 @@ int service_resolve_write_addon_dependencies_cdb(ocdbmaker *c, resolve_service_a
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
-    dep->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
+    dep->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, dep->sa.s, dep->sa.len))
         return 0 ;
@@ -237,9 +229,8 @@ int service_resolve_write_addon_regex_cdb(ocdbmaker *c, resolve_service_addon_re
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
-    rx->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, rx) ;
+    rx->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, rx->sa.s, rx->sa.len))
         return 0 ;
@@ -261,9 +252,8 @@ int service_resolve_write_addon_event_cdb(ocdbmaker *c, resolve_service_addon_ev
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
-    ev->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
+    ev->rversion = resolve_add_string(&wres, SS_VERSION) ;
 
     if (!ocdb_make_add(c, "sa", 2, ev->sa.s, ev->sa.len))
         return 0 ;

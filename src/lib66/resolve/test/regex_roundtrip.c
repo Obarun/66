@@ -50,25 +50,25 @@ static void test_roundtrip(char const *dir)
     printf("Running regex addon round-trip\n") ;
 
     resolve_service_addon_regex_t rx = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_REGEX, &rx) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &rx) ;
+    resolve_init(&w) ;
 
-    rx.configure = resolve_add_string(w, "configure.sh") ;
-    rx.directories = resolve_add_string(w, "dir1 dir2") ;
+    rx.configure = resolve_add_string(&w, "configure.sh") ;
+    rx.directories = resolve_add_string(&w, "dir1 dir2") ;
     rx.ndirectories = 2 ;
-    rx.files = resolve_add_string(w, "file1") ;
+    rx.files = resolve_add_string(&w, "file1") ;
     rx.nfiles = 1 ;
-    rx.infiles = resolve_add_string(w, ":file:KEY=val") ;
+    rx.infiles = resolve_add_string(&w, ":file:KEY=val") ;
     rx.ninfiles = 1 ;
 
-    if (!write_cdb(w, dir, "svc.regex")) {
+    if (!write_cdb(&w, dir, "svc.regex")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_regex_t back = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_REGEX, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.regex") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.regex") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -82,8 +82,8 @@ static void test_roundtrip(char const *dir)
     assert(!strcmp(back.sa.s + back.infiles, ":file:KEY=val")) ;
     assert(back.ninfiles == 1) ;
 
-    resolve_free(wback) ;
-    resolve_free(w) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&w) ;
 
     printf(" PASS\n") ;
 }

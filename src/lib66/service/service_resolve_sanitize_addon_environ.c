@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 
@@ -31,15 +30,13 @@ void service_resolve_sanitize_addon_environ(resolve_service_addon_environ_t *e)
 
     e->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, e) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
     e->rversion = 0 ;
     // string fields only; env_overwrite and nimportfile are integers
-    e->env = e->env ? resolve_add_string(wres, stk + e->env) : 0 ;
-    e->envdir = e->envdir ? resolve_add_string(wres, stk + e->envdir) : 0 ;
-    e->importfile = e->importfile ? resolve_add_string(wres, stk + e->importfile) : 0 ;
-
-    free(wres) ;
+    e->env = e->env ? resolve_add_string(&wres, stk + e->env) : 0 ;
+    e->envdir = e->envdir ? resolve_add_string(&wres, stk + e->envdir) : 0 ;
+    e->importfile = e->importfile ? resolve_add_string(&wres, stk + e->importfile) : 0 ;
 }

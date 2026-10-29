@@ -214,7 +214,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     char svname[SS_MAX_SERVICE_NAME + 1] ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing service argument") ;
@@ -230,7 +230,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
         if (!ob_dirname(dirname, *argv))
             log_dieu(LOG_EXIT_SYS, "get dirname of: ", *argv) ;
 
-        if (resolve_read_cdb(wres, dirname, basename) <= 0)
+        if (resolve_read_cdb(&wres, dirname, basename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {
@@ -241,7 +241,7 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
 
         char const *sv = r ? svname : *argv ;
 
-        r = resolve_read(wres, info->base.s, sv) ;
+        r = resolve_read(&wres, info->base.s, sv) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
 
@@ -259,58 +259,58 @@ int ssexec_resolve(int argc, char const *const *argv, void *data)
     resolve_service_addon_event_t event = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
     info_addon_t addons[DATA_SERVICE_EVENT + 1] = {{0,0}} ;
 
-    resolve_wrapper_t_ref wlimit = resolve_set_struct(DATA_SERVICE_LIMIT, &limit) ;
-    if (res.has_limit && resolve_read(wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wlimit = RESOLVE_WRAPPER(DATA_SERVICE_LIMIT, &limit) ;
+    if (res.has_limit && resolve_read(&wlimit, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_LIMIT].base = &limit ;
         addons[DATA_SERVICE_LIMIT].blob = limit.sa.s ;
     }
 
-    resolve_wrapper_t_ref wenviron = resolve_set_struct(DATA_SERVICE_ENVIRON, &environ) ;
-    if (res.has_environ && resolve_read(wenviron, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wenviron = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, &environ) ;
+    if (res.has_environ && resolve_read(&wenviron, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_ENVIRON].base = &environ ;
         addons[DATA_SERVICE_ENVIRON].blob = environ.sa.s ;
     }
 
-    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    if (res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wio = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    if (res.has_io && resolve_read(&wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_IO].base = &io ;
         addons[DATA_SERVICE_IO].blob = io.sa.s ;
     }
 
-    resolve_wrapper_t_ref wexecute = resolve_set_struct(DATA_SERVICE_EXECUTE, &execute) ;
-    if (res.has_execute && resolve_read(wexecute, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wexecute = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &execute) ;
+    if (res.has_execute && resolve_read(&wexecute, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_EXECUTE].base = &execute ;
         addons[DATA_SERVICE_EXECUTE].blob = execute.sa.s ;
     }
 
-    resolve_wrapper_t_ref wdependencies = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dependencies) ;
-    if (res.has_dependencies && resolve_read(wdependencies, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wdependencies = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &dependencies) ;
+    if (res.has_dependencies && resolve_read(&wdependencies, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_DEPENDENCIES].base = &dependencies ;
         addons[DATA_SERVICE_DEPENDENCIES].blob = dependencies.sa.s ;
     }
 
-    resolve_wrapper_t_ref wregex = resolve_set_struct(DATA_SERVICE_REGEX, &regex) ;
-    if (res.has_regex && resolve_read(wregex, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wregex = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &regex) ;
+    if (res.has_regex && resolve_read(&wregex, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_REGEX].base = &regex ;
         addons[DATA_SERVICE_REGEX].blob = regex.sa.s ;
     }
 
-    resolve_wrapper_t_ref wevent = resolve_set_struct(DATA_SERVICE_EVENT, &event) ;
-    if (res.has_event && resolve_read(wevent, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
+    resolve_wrapper_t wevent = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &event) ;
+    if (res.has_event && resolve_read(&wevent, res.sa.s + res.path.home, res.sa.s + res.name) > 0) {
         addons[DATA_SERVICE_EVENT].base = &event ;
         addons[DATA_SERVICE_EVENT].blob = event.sa.s ;
     }
 
     info_resolve_display(&res, res.sa.s, fields, OPT_COUNT(fields), field, noname, addons, DATA_SERVICE_EVENT + 1) ;
 
-    resolve_free(wlimit) ;
-    resolve_free(wenviron) ;
-    resolve_free(wio) ;
-    resolve_free(wexecute) ;
-    resolve_free(wdependencies) ;
-    resolve_free(wregex) ;
-    resolve_free(wevent) ;
-    resolve_free(wres) ;
+    resolve_free_obj(&wlimit) ;
+    resolve_free_obj(&wenviron) ;
+    resolve_free_obj(&wio) ;
+    resolve_free_obj(&wexecute) ;
+    resolve_free_obj(&wdependencies) ;
+    resolve_free_obj(&wregex) ;
+    resolve_free_obj(&wevent) ;
+    resolve_free_obj(&wres) ;
 
     return 0 ;
 }

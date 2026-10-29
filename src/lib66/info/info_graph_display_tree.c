@@ -32,13 +32,13 @@ int info_graph_display_tree(char const *name)
     int err = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
 
     uid_t owner = getuid() ;
 
     if (!set_ownersysdir(&sa, owner)) {
         log_warnusys("set owner directory") ;
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return err ;
     }
 
@@ -50,7 +50,7 @@ int info_graph_display_tree(char const *name)
         goto freed ;
     }
 
-    if (resolve_read(wres, sa.s, name) <= 0)
+    if (resolve_read(&wres, sa.s, name) <= 0)
         goto freed ;
 
     /*
@@ -89,7 +89,7 @@ int info_graph_display_tree(char const *name)
     err = 1 ;
 
     freed:
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
 
     return err ;
 

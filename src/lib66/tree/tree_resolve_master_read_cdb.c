@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdlib.h>//free
 #include <errno.h>
 
 #include <oblibs/log.h>
@@ -25,18 +24,12 @@ int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres)
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres ;
-
-    wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
-
     if (resolve_get_sa(&mres->sa,c) <= 0) {
-        free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
 
     /* configuration */
     if (!resolve_get_key_u32(c, "rversion", &mres->rversion)) {
-        free(wres) ;
         return (errno = EINVAL, 0)  ;
     }
 
@@ -46,11 +39,8 @@ int tree_resolve_master_read_cdb(ocdb *c, resolve_tree_master_t *mres)
         !resolve_get_key_u32(c, "contents", &mres->contents) ||
         !resolve_get_key_u32(c, "nallow", &mres->nallow) ||
         !resolve_get_key_u32(c, "ncontents", &mres->ncontents)) {
-            free(wres) ;
             return 0 ;
     }
-
-    free(wres) ;
 
     return 1 ;
 }

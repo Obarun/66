@@ -28,9 +28,9 @@ int tree_find_current(char *treename, char const *base)
 
     int e = -1 ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, &mres) ;
 
-    if (resolve_read(wres, base, SS_MASTER + 1) <= 0)
+    if (resolve_read(&wres, base, SS_MASTER + 1) <= 0)
         goto err ;
 
     // no current tree: the default one
@@ -38,6 +38,6 @@ int tree_find_current(char *treename, char const *base)
     e = 1 ;
 
     err:
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return e ;
 }

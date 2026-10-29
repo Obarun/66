@@ -50,30 +50,30 @@ static void test_roundtrip(char const *dir)
     printf("Running dependencies addon round-trip\n") ;
 
     resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &dep) ;
+    resolve_init(&w) ;
 
-    dep.depends = resolve_add_string(w, "dep1 dep2") ;
+    dep.depends = resolve_add_string(&w, "dep1 dep2") ;
     dep.ndepends = 2 ;
-    dep.requiredby = resolve_add_string(w, "svc-log") ;
+    dep.requiredby = resolve_add_string(&w, "svc-log") ;
     dep.nrequiredby = 1 ;
-    dep.optsdeps = resolve_add_string(w, "opt1") ;
+    dep.optsdeps = resolve_add_string(&w, "opt1") ;
     dep.noptsdeps = 1 ;
-    dep.contents = resolve_add_string(w, "a b c") ;
+    dep.contents = resolve_add_string(&w, "a b c") ;
     dep.ncontents = 3 ;
-    dep.provide = resolve_add_string(w, "virtual-svc") ;
+    dep.provide = resolve_add_string(&w, "virtual-svc") ;
     dep.nprovide = 1 ;
-    dep.conflict = resolve_add_string(w, "other-svc") ;
+    dep.conflict = resolve_add_string(&w, "other-svc") ;
     dep.nconflict = 1 ;
 
-    if (!write_cdb(w, dir, "svc.dependencies")) {
+    if (!write_cdb(&w, dir, "svc.dependencies")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_dependencies_t back = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.dependencies") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.dependencies") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -92,8 +92,8 @@ static void test_roundtrip(char const *dir)
     assert(!strcmp(back.sa.s + back.conflict, "other-svc")) ;
     assert(back.nconflict == 1) ;
 
-    resolve_free(wback) ;
-    resolve_free(w) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&w) ;
 
     printf(" PASS\n") ;
 }

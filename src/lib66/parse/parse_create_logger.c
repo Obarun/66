@@ -68,7 +68,7 @@ static void compute_log_script(resolve_service_t *log, resolve_service_addon_exe
 
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, logexec) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, logexec) ;
 
     int build = !strcmp(lg->sa.s + lg->execute.run.build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
 
@@ -80,7 +80,7 @@ static void compute_log_script(resolve_service_t *log, resolve_service_addon_exe
     int itimestamp = SS_LOGGER_TIMESTAMP ;
     char *logrunner = lg->execute.run.runas ? lg->sa.s + lg->execute.run.runas : SS_LOGGER_RUNNER ;
 
-    logexec->run.runas = resolve_add_string(wres, logrunner) ;
+    logexec->run.runas = resolve_add_string(&wres, logrunner) ;
 
     // timestamp
     uint32_t ts = lg->timestamp == E_PARSER_TIME_ENDOFKEY ? (uint32_t)itimestamp : lg->timestamp ;
@@ -113,7 +113,7 @@ static void compute_log_script(resolve_service_t *log, resolve_service_addon_exe
                     SS_EXTLIBEXECPREFIX "66-execute start ", \
                     log->sa.s + log->name, "\n") ;
 
-        logexec->run.run = resolve_add_string(wres, run) ;
+        logexec->run.run = resolve_add_string(&wres, run) ;
 
     }
 
@@ -136,18 +136,16 @@ static void compute_log_script(resolve_service_t *log, resolve_service_addon_exe
 
             auto_strings(run + FAKELEN, "s", pmax, " ", io->sa.s + io->fdout.destination, "\n") ;
 
-            logexec->run.run_user = resolve_add_string(wres, run) ;
+            logexec->run.run_user = resolve_add_string(&wres, run) ;
 
         } else {
 
             char run[strlen(lg->sa.s + lg->execute.run.run_user) + 2] ;
             auto_strings(run, lg->sa.s + lg->execute.run.run_user, "\n") ;
 
-            logexec->run.run_user = resolve_add_string(wres, run) ;
+            logexec->run.run_user = resolve_add_string(&wres, run) ;
         }
     }
-
-    free(wres) ;
 }
 
 static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolve_service_addon_io_t *io, resolve_service_addon_io_t *logio, resolve_service_addon_logger_t *lg, resolve_service_addon_execute_t *parentexec, resolve_service_addon_execute_t *logexec, resolve_service_addon_dependencies_t *logdep, ssexec_t *info)
@@ -157,10 +155,10 @@ static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolv
     if (!res->logger)
         return 1 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, log) ;
-    resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, logexec) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, log) ;
+    resolve_wrapper_t exwres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, logexec) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
     char *str = res->sa.s ;
     size_t pnamelen = strlen(str + res->name) ;
@@ -171,50 +169,47 @@ static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolv
 
     auto_strings(description, str + res->name, " logger") ;
 
-    log->name = resolve_add_string(wres, name) ;
-    log->description = resolve_add_string(wres, description) ;
-    log->version = resolve_add_string(wres, str + res->version) ;
+    log->name = resolve_add_string(&wres, name) ;
+    log->description = resolve_add_string(&wres, description) ;
+    log->version = resolve_add_string(&wres, str + res->version) ;
     log->type = res->type ;
     logexec->notify = 3 ;
     logexec->maxdeath = parentexec->maxdeath ;
     log->earlier = res->earlier ;
     if (res->intree)
-        log->intree = resolve_add_string(wres, str + res->intree) ;
+        log->intree = resolve_add_string(&wres, str + res->intree) ;
 
-    log->ownerstr = resolve_add_string(wres, str + res->ownerstr) ;
+    log->ownerstr = resolve_add_string(&wres, str + res->ownerstr) ;
     log->owner = res->owner ;
-    log->treename = resolve_add_string(wres, str + res->treename) ;
-    log->user = resolve_add_string(wres, str + res->user) ;
+    log->treename = resolve_add_string(&wres, str + res->treename) ;
+    log->user = resolve_add_string(&wres, str + res->user) ;
     if (res->inns)
-        log->inns = resolve_add_string(wres, str + res->inns) ;
+        log->inns = resolve_add_string(&wres, str + res->inns) ;
     log->islog = 1 ;
 
-    log->path.home = resolve_add_string(wres, str + res->path.home) ;
-    log->path.frontend = resolve_add_string(wres, str + res->path.frontend) ;
-    log->path.servicedir = compute_src_servicedir(wres, info) ;
+    log->path.home = resolve_add_string(&wres, str + res->path.home) ;
+    log->path.frontend = resolve_add_string(&wres, str + res->path.frontend) ;
+    log->path.servicedir = compute_src_servicedir(&wres, info) ;
     {
-        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, logdep) ;
-        logdep->requiredby = resolve_add_string(depwres, str + res->name) ;
+        resolve_wrapper_t depwres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, logdep) ;
+        logdep->requiredby = resolve_add_string(&depwres, str + res->name) ;
         logdep->nrequiredby = 1 ;
-        free(depwres) ;
     }
     log->has_dependencies = 1 ;
-    logexec->run.build = lg->execute.run.build ? resolve_add_string(exwres, lg->sa.s + lg->execute.run.build) : 0 ;
-    logexec->run.runas = resolve_add_string(exwres, lg->sa.s + lg->execute.run.runas) ;
+    logexec->run.build = lg->execute.run.build ? resolve_add_string(&exwres, lg->sa.s + lg->execute.run.build) : 0 ;
+    logexec->run.runas = resolve_add_string(&exwres, lg->sa.s + lg->execute.run.runas) ;
     logexec->timeout.start = lg->execute.timeout.start ;
     logexec->timeout.stop = SS_DEFAULT_STOP_TIMEOUT ; // a logger has no [Stop]: the general stop delay
     logexec->down = lg->execute.down ;
     logexec->downsignal = lg->execute.downsignal ;
 
-    if (parse_compute_live(wres, info) < 0) {
-        free(exwres) ;
-        free(wres) ;
+    if (parse_compute_live(&wres, info) < 0) {
         return -1 ;
     }
 
     {
-        resolve_wrapper_t_ref iowres = resolve_set_struct(DATA_SERVICE_IO, logio) ;
-        resolve_init(iowres) ;
+        resolve_wrapper_t iowres = RESOLVE_WRAPPER(DATA_SERVICE_IO, logio) ;
+        resolve_init(&iowres) ;
 
         if (!strcmp(lg->sa.s + lg->execute.run.build, "custom")) {
 
@@ -223,12 +218,10 @@ static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolv
         } else {
 
             logio->fdin.type = logio->fdout.type = E_PARSER_IO_TYPE_66LOG ;
-            logio->fdin.destination = resolve_add_string(iowres, res->sa.s + res->live.fdholderdir) ;
-            logio->fdout.destination = logio->fderr.destination = resolve_add_string(iowres, io->sa.s + io->fdout.destination) ;
+            logio->fdin.destination = resolve_add_string(&iowres, res->sa.s + res->live.fdholderdir) ;
+            logio->fdout.destination = logio->fderr.destination = resolve_add_string(&iowres, io->sa.s + io->fdout.destination) ;
             logio->fderr.type = E_PARSER_IO_TYPE_INHERIT ;
         }
-
-        free(iowres) ;
     }
     log->has_io = 1 ;
     log->has_execute = 1 ;
@@ -236,9 +229,6 @@ static int compute_logger(resolve_service_t *res, resolve_service_t *log, resolv
     // oneshot do not use fdholder daemon
     if (res->type == E_PARSER_TYPE_CLASSIC)
         compute_log_script(log, logexec, io, lg) ;
-
-    free(exwres) ;
-    free(wres) ;
 
     return 1 ;
 }
@@ -260,46 +250,40 @@ int parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
     resolve_service_addon_io_t logio = RESOLVE_SERVICE_ADDON_IO_ZERO ;
     resolve_service_addon_execute_t logexec = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_service_addon_dependencies_t logdep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
     {
-        resolve_wrapper_t_ref exwres = resolve_set_struct(DATA_SERVICE_EXECUTE, &logexec) ;
-        resolve_init(exwres) ;
-        free(exwres) ;
-        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &logdep) ;
-        resolve_init(depwres) ;
-        free(depwres) ;
+        resolve_wrapper_t exwres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &logexec) ;
+        resolve_init(&exwres) ;
+        resolve_wrapper_t depwres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &logdep) ;
+        resolve_init(&depwres) ;
     }
 
     hash = resolve_hash_search(hres, logname) ;
     if (hash == NULL && res->type == E_PARSER_TYPE_CLASSIC) {
 
-        resolve_wrapper_t_ref depwres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, parentdep) ;
+        resolve_wrapper_t depwres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, parentdep) ;
 
         if (parentdep->ndepends) {
 
             char buf[strlen(parentdep->sa.s + parentdep->depends) + 1 + strlen(logname) + 1] ;
             auto_strings(buf, parentdep->sa.s + parentdep->depends, " ", logname) ;
 
-            parentdep->depends = resolve_add_string(depwres, buf) ;
+            parentdep->depends = resolve_add_string(&depwres, buf) ;
 
         } else {
 
-            parentdep->depends = resolve_add_string(depwres, logname) ;
+            parentdep->depends = resolve_add_string(&depwres, logname) ;
         }
 
         parentdep->ndepends++ ;
-
-        free(depwres) ;
 
         if (compute_logger(res, &lres, io, &logio, lg, parentexec, &logexec, &logdep, info) < 0)
             goto err ;
 
         /** keep the derived run scripts on the parent's logger addon (dump/reference) */
         {
-            resolve_wrapper_t_ref lgwres = resolve_set_struct(DATA_SERVICE_LOGGER, lg) ;
-            lg->execute.run.run = resolve_add_string(lgwres, logexec.sa.s + logexec.run.run) ;
-            lg->execute.run.run_user = resolve_add_string(lgwres, logexec.sa.s + logexec.run.run_user) ;
-            free(lgwres) ;
+            resolve_wrapper_t lgwres = RESOLVE_WRAPPER(DATA_SERVICE_LOGGER, lg) ;
+            lg->execute.run.run = resolve_add_string(&lgwres, logexec.sa.s + logexec.run.run) ;
+            lg->execute.run.run_user = resolve_add_string(&lgwres, logexec.sa.s + logexec.run.run_user) ;
         }
 
         log_trace("add service: ", logname, " to the service selection") ;
@@ -316,8 +300,6 @@ int parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
         strbuf_free(&logdep.sa) ;
     }
 
-    free(wres) ;
-
     return 1 ;
 
     err:
@@ -325,6 +307,5 @@ int parse_create_logger(hash_t *hres, struct resolve_hash_s *c, ssexec_t *info)
         strbuf_free(&logio.sa) ;
         strbuf_free(&logexec.sa) ;
         strbuf_free(&logdep.sa) ;
-        free(wres) ;
         return -1 ;
 }

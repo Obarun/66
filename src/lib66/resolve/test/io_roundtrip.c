@@ -51,24 +51,24 @@ static void test_roundtrip(char const *dir)
     printf("Running io addon round-trip\n") ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    resolve_init(&w) ;
 
     io.fdin.type = E_PARSER_IO_TYPE_66LOG ;
-    io.fdin.destination = resolve_add_string(w, "/run/66/scandir/fdholder") ;
+    io.fdin.destination = resolve_add_string(&w, "/run/66/scandir/fdholder") ;
     io.fdout.type = E_PARSER_IO_TYPE_66LOG ;
-    io.fdout.destination = resolve_add_string(w, "/var/log/66/svc") ;
+    io.fdout.destination = resolve_add_string(&w, "/var/log/66/svc") ;
     io.fderr.type = E_PARSER_IO_TYPE_INHERIT ;
-    io.fderr.destination = resolve_add_string(w, "/var/log/66/svc") ;
+    io.fderr.destination = resolve_add_string(&w, "/var/log/66/svc") ;
 
-    if (!write_cdb(w, dir, "svc.io")) {
+    if (!write_cdb(&w, dir, "svc.io")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_io_t back = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_IO, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.io") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_IO, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.io") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -81,8 +81,8 @@ static void test_roundtrip(char const *dir)
     assert(back.fderr.type == E_PARSER_IO_TYPE_INHERIT) ;
     assert(!strcmp(back.sa.s + back.fderr.destination, "/var/log/66/svc")) ;
 
-    resolve_free(wback) ;
-    resolve_free(w) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&w) ;
 
     printf(" PASS\n") ;
 }

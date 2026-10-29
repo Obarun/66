@@ -52,13 +52,13 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name, uint32_t has_event)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_event = has_event ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void get_field(strbuf *out, char const *base, char const *name, uint32_t id)
@@ -67,21 +67,21 @@ static void get_field(strbuf *out, char const *base, char const *name, uint32_t 
     t.u.service.id = id ;
 
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &ev) ;
 
     out->len = 0 ;
-    assert(resolve_get_field(out, w, base, name, t) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_get_field(out, &w, base, name, t) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void modify_field(char const *base, char const *name, uint32_t id, char const *val)
 {
     resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &ev) ;
     resolve_enum_table_t t = E_TABLE_SERVICE_EVENT_ZERO ;
     t.u.service.id = id ;
-    assert(resolve_modify_field(w, base, name, t, val) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_modify_field(&w, base, name, t, val) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 int main(void)
@@ -102,13 +102,13 @@ int main(void)
     write_core(base, "withevent", 1) ;
     {
         resolve_service_addon_event_t ev = RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
-        resolve_init(w) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &ev) ;
+        resolve_init(&w) ;
         ev.type = EVENT_SOURCE_SERVICE ;
         ev.nfrom = 1 ;
-        ev.from = resolve_add_string(w, "alpha") ;
-        assert(resolve_write(w, base, "withevent") > 0) ;
-        resolve_free(w) ;
+        ev.from = resolve_add_string(&w, "alpha") ;
+        assert(resolve_write(&w, base, "withevent") > 0) ;
+        resolve_free_obj(&w) ;
     }
 
     /* eventfrom is a list field: resolve_get_field returns it sbl-cleaned, so a

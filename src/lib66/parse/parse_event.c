@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 #include <string.h>
 #include <errno.h>
 
@@ -344,12 +343,11 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     ev->type = (uint32_t)src ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
-    resolve_init(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
+    resolve_init(&wres) ;
 
-    int r = has_from ? read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, wres, &ev->from, &ev->nfrom) : 1 ;
+    int r = has_from ? read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_FROM, &wres, &ev->from, &ev->nfrom) : 1 ;
     if (r <= 0) {
-        free(wres) ;
         if (r < 0)
             return -1 ;
         log_warnu_return(LOG_EXIT_ZERO, "read the From list of service: ", name) ;
@@ -359,9 +357,8 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         ev->combine = EVENT_COMBINE_ANY ;
 
-        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ON, wres, &ev->on, &ev->non) ;
+        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ON, &wres, &ev->on, &ev->non) ;
         if (r <= 0) {
-            free(wres) ;
             if (r < 0)
                 return -1 ;
             log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
@@ -371,9 +368,8 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         ev->combine = EVENT_COMBINE_ALL ;
 
-        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ONALL, wres, &ev->on, &ev->non) ;
+        r = read_list(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_ONALL, &wres, &ev->on, &ev->non) ;
         if (r <= 0) {
-            free(wres) ;
             if (r < 0)
                 return -1 ;
             log_warnu_return(LOG_EXIT_ZERO, "read the OnAll list of service: ", name) ;
@@ -382,7 +378,6 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     if ((src == EVENT_SOURCE_SERVICE || src == EVENT_SOURCE_SIGNAL) &&
         (!check_from_names(ev->sa.s + ev->from, name) || !validate_on_tokens(ev->sa.s + ev->on, src, ev->sa.s + ev->from, has_from, name))) {
-        free(wres) ;
         return 0 ;
     }
 
@@ -390,7 +385,6 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
         r = validate_from_sources(ev->sa.s + ev->from, src, ctx, name) ;
         if (r <= 0) {
-            free(wres) ;
             return r ;
         }
     }
@@ -401,14 +395,12 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         int d = event_do_from_string(v) ;
 
         if (d < 0) {
-            free(wres) ;
             log_warn_return(LOG_EXIT_ZERO, "invalid Do action: ", v, " of service: ", name) ;
         }
 
         ev->docmd = (uint32_t)d ;
 
         if (d == EVENT_DO_RELOAD && res->type == E_PARSER_TYPE_ONESHOT) {
-            free(wres) ;
             log_warn_return(LOG_EXIT_ZERO, "Do=reload needs a process to signal, not allowed on a oneshot reactor of service: ", name) ;
         }
     }
@@ -418,11 +410,10 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         v = parse_store_get(st, E_PARSER_SECTION_EVENT, E_PARSER_SECTION_EVENT_EMIT, 0) ;
 
         if (v[str_search(v, '.')]) {
-            free(wres) ;
             log_warn_return(LOG_EXIT_ZERO, "an event name with a dot is reserved to 66, Emit: ", v, " not allowed of service: ", name) ;
         }
 
-        ev->emit = resolve_add_string(wres, v) ;
+        ev->emit = resolve_add_string(&wres, v) ;
     }
 
     ev->propagate = 1 ;
@@ -434,8 +425,6 @@ int parse_event(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         if (v[0] == 'F' || v[0] == 'f' || v[0] == '0')
             ev->propagate = 0 ;
     }
-
-    free(wres) ;
 
     res->has_event = 1 ;
 
@@ -472,41 +461,36 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     ev->type = (uint32_t)src ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
-    resolve_init(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
+    resolve_init(&wres) ;
 
     switch (src) {
 
         case EVENT_SOURCE_INOTIFY:
 
             if (has_expr || has_tz || has_every) {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "an inotify source only takes Watch and On of service: ", name) ;
             }
             if (!has_watch || !has_on) {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "an inotify source requires Watch and On of service: ", name) ;
             }
 
             v = MAIN_GET(st, WATCH) ;
             if (v[0] != '/') {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "Watch must be an absolute path: ", v, " of service: ", name) ;
             }
-            ev->watch = resolve_add_string(wres, v) ;
+            ev->watch = resolve_add_string(&wres, v) ;
 
             ev->combine = EVENT_COMBINE_ANY ;
 
-            int r = read_list(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_ON, wres, &ev->on, &ev->non) ;
+            int r = read_list(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_ON, &wres, &ev->on, &ev->non) ;
             if (r <= 0) {
-                free(wres) ;
                 if (r < 0)
                     return -1 ;
                 log_warnu_return(LOG_EXIT_ZERO, "read the On list of service: ", name) ;
             }
 
             if (!validate_on_tokens(ev->sa.s + ev->on, EVENT_SOURCE_INOTIFY, 0, 0, name)) {
-                free(wres) ;
                 return 0 ;
             }
             break ;
@@ -515,11 +499,9 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             {
 
                 if (has_watch || has_on || has_every) {
-                    free(wres) ;
                     log_warn_return(LOG_EXIT_ZERO, "a schedule source only takes Expression and Timezone of service: ", name) ;
                 }
                 if (!has_expr) {
-                    free(wres) ;
                     log_warn_return(LOG_EXIT_ZERO, "a schedule source requires Expression of service: ", name) ;
                 }
 
@@ -527,30 +509,26 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                 char const *tz = has_tz ? MAIN_GET(st, TIMEZONE) : 0 ;
                 cron_t cron = CRON_EXPR_ZERO ;
                 if (!parse_cron(v, &cron, tz)) {
-                    free(wres) ;
                     log_warnu_return(LOG_EXIT_ZERO, "parse cron Expression: ", v, " of service: ", name) ;
                 }
 
-                ev->expression = resolve_add_string(wres, v) ;
+                ev->expression = resolve_add_string(&wres, v) ;
                 if (has_tz)
-                    ev->timezone = resolve_add_string(wres, tz) ;
+                    ev->timezone = resolve_add_string(&wres, tz) ;
                 break ;
             }
 
         case EVENT_SOURCE_TIMER:
 
             if (has_watch || has_on || has_expr || has_tz) {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "a timer source only takes Every of service: ", name) ;
             }
             if (!has_every) {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "a timer source requires Every of service: ", name) ;
             }
 
             v = MAIN_GET(st, EVERY) ;
             if (!every_to_ms(v, &ev->interval)) {
-                free(wres) ;
                 log_warn_return(LOG_EXIT_ZERO, "invalid Every duration: ", v, " of service: ", name) ;
             }
             break ;
@@ -558,8 +536,6 @@ int parse_event_source(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         default:
             break ;
     }
-
-    free(wres) ;
 
     res->has_event = 1 ;
 

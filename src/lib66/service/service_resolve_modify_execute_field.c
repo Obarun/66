@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,40 +25,40 @@ void service_resolve_modify_execute_field(resolve_service_addon_execute_t *ex, r
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
 
     switch (table.id) {
 
         case E_RESOLVE_SERVICE_EXECUTE_RUN:
-            ex->run.run = resolve_add_string(wres, data) ;
+            ex->run.run = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_RUN_USER:
-            ex->run.run_user = resolve_add_string(wres, data) ;
+            ex->run.run_user = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_RUN_BUILD:
-            ex->run.build = resolve_add_string(wres, data) ;
+            ex->run.build = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS:
-            ex->run.runas = resolve_add_string(wres, data) ;
+            ex->run.runas = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_FINISH:
-            ex->finish.run = resolve_add_string(wres, data) ;
+            ex->finish.run = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_FINISH_USER:
-            ex->finish.run_user = resolve_add_string(wres, data) ;
+            ex->finish.run_user = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_FINISH_BUILD:
-            ex->finish.build = resolve_add_string(wres, data) ;
+            ex->finish.build = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_FINISH_RUNAS:
-            ex->finish.runas = resolve_add_string(wres, data) ;
+            ex->finish.runas = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_TIMEOUTSTART:
@@ -99,15 +98,15 @@ void service_resolve_modify_execute_field(resolve_service_addon_execute_t *ex, r
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_CHDIR:
-            ex->chdir = resolve_add_string(wres, data) ;
+            ex->chdir = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_CAPS_BOUND:
-            ex->capsbound = resolve_add_string(wres, data) ;
+            ex->capsbound = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_CAPS_AMBIENT:
-            ex->capsambient = resolve_add_string(wres, data) ;
+            ex->capsambient = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EXECUTE_NOTIFY:
@@ -125,8 +124,6 @@ void service_resolve_modify_execute_field(resolve_service_addon_execute_t *ex, r
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_execute(ex) ;
 }

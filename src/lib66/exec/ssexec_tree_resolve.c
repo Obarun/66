@@ -97,9 +97,9 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
     uint8_t master = 0 ;
     char const *treename = 0 ;
 
-    resolve_wrapper_t_ref wres = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing tree argument") ;
@@ -117,17 +117,19 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
         if (!strcmp(basename, SS_MASTER + 1)) {
 
             master = 1 ;
-            wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+            wres.type = DATA_TREE_MASTER ;
+            wres.obj = &mres ;
 
         } else {
 
-            wres = resolve_set_struct(DATA_TREE, &tres) ;
+            wres.type = DATA_TREE ;
+            wres.obj = &tres ;
         }
 
         if (!ob_dirname(dirname, treename))
             log_dieu(LOG_EXIT_SYS, "get dirname of: ", treename) ;
 
-        if (resolve_read_cdb(wres, dirname, basename) <= 0)
+        if (resolve_read_cdb(&wres, dirname, basename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
 
     } else {
@@ -135,11 +137,13 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
         if (!strcmp(treename, SS_MASTER + 1)) {
 
             master = 1 ;
-            wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+            wres.type = DATA_TREE_MASTER ;
+            wres.obj = &mres ;
 
         } else {
 
-            wres = resolve_set_struct(DATA_TREE, &tres) ;
+            wres.type = DATA_TREE ;
+            wres.obj = &tres ;
 
             r = tree_isvalid(info->base.s, treename) ;
 
@@ -150,7 +154,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
                 log_dieu(LOG_EXIT_USER, "find tree: ", treename) ;
         }
 
-        if (resolve_read(wres, info->base.s, treename) <= 0)
+        if (resolve_read(&wres, info->base.s, treename) <= 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file") ;
     }
 
@@ -159,7 +163,7 @@ int ssexec_tree_resolve(int argc, char const *const *argv, void *data)
     else
         info_resolve_display(&tres, tres.sa.s, fields_tree, OPT_COUNT(fields_tree), field, noname, 0, 0) ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return 0 ;
 }

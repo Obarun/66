@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
 
 #include <oblibs/log.h>
 
@@ -31,17 +30,15 @@ void tree_resolve_sanitize(resolve_tree_t *tres)
 
     tres->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, tres) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
-    tres->name = tres->name ? resolve_add_string(wres, stk + tres->name) : 0 ;
-    tres->depends = tres->depends ? resolve_add_string(wres, stk + tres->depends) : 0 ;
-    tres->requiredby = tres->requiredby ? resolve_add_string(wres, stk + tres->requiredby) : 0 ;
-    tres->allow = tres->allow ? resolve_add_string(wres, stk + tres->allow) : 0 ;
-    tres->groups = tres->groups ? resolve_add_string(wres, stk + tres->groups) : 0 ;
-    tres->contents = tres->contents ? resolve_add_string(wres, stk + tres->contents) : 0 ;
+    tres->name = tres->name ? resolve_add_string(&wres, stk + tres->name) : 0 ;
+    tres->depends = tres->depends ? resolve_add_string(&wres, stk + tres->depends) : 0 ;
+    tres->requiredby = tres->requiredby ? resolve_add_string(&wres, stk + tres->requiredby) : 0 ;
+    tres->allow = tres->allow ? resolve_add_string(&wres, stk + tres->allow) : 0 ;
+    tres->groups = tres->groups ? resolve_add_string(&wres, stk + tres->groups) : 0 ;
+    tres->contents = tres->contents ? resolve_add_string(&wres, stk + tres->contents) : 0 ;
     tres->rversion = 0 ;
-
-    free(wres) ;
 }

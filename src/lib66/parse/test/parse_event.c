@@ -67,18 +67,18 @@ static void env_add(test_env_t *e, char const *name, uint32_t svtype, uint32_t e
     h->event.type = evtype ;
 }
 
-static int run_env(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st, test_env_t *e)
+static int run_env(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t *w, parse_store_t *st, test_env_t *e)
 {
     *c = (struct resolve_hash_s){0} ;
     assert(parse_store_build(st, fe) == 1) ;
-    *w = resolve_set_struct(DATA_SERVICE, &c->res) ;
-    resolve_init(*w) ;
-    c->res.name = resolve_add_string(*w, "testsvc") ;
+    *w = (resolve_wrapper_t)RESOLVE_WRAPPER(DATA_SERVICE, &c->res) ;
+    resolve_init(w) ;
+    c->res.name = resolve_add_string(w, "testsvc") ;
     parse_build_ctx_t ctx = { .st = st, .conf = 0, .hres = &e->hres, .info = &e->info } ;
     return parse_event(c, &ctx) ;
 }
 
-static int run(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st)
+static int run(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t *w, parse_store_t *st)
 {
     test_env_t e ;
     env_start(&e) ;
@@ -93,7 +93,7 @@ static int run(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, 
 static void cleanup(struct resolve_hash_s *c, resolve_wrapper_t *w, parse_store_t *st)
 {
     strbuf_free(&c->event.sa) ;
-    resolve_free(w) ;
+    resolve_free_obj(w) ;
     parse_store_free(st) ;
 }
 
@@ -113,7 +113,7 @@ static void service_on_do(void)
         "On = ( down )\n"
         "Do = restart\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -126,7 +126,7 @@ static void service_on_do(void)
     assert(c.event.docmd == EVENT_DO_RESTART) ;
     assert(c.event.emit == 0) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* signal reactor: OnAll (all) + Emit, explicit From */
@@ -145,7 +145,7 @@ static void signal_onall_emit(void)
         "OnAll = ( SIGHUP SIGTERM )\n"
         "Emit = sig-caught\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -158,7 +158,7 @@ static void signal_onall_emit(void)
     assert(c.event.docmd == EVENT_DO_NONE) ;
     assert(!strcmp(c.event.sa.s + c.event.emit, "sig-caught")) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* user reactor: On only, no source */
@@ -176,7 +176,7 @@ static void user_on(void)
         "On = ( mytrigger )\n"
         "Do = start\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -186,7 +186,7 @@ static void user_on(void)
     assert(c.event.combine == EVENT_COMBINE_ANY) ;
     assert(c.event.docmd == EVENT_DO_START) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* inotify reactor: From + Do, no On/OnAll (condition in the source) */
@@ -208,7 +208,7 @@ static void inotify_from_do(void)
     env_start(&e) ;
     env_add(&e, "resolv-watch", E_PARSER_TYPE_EVENT, EVENT_SOURCE_INOTIFY) ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_env(fe, &c, &w, &st, &e) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -218,7 +218,7 @@ static void inotify_from_do(void)
     assert(c.event.on == 0 && c.event.non == 0) ;
     assert(c.event.docmd == EVENT_DO_RELOAD) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
     env_free(&e) ;
 }
 
@@ -242,14 +242,14 @@ static void schedule_from_multi(void)
     env_add(&e, "nightly", E_PARSER_TYPE_EVENT, EVENT_SOURCE_SCHEDULE) ;
     env_add(&e, "weekly", E_PARSER_TYPE_EVENT, EVENT_SOURCE_SCHEDULE) ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_env(fe, &c, &w, &st, &e) == 1) ;
 
     assert(c.event.type == EVENT_SOURCE_SCHEDULE) ;
     assert(!strcmp(c.event.sa.s + c.event.from, "nightly weekly")) ;
     assert(c.event.nfrom == 2) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
     env_free(&e) ;
 }
 
@@ -264,12 +264,12 @@ static void without_event(void)
         "[Start]\n"
         "Execute = ( /bin/true )\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     c = (struct resolve_hash_s){0} ;
     assert(parse_store_build(&st, fe) == 1) ;
-    w = resolve_set_struct(DATA_SERVICE, &c.res) ;
-    resolve_init(w) ;
-    c.res.name = resolve_add_string(w, "testsvc") ;
+    w = (resolve_wrapper_t)RESOLVE_WRAPPER(DATA_SERVICE, &c.res) ;
+    resolve_init(&w) ;
+    c.res.name = resolve_add_string(&w, "testsvc") ;
     c.res.has_event = 1 ; // seed non-zero to prove parse_event clears it
     parse_build_ctx_t ctx = { .st = &st, .conf = 0 } ;
     assert(parse_event(&c, &ctx) == 1) ;
@@ -277,7 +277,7 @@ static void without_event(void)
     assert(c.res.has_event == 0) ;
     assert(c.event.type == 0 && c.event.from == 0 && c.event.on == 0) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* rejections: each must make parse_event return 0 */
@@ -285,10 +285,10 @@ static void rejected(char const *label, char const *fe)
 {
     printf("Running rejection test %s...\n", label) ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 0) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 // rejections that need a seeded From target in the hash
@@ -300,10 +300,10 @@ static void rejected_from(char const *label, char const *fe, char const *src, ui
     env_start(&e) ;
     env_add(&e, src, svtype, evtype) ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_env(fe, &c, &w, &st, &e) == 0) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
     env_free(&e) ;
 }
 
@@ -324,23 +324,23 @@ static void service_on_predicates(void)
         "On = ( down signaled db:exited:5 web:up signaled:SIGKILL exec-failed )\n"
         "Do = restart\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
     assert(!strcmp(c.event.sa.s + c.event.on, "down signaled db:exited:5 web:up signaled:SIGKILL exec-failed")) ;
     assert(c.event.non == 6) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
-static int run_source(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t **w, parse_store_t *st)
+static int run_source(char const *fe, struct resolve_hash_s *c, resolve_wrapper_t *w, parse_store_t *st)
 {
     *c = (struct resolve_hash_s){0} ;
     assert(parse_store_build(st, fe) == 1) ;
-    *w = resolve_set_struct(DATA_SERVICE, &c->res) ;
-    resolve_init(*w) ;
-    c->res.name = resolve_add_string(*w, "testsrc") ;
+    *w = (resolve_wrapper_t)RESOLVE_WRAPPER(DATA_SERVICE, &c->res) ;
+    resolve_init(w) ;
+    c->res.name = resolve_add_string(w, "testsrc") ;
     parse_build_ctx_t ctx = { .st = st, .conf = 0 } ;
     return parse_event_source(c, &ctx) ;
 }
@@ -357,7 +357,7 @@ static void source_inotify(void)
         "Watch = /etc/resolv.conf\n"
         "On = ( IN_MODIFY IN_CREATE )\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_source(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -367,7 +367,7 @@ static void source_inotify(void)
     assert(c.event.non == 2) ;
     assert(c.event.combine == EVENT_COMBINE_ANY) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* schedule source: cron Expression + Timezone */
@@ -382,7 +382,7 @@ static void source_schedule(void)
         "Expression = \"0 0 3 * * ?\"\n"
         "Timezone = Europe/Paris\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_source(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
@@ -390,7 +390,7 @@ static void source_schedule(void)
     assert(!strcmp(c.event.sa.s + c.event.expression, "0 0 3 * * ?")) ;
     assert(!strcmp(c.event.sa.s + c.event.timezone, "Europe/Paris")) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* timer source: Every with a suffix, normalised to milliseconds */
@@ -404,14 +404,14 @@ static void source_timer(void)
         "EventType = timer\n"
         "Every = 5m\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_source(fe, &c, &w, &st) == 1) ;
 
     assert(c.res.has_event == 1) ;
     assert(c.event.type == EVENT_SOURCE_TIMER) ;
     assert(c.event.interval == 300000) ; // 5 * 60 * 1000
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 /* Every defaults to seconds */
@@ -425,22 +425,22 @@ static void source_timer_default(void)
         "EventType = timer\n"
         "Every = 30\n" ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_source(fe, &c, &w, &st) == 1) ;
 
     assert(c.event.interval == 30000) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 static void rejected_source(char const *label, char const *fe)
 {
     printf("Running source rejection test %s...\n", label) ;
 
-    struct resolve_hash_s c ; resolve_wrapper_t *w ; parse_store_t st ;
+    struct resolve_hash_s c ; resolve_wrapper_t w ; parse_store_t st ;
     assert(run_source(fe, &c, &w, &st) == 0) ;
 
-    cleanup(&c, w, &st) ;
+    cleanup(&c, &w, &st) ;
 }
 
 int main(void)

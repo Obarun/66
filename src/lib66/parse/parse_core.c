@@ -14,7 +14,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h> // free
 #include <pwd.h>
 #include <errno.h>
 #include <sys/stat.h> // S_IFDIR
@@ -189,7 +188,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
     char const *inns = ctx->inns ;
     char const *intree = ctx->intree ;
     resolve_service_t *moduleres = ctx->moduleres ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, res) ;
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
     _cleanup_strbuf_ strbuf tree = STRBUF_ZERO ;
 
@@ -201,7 +200,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
         int r = key_to_enum(enum_list_parser_type, v) ;
         if (r == -1) {
-            free(wres) ;
             parse_error_return(0, 0, table) ;
         }
 
@@ -209,7 +207,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
     } else {
 
-        free(wres) ;
         log_warnu_return(LOG_EXIT_ZERO, "get mandatory key Type of service: ", svname) ;
     }
 
@@ -217,12 +214,10 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
      * not parsed here -- stop before touching the tree or the config keys. */
     ssize_t isdir = scan_mode(sv, FLAGS_DIR) ;
     if (!isdir && errno != ENOENT) {
-        free(wres) ;
         return -1 ;
     }
 
     if (isdir == 1 && res->type != E_PARSER_TYPE_MODULE) {
-        free(wres) ;
         return 2 ;
     }
 
@@ -230,17 +225,17 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
         char n[strlen(inns) + 1 + strlen(svname) + 1] ;
         auto_strings(n, inns, ":", svname) ;
-        res->name = resolve_add_string(wres, n) ;
-        res->inns = resolve_add_string(wres, inns) ;
+        res->name = resolve_add_string(&wres, n) ;
+        res->inns = resolve_add_string(&wres, inns) ;
 
     } else {
 
-        res->name = resolve_add_string(wres, svname) ;
+        res->name = resolve_add_string(&wres, svname) ;
     }
 
     res->owner = info->owner ;
-    res->ownerstr = resolve_add_string(wres, info->ownerstr) ;
-    res->path.home = resolve_add_string(wres, info->base.s) ;
+    res->ownerstr = resolve_add_string(&wres, info->ownerstr) ;
+    res->path.home = resolve_add_string(&wres, info->base.s) ;
 
     {
         char const *realname = insta > 0 ? instaname : svname ;
@@ -254,7 +249,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
             char tdir[strlen(result)] ;
 
             if (!ob_dirname(pdir, path) || !ob_dirname(tdir, result)) {
-                free(wres) ;
                 return -1 ;
             }
 
@@ -262,7 +256,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
             auto_strings(frontend, pdir, SS_MODULE_FRONTEND + 1, tdir, realname) ;
 
-            res->path.frontend = resolve_add_string(wres, frontend) ;
+            res->path.frontend = resolve_add_string(&wres, frontend) ;
 
         } else {
 
@@ -270,7 +264,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
             auto_strings(frontend, svsrc, realname) ;
 
-            res->path.frontend = resolve_add_string(wres, frontend) ;
+            res->path.frontend = resolve_add_string(&wres, frontend) ;
         }
     }
 
@@ -278,7 +272,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
         char const *v = parse_store_get(st, E_PARSER_SECTION_MAIN, E_PARSER_SECTION_MAIN_INTREE, 0) ;
 
-        res->intree = resolve_add_string(wres, v) ;
+        res->intree = resolve_add_string(&wres, v) ;
     }
 
     /** an explicit InTree forces the target tree, unless a tree was already
@@ -286,15 +280,14 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
     {
         int r = core_tree(&tree, res->sa.s + res->name, res->intree ? res->sa.s + res->intree : 0, info) ;
         if (r <= 0) {
-            free(wres) ;
             return r ;
         }
     }
 
-    res->treename = resolve_add_string(wres, tree.s) ;
+    res->treename = resolve_add_string(&wres, tree.s) ;
 
     if (inns && intree)
-        res->intree = resolve_add_string(wres, intree) ;
+        res->intree = resolve_add_string(&wres, intree) ;
 
     for (uint32_t kid = 0 ; kid < E_PARSER_SECTION_MAIN_ENDOFKEY ; kid++) {
 
@@ -309,7 +302,7 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
             case E_PARSER_SECTION_MAIN_DESCRIPTION:
 
-                res->description = resolve_add_string(wres, v) ;
+                res->description = resolve_add_string(&wres, v) ;
                 break ;
 
             case E_PARSER_SECTION_MAIN_VERSION:
@@ -318,18 +311,16 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
                     int r = store_list(&stk, st, kid) ;
                     if (r <= 0) {
-                        free(wres) ;
                         if (r < 0)
                             return -1 ;
                         parse_error_return(0, 8, table) ;
                     }
 
                     if (stk.len > SS_SERVICE_VERSION_MAXLEN) {
-                        free(wres) ;
                         parse_error_return(0, 0, table) ;
                     }
 
-                    res->version = resolve_add_string(wres, stk.s) ;
+                    res->version = resolve_add_string(&wres, stk.s) ;
                 }
                 break ;
 
@@ -338,7 +329,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
                     _alloc_sbl_(stk, len + 1) ;
                     int r = store_list(&stk, st, kid) ;
                     if (r <= 0) {
-                        free(wres) ;
                         if (r < 0)
                             return -1 ;
                         parse_error_return(0, 8, table) ;
@@ -356,7 +346,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
                             r = parse_copyfrom_path(src, dname, res->sa.s + res->path.frontend, stk.s + pos) ;
                             if (r <= 0) {
-                                free(wres) ;
                                 if (r < 0)
                                     return -1 ;
                                 log_warn("path of key: CopyFrom: does not exist: ", stk.s + pos) ;
@@ -365,13 +354,12 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
                             if (!sbl_add(ctx->copyfrom, src) || !sbl_add(ctx->copyfrom, dname) ||
                                 !auto_strbuf(&one, stk.s + pos, " ")) {
-                                free(wres) ;
                                 return -1 ;
                             }
                         }
 
                         one.s[one.len - 1] = 0 ;
-                        res->copyfrom = resolve_add_string(wres, one.s) ;
+                        res->copyfrom = resolve_add_string(&wres, one.s) ;
                     }
                 }
                 break ;
@@ -382,7 +370,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
 
                     int r = store_list(&stk, st, kid) ;
                     if (r <= 0) {
-                        free(wres) ;
                         if (r < 0)
                             return -1 ;
                         parse_error_return(0, 8, table) ;
@@ -394,7 +381,6 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
                         r = key_to_enum(enum_list_parser_flags, stk.s + pos) ;
 
                         if (r == -1) {
-                            free(wres) ;
                             parse_error_return(0, 0, table) ;
                         }
 
@@ -409,15 +395,13 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
                     _alloc_sbl_(stk, len + 1) ;
                     int r = store_list(&stk, st, kid) ;
                     if (r <= 0) {
-                        free(wres) ;
                         if (r < 0)
                             return -1 ;
                         parse_error_return(0, 8, table) ;
                     }
 
-                    r = core_user(res, wres, &stk, table) ;
+                    r = core_user(res, &wres, &stk, table) ;
                     if (r <= 0) {
-                        free(wres) ;
                         return r ;
                     }
                 }
@@ -433,19 +417,19 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
     if (!res->description) {
         char d[strlen(res->sa.s + res->name) + 8 + 1] ;
         auto_strings(d, res->sa.s + res->name, " service") ;
-        res->description = resolve_add_string(wres, d) ;
+        res->description = resolve_add_string(&wres, d) ;
         log_trace("key Description at section [Main] was not set -- define it to: ", d) ;
     }
 
     if (!res->version) {
-        res->version = resolve_add_string(wres, SS_VERSION) ;
+        res->version = resolve_add_string(&wres, SS_VERSION) ;
         log_trace("key Version at section [Main] was not set -- define it to: ", SS_VERSION) ;
     }
 
     if (!res->user) {
         if (!info->owner) {
 
-            res->user = resolve_add_string(wres, "root") ;
+            res->user = resolve_add_string(&wres, "root") ;
             log_trace("key User at section [Main] was not set -- define it to: root") ;
 
         } else {
@@ -453,23 +437,19 @@ int parse_core(resolve_service_t *res, char const *sv, char const *svname,
             struct passwd *pw = getpwuid(info->owner);
             if (!pw) {
                 if (!errno) errno = ESRCH ;
-                free(wres) ;
                 log_warnu_return(LOG_EXIT_ZERO,"get user name") ;
             }
 
-            res->user = resolve_add_string(wres, pw->pw_name) ;
+            res->user = resolve_add_string(&wres, pw->pw_name) ;
             log_trace("key User at section [Main] was not set -- define it to: ", pw->pw_name) ;
         }
     }
 
-    res->path.servicedir = compute_src_servicedir(wres, info) ;
+    res->path.servicedir = compute_src_servicedir(&wres, info) ;
 
-    if (parse_compute_live(wres, info) < 0) {
-        free(wres) ;
+    if (parse_compute_live(&wres, info) < 0) {
         return -1 ;
     }
-
-    free(wres) ;
 
     return 1 ;
 }

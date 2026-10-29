@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 #include <string.h>
 #include <sys/types.h> // ssize_t
 
@@ -43,7 +42,7 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
 
     for (uint32_t kid = 0 ; kid < E_PARSER_SECTION_MAIN_ENDOFKEY ; kid++) {
@@ -74,7 +73,6 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
         int r = strbuf_copyb(&stk, v, len) ? parse_list(&stk) : -1 ;
         if (r <= 0) {
-            free(wres) ;
             if (r < 0)
                 return -1 ;
             parse_error_return(0, 8, table) ;
@@ -89,12 +87,10 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
                     continue ;
 
                 if (get_rstrlen_until(stk.s + pos, SS_LOG_SUFFIX) >= 0) {
-                    free(wres) ;
                     log_warn_return(LOG_EXIT_ZERO, "service: ", service, " names: ", stk.s + pos, " -- the suffix " SS_LOG_SUFFIX " is reserved to the loggers") ;
                 }
 
                 if (strlen(stk.s + pos) > SS_MAX_SERVICE_NAME) {
-                    free(wres) ;
                     log_warn_return(LOG_EXIT_ZERO, "service: ", service, " names: ", stk.s + pos, " -- the name is too long") ;
                 }
             }
@@ -112,9 +108,8 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
         if (stk.len) {
 
-            int off = parse_compute_list(wres, &stk, nfield, opts) ;
+            int off = parse_compute_list(&wres, &stk, nfield, opts) ;
             if (off < 0) {
-                free(wres) ;
                 return -1 ;
             }
 
@@ -131,15 +126,14 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
             size_t len = strlen(dep->sa.s + dep->depends) ;
             char t[len + strlen(dep->sa.s + dep->optsdeps) + 2] ;
             auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + dep->optsdeps) ;
-            off = resolve_add_string(wres, t) ;
+            off = resolve_add_string(&wres, t) ;
 
         } else {
 
-            off = resolve_add_string(wres, dep->sa.s + dep->optsdeps) ;
+            off = resolve_add_string(&wres, dep->sa.s + dep->optsdeps) ;
         }
 
         if (off < 0) {
-            free(wres) ;
             return -1 ;
         }
 
@@ -164,7 +158,6 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
         int r = strbuf_copyb(&strb, fv, flen) ? parse_list(&strb) : -1 ;
         if (r <= 0) {
-            free(wres) ;
             if (r < 0)
                 return -1 ;
             table = (resolve_enum_table_t)E_TABLE_PARSER_SECTION_EVENT_ZERO ;
@@ -176,23 +169,21 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
             uint32_t nfrom = 0 ;
             ssize_t off ;
-            int from = parse_compute_list(wres, &strb, &nfrom, 0) ;
+            int from = parse_compute_list(&wres, &strb, &nfrom, 0) ;
 
             if (from < 0) {
-                free(wres) ;
                 return -1 ;
             }
 
             if (dep->ndepends) {
                 char t[strlen(dep->sa.s + dep->depends) + strlen(dep->sa.s + from) + 2] ;
                 auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + from) ;
-                off = resolve_add_string(wres, t) ;
+                off = resolve_add_string(&wres, t) ;
             } else {
-                off = resolve_add_string(wres, dep->sa.s + from) ;
+                off = resolve_add_string(&wres, dep->sa.s + from) ;
             }
 
             if (off < 0) {
-                free(wres) ;
                 return -1 ;
             }
 
@@ -200,8 +191,6 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
             dep->ndepends += nfrom ;
         }
     }
-
-    free(wres) ;
 
     return 1 ;
 }

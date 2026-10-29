@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 
@@ -31,16 +30,14 @@ void service_resolve_sanitize_addon_regex(resolve_service_addon_regex_t *rx)
 
     rx->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, rx) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
     rx->rversion = 0 ;
     // string fields only; the n* counts are integers
-    rx->configure = rx->configure ? resolve_add_string(wres, stk + rx->configure) : 0 ;
-    rx->directories = rx->directories ? resolve_add_string(wres, stk + rx->directories) : 0 ;
-    rx->files = rx->files ? resolve_add_string(wres, stk + rx->files) : 0 ;
-    rx->infiles = rx->infiles ? resolve_add_string(wres, stk + rx->infiles) : 0 ;
-
-    free(wres) ;
+    rx->configure = rx->configure ? resolve_add_string(&wres, stk + rx->configure) : 0 ;
+    rx->directories = rx->directories ? resolve_add_string(&wres, stk + rx->directories) : 0 ;
+    rx->files = rx->files ? resolve_add_string(&wres, stk + rx->files) : 0 ;
+    rx->infiles = rx->infiles ? resolve_add_string(&wres, stk + rx->infiles) : 0 ;
 }

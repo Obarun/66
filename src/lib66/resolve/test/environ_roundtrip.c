@@ -50,23 +50,23 @@ static void test_roundtrip(char const *dir)
     printf("Running environ addon round-trip\n") ;
 
     resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    resolve_wrapper_t *we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
-    resolve_init(we) ;
+    resolve_wrapper_t we = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, &e) ;
+    resolve_init(&we) ;
 
-    e.env = resolve_add_string(we, "FOO=bar\nBAZ=qux") ;
-    e.envdir = resolve_add_string(we, "/etc/66/conf/svc") ;
-    e.importfile = resolve_add_string(we, "/etc/svc.env") ;
+    e.env = resolve_add_string(&we, "FOO=bar\nBAZ=qux") ;
+    e.envdir = resolve_add_string(&we, "/etc/66/conf/svc") ;
+    e.importfile = resolve_add_string(&we, "/etc/svc.env") ;
     e.env_overwrite = 1 ;
     e.nimportfile = 1 ;
 
-    if (!write_cdb(we, dir, "svc.environ")) {
+    if (!write_cdb(&we, dir, "svc.environ")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_environ_t back = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_ENVIRON, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.environ") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.environ") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -78,8 +78,8 @@ static void test_roundtrip(char const *dir)
     assert(back.env_overwrite == 1) ;
     assert(back.nimportfile == 1) ;
 
-    resolve_free(wback) ;
-    resolve_free(we) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&we) ;
 
     printf(" PASS\n") ;
 }

@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,7 +25,7 @@ void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_ser
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_IO, io) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_IO, io) ;
 
     switch (table.id) {
 
@@ -35,7 +34,7 @@ void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_ser
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDINDEST:
-            io->fdin.destination = resolve_add_string(wres, data) ;
+            io->fdin.destination = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDOUT:
@@ -43,7 +42,7 @@ void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_ser
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDOUTDEST:
-            io->fdout.destination = resolve_add_string(wres, data) ;
+            io->fdout.destination = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDERR:
@@ -51,14 +50,12 @@ void service_resolve_modify_io_field(resolve_service_addon_io_t *io, resolve_ser
             break ;
 
         case E_RESOLVE_SERVICE_IO_STDERRDEST:
-            io->fderr.destination = resolve_add_string(wres, data) ;
+            io->fderr.destination = resolve_add_string(&wres, data) ;
             break ;
 
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_io(io) ;
 }

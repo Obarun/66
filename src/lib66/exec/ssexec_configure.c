@@ -246,7 +246,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     size_t pos = 0 ;
     _cleanup_strbuf_ strbuf src = STRBUF_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     /* drain option state into locals, then reset the statics for re-entrancy.
      * the two strbufs are moved (ownership transferred to the auto-freed locals)
@@ -276,7 +276,7 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
 
     if (todo == T_UNSET && !import && !current) todo = T_EDIT ;
 
-    r = resolve_read(wres, info->base.s, sv) ;
+    r = resolve_read(&wres, info->base.s, sv) ;
     if (!r && errno == ENOENT)
         command_refuse_unknown(sv, info->base.s, info->owner, false) ;
 
@@ -284,11 +284,11 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", sv) ;
 
     resolve_service_addon_environ_t e = RESOLVE_SERVICE_ADDON_ENVIRON_ZERO ;
-    resolve_wrapper_t_ref we = resolve_set_struct(DATA_SERVICE_ENVIRON, &e) ;
-    if (!res.has_environ || resolve_read(we, res.sa.s + res.path.home, res.sa.s + res.name) <= 0 || !e.envdir) {
+    resolve_wrapper_t we = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, &e) ;
+    if (!res.has_environ || resolve_read(&we, res.sa.s + res.path.home, res.sa.s + res.name) <= 0 || !e.envdir) {
         log_warn(sv," do not have configuration file") ;
-        resolve_free(we) ;
-        resolve_free(wres) ;
+        resolve_free_obj(&we) ;
+        resolve_free_obj(&wres) ;
         return 0 ;
     }
 
@@ -301,11 +301,11 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
     auto_strings(svconf_buf, e.sa.s + e.envdir) ;
     svconf = svconf_buf ;
 
-    resolve_free(we) ;
+    resolve_free_obj(&we) ;
 
     if (import) {
         do_import(sv,svconf,import,res.type) ;
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return 0 ;
     }
 
@@ -330,14 +330,14 @@ int ssexec_configure(int argc, char const *const *argv, void *data)
 
             log_info("Symlink switched successfully to version: ", src.s) ;
 
-            resolve_free(wres) ;
+            resolve_free_obj(&wres) ;
             return 0 ;
         }
 
         satmp.len = 0 ;
     }
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     switch(todo)
     {

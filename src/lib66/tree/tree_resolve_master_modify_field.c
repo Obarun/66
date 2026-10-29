@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -25,28 +24,28 @@ void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t fiel
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, mres) ;
 
     switch(field) {
 
         case E_RESOLVE_TREE_MASTER_RVERSION:
-            mres->rversion = resolve_add_string(wres, data) ;
+            mres->rversion = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NAME:
-            mres->name = resolve_add_string(wres,data) ;
+            mres->name = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_ALLOW:
-            mres->allow = resolve_add_string(wres,data) ;
+            mres->allow = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_CURRENT:
-            mres->current = resolve_add_string(wres,data) ;
+            mres->current = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_CONTENTS:
-            mres->contents = resolve_add_string(wres,data) ;
+            mres->contents = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_MASTER_NALLOW:
@@ -62,5 +61,4 @@ void tree_resolve_master_modify_field(resolve_tree_master_t *mres, uint32_t fiel
     }
 
     tree_resolve_master_sanitize(mres) ;
-    free(wres) ;
 }

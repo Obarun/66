@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,32 +25,32 @@ void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resol
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
 
     switch (table.id) {
 
         case E_RESOLVE_SERVICE_EVENT_FROM:
-            ev->from = resolve_add_string(wres, data) ;
+            ev->from = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_ON:
-            ev->on = resolve_add_string(wres, data) ;
+            ev->on = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_EMIT:
-            ev->emit = resolve_add_string(wres, data) ;
+            ev->emit = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_WATCH:
-            ev->watch = resolve_add_string(wres, data) ;
+            ev->watch = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_EXPRESSION:
-            ev->expression = resolve_add_string(wres, data) ;
+            ev->expression = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_TIMEZONE:
-            ev->timezone = resolve_add_string(wres, data) ;
+            ev->timezone = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_EVENT_TYPE:
@@ -86,8 +85,6 @@ void service_resolve_modify_event_field(resolve_service_addon_event_t *ev, resol
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_event(ev) ;
 }

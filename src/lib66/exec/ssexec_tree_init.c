@@ -134,14 +134,14 @@ static void collect_tree_services(strbuf *out, char const *base, char const *tre
     _cleanup_strbuf_ strbuf svc = STRBUF_ZERO ;
     resolve_enum_table_t table = E_TABLE_TREE_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
     size_t pos = 0 ;
 
     table.u.tree.id = E_RESOLVE_TREE_CONTENTS ;
-    if (resolve_get_field(&svc, wres, base, treename, table) <= 0)
+    if (resolve_get_field(&svc, &wres, base, treename, table) <= 0)
         log_dieu(LOG_EXIT_SYS, "get services list from tree: ", treename) ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     FOREACH_SBL(&svc, pos) {
         if (!sbl_add(out, svc.s + pos))
@@ -156,14 +156,14 @@ static void collect_group_services(strbuf *out, ssexec_t *info, char const *grou
     _cleanup_strbuf_ strbuf master = STRBUF_ZERO ;
     resolve_enum_table_t table = E_TABLE_TREE_MASTER_ZERO ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, &mres) ;
     size_t pos = 0 ;
 
     table.u.tree.id = E_RESOLVE_TREE_MASTER_CONTENTS ;
-    if (resolve_get_field(&master, wres, info->base.s, SS_MASTER + 1, table) <= 0)
+    if (resolve_get_field(&master, &wres, info->base.s, SS_MASTER + 1, table) <= 0)
         log_dieu(LOG_EXIT_SYS, "get resolve Master file of trees") ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     FOREACH_SBL(&master, pos) {
 

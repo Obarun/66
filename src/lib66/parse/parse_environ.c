@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdlib.h> // free
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
@@ -123,28 +122,24 @@ int parse_environ(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         return -1 ;
 
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
-    resolve_wrapper_t_ref ewres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+    resolve_wrapper_t ewres = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, e) ;
 
-    resolve_init(ewres) ; // offset 0 = "" convention
+    resolve_init(&ewres) ; // offset 0 = "" convention
 
-    int r = env_import_field(e, ewres, &store) ;
+    int r = env_import_field(e, &ewres, &store) ;
     if (r <= 0) {
-        free(ewres) ;
         return r ;
     }
 
-    e->env = resolve_add_string(ewres, store.s) ;
+    e->env = resolve_add_string(&ewres, store.s) ;
 
     if (!env_resolve_conf(&sa, res)) {
-        free(ewres) ;
         return -1 ;
     }
 
-    e->envdir = resolve_add_string(ewres, sa.s) ;
+    e->envdir = resolve_add_string(&ewres, sa.s) ;
 
     e->env_overwrite = conf ;
-
-    free(ewres) ;
 
     return 1 ;
 }

@@ -51,13 +51,13 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name, uint32_t has_execute)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_execute = has_execute ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void get_field(strbuf *out, char const *base, char const *name, uint32_t id)
@@ -66,21 +66,21 @@ static void get_field(strbuf *out, char const *base, char const *name, uint32_t 
     t.u.service.id = id ;
 
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
 
     out->len = 0 ;
-    assert(resolve_get_field(out, w, base, name, t) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_get_field(out, &w, base, name, t) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void modify_field(char const *base, char const *name, uint32_t id, char const *val)
 {
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
     resolve_enum_table_t t = E_TABLE_SERVICE_EXECUTE_ZERO ;
     t.u.service.id = id ;
-    assert(resolve_modify_field(w, base, name, t, val) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_modify_field(&w, base, name, t, val) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 int main(void)
@@ -101,13 +101,13 @@ int main(void)
     write_core(base, "withexec", 1) ;
     {
         resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-        resolve_init(w) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
+        resolve_init(&w) ;
         ex.notify = 3 ;
         ex.downsignal = 15 ;
-        ex.run.runas = resolve_add_string(w, "root") ;
-        assert(resolve_write(w, base, "withexec") > 0) ;
-        resolve_free(w) ;
+        ex.run.runas = resolve_add_string(&w, "root") ;
+        assert(resolve_write(&w, base, "withexec") > 0) ;
+        resolve_free_obj(&w) ;
     }
 
     get_field(&sa, base, "withexec", E_RESOLVE_SERVICE_EXECUTE_RUN_RUNAS) ;

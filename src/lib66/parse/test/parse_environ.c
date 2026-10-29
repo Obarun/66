@@ -58,9 +58,9 @@ static void with_environment(void)
     assert(parse_store_build(&st, fe.s) == 1) ;
 
     struct resolve_hash_s c = {0} ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &c.res) ;
-    resolve_init(w) ;
-    c.res.name = resolve_add_string(w, "testsvc") ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &c.res) ;
+    resolve_init(&w) ;
+    c.res.name = resolve_add_string(&w, "testsvc") ;
     c.res.owner = 0 ; // admin -> envdir under SS_SERVICE_ADMCONFDIR
 
     parse_build_ctx_t ctx = { .st = &st, .conf = 1 } ;
@@ -84,7 +84,7 @@ static void with_environment(void)
     assert(!strcmp(c.environ.sa.s + c.environ.importfile, imp)) ;
 
     strbuf_free(&c.environ.sa) ;
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
     parse_store_free(&st) ;
     unlink(imp) ;
 }
@@ -105,9 +105,9 @@ static void without_environment(void)
     assert(parse_store_build(&st, fe) == 1) ;
 
     struct resolve_hash_s c = {0} ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &c.res) ;
-    resolve_init(w) ;
-    c.res.name = resolve_add_string(w, "testsvc") ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &c.res) ;
+    resolve_init(&w) ;
+    c.res.name = resolve_add_string(&w, "testsvc") ;
 
     c.res.has_environ = 1 ; // seed non-zero to prove parse_environ clears it
     parse_build_ctx_t ctx = { .st = &st, .conf = 0 } ;
@@ -118,7 +118,7 @@ static void without_environment(void)
     assert(c.environ.envdir == 0) ;
 
     strbuf_free(&c.environ.sa) ;
-    resolve_free(w) ;
+    resolve_free_obj(&w) ;
     parse_store_free(&st) ;
 }
 

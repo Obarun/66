@@ -14,8 +14,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h> // free
-#include <errno.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -33,13 +31,8 @@ int eventd_rule_load(char const *base, char const *name, resolve_service_addon_e
 
     *out = (resolve_service_addon_event_t)RESOLVE_SERVICE_ADDON_EVENT_ZERO ;
 
-    resolve_wrapper_t_ref wev = resolve_set_struct(DATA_SERVICE_EVENT, out) ;
-    int r = resolve_read(wev, base, name) ;
-    /* the caller reads errno to tell ENOENT from EINVAL:
-     * be paranoid about free() as with have no clear contract about it */
-    int e = errno ;
-    free(wev) ;
-    errno = e ;
+    resolve_wrapper_t wev = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, out) ;
+    int r = resolve_read(&wev, base, name) ;
 
     return r ; // 1 = rule loaded, 0 = no .event addon (ENOENT) or one that does not read (EINVAL), -1 = error
 }

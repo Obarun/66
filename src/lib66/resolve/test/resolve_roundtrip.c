@@ -68,26 +68,26 @@ static void test_roundtrip(char const *dir)
     printf("Running test_roundtrip\n") ;
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&wres) ;
 
-    res.name = resolve_add_string(wres, "myservice") ;
-    res.description = resolve_add_string(wres, "a test service") ;
-    res.version = resolve_add_string(wres, "1.2.3") ;
-    res.user = resolve_add_string(wres, "root") ;
-    res.treename = resolve_add_string(wres, "global") ;
-    res.ownerstr = resolve_add_string(wres, "0") ;
+    res.name = resolve_add_string(&wres, "myservice") ;
+    res.description = resolve_add_string(&wres, "a test service") ;
+    res.version = resolve_add_string(&wres, "1.2.3") ;
+    res.user = resolve_add_string(&wres, "root") ;
+    res.treename = resolve_add_string(&wres, "global") ;
+    res.ownerstr = resolve_add_string(&wres, "0") ;
     res.type = E_PARSER_TYPE_CLASSIC ;
     res.enabled = 1 ;
 
-    if (!write_cdb(wres, dir, "svc")) {
+    if (!write_cdb(&wres, dir, "svc")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_t back = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -101,8 +101,8 @@ static void test_roundtrip(char const *dir)
     ASSERT_EQ(back.type, E_PARSER_TYPE_CLASSIC, "type") ;
     ASSERT_EQ(back.enabled, 1, "enabled") ;
 
-    resolve_free(wback) ;
-    resolve_free(wres) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&wres) ;
 
     printf(" PASS\n") ;
 }

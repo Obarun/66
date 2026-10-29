@@ -86,7 +86,7 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
 
     int r = -1 ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     service_status_t st = STATUS_ZERO ;
     char svname[SS_MAX_SERVICE_NAME + 1] ;
@@ -113,7 +113,7 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
 
         char const *sv = r ? svname : *argv ;
 
-        r = resolve_read(wres, info->base.s, sv) ;
+        r = resolve_read(&wres, info->base.s, sv) ;
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
 
@@ -126,7 +126,7 @@ int ssexec_runstate(int argc, char const *const *argv, void *data)
 
     info_status_display(&st, field, noname) ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return 0 ;
 }

@@ -1248,21 +1248,20 @@ int main(int argc, char const *const *argv)
     if (chdir(servicename) < 0)
       log_dieusys(111, "chdir to ", servicename) ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    if (!resolve_read_at(wres, ".", servicename))
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    if (!resolve_read_at(&wres, ".", servicename))
       log_dieusys(111, "read resolve file of: ", servicename) ;
 
     /** supervision scalars (notify/maxdeath/maxdeathtime) and the timeouts/downsignal
      * live in the execute addon; load it locally from ./.resolve. */
     {
-        resolve_wrapper_t_ref wex = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
+        resolve_wrapper_t wex = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
         if (res.has_execute) {
             char exname[strlen(servicename) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
             auto_strings(exname, servicename, SS_ADDON_EXECUTE_SUFFIX) ;
-            if (!resolve_read_at(wex, ".", exname))
+            if (!resolve_read_at(&wex, ".", exname))
               log_dieusys(111, "read execute addon of: ", servicename) ;
         }
-        free(wex) ;
     }
 
     {
@@ -1380,7 +1379,7 @@ int main(int argc, char const *const *argv)
         event_emit_lifecycle(SS_EVENTDIR + 1, EVENT_LIFECYCLE_DOWN, &now) ;
     }
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return 0 ;
 }

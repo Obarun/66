@@ -14,7 +14,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
@@ -428,8 +427,8 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
     resolve_service_t *res = &c->res ;
     resolve_service_addon_io_t *io = &c->io ;
     ssexec_t *info = ctx->info ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, io) ;
-    resolve_init(w) ; // offset 0 = "" convention
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, io) ;
+    resolve_init(&w) ; // offset 0 = "" convention
 
     static uint32_t const main_keys[3] = {
         E_PARSER_SECTION_MAIN_STDIN,
@@ -453,9 +452,8 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             resolve_enum_table_t table = E_TABLE_PARSER_SECTION_MAIN_ZERO ;
             table.u.parser.id = main_keys[i] ;
 
-            int r = io_parse_one(res, io, w, info, table, v) ;
+            int r = io_parse_one(res, io, &w, info, table, v) ;
             if (r <= 0) {
-                free(w) ;
                 return r ;
             }
         }
@@ -466,16 +464,14 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
             resolve_enum_table_t table = E_TABLE_PARSER_SECTION_EXECUTE_ZERO ;
             table.u.parser.id = keys[i] ;
 
-            int r = io_parse_one(res, io, w, info, table, v) ;
+            int r = io_parse_one(res, io, &w, info, table, v) ;
             if (r <= 0) {
-                free(w) ;
                 return r ;
             }
         }
     }
 
-    if (parse_io_resolve(res, io, w, info) < 0) {
-        free(w) ;
+    if (parse_io_resolve(res, io, &w, info) < 0) {
         return -1 ;
     }
 
@@ -483,9 +479,7 @@ int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
      * the io addon so 66-execute can chown the directory (classic and oneshot),
      * without reading a separate logger addon. */
     if (io->fdout.type == E_PARSER_IO_TYPE_66LOG && c->logger.execute.run.runas)
-        io->runas = resolve_add_string(w, c->logger.sa.s + c->logger.execute.run.runas) ;
-
-    free(w) ;
+        io->runas = resolve_add_string(&w, c->logger.sa.s + c->logger.execute.run.runas) ;
 
     res->has_io = 1 ;
 

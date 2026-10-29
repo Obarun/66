@@ -444,9 +444,9 @@ static void info_display_all(const char *treename,int *what)
 
     unsigned int i = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
 
-    if (resolve_read(wres, pinfo->base.s, treename) <= 0)
+    if (resolve_read(&wres, pinfo->base.s, treename) <= 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
     for (; what[i] >= 0 ; i++) {
@@ -454,7 +454,7 @@ static void info_display_all(const char *treename,int *what)
         (*fields_tree[idx].render)(fields[idx],&tres) ;
     }
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 }
 
 static void info_parse_options(char const *str,int *what)

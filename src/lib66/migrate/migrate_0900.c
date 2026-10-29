@@ -87,16 +87,16 @@ static void migrate_event_0900(ssexec_t *info, char const *path, char const *nam
 
     ev.propagate = 1 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, &ev) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, &ev) ;
 
-    if (!resolve_write(wres, info->base.s, name)) {
-        resolve_free(wres) ;
+    if (!resolve_write(&wres, info->base.s, name)) {
+        resolve_free_obj(&wres) ;
         log_dieusys(LOG_EXIT_SYS, "write event addon of service: ", name) ;
     }
 
     log_trace("event addon migrated for: ", name) ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 }
 
 void migrate_0900(void)

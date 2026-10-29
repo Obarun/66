@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,16 +25,16 @@ void service_resolve_modify_environ_field(resolve_service_addon_environ_t *e, re
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_ENVIRON, e) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_ENVIRON, e) ;
 
     switch (table.id) {
 
         case E_RESOLVE_SERVICE_ENVIRON_ENV:
-            e->env = resolve_add_string(wres, data) ;
+            e->env = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_ENVDIR:
-            e->envdir = resolve_add_string(wres, data) ;
+            e->envdir = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_ENV_OVERWRITE:
@@ -43,7 +42,7 @@ void service_resolve_modify_environ_field(resolve_service_addon_environ_t *e, re
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_IMPORTFILE:
-            e->importfile = resolve_add_string(wres, data) ;
+            e->importfile = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_ENVIRON_NIMPORTFILE:
@@ -53,8 +52,6 @@ void service_resolve_modify_environ_field(resolve_service_addon_environ_t *e, re
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_environ(e) ;
 }

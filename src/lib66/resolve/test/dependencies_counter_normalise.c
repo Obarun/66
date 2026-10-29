@@ -54,20 +54,19 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_dependencies = 1 ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void read_addon(resolve_service_addon_dependencies_t *dep, char const *base, char const *name)
 {
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
-    assert(resolve_read(w, base, name) > 0) ;
-    free(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
+    assert(resolve_read(&w, base, name) > 0) ;
 }
 
 int main(void)
@@ -87,16 +86,16 @@ int main(void)
     write_core(base, "liar") ;
     {
         resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
-        resolve_init(w) ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &dep) ;
+        resolve_init(&w) ;
         dep.ndepends = 1 ;
         dep.nrequiredby = 2 ;
         dep.noptsdeps = 3 ;
         dep.ncontents = 4 ;
         dep.nprovide = 5 ;
         dep.nconflict = 6 ;
-        assert(resolve_write(w, base, "liar") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_write(&w, base, "liar") > 0) ;
+        resolve_free_obj(&w) ;
     }
     {
         resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
@@ -117,16 +116,16 @@ int main(void)
     write_core(base, "sound") ;
     {
         resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, &dep) ;
-        resolve_init(w) ;
-        dep.depends = resolve_add_string(w, "alpha beta") ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, &dep) ;
+        resolve_init(&w) ;
+        dep.depends = resolve_add_string(&w, "alpha beta") ;
         dep.ndepends = 2 ;
-        dep.requiredby = resolve_add_string(w, "gamma") ;
+        dep.requiredby = resolve_add_string(&w, "gamma") ;
         dep.nrequiredby = 1 ;
-        dep.contents = resolve_add_string(w, "delta") ;
+        dep.contents = resolve_add_string(&w, "delta") ;
         dep.ncontents = 1 ;
-        assert(resolve_write(w, base, "sound") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_write(&w, base, "sound") > 0) ;
+        resolve_free_obj(&w) ;
     }
     {
         resolve_service_addon_dependencies_t dep = RESOLVE_SERVICE_ADDON_DEPENDENCIES_ZERO ;

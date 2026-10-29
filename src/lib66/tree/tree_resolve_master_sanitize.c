@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h>
 
 #include <oblibs/log.h>
 
@@ -31,14 +30,13 @@ void tree_resolve_master_sanitize(resolve_tree_master_t *mres)
 
     mres->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, mres) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
-    mres->name = mres->name ? resolve_add_string(wres, stk + mres->name) : 0 ;
-    mres->allow = mres->allow ? resolve_add_string(wres, stk + mres->allow) : 0 ;
-    mres->current = mres->current ? resolve_add_string(wres, stk + mres->current) : 0 ;
-    mres->contents = mres->contents ? resolve_add_string(wres, stk + mres->contents) : 0 ;
+    mres->name = mres->name ? resolve_add_string(&wres, stk + mres->name) : 0 ;
+    mres->allow = mres->allow ? resolve_add_string(&wres, stk + mres->allow) : 0 ;
+    mres->current = mres->current ? resolve_add_string(&wres, stk + mres->current) : 0 ;
+    mres->contents = mres->contents ? resolve_add_string(&wres, stk + mres->contents) : 0 ;
     mres->rversion = 0 ;
-    free(wres) ;
 }

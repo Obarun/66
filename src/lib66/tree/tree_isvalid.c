@@ -23,11 +23,11 @@ int tree_isvalid(char const *base, char const *treename)
 
     int e = -1 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref twres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t twres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
 
-    e = resolve_check(twres, base, treename) ;
+    e = resolve_check(&twres, base, treename) ;
 
-    resolve_free(twres) ;
+    resolve_free_obj(&twres) ;
 
     return e ;
 }

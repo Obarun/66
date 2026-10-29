@@ -120,16 +120,16 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
 
         char const *name = names.s + pos ;
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
-        if (resolve_read(wres, info->base.s, name) <= 0) {
-            resolve_free(wres) ;
+        if (resolve_read(&wres, info->base.s, name) <= 0) {
+            resolve_free_obj(&wres) ;
             continue ;
         }
 
         resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-        resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-        uint8_t io_ok = res.has_io && resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0 ;
+        resolve_wrapper_t wio = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+        uint8_t io_ok = res.has_io && resolve_read(&wio, res.sa.s + res.path.home, res.sa.s + res.name) > 0 ;
 
         char const *dest = io_ok ? io.sa.s + io.fdout.destination : 0 ;
         uint8_t logdir = io_ok && !res.islog && io.fdout.type == E_PARSER_IO_TYPE_66LOG ;
@@ -159,8 +159,8 @@ static log_source_t *collect_all(ssexec_t *info, size_t *nsrc)
             n++ ;
         }
 
-        resolve_free(wio) ;
-        resolve_free(wres) ;
+        resolve_free_obj(&wio) ;
+        resolve_free_obj(&wres) ;
     }
 
     char p[info->live.len + SS_LOG_LEN + 1 + info->ownerlen + 1] ;
@@ -206,7 +206,7 @@ static log_source_t *collect_system(ssexec_t *info, size_t *nsrc)
 static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *nsrc)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
     log_source_t *src = 0 ;
     char held[SS_MAX_SERVICE_NAME + 1] ;
     int r ;
@@ -217,7 +217,7 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
 
     char const *sv = held_r ? held : name ;
 
-    r = resolve_read(wres, info->base.s, sv) ;
+    r = resolve_read(&wres, info->base.s, sv) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
@@ -230,9 +230,9 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
     *src = (log_source_t)LOG_SOURCE_ZERO ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
-        resolve_free(wio) ;
+    resolve_wrapper_t wio = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    if (!res.has_io || resolve_read(&wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
+        resolve_free_obj(&wio) ;
         log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
     }
 
@@ -250,8 +250,8 @@ static log_source_t *collect_service(ssexec_t *info, char const *name, size_t *n
 
     } else log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
 
-    resolve_free(wio) ;
-    resolve_free(wres) ;
+    resolve_free_obj(&wio) ;
+    resolve_free_obj(&wres) ;
 
     *nsrc = 1 ;
 
@@ -269,7 +269,7 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
     }
 
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
     char held[SS_MAX_SERVICE_NAME + 1] ;
 
     int held_r = service_resolve_provide(held, target, 0, info->base.s) ;
@@ -278,16 +278,16 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
 
     char const *sv = held_r ? held : target ;
 
-    int r = resolve_read(wres, info->base.s, sv) ;
+    int r = resolve_read(&wres, info->base.s, sv) ;
     if (r < 0)
         log_dieusys(LOG_EXIT_SYS, "read resolve file of: ", sv) ;
     if (!r)
         command_refuse_unknown(target, info->base.s, info->owner, false) ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t_ref wio = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    if (!res.has_io || resolve_read(wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
-        resolve_free(wio) ;
+    resolve_wrapper_t wio = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    if (!res.has_io || resolve_read(&wio, res.sa.s + res.path.home, res.sa.s + res.name) <= 0) {
+        resolve_free_obj(&wio) ;
         log_die(LOG_EXIT_USER, "service has no readable log: ", sv) ;
     }
 
@@ -300,8 +300,8 @@ static int follow_source(ssexec_t *info, char const *target, regex_t *re)
     char dest[strlen(io.sa.s + io.fdout.destination) + 1] ;
     auto_strings(dest, io.sa.s + io.fdout.destination) ;
 
-    resolve_free(wio) ;
-    resolve_free(wres) ;
+    resolve_free_obj(&wio) ;
+    resolve_free_obj(&wres) ;
 
     return log_follow(sv, dest, is_logdir, 0, re) ;
 }

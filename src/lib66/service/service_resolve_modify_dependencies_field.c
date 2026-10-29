@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -26,32 +25,32 @@ void service_resolve_modify_dependencies_field(resolve_service_addon_dependencie
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_DEPENDENCIES, dep) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_DEPENDENCIES, dep) ;
 
     switch (table.id) {
 
         case E_RESOLVE_SERVICE_DEPS_DEPENDS:
-            dep->depends = resolve_add_string(wres, data) ;
+            dep->depends = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_REQUIREDBY:
-            dep->requiredby = resolve_add_string(wres, data) ;
+            dep->requiredby = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_OPTSDEPS:
-            dep->optsdeps = resolve_add_string(wres, data) ;
+            dep->optsdeps = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_CONTENTS:
-            dep->contents = resolve_add_string(wres, data) ;
+            dep->contents = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_PROVIDE:
-            dep->provide = resolve_add_string(wres, data) ;
+            dep->provide = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_CONFLICT:
-            dep->conflict = resolve_add_string(wres, data) ;
+            dep->conflict = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_SERVICE_DEPS_NDEPENDS:
@@ -81,8 +80,6 @@ void service_resolve_modify_dependencies_field(resolve_service_addon_dependencie
         default:
             break ;
     }
-
-    free(wres) ;
 
     service_resolve_sanitize_addon_dependencies(dep) ;
 }

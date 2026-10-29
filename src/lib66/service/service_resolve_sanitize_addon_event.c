@@ -13,7 +13,6 @@
  */
 
 #include <string.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 
@@ -31,18 +30,16 @@ void service_resolve_sanitize_addon_event(resolve_service_addon_event_t *ev)
 
     ev->sa.len = 0 ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EVENT, ev) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EVENT, ev) ;
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
 
     ev->rversion = 0 ;
     // string fields only; type/nfrom/non/combine/docmd/interval are integers
-    ev->from = ev->from ? resolve_add_string(wres, stk + ev->from) : 0 ;
-    ev->on = ev->on ? resolve_add_string(wres, stk + ev->on) : 0 ;
-    ev->emit = ev->emit ? resolve_add_string(wres, stk + ev->emit) : 0 ;
-    ev->watch = ev->watch ? resolve_add_string(wres, stk + ev->watch) : 0 ;
-    ev->expression = ev->expression ? resolve_add_string(wres, stk + ev->expression) : 0 ;
-    ev->timezone = ev->timezone ? resolve_add_string(wres, stk + ev->timezone) : 0 ;
-
-    free(wres) ;
+    ev->from = ev->from ? resolve_add_string(&wres, stk + ev->from) : 0 ;
+    ev->on = ev->on ? resolve_add_string(&wres, stk + ev->on) : 0 ;
+    ev->emit = ev->emit ? resolve_add_string(&wres, stk + ev->emit) : 0 ;
+    ev->watch = ev->watch ? resolve_add_string(&wres, stk + ev->watch) : 0 ;
+    ev->expression = ev->expression ? resolve_add_string(&wres, stk + ev->expression) : 0 ;
+    ev->timezone = ev->timezone ? resolve_add_string(&wres, stk + ev->timezone) : 0 ;
 }

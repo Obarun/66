@@ -65,25 +65,25 @@ static void make_layout(char const *name)
 static void write_core(char const *name, uint32_t has_dependencies)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_dependencies = has_dependencies ;
-    assert(resolve_write(w, base, name) == 1) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) == 1) ;
+    resolve_free_obj(&w) ;
 }
 
 // the execute addon, written through resolve_write(), which declares it in the resolve file
 static void write_execute(char const *name, uint32_t notify)
 {
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
+    resolve_init(&w) ;
     ex.notify = notify ;
-    ex.chdir = resolve_add_string(w, "/srv") ;
-    assert(resolve_write(w, base, name) == 1) ;
-    resolve_free(w) ;
+    ex.chdir = resolve_add_string(&w, "/srv") ;
+    assert(resolve_write(&w, base, name) == 1) ;
+    resolve_free_obj(&w) ;
 }
 
 static void test_absent(void)
@@ -366,14 +366,12 @@ static void test_free_errno(void)
 
     // the table owns what res held
     res = (resolve_service_t)RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *wm = resolve_set_struct(DATA_SERVICE, &res) ;
-    assert(wm) ;
-    resolve_init(wm) ;
-    assert(resolve_add_string(wm, "payload") >= 0 && res.sa.len) ;
+    resolve_wrapper_t wm = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&wm) ;
+    assert(resolve_add_string(&wm, "payload") >= 0 && res.sa.len) ;
     errno = EDOM ;
-    resolve_free_obj(wm) ;
+    resolve_free_obj(&wm) ;
     assert(errno == EDOM && !res.sa.len && !res.sa.s) ;
-    resolve_free(wm) ;
 }
 
 static void provide_link(char const *name, char const *target)

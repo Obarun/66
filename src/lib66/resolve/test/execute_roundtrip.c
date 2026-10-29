@@ -52,17 +52,17 @@ static void test_roundtrip(char const *dir)
     printf("Running execute addon round-trip\n") ;
 
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_EXECUTE, &ex) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
+    resolve_init(&w) ;
 
     ex.notify = 3 ;
     ex.maxdeath = 7 ;
     ex.maxdeathtime = 12345 ;
-    ex.run.run = resolve_add_string(w, "#!/usr/bin/execlineb -P\nforeground { echo run }\n") ;
-    ex.run.run_user = resolve_add_string(w, "#!/bin/sh\nexec /bin/true\n") ;
-    ex.run.build = resolve_add_string(w, "custom") ;
-    ex.run.runas = resolve_add_string(w, "root") ;
-    ex.finish.run = resolve_add_string(w, "#!/usr/bin/execlineb -P\nforeground { echo finish }\n") ;
+    ex.run.run = resolve_add_string(&w, "#!/usr/bin/execlineb -P\nforeground { echo run }\n") ;
+    ex.run.run_user = resolve_add_string(&w, "#!/bin/sh\nexec /bin/true\n") ;
+    ex.run.build = resolve_add_string(&w, "custom") ;
+    ex.run.runas = resolve_add_string(&w, "root") ;
+    ex.finish.run = resolve_add_string(&w, "#!/usr/bin/execlineb -P\nforeground { echo finish }\n") ;
     ex.timeout.start = 5000 ;
     ex.timeout.stop = 6000 ;
     ex.down = 1 ;
@@ -72,18 +72,18 @@ static void test_roundtrip(char const *dir)
     ex.want_umask = 1 ;
     ex.nice = 25 ;
     ex.want_nice = 1 ;
-    ex.chdir = resolve_add_string(w, "/var/lib/svc") ;
-    ex.capsbound = resolve_add_string(w, "cap_net_bind_service") ;
+    ex.chdir = resolve_add_string(&w, "/var/lib/svc") ;
+    ex.capsbound = resolve_add_string(&w, "cap_net_bind_service") ;
     ex.ncapsbound = 1 ;
 
-    if (!write_cdb(w, dir, "svc.execute")) {
+    if (!write_cdb(&w, dir, "svc.execute")) {
         printf("FAIL: resolve_write_cdb\n") ;
         assert(0) ;
     }
 
     resolve_service_addon_execute_t back = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
-    resolve_wrapper_t *wback = resolve_set_struct(DATA_SERVICE_EXECUTE, &back) ;
-    int r = resolve_read_cdb(wback, dir, "svc.execute") ;
+    resolve_wrapper_t wback = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &back) ;
+    int r = resolve_read_cdb(&wback, dir, "svc.execute") ;
     if (r <= 0) {
         printf("FAIL: resolve_read_cdb returned %d\n", r) ;
         assert(0) ;
@@ -110,8 +110,8 @@ static void test_roundtrip(char const *dir)
     assert(!strcmp(back.sa.s + back.capsbound, "cap_net_bind_service")) ;
     assert(back.ncapsbound == 1) ;
 
-    resolve_free(wback) ;
-    resolve_free(w) ;
+    resolve_free_obj(&wback) ;
+    resolve_free_obj(&w) ;
 
     printf(" PASS\n") ;
 }

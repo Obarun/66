@@ -12,8 +12,6 @@
  * except according to the terms contained in the LICENSE file.
  */
 
-#include <stdlib.h>
-
 #include <oblibs/log.h>
 #include <oblibs/cdb.h>
 
@@ -25,9 +23,8 @@ static void add_version(resolve_tree_master_t *mres)
 {
     log_flow() ;
     log_trace("Master resolve file version set to: ", SS_VERSION) ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, mres) ;
-    mres->rversion = resolve_add_string(wres, SS_VERSION) ;
-    free(wres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, mres) ;
+    mres->rversion = resolve_add_string(&wres, SS_VERSION) ;
 }
 
 int tree_resolve_master_write_cdb(ocdbmaker *c, resolve_tree_master_t *mres)

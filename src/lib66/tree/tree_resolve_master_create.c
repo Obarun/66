@@ -30,7 +30,7 @@ int tree_resolve_master_create(char const *base, uid_t owner)
     int e = 0 ;
     struct passwd *pw = getpwuid(owner) ;
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, &mres) ;
 
     if (!pw) {
 
@@ -39,20 +39,20 @@ int tree_resolve_master_create(char const *base, uid_t owner)
         goto err ;
     }
 
-    resolve_init(wres) ;
+    resolve_init(&wres) ;
     char ownerstr[UID_FMT];
     ownerstr[uid_format(ownerstr, owner)] = 0 ;
-    mres.name = resolve_add_string(wres, SS_MASTER + 1) ;
-    mres.allow = resolve_add_string(wres, ownerstr) ; ;
+    mres.name = resolve_add_string(&wres, SS_MASTER + 1) ;
+    mres.allow = resolve_add_string(&wres, ownerstr) ; ;
     mres.nallow++ ;
 
     log_trace("write Master resolve file of trees") ;
-    if (!resolve_write(wres, base, SS_MASTER + 1))
+    if (!resolve_write(&wres, base, SS_MASTER + 1))
         goto err ;
 
     e  = 1 ;
 
     err:
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return e ;
 }

@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h> // free
 
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
@@ -40,7 +39,8 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
 
     // lazily initialised on the first present key, so a module without any [Regex]
     // key leaves sa untouched (no addon, no leak)
-    resolve_wrapper_t_ref wres = 0 ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, rx) ;
+    uint8_t init = 0 ;
     resolve_enum_table_t table = E_TABLE_PARSER_SECTION_REGEX_ZERO ;
 
     for (uint32_t kid = 0 ; kid < E_PARSER_SECTION_REGEX_ENDOFKEY ; kid++) {
@@ -48,9 +48,9 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         if (!parse_store_present(st, E_PARSER_SECTION_REGEX, kid))
             continue ;
 
-        if (!wres) {
-            wres = resolve_set_struct(DATA_SERVICE_REGEX, rx) ;
-            resolve_init(wres) ; // offset 0 = "" convention
+        if (!init) {
+            resolve_init(&wres) ; // offset 0 = "" convention
+            init = 1 ;
         }
 
         table.u.parser.id = kid ;
@@ -60,7 +60,7 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         switch (kid) {
 
             case E_PARSER_SECTION_REGEX_CONFIGURE:
-                rx->configure = resolve_add_string(wres, v) ;
+                rx->configure = resolve_add_string(&wres, v) ;
                 break ;
 
             case E_PARSER_SECTION_REGEX_DIRECTORIES:
@@ -75,13 +75,12 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
                     _alloc_sbl_(stk, len + 1) ;
                     int r = strbuf_copyb(&stk, v, len) ? parse_list(&stk) : -1 ;
                     if (r <= 0) {
-                        free(wres) ;
                         if (r < 0)
                             return -1 ;
                         parse_error_return(0, 8, table) ;
                     }
                     if (stk.len)
-                        *field = parse_compute_list(wres, &stk, nfield, 0) ;
+                        *field = parse_compute_list(&wres, &stk, nfield, 0) ;
                 }
                 break ;
 
@@ -90,8 +89,7 @@ int parse_regex(struct resolve_hash_s *c, parse_build_ctx_t *ctx)
         }
     }
 
-    if (wres) {
-        free(wres) ;
+    if (init) {
         res->has_regex = 1 ;
     }
 

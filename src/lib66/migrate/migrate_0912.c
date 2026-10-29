@@ -102,7 +102,7 @@ void migrate_0912_provide_symlink(void)
             log_dieusys(LOG_EXIT_SYS, "get provided names") ;
 
         resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-        resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
+        resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
         FOREACH_SBL(&names, npos) {
 
@@ -111,14 +111,12 @@ void migrate_0912_provide_symlink(void)
 
             auto_strings(lnk, info.base.s, SS_SYSTEM, SS_RESOLVE, SS_SERVICE, SS_PROVIDE, "/", name) ;
 
-            if (resolve_check(wres, info.base.s, name) <= 0)
+            if (resolve_check(&wres, info.base.s, name) <= 0)
                 continue ;
 
             log_warn("service: ", name, " has a name a provider claims -- the service keeps it, remove one of them to hand it over") ;
             file_tryunlink(lnk) ;
         }
-
-        free(wres) ;
     }
 
     ssexec_free(&info) ;

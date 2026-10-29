@@ -14,7 +14,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include <oblibs/sbl.h>
 #include <oblibs/log.h>
@@ -44,14 +43,14 @@ uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *inf
 
     uint32_t n = 0 ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
     struct resolve_hash_tree_s *hash = NULL ;
 
     hash = hash_search_tree(&g->hres, treename) ;
 
     if (hash == NULL) {
 
-        if (resolve_read(wres, info->base.s, treename) <= 0)
+        if (resolve_read(&wres, info->base.s, treename) <= 0)
             log_dieu(LOG_EXIT_SYS, "read resolve file of: ", treename) ;
 
         log_trace("add tree: ", treename, " to the tree selection") ;
@@ -82,8 +81,6 @@ uint32_t tree_graph_collect(tree_graph_t *g, const char *treename, ssexec_t *inf
             n += tree_graph_ncollect(g, stk.s, stk.len, info) ;
         }
     }
-
-    free(wres) ;
 
     return n ;
 }

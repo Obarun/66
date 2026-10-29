@@ -12,7 +12,6 @@
  * except according to the terms contained in the LICENSE file./
  */
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <oblibs/string.h>
@@ -35,7 +34,7 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
     log_flow() ;
 
     resolve_service_addon_scripts_t *script = runorfinish ? &ex->run : &ex->finish ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
     char *env = "importas -D2 VERBOSITY VERBOSITY\n" ;
     char *exec = SS_EXTLIBEXECPREFIX "66-execute -v${VERBOSITY}" ;
@@ -48,9 +47,7 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
         !runorfinish ? " stop " : " start ", \
         res->sa.s + res->name, (!runorfinish) ? " $@\n" : "\n") ;
 
-    script->run = resolve_add_string(wres, run) ;
-
-    free(wres) ;
+    script->run = resolve_add_string(&wres, run) ;
 }
 
 /**
@@ -66,7 +63,7 @@ static void compute_wrapper_scripts_user(resolve_service_addon_execute_t *ex, ui
     resolve_service_addon_scripts_t *script = runorfinish ? &ex->run : &ex->finish ;
     size_t scriptlen = strlen(ex->sa.s + script->run_user) ;
     int build = !strcmp(ex->sa.s + script->build, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE_EXECUTE, ex) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
 
     char run[shebanglen + 1 + scriptlen + 1 + 1] ;
 
@@ -78,9 +75,7 @@ static void compute_wrapper_scripts_user(resolve_service_addon_execute_t *ex, ui
     if (script->run_user)
         auto_strings(run + fakelen, ex->sa.s + script->run_user, "\n") ;
 
-    script->run_user = resolve_add_string(wres, run) ;
-
-    free(wres) ;
+    script->run_user = resolve_add_string(&wres, run) ;
 }
 
 void parse_compute_script(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish)

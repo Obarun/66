@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -31,13 +30,13 @@
 #define sanitize_addon(type, ctype, zero, sanitize, what) \
 do { \
     ctype addon = zero ; \
-    resolve_wrapper_t_ref w = resolve_set_struct(type, &addon) ; \
-    if (resolve_read(w, info->base.s, name) <= 0) \
+    resolve_wrapper_t w = RESOLVE_WRAPPER(type, &addon) ; \
+    if (resolve_read(&w, info->base.s, name) <= 0) \
         log_dieu(LOG_EXIT_SYS, "read the " what " addon of service: ", name, " -- please make a bug report") ; \
     sanitize(&addon) ; \
-    if (!resolve_write(w, info->base.s, name)) \
+    if (!resolve_write(&w, info->base.s, name)) \
         log_dieusys(LOG_EXIT_SYS, "write the " what " addon of service: ", name) ; \
-    resolve_free(w) ; \
+    resolve_free_obj(&w) ; \
 } while (0)
 
 static int sanitize_service(ssexec_t *info)
@@ -112,7 +111,6 @@ static int sanitize_tree(ssexec_t *info)
     uint32_t flag = GRAPH_WANT_DEPENDS|GRAPH_WANT_REQUIREDBY, ntree = 0 ;
     struct resolve_hash_tree_s *c, *tmp ;
     vertex_t *v = NULL ;
-    resolve_wrapper_t_ref wres = 0 ;
 
     log_trace("sanitize trees resolve files") ;
 
@@ -127,7 +125,7 @@ static int sanitize_tree(ssexec_t *info)
 
     HASH_FOREACH(&graph.hres, c, tmp) {
 
-        wres = resolve_set_struct(DATA_TREE, &c->tres) ;
+        resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &c->tres) ;
         char name[strlen(c->tres.sa.s + c->tres.name) + 1] ;
         auto_strings(name, c->tres.sa.s + c->tres.name) ;
 
@@ -137,12 +135,11 @@ static int sanitize_tree(ssexec_t *info)
 
         tree_resolve_sanitize(&c->tres) ;
 
-        if (!resolve_write(wres, info->base.s, name))
+        if (!resolve_write(&wres, info->base.s, name))
             log_warnusys_return(LOG_EXIT_ZERO, "write resolve file of tree: ", name) ;
     }
 
     tree_graph_destroy(&graph) ;
-    free(wres) ;
 
     return 1 ;
 }
@@ -154,17 +151,17 @@ static int sanitize_tree_master(ssexec_t *info)
     log_trace("sanitize Master resolve") ;
 
     resolve_tree_master_t mres = RESOLVE_TREE_MASTER_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE_MASTER, &mres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE_MASTER, &mres) ;
 
-    if (resolve_read(wres, info->base.s, SS_MASTER + 1) <= 0)
+    if (resolve_read(&wres, info->base.s, SS_MASTER + 1) <= 0)
         log_warnusys_return(LOG_EXIT_ZERO, "read Master resolve file") ;
 
     tree_resolve_master_sanitize(&mres) ;
 
-    if (!resolve_write(wres, info->base.s, SS_MASTER + 1))
+    if (!resolve_write(&wres, info->base.s, SS_MASTER + 1))
         log_warnusys_return(LOG_EXIT_ZERO, "write Master resolve file") ;
 
-    resolve_free(wres) ;
+    resolve_free_obj(&wres) ;
 
     return 1 ;
 }

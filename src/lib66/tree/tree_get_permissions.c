@@ -33,10 +33,10 @@ int tree_get_permissions(char const *base, char const *treename)
     size_t pos = 0 ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     resolve_tree_t tres = RESOLVE_TREE_ZERO ;
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, &tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, &tres) ;
     uid_t uid = getuid(), treeuid = -1 ;
 
-    if (resolve_read(wres, base, treename) <= 0)
+    if (resolve_read(&wres, base, treename) <= 0)
         goto freed ;
 
     e = 0 ;
@@ -64,6 +64,6 @@ int tree_get_permissions(char const *base, char const *treename)
     }
 
     freed:
-        resolve_free(wres) ;
+        resolve_free_obj(&wres) ;
         return e ;
 }

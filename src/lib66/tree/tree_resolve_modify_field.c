@@ -13,7 +13,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>//free
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -25,16 +24,16 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const 
 {
     log_flow() ;
 
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_TREE, tres) ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_TREE, tres) ;
 
     switch(field) {
 
         case E_RESOLVE_TREE_RVERSION:
-            tres->rversion = resolve_add_string(wres, data) ;
+            tres->rversion = resolve_add_string(&wres, data) ;
             break ;
 
         case E_RESOLVE_TREE_NAME:
-            tres->name = resolve_add_string(wres,data) ;
+            tres->name = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_ENABLED:
@@ -43,23 +42,23 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const 
             break ;
 
         case E_RESOLVE_TREE_DEPENDS:
-            tres->depends = resolve_add_string(wres,data) ;
+            tres->depends = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_REQUIREDBY:
-            tres->requiredby = resolve_add_string(wres,data) ;
+            tres->requiredby = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_ALLOW:
-            tres->allow = resolve_add_string(wres,data) ;
+            tres->allow = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_GROUPS:
-            tres->groups = resolve_add_string(wres,data) ;
+            tres->groups = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_CONTENTS:
-            tres->contents = resolve_add_string(wres,data) ;
+            tres->contents = resolve_add_string(&wres,data) ;
             break ;
 
         case E_RESOLVE_TREE_NDEPENDS:
@@ -95,5 +94,4 @@ void tree_resolve_modify_field(resolve_tree_t *tres, uint32_t field, char const 
     }
 
     tree_resolve_sanitize(tres) ;
-    free(wres) ;
 }

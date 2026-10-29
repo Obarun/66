@@ -51,13 +51,13 @@ static void make_layout(char const *base, char const *name)
 static void write_core(char const *base, char const *name, uint32_t has_regex)
 {
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(w) ;
-    res.name = resolve_add_string(w, name) ;
-    res.path.home = resolve_add_string(w, base) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&w) ;
+    res.name = resolve_add_string(&w, name) ;
+    res.path.home = resolve_add_string(&w, base) ;
     res.has_regex = has_regex ;
-    assert(resolve_write(w, base, name) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_write(&w, base, name) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void get_field(strbuf *out, char const *base, char const *name, uint32_t id)
@@ -66,21 +66,21 @@ static void get_field(strbuf *out, char const *base, char const *name, uint32_t 
     t.u.service.id = id ;
 
     resolve_service_addon_regex_t rx = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_REGEX, &rx) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &rx) ;
 
     out->len = 0 ;
-    assert(resolve_get_field(out, w, base, name, t) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_get_field(out, &w, base, name, t) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 static void modify_field(char const *base, char const *name, uint32_t id, char const *val)
 {
     resolve_service_addon_regex_t rx = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-    resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_REGEX, &rx) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &rx) ;
     resolve_enum_table_t t = E_TABLE_SERVICE_REGEX_ZERO ;
     t.u.service.id = id ;
-    assert(resolve_modify_field(w, base, name, t, val) > 0) ;
-    resolve_free(w) ;
+    assert(resolve_modify_field(&w, base, name, t, val) > 0) ;
+    resolve_free_obj(&w) ;
 }
 
 int main(void)
@@ -101,13 +101,13 @@ int main(void)
     write_core(base, "withregex", 1) ;
     {
         resolve_service_addon_regex_t rx = RESOLVE_SERVICE_ADDON_REGEX_ZERO ;
-        resolve_wrapper_t *w = resolve_set_struct(DATA_SERVICE_REGEX, &rx) ;
-        resolve_init(w) ;
-        rx.configure = resolve_add_string(w, "setup.sh") ;
-        rx.directories = resolve_add_string(w, "alpha") ;
+        resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_REGEX, &rx) ;
+        resolve_init(&w) ;
+        rx.configure = resolve_add_string(&w, "setup.sh") ;
+        rx.directories = resolve_add_string(&w, "alpha") ;
         rx.ndirectories = 1 ;
-        assert(resolve_write(w, base, "withregex") > 0) ;
-        resolve_free(w) ;
+        assert(resolve_write(&w, base, "withregex") > 0) ;
+        resolve_free_obj(&w) ;
     }
 
     /* configure is a scalar string: it round-trips as itself */

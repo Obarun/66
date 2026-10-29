@@ -51,8 +51,8 @@ static void io_case(char const *name, int want, int islog, int i, int o, int e,
     printf("Running io_case %s...\n", name) ;
 
     resolve_service_addon_io_t io = RESOLVE_SERVICE_ADDON_IO_ZERO ;
-    resolve_wrapper_t_ref w = resolve_set_struct(DATA_SERVICE_IO, &io) ;
-    resolve_init(w) ;
+    resolve_wrapper_t w = RESOLVE_WRAPPER(DATA_SERVICE_IO, &io) ;
+    resolve_init(&w) ;
 
     res.logger = want ;
     res.islog = islog ;
@@ -60,7 +60,7 @@ static void io_case(char const *name, int want, int islog, int i, int o, int e,
     io.fdout.type = o ;
     io.fderr.type = e ;
 
-    parse_io_resolve(&res, &io, w, &info) ;
+    parse_io_resolve(&res, &io, &w, &info) ;
 
     assert(io.fdin.type == (uint32_t)xi) ;
     assert(io.fdout.type == (uint32_t)xo) ;
@@ -73,15 +73,14 @@ static void io_case(char const *name, int want, int islog, int i, int o, int e,
     int eff = res.logger && (io.fdin.type == LG || io.fdout.type == LG) ;
     assert(eff == xwant) ;
 
-    free(w) ;
     strbuf_free(&io.sa) ;
 }
 
 int main(void)
 {
-    resolve_wrapper_t_ref wres = resolve_set_struct(DATA_SERVICE, &res) ;
-    resolve_init(wres) ;
-    res.name = resolve_add_string(wres, "testsvc") ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+    resolve_init(&wres) ;
+    res.name = resolve_add_string(&wres, "testsvc") ;
     res.owner = 0 ; // root -> compute_log_dir uses SS_LOGGER_SYSDIR, no home needed
 
     if (!auto_strbuf(&info.live, "/run/66"))
@@ -112,8 +111,6 @@ int main(void)
     /* the == -> = fix: out=NULL & in=NULL now collapses out to INHERIT (was the
      * old no-op that left out=NULL). */
     io_case("null_null_null",  1, 0, NU, NU, NU,  NU, IN, NU, 0) ;
-
-    free(wres) ;
 
     printf("All tests passed successfully.\n") ;
     return 0 ;
