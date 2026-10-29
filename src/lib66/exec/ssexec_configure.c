@@ -52,8 +52,6 @@ enum tasks_e
     T_REPLACE
 } ;
 
-#define MAXOPTS 3
-#define checkopts(n) if (n >= MAXOPTS) log_die(LOG_EXIT_USER, "too many versions number")
 #define DELIM ','
 
 static uint8_t check_current_version(char const *svconf,char const *version)
@@ -96,7 +94,8 @@ static void do_import(char const *svname, char const *svconf, char const *versio
     if (!lexer_trim_with_delim(&stk,version,DELIM))
         log_dieu(LOG_EXIT_SYS,"clean string: ",version) ;
 
-    checkopts(sbl_count(&stk)) ;
+    if (sbl_count(&stk) != 2)
+        log_die(LOG_EXIT_USER, "import needs two versions: src,dst") ;
 
     src_version = stk.s ;
     pos = strlen(stk.s) + 1 ;

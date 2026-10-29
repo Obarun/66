@@ -634,6 +634,7 @@ Every named frontend is checked before anything is stopped: a refusal of the par
 | several services | 0 | the first one only | a warning names each one left out |
 | no configuration file | 0 | nothing | `<name> do not have configuration file` |
 | version that does not exist (**-s**, **-c**) | 100 | nothing | |
+| **-i** naming one version, or more than two | 100 | nothing | `import needs two versions: src,dst` |
 | **-c**, the switch of the link fails | 111 | | |
 | `EDITOR` not set and no **-e** | 100 | nothing | `EDITOR is not set at the environment variable -- please use the -e option to specify the editor to use e.g. 66 configure -e nano <service>.` |
 | upstream file modified by hand | 100 | nothing | `invalid upstream configuration file! Do you have modified it? Tries to parse the service again.` |
