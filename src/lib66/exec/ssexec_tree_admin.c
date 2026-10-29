@@ -632,6 +632,7 @@ void tree_enable_disable(tree_graph_t *g, char const *base, char const *treename
 
         if (tree_ongroups(base, treename, TREE_GROUPS_BOOT) && action) {
             log_warn(treename," is a part of group ", TREE_GROUPS_BOOT," -- ignoring enable request") ;
+            resolve_free_obj(&wres) ;
             return ;
         }
 
