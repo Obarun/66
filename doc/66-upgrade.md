@@ -137,10 +137,12 @@ Then check these points against your frontends and your scripts:
   there depends on the declaring one exactly as if its own frontend said so. A
   service named there and never parsed is not parsed by the declaration.
 - **Invalid services are named, not tripped over.** A service whose resolve file
-  or addon does not read, that is part of or depends on a dependency cycle, or
-  whose frontend is gone, is refused with `100` by a command whose action touches
-  it, with a message that names its repair: `66 reconfigure -c`, `66 parse -f`
-  or `66 remove`. A command that does not touch it acts and warns at verbosity 2.
+  or addon does not read, or that is part of or depends on a dependency cycle,
+  is refused with `100` by a command whose action touches it, with a message
+  that names its repair: `66 reconfigure -c` or `66 parse -f`. A command that
+  does not touch it acts and warns at verbosity 2. A service whose frontend is
+  gone is refused only by `66 parse -f`, `66 reconfigure` and `66 status`
+  naming it, the others act from its resolve file: `66 remove` takes it out.
   `66 tree start`, `66 tree stop`, `66 tree free`, the boot and the shutdown leave
   it out, with what depends on it, and start or stop the others; the tree then
   counts as failed.

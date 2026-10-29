@@ -169,15 +169,20 @@ service: b has neither a resolve file nor a frontend -- remove it with 66 remove
 A service is invalid when:
 
 - its resolve file, or one of its addons, is present on disk but cannot be read: `66 reconfigure -c` repairs it;
-- it is part of a dependency cycle, or depends on one: breaking the cycle in the frontends and `66 parse -f` repair it;
-- its frontend is gone from every directory 66 looks in: `66 remove` takes it out;
+- it is part of a dependency cycle, or depends on one: breaking the cycle in the frontends and `66 parse -f` repair it.
 
 A service without resolve file is not invalid, it is [absent](#absent-service).
+
+A service whose frontend is gone from every directory 66 looks in is not invalid either: the commands act from its resolve file and accept it. A command that parses it again, `66 parse -f` and `66 reconfigure`, and `66 status` naming it refuse with `100`, and `66 remove` takes it out:
+
+```
+service: b has no frontend anywhere any more -- remove it with 66 remove b
+```
 
 The dependencies a service declares are read in its own resolve file: while that file does not read, they are unknown, and the service is reached only through what its neighbours declare toward it. A command acting on one of its dependencies does not see it depend on it; `66 reconfigure -c` repairs it first.
 
 - A command whose action touches it refuses with `100`, and nothing moves. `66 remove` and `66 reconfigure -c` accept it when it is named.
-- A command whose action does not touch it acts, and warns at verbosity 2. A frontend gone is seen only by a command whose action touches the service: the others say nothing about it.
+- A command whose action does not touch it acts, and warns at verbosity 2.
 - When several causes apply, the message names the first of: unreadable resolve file, dependency cycle, frontend gone.
 - A service on a dependency cycle that runs, named to `66 remove` or `66 reconfigure -c`, has no place in the order: it is stopped before the others.
 
@@ -194,7 +199,6 @@ An unreadable resolve file is named with the services that depend on it when the
 service: b has an unreadable resolve file, and is required by: c -- repair it with 66 reconfigure -c b
 service: b has an unreadable resolve file -- repair it with 66 reconfigure -c b
 service: c cannot be ordered: it is part of, or depends on, a dependency cycle -- break the cycle in the frontends, then re-parse them with 66 parse -f
-service: b has no frontend anywhere any more -- remove it with 66 remove b
 ```
 
 ### Events
@@ -614,6 +618,7 @@ Every named frontend is checked before anything is stopped: a refusal of the par
 | dependencies never parsed | 0 | parsed along its `Depends` | |
 | absent `b`: `status b` | 0 | `b` parsed, then shown | |
 | named service invalid | 100 | nothing | see [Invalid service](#invalid-service) |
+| named service, its frontend gone | 100 | nothing | see [Invalid service](#invalid-service) |
 | invalid service elsewhere | 0 | warning | |
 | scandir not running, or no status record | 0 | field `Status` is `None`, prefixed by `enabled, ` when enabled | |
 | status record that does not read | 0 | field `Status` is `unreadable`, a warning names the service | |

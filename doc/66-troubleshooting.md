@@ -98,6 +98,13 @@ invalid, and names the repair in its message:
 ```
 service: b has an unreadable resolve file -- repair it with 66 reconfigure -c b
 service: c cannot be ordered: it is part of, or depends on, a dependency cycle -- break the cycle in the frontends, then re-parse them with 66 parse -f
+```
+
+A service whose frontend is gone from every directory `66` looks in is not
+invalid, the commands act from its resolve file; `66 parse -f`,
+`66 reconfigure` and `66 status` naming it refuse it with `100`:
+
+```
 service: b has no frontend anywhere any more -- remove it with 66 remove b
 ```
 

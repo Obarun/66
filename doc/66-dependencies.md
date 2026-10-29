@@ -244,14 +244,21 @@ it through a `Depends` or a `From`; a `RequiredBy` is never followed by a parse.
 which prepare nothing, refuse it.
 
 A service is **invalid** when its resolve file or one of its addons cannot be
-read, when it is part of a dependency cycle or depends on one, or when its
-frontend is gone from every directory `66` looks in. A command whose action
-touches it refuses with `100` and moves nothing; a command whose action does not
-touch it acts, and warns at verbosity 2. The message names the repair:
+read, or when it is part of a dependency cycle or depends on one. A command
+whose action touches it refuses with `100` and moves nothing; a command whose
+action does not touch it acts, and warns at verbosity 2. The message names the
+repair:
 
 ```
 service: b has an unreadable resolve file, and is required by: c -- repair it with 66 reconfigure -c b
 service: c cannot be ordered: it is part of, or depends on, a dependency cycle -- break the cycle in the frontends, then re-parse them with 66 parse -f
+```
+
+A service whose frontend is gone from every directory `66` looks in is not
+invalid: the commands act from its resolve file. `66 parse -f`,
+`66 reconfigure` and `66 status` naming it refuse it with `100`:
+
+```
 service: b has no frontend anywhere any more -- remove it with 66 remove b
 ```
 

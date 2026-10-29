@@ -28,7 +28,7 @@ This command handles [interdependencies](66.html#handling-dependencies).
 
 A name that a neighbour still names in its `RequiredBy` after its removal, or that was never parsed, is *absent*. `66 remove` of an absent name removes the services that depend on it, and the name stays absent as long as a neighbour names it.
 
-`66 remove` accepts a named service that is invalid: a resolve file that does not read, a service on a dependency cycle, or a service whose frontend is gone from every directory 66 looks in. It is removed as far as its readable state allows; a running one whose resolve file does not read is stopped through its scandir entry. An invalid service met among the services the removal reaches, and not named, refuses the whole command with `100`.
+`66 remove` accepts a named service that is invalid: a resolve file that does not read, or a service on a dependency cycle. It is removed as far as its readable state allows; a running one whose resolve file does not read is stopped through its scandir entry. An invalid service met among the services the removal reaches, and not named, refuses the whole command with `100`.
 
 ## Options
 
