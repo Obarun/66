@@ -23,6 +23,7 @@
 #include <oblibs/log.h>
 #include <oblibs/types.h>
 #include <oblibs/cdb.h>
+#include <oblibs/fd.h>
 #include <oblibs/files.h>
 #include <oblibs/account.h>
 #include <oblibs/directory.h>
@@ -595,6 +596,9 @@ static void migrate_resolve(ssexec_t *info, const char *path, const char *name)
     strbuf_free(&logger.sa) ;
 
     resolve_free_obj(&wres) ;
+    strbuf_free(&res.sa) ;
+    close_fd(fd) ;
+    ocdb_free(&c) ;
 }
 
 static void migrate_service_0822(void)

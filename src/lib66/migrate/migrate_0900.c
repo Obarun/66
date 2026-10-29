@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include <oblibs/fd.h>
 #include <oblibs/log.h>
 #include <oblibs/sbl.h>
 #include <oblibs/strbuf.h>
@@ -97,6 +98,8 @@ static void migrate_event_0900(ssexec_t *info, char const *path, char const *nam
     log_trace("event addon migrated for: ", name) ;
 
     resolve_free_obj(&wres) ;
+    close_fd(fd) ;
+    ocdb_free(&c) ;
 }
 
 void migrate_0900(void)
