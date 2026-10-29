@@ -911,17 +911,12 @@ static void uptimeout(void)
         killk() ;
         settimeout(5) ;
 
-    } else if (ex.notify && !status.flagready) {
+    } else {
 
         kill_timeout = 1 ;
         status.flagwantup = 0 ;
         latched_who = STATUS_WHO_SELF ;
         up_d() ;
-
-    } else {
-
-        settimeout_infinite() ;
-        log_warn("can't happen: timeout while the service is up!") ;
     }
 }
 
