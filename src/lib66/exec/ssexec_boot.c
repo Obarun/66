@@ -142,7 +142,7 @@ static int read_kernel_parameters(strbuf *kernel, const char *file)
 
     FOREACH_SBL(&trim, pos) {
         // keep only key=value tokens
-        if (get_len_until(trim.s + pos, '=') >= 0) {
+        if (trim.s[pos + str_search(trim.s + pos, '=')]) {
             size_t toklen = strlen(trim.s + pos) ;
             if (!sbl_addb(&res, trim.s + pos, toklen))
                 sulogin("append kernel parameter: ", trim.s + pos) ;
@@ -307,8 +307,8 @@ static void split_tmpfs(char *dst,char const *str)
 {
     log_flow() ;
 
-    size_t len = get_len_until(str+1,'/') ;
-    len++ ;
+    size_t len = str_search(str + 1, '/') ;
+    len = str[1 + len] ? len + 1 : 0 ;
     memcpy(dst,str,len) ;
     dst[len] = 0 ;
 }

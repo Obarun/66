@@ -174,7 +174,8 @@ static int io_parse_one(resolve_service_t *res, resolve_service_addon_io_t *io, 
 
     size_t len = strlen(line) ;
     _alloc_sbl_(stk, len) ;
-    ssize_t delim = get_len_until(line, ':'), type = -1 ;
+    size_t colon = str_search(line, ':') ;
+    ssize_t delim = line[colon] ? (ssize_t)colon : -1, type = -1 ;
 
     if (delim + 2 >= (ssize_t)len)
         parse_error_return(0, 10, table) ;

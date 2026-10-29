@@ -93,7 +93,7 @@ static int parse_time(char const *str, struct timespec *ts)
     /* CLI form is unquoted ISO 8601: only 'T'/'t' joins date and time. The DFA
      * also accepts a space (for log lines), but a space here would force shell
      * quoting, so reject it -- one canonical command-line format. */
-    if (strchr(str, ' '))
+    if (str[str_search(str, ' ')])
         return 0 ;
 
     return log_iso_scan(str, len, ts, &end) && end == len ;

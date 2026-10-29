@@ -33,10 +33,9 @@ int parse_clean_runas(char const *str, resolve_enum_table_t table)
     char file[len + 1] ;
     auto_strings(file, str) ;
 
-    char *colon ;
-    colon = strchr(file,':') ;
+    char *colon = file + str_search(file, ':') ;
 
-    if (colon) {
+    if (*colon) {
 
         *colon = 0 ;
 

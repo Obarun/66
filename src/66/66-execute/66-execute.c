@@ -598,9 +598,9 @@ static void execute_uidgid(resolve_service_t *res, resolve_service_addon_execute
 
     if (want) {
 
-        char *colon = strchr(as,':') ;
+        char *colon = as + str_search(as, ':') ;
 
-        if (colon) {
+        if (*colon) {
 
             if (!uid_parse_strict(as, &uid))
                 log_dieusys(LOG_EXIT_SYS,  "get uid of: ", as) ;

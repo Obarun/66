@@ -144,11 +144,9 @@ static void check_identifier(char const *name)
 
 static ssize_t tree_get_key(char *table,char const *str)
 {
-    ssize_t pos = -1 ;
+    size_t pos = str_search(str, '=') ;
 
-    pos = get_len_until(str,'=') ;
-
-    if (pos == -1)
+    if (!str[pos])
         return -1 ;
 
     auto_strings(table,str) ;

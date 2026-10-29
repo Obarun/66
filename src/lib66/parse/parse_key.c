@@ -57,8 +57,8 @@ int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
         if (kid < 0) {
             log_warn("unknown key: ", key->s, " -- ignoring it") ;
             cfg->found = 0 ;
-            next = get_len_until(cfg->str + cfg->opos, '\n') ;
-            if (next < 0) next = 0 ;
+            next = str_search(cfg->str + cfg->opos, '\n') ;
+            if (!cfg->str[cfg->opos + next]) next = 0 ;
             cfg->pos = cfg->opos + next + 1 ;
         }
 

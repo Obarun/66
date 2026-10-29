@@ -243,8 +243,7 @@ static uint32_t inotify_mask_from_on(char const *on, uint32_t non)
 
     for (uint32_t i = 0 ; i < non ; i++) {
 
-        ssize_t got = get_len_until(p, ' ') ;
-        size_t tlen = got < 0 ? strlen(p) : (size_t)got ;
+        size_t tlen = str_search(p, ' ') ;
 
         for (size_t j = 0 ; j < sizeof(event_in_table) / sizeof(event_in_table[0]) ; j++)
             if (tlen == event_in_table[j].len && !memcmp(p, event_in_table[j].name, tlen)) {
@@ -372,8 +371,7 @@ static void reactor_wire(eventd_reactor_t *re, int arm)
 
     for (uint32_t i = 0 ; i < n ; i++) {
 
-        ssize_t got = get_len_until(p, ' ') ;
-        size_t plen = got < 0 ? strlen(p) : (size_t)got ; // last entry has no trailing space
+        size_t plen = str_search(p, ' ') ; // last entry has no trailing space
 
         char nm[plen + 1] ;
         memcpy(nm, p, plen) ;
@@ -399,8 +397,7 @@ static int reactor_listens_to(eventd_reactor_t const *re, uint8_t kind, char con
 
     for (uint32_t i = 0 ; i < n ; i++) {
 
-        ssize_t got = get_len_until(p, ' ') ;
-        size_t plen = got < 0 ? strlen(p) : (size_t)got ;
+        size_t plen = str_search(p, ' ') ;
 
         if (plen == slen && !memcmp(p, source, plen))
             return 1 ;
@@ -681,8 +678,7 @@ static void reactor_catch_up(eventd_reactor_t *re)
 
     for (uint32_t i = 0 ; i < n ; i++) {
 
-        ssize_t got = get_len_until(p, ' ') ;
-        size_t plen = got < 0 ? strlen(p) : (size_t)got ;
+        size_t plen = str_search(p, ' ') ;
 
         event_frame_t frame ;
         if (reactor_source_status(p, plen, &frame, 0)) {

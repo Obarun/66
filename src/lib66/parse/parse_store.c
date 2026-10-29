@@ -88,8 +88,8 @@ static int store_put(parse_store_t *st, uint32_t sid, uint32_t kid, char const *
 
 static int store_environ(parse_store_t *st, char const *body)
 {
-    int r = get_len_until(body, '\n') ;
-    if (r < 0)
+    size_t r = str_search(body, '\n') ;
+    if (!body[r])
         r = 0 ;
     r++ ;
 

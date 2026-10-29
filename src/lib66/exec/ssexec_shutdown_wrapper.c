@@ -145,7 +145,7 @@ static inline void parse_time(struct timespec *when, struct timespec const *now,
 {
     if (!strcmp(s, "now")) *when = *now ;
     else if (s[0] == '+') parse_mins(when, now, s + 1) ;
-    else if (strchr(s, ':')) parse_hourmin(when, now, s) ;
+    else if (s[str_search(s, ':')]) parse_hourmin(when, now, s) ;
     else parse_mins(when, now, s) ;
 }
 

@@ -18,13 +18,13 @@
 
 int module_getname(char *module, char const *name)
 {
-    int r = str_contain(name, ":") ;
+    size_t r = str_search(name, ':') ;
 
-    if (r <= 1)
+    if (!name[r] || !r)
         return 0 ;
 
-    memcpy(module, name, r - 1) ;
-    module[r - 1] = 0 ;
+    memcpy(module, name, r) ;
+    module[r] = 0 ;
 
     return 1 ;
 }

@@ -40,9 +40,9 @@ int ssexec_env_set(int argc, char const *const *argv, void *data)
     for (int pos = 0 ; pos < argc ; pos++) {
 
         char const *pair = argv[pos] ;
-        ssize_t klen = get_len_until(pair, '=') ;
+        size_t klen = str_search(pair, '=') ;
 
-        if (klen <= 0)
+        if (!pair[klen] || !klen)
             log_die(LOG_EXIT_USER, "invalid variable=value pair: ", pair) ;
 
         // bound the name before it sizes the buffer below

@@ -62,6 +62,7 @@
 #include <oblibs/process.h>
 #include <oblibs/environ.h>
 #include <oblibs/fhash_cb.h>
+#include <oblibs/string.h>
 
 #include <66/config.h> // SS_MAX_SERVICE, SS_MAX_SERVICE_NAME (compile-time)
 #include "lib/scandir.h" // svpool + devino + (via bits.h) bitset32_t
@@ -318,7 +319,7 @@ static inline void waitthem(void)
 
 static inline int is_logger(uint32_t i)
 {
-    return !!strchr(NAME(i), '/') ;
+    return NAME(i)[str_search(NAME(i), '/')] != 0 ;
 }
 
 static char const *scandir_signame(int sig)

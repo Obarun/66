@@ -53,10 +53,9 @@ int write_execute_scripts(char const *file, char const *contents, char const *ds
         char file[len + 1] ;
         auto_strings(file, runas) ;
 
-        char *colon ;
-        colon = strchr(file,':') ;
+        char *colon = file + str_search(file, ':') ;
 
-        if (colon) {
+        if (*colon) {
 
             if (!uid_parse_strict(file, &uid) || !gid_parse_strict(colon + 1, &gid))
                 return (errno = EINVAL, -1) ;

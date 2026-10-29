@@ -73,8 +73,8 @@ int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, s
             ssize_t id = key_to_enum(enum_list_parser_section, stk.s) ;
             if (id < 0 || cfg.str[!cfg.opos ? 0 : cfg.opos - 1] == '#') {
                 log_warn(id < 0 ? "invalid section name: " : "commented section: ", stk.s, " -- ignoring it") ;
-                id = get_len_until(cfg.str + cfg.cpos, '\n') ;
-                if (id < 0)
+                id = str_search(cfg.str + cfg.cpos, '\n') ;
+                if (!cfg.str[cfg.cpos + id])
                     log_warn_return(LOG_EXIT_ZERO, "frontend service file must end with an empty line") ;
 
                 cfg.pos += --id ;

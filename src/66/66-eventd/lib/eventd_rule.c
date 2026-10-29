@@ -60,9 +60,9 @@ int eventd_token_match(char const *token, event_frame_t const *f)
     if (f->kind != EVENT_KIND_TRANSITION)
         return 0 ;
 
-    char const *colon = strchr(token, ':') ;
+    char const *colon = token + str_search(token, ':') ;
 
-    if (!colon) {
+    if (!*colon) {
         int s = status_state_from_string(token) ;
         if (s >= 0)
             return f->state == (uint8_t)s ;
@@ -103,13 +103,11 @@ int eventd_token_match(char const *token, event_frame_t const *f)
 
 static char const *list_next(char const *p, size_t *len)
 {
-    ssize_t n = get_len_until(p, ' ') ;
-    if (n < 0) {
-        *len = strlen(p) ; // last entry: no trailing space
-        return p + *len ;
-    }
-    *len = (size_t)n ;
-    return p + n + 1 ;
+    *len = str_search(p, ' ') ;
+    if (!p[*len])
+        return p + *len ; // last entry: no trailing space
+
+    return p + *len + 1 ;
 }
 
 static int source_in_from(resolve_service_addon_event_t const *r, char const *svc, size_t len)

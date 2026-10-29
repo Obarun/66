@@ -51,7 +51,8 @@ static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
 
         int r = key_to_enum(list, key.s) ;
         if (r < 0) {
-            r = get_len_until(line + (*o), '\n') + 1 ;
+            r = str_search(line + (*o), '\n') ;
+            r = line[(*o) + r] ? r + 1 : 0 ;
             (*o) += r ;
             return 0 ;
         }
@@ -141,7 +142,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
                         int /* last parenthese */ lp = o + olvp ;
                         e = 0 ;
 
-                        e = get_len_until(line + o, '\n') + 1 ;
+                        e = str_search(line + o, '\n') ;
+                        e = line[o + e] ? e + 1 : 0 ;
 
                         if (o + e >= len) {
                             // end of string. this validate the parenthese
@@ -191,7 +193,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
 
                             } else {
                                 // this is a comment
-                                e = get_len_until(line + o, '\n') + 1 ;
+                                e = str_search(line + o, '\n') ;
+                                e = line[o + e] ? e + 1 : 0 ;
                                 o += e ;
                                 vp = 1 ;
                                 lvp = lp  ;
@@ -227,7 +230,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
                     } else {
                         /** another comment, continue the check at the
                          * next line */
-                        e = get_len_until(line + o, '\n') + 1 ;
+                        e = str_search(line + o, '\n') ;
+                        e = line[o + e] ? e + 1 : 0 ;
                         o += e ;
                     }
                 }
@@ -242,7 +246,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
                     char secname[20] ;
                     int r = get_sep_before(line + o, ']', '\n') ;
                     if (r < 0) {
-                        e = get_len_until(line + o, '\n') + 1 ;
+                        e = str_search(line + o, '\n') ;
+                        e = line[o + e] ? e + 1 : 0 ;
                         o += e ;
                         vp = 0 ;
                         break ;
