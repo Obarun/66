@@ -15,8 +15,9 @@
 /** The refusals the commands share, by effect: the exit code and the line of
  * the contract for a name no vertex answers to (unknown, not parsed, provided
  * by another under remove) and for a selection that meets an absent or an
- * invalid service, its frontend gone included; nothing said and nothing
- * refused out of the refusals asked. A system is written under a private
+ * invalid service; a frontend gone, named or met, is not refused, the
+ * commands act from the resolve file; nothing said and nothing refused out of
+ * the refusals asked. A system is written under a private
  * mkdtemp directory; each refusal runs in a child that owns a user namespace
  * and a chroot holding the frontend directories, so that nothing of the host
  * is read, and dies there. */
@@ -120,6 +121,7 @@ static void write_system(void)
     write_service("b", "a ab") ;
     write_service("c", "gone") ;
     write_service("d", "") ;
+    write_service("e", "d") ;
     write_service("w", "u") ;
     write_service("x", "y") ;
     write_service("y", "x") ;
@@ -137,7 +139,7 @@ static void write_system(void)
     CHECK(symlink("../pv-conn", file) == 0, "link %s", file) ;
 
     // the frontends of owner 0, every service but d and the absent gone
-    char const *fe[] = { "a", "ab", "b", "c", "w", "u", "x", "y", "z", "m", "pv-conn", "free-fe" } ;
+    char const *fe[] = { "a", "ab", "b", "c", "e", "w", "u", "x", "y", "z", "m", "pv-conn", "free-fe" } ;
     auto_strings(dir, root, SS_SERVICE_ADMDIR) ;
     CHECK(dir_create_parent(dir, 0755), "create %s", dir) ;
     auto_strings(dir, root, SS_SERVICE_SYSDIR) ;
@@ -267,9 +269,8 @@ static void refuse_child(service_graph_t const *g)
         { "an unreadable service met, only named ones refused", 0, "w", 0, DEP, NI, 0, 0 },
         { "a service on a cycle named", 0, "x", 0, NONE, NI, 100,
             "service: x cannot be ordered: it is part of, or depends on, a dependency cycle -- break the cycle in the frontends, then re-parse them with 66 parse -f" },
-        { "a frontend gone, named", 0, "d", 0, NONE, NI, 100,
-            "service: d has no frontend anywhere any more -- remove it with 66 remove d" },
-        { "a frontend gone, out of the refusals asked", 0, "d", 0, NONE, MI | NA | MA, 0, 0 },
+        { "a frontend gone, named, not invalid", 0, "d", 0, NONE, NA | NI, 0, 0 },
+        { "a frontend gone, met, not invalid", 0, "e", 0, DEP, MA | MI, 0, 0 },
         { "a valid selection", 0, "b", 0, NONE, NA | MA | NI | MI, 0, 0 },
         { "an absent service named is not met", 0, "ab", 0, NONE, MA, 0, 0 },
         { "out of the start order, the first by index", 0, "z", 0, DEP, MI, 100,

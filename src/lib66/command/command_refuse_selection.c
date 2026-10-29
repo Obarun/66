@@ -72,9 +72,10 @@ static uint32_t first_refused(selection_service_t const *sel, uint32_t refusals)
     return SERVICE_GRAPH_NOINDEX ;
 }
 
-static void refuse(service_graph_t const *g, uint32_t index, strbuf *frontends, bool gone)
+static void refuse(service_graph_t const *g, uint32_t index, strbuf *frontends)
 {
     int r ;
+    bool gone = false ;
     char const *name = service_graph_name(g, index) ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
@@ -100,25 +101,9 @@ static void refuse(service_graph_t const *g, uint32_t index, strbuf *frontends, 
     log_die(LOG_EXIT_USER, sa.s) ;
 }
 
-static void refuse_gone(selection_service_t const *sel, uint32_t index, strbuf *frontends, uint32_t refusals)
-{
-    service_graph_t const *g = sel->g ;
-    uint32_t scope = bitset32_isvalid(&sel->named, index) ? SELECTION_SERVICE_REFUSE_NAMED_INVALID : SELECTION_SERVICE_REFUSE_MET_INVALID ;
-
-    if (!(refusals & scope) || service_graph_state(g, index) != SERVICE_GRAPH_STATE_OK)
-        return ;
-
-    int r = service_graph_frontend_gone(g, index, frontends) ;
-    if (r < 0)
-        log_dieusys(LOG_EXIT_SYS, "find the frontend of: ", service_graph_name(g, index)) ;
-
-    if (r)
-        refuse(g, index, frontends, true) ;
-}
-
 static void refuse_scope(selection_service_t const *sel, strbuf *frontends, uint32_t refusals)
 {
-    uint32_t pos = 0, index = 0, found ;
+    uint32_t found ;
 
     if (!refusals)
         return ;
@@ -126,13 +111,7 @@ static void refuse_scope(selection_service_t const *sel, strbuf *frontends, uint
     found = first_refused(sel, refusals & GRAPH_REFUSE) ;
 
     if (found != SERVICE_GRAPH_NOINDEX)
-        refuse(sel->g, found, frontends, false) ;
-
-    if (!(refusals & (SELECTION_SERVICE_REFUSE_NAMED_INVALID | SELECTION_SERVICE_REFUSE_MET_INVALID)))
-        return ;
-
-    FOREACH_SELECTION(sel, pos, index)
-        refuse_gone(sel, index, frontends, refusals) ;
+        refuse(sel->g, found, frontends) ;
 }
 
 void command_refuse_selection(selection_service_t const *sel, strbuf *frontends, uint32_t refusals)

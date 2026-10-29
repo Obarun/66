@@ -659,6 +659,25 @@ static void prepare_absent(service_graph_t *g, ssexec_t *info)
     command_parse_missing(g, argv, n, info, 0) ;
 }
 
+static void refuse_gone(service_graph_t const *g, uint32_t index, strbuf *frontends)
+{
+    int r ;
+    char const *name = service_graph_name(g, index) ;
+    _cleanup_strbuf_ strbuf msg = STRBUF_ZERO ;
+
+    r = service_graph_frontend_gone(g, index, frontends) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "find the frontend of: ", name) ;
+
+    if (!r)
+        return ;
+
+    if (service_graph_invalid_message(&msg, g, index, true) < 0)
+        log_dieusys(LOG_EXIT_SYS, "compose the message of service: ", name) ;
+
+    log_die(LOG_EXIT_USER, msg.s) ;
+}
+
 static int select_named(selection_service_t *sel, command_graph_t *d, char const *const *argv, int argc, ssexec_t *info, strbuf *frontends)
 {
     int r ;
@@ -673,6 +692,8 @@ static int select_named(selection_service_t *sel, command_graph_t *d, char const
 
         if (!bitset32_isvalid(&sel->named, index))
             continue ;
+
+        refuse_gone(&d->g, index, frontends) ;
 
         r = service_graph_resolve_read(&d->store, index, SERVICE_READ_IO, &h) ;
         if (r < 0)

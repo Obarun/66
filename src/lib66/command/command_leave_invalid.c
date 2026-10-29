@@ -50,18 +50,8 @@ static int bad(strbuf *msg, selection_service_t const *sel, uint32_t index, strb
 
     } else {
 
-        if (!bitset32_isvalid(&sel->member, index))
+        if (!bitset32_isvalid(&sel->member, index) || !service_graph_invalid(state))
             return 0 ;
-
-        if (!service_graph_invalid(state)) {
-
-            gone = service_graph_frontend_gone(g, index, frontends) ;
-            if (gone < 0)
-                log_dieusys(LOG_EXIT_SYS, "find the frontend of: ", name) ;
-
-            if (!gone)
-                return 0 ;
-        }
     }
 
     r = service_graph_invalid_message(msg, g, index, gone) ;

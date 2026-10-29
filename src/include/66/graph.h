@@ -56,8 +56,8 @@ struct selection_service_s ;
 #define SERVICE_GRAPH_STATE_UNREADABLE 2 // a resolve file present that service_read() refuses: itself, or an addon it declares, missing or unreadable
 #define SERVICE_GRAPH_STATE_UNORDERED 3 // on a dependency cycle, or depending on one: it has no place in the start order
 #define SERVICE_GRAPH_STATE_MAX SERVICE_GRAPH_STATE_UNORDERED
-// a vertex is invalid when it is UNREADABLE or UNORDERED, or when its frontend is gone
-// (service_graph_frontend_gone); a message names the first cause in this order (contract, Invalid service)
+// a vertex is invalid when it is UNREADABLE or UNORDERED; a frontend gone (service_graph_frontend_gone)
+// is seen by a parse and by 66 status only, named after both (contract, Invalid service)
 
 /**
  * @struct service_graph_vertex_s
@@ -665,10 +665,11 @@ extern int service_graph_frontend_gone(service_graph_t const *g, uint32_t index,
  * elsewhere both say it through this function. A vertex
  * SERVICE_GRAPH_STATE_UNREADABLE names the vertexes that depend on it.
  *
- * @frontend_gone makes a SERVICE_GRAPH_STATE_OK vertex invalid ("has no
- * frontend anywhere any more"), and a SERVICE_GRAPH_STATE_ABSENT vertex one to
- * report ("has neither a resolve file nor a frontend"), the two lines of the
- * contract this function composes beside the invalid states.
+ * @frontend_gone makes a SERVICE_GRAPH_STATE_OK vertex one to report ("has
+ * no frontend anywhere any more"), as a parse and 66 status do, and a
+ * SERVICE_GRAPH_STATE_ABSENT vertex one to report ("has neither a resolve file
+ * nor a frontend"), the two lines of the contract this function composes
+ * beside the invalid states.
  *
  * @param[out] sa            Receives the line, which replaces what it held.
  * @param[in]  g             Graph to read.
@@ -676,7 +677,7 @@ extern int service_graph_frontend_gone(service_graph_t const *g, uint32_t index,
  * @param[in]  frontend_gone The answer of service_graph_frontend_gone() for
  *                           @index.
  *
- * @return 1 when @index is invalid, or absent without frontend, and @sa holds
+ * @return 1 when @index is invalid, or its frontend is gone, and @sa holds
  *         the line, which replaces what @sa held.
  * @return 0 when @index is valid, nothing written in @sa.
  * @return -1 on a system error, errno set; EINVAL when the state of @index is
@@ -708,8 +709,8 @@ extern int service_graph_dependents(strbuf *sa, service_graph_t const *g, uint32
  * frontend, with the line of service_graph_invalid_message(): a command whose
  * action does not touch an invalid service acts and warns (contract, Invalid
  * service). The frontend of a service that reads is not looked at here: a
- * frontend gone is seen only by a command whose action touches the service
- * (command_refuse_selection()); the absent vertexes, a handful of declared
+ * frontend gone is seen only by a parse and by 66 status of the service;
+ * the absent vertexes, a handful of declared
  * names, are looked at.
  *
  * @param[in]     g         Graph to read.
