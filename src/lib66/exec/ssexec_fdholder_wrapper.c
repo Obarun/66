@@ -122,12 +122,12 @@ static opt_t const opts_fdholder_list[] = {
 } ;
 
 static opt_cmd_t const fdholder_sub[] = {
-    { .name = "start",    .help = "start the scandir's fdholder daemon",   .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .fn = &do_fdholder_start },
-    { .name = "stop",     .help = "stop the scandir's fdholder daemon",    .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .fn = &do_fdholder_stop },
-    { .name = "restart",  .help = "restart the scandir's fdholder daemon", .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .fn = &do_fdholder_restart },
-    { .name = "store",    .help = "store a file descriptor under a name",  .operands = "id",         .opts = opts_fdholder_store,    .nopts = OPT_COUNT(opts_fdholder_store),    .fn = &ssexec_fdholder_store },
-    { .name = "retrieve", .help = "retrieve a descriptor and exec prog",   .operands = "id prog...", .opts = opts_fdholder_retrieve, .nopts = OPT_COUNT(opts_fdholder_retrieve), .fn = &ssexec_fdholder_retrieve },
-    { .name = "list",     .help = "list stored descriptor names",          .operands = NULL,         .opts = opts_fdholder_list,     .nopts = OPT_COUNT(opts_fdholder_list),     .fn = &ssexec_fdholder_list },
+    { .name = "start",    .help = "start the scandir's fdholder daemon",   .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .on_option = &on_fdholder_signal,   .fn = &do_fdholder_start },
+    { .name = "stop",     .help = "stop the scandir's fdholder daemon",    .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .on_option = &on_fdholder_signal,   .fn = &do_fdholder_stop },
+    { .name = "restart",  .help = "restart the scandir's fdholder daemon", .operands = NULL,         .opts = opts_fdholder_signal,   .nopts = OPT_COUNT(opts_fdholder_signal),   .on_option = &on_fdholder_signal,   .fn = &do_fdholder_restart },
+    { .name = "store",    .help = "store a file descriptor under a name",  .operands = "id",         .opts = opts_fdholder_store,    .nopts = OPT_COUNT(opts_fdholder_store),    .on_option = &on_fdholder_store,    .fn = &ssexec_fdholder_store },
+    { .name = "retrieve", .help = "retrieve a descriptor and exec prog",   .operands = "id prog...", .opts = opts_fdholder_retrieve, .nopts = OPT_COUNT(opts_fdholder_retrieve), .on_option = &on_fdholder_retrieve, .fn = &ssexec_fdholder_retrieve },
+    { .name = "list",     .help = "list stored descriptor names",          .operands = NULL,         .opts = opts_fdholder_list,     .nopts = OPT_COUNT(opts_fdholder_list),     .on_option = &on_fdholder_list,     .fn = &ssexec_fdholder_list },
 } ;
 
 opt_cmd_t const cmd_fdholder = {
