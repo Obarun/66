@@ -129,12 +129,12 @@ int oneshot_async_send(oneshot_async_t *a, sse_epoll_t *loop, char const *socket
 
     int fd = sse_streamux_create_client(socket) ;
     if (fd < 0)
-        log_warnusys("connect to oneshot daemon: ", socket) ;
+        log_warnusys_return(LOG_EXIT_ZERO, "connect to oneshot daemon: ", socket) ;
 
     a->stream = sse_stream_new(fd, async_read_cb, async_write_cb, async_close_cb, async_error_cb, a) ;
     if (!a->stream) {
         close_fd(fd) ;
-        log_warnusys("create stream") ;
+        log_warnusys_return(LOG_EXIT_ZERO, "create stream") ;
     }
 
     a->hdrbuf = malloc(ONESHOT_HDR_SIZE) ;
