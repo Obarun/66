@@ -152,5 +152,6 @@ extern int parse_compute_live(resolve_wrapper_t_ref wres, ssexec_t *info) ;
 extern int parse_copyfrom_path(char *src, char *dname, char const *frontend, char const *what) ;
 extern ssize_t compute_log_dir(resolve_wrapper_t_ref wres, resolve_service_t *res, const char *destination) ;
 extern void parse_compute_script(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish) ;
+extern void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish) ;
 
 #endif

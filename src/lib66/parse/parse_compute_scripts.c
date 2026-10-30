@@ -29,7 +29,7 @@
 /**
  * @!runorfinish -> finish, @runorfinish -> run
  * */
-static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish)
+void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addon_execute_t *ex, uint8_t runorfinish)
 {
     log_flow() ;
 
