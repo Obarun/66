@@ -25,20 +25,11 @@
 #include <66/constants.h>
 #include <66/migrate.h>
 #include <66/ssexec.h>
+#include <66/status.h>
+#include <66/svc.h>
 #include <66/utils.h>
 #include <66/command.h>
 
-/** The control scripts of a scandir are written once, when the scandir is
- * created, and live in /run until the next boot. Those of the previous release
- * carry `-l <live>`, an option this one no longer accepts anywhere: the running
- * scandir execs its .66-scandir/SIG* scripts on a signal, and the supervisor
- * relaunches 66-shutdownd from its run file, so a machine upgraded without a
- * reboot would answer the power button with a usage error. Strip the argument
- * where it stands, the next boot writes these files afresh.
- *
- * A failure only costs the rewrite: the state on disk is already migrated at
- * this point, so warn and carry on rather than abort and leave the system
- * halfway. */
 
 #define MIGRATE_SCANDIR_HINT " -- you may need to force the reboot using 66 reboot -f"
 #define MIGRATE_CONTROL_NAME_MAX (sizeof "/SIGWINCH" - 1)
@@ -111,6 +102,13 @@ void migrate_0920(void)
     auto_strings(shut, info.scandir.s, "/", SS_BOOT_SHUTDOWND, "/run") ;
 
     migrate_strip_live(shut, info.live.s) ;
+
+    char shutd[info.scandir.len + 1 + SS_BOOT_SHUTDOWND_LEN + 1] ;
+
+    auto_strings(shutd, info.scandir.s, "/", SS_BOOT_SHUTDOWND) ;
+
+    if (!access(shutd, F_OK) && !svc_control_send(shutd, "k", 1, STATUS_WHO_SHUTDOWN))
+        log_warnu("relaunch: ", shutd, MIGRATE_SCANDIR_HINT) ;
 
     ssexec_free(&info) ;
 }
