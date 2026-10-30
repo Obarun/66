@@ -775,6 +775,10 @@ int main(int argc, char const *const *argv, char const *const *envp)
     resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
 
     PROG = "66-execute" ;
+
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     {
         opt_scan_t st = OPT_SCAN_ZERO ;
 

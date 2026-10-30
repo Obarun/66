@@ -1246,6 +1246,9 @@ int main(int argc, char const *const *argv)
     if (!lx_signalfd_ignore(SIGPIPE))
       log_dieusys(111, "ignore SIGPIPE") ;
 
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     if (argc < 2)
       log_usage(USAGE) ;
 

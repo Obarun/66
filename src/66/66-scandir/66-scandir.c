@@ -874,6 +874,9 @@ int main(int argc, char const *const *argv)
 
     PROG = "66-scandir" ;
 
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     for (;;) {
 
         int o = opt_scan(argc, argv, opts, OPT_COUNT(opts), &st) ;

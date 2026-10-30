@@ -464,7 +464,7 @@ void write_control(char const *scandir,char const *live, char const *filename, i
     if (!BOOT) {
 
         if (!auto_strbuf(&b,
-            SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 -v3 tree stop }\n"))
+            SS_EXECLINE_BINPREFIX "foreground { " SS_BINPREFIX "66 tree stop }\n"))
                 log_die_nomem("strbuf") ;
 
     }
@@ -519,9 +519,7 @@ static void create_service_socket(char const *scandir, char const *name, char co
     size_t scandirlen = strlen(scandir) ;
     size_t namelen = strlen(name) ;
     char dst[scandirlen + 1 + namelen + 16] ;
-    char verbo[U32_FMT];
 
-    verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
     auto_strings(dst, scandir, "/", name) ;
     auto_dir(dst, 0755) ;
     auto_chown(dst) ;
@@ -530,12 +528,12 @@ static void create_service_socket(char const *scandir, char const *name, char co
 
     auto_file(dst, SS_NOTIFICATION, "3\n", 2) ;
 
-    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + strlen(bin) + 3 + U32_FMT + 1 + strlen(operand) + 64 + 1 ;
+    size_t runlen = strlen(SS_EXECLINE_SHEBANGPREFIX) + strlen(SS_LIBEXECPREFIX) + strlen(bin) + 1 + strlen(operand) + 64 + 1 ;
 
     char run[runlen] ;
     auto_strings(run, "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -P\n", \
                 "fdmove -c 2 1\n", \
-                SS_LIBEXECPREFIX, bin, " -v", verbo, " -d 3 -- ", operand, "\n") ;
+                SS_LIBEXECPREFIX, bin, " -d 3 -- ", operand, "\n") ;
 
     auto_strings(dst, scandir, "/", name, "/run") ;
 

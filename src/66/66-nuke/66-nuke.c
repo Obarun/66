@@ -34,6 +34,11 @@ static opt_cmd_t const cmd = {
 
 int main (int argc, char const *const *argv)
 {
+
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
+
     {
         opt_scan_t st = OPT_SCAN_ZERO ;
 

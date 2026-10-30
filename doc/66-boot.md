@@ -55,9 +55,9 @@ When booting a system, command *boot* performs the following operations:
 
 - It checks if the `%%livedir%%` basename is a valid mountpoint, and if so it mounts it. If requested, it unmounts if the `%%livedir%%` basename is a valid mountpoint and performs a mount.
 
-- It creates the `%%livedir%%` directory invocating [66 -v VERBOSITY scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
+- It creates the `%%livedir%%` directory invocating [66 scandir -b -c create](66-scandir.html) plus **-L user_log** if requested.
 
-- It initiates the early services of every tree of the `boot` group invocating [66 -v VERBOSITY tree init --group boot](66-tree.html#init) — or of *TREE* alone when that key is set.
+- It initiates the early services of every tree of the `boot` group invocating [66 tree init --group boot](66-tree.html#init) — or of *TREE* alone when that key is set.
 
 - It performs "the fifo trick" where it redirects its stdout to the `catch-all` logger's fifo without blocking before the `catch-all` logger is even up (because it's a service that will be spawned a bit later, when [scandir start](66-scandir.html) is executed).
 
@@ -71,7 +71,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It also makes the catch-all logger's fifo its stderr.
 
-- It execs into [66 -v VERBOSITY scandir start](66-scandir.html) with `%%livedir%%/scandir/0` as its scandir.
+- It execs into [66 scandir start](66-scandir.html) with `%%livedir%%/scandir/0` as its scandir.
 
     * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services of the `boot` group (or of *TREE* when pinned), where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
 
@@ -87,7 +87,7 @@ Skeleton files are mandatory and must exist on your system to be able to boot th
 
 - `init.conf` : this file contains a set of `key=value` pairs available to a user to configure the boot process. A key that is absent keeps its built-in default, so every key is optional; the name of a key ***must not*** be changed. By default:
 
-    * `VERBOSITY=2` : increases/decreases the verbosity of the *stage1* process.
+    * `VERBOSITY=2` : sets the verbosity of the boot and of every *66* program started after it, services included. The value is a decimal number. *boot* passes it on in the `VERBOSITY` environment variable, which every *66* program reads when it starts; an explicit `-v` on a command line takes precedence.
 
     * `PATH=/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin` : the initial value for the *PATH* environment variable that will be passed on to all starting processes unless it's overridden by *PATH* declaration with the **-e** option. It is absolutely necessary for [execline](https://skarnet.org/software/execline/) and all *66 command* binaries to be accessible via *PATH*, else the machine will not boot.
 
@@ -107,12 +107,15 @@ BOOT_IMAGE=../vmlinuz-linux root=/dev/sda3 ro vga=895 initrd=../intel-ucode.img,
 
 ## Environment importation
 
-The environment variables used to launch all commands during the boot process are determined in the following order of precedence. For any `key=value` pair, the last one encountered takes precedence:
+The keys of the init.conf file are read by *boot* itself; a key given on the kernel command line takes precedence over the same key of the init.conf file. Of these keys, only `PATH` and `VERBOSITY` are passed on in the environment.
 
-- Variables imported from the init.conf file.
+The environment of the processes launched by the boot is built in the following order. For any `key=value` pair, the last one encountered takes precedence:
+
+- `PATH` and `VERBOSITY` from the init.conf file or the kernel command line.
 - Variables imported from the %%environment_adm%% directory.
 - Variables imported from the directory specified with the -e option, if provided.
-- Variables imported from the kernel command line.
+
+The [scandir create](66-scandir.html) and [tree init](66-tree.html#init) invocations run before the directories are imported, so they see only `PATH` and `VERBOSITY` from the init.conf file or the kernel command line. Everything that starts after them, the scandir, *stage2* and every service, sees the complete environment: a `VERBOSITY` set in %%environment_adm%% or in the **-e** directory replaces the one of the init.conf file.
 
 ## See also
 

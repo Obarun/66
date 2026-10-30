@@ -34,6 +34,10 @@ int main (int argc, char const *const *argv)
     char sep = ' ' ;
     char donl = 1 ;
     PROG = "66-echo" ;
+
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     {
         opt_scan_t st = OPT_SCAN_ZERO ;
 

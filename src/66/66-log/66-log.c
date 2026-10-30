@@ -686,6 +686,9 @@ int main(int argc, char const *const *argv)
   PROG = "66-log" ;
   VERBOSITY = LOG_LEVEL_WARN ;
 
+  if (set_verbosity_from_env() < 0)
+    log_warnusys("import VERBOSITY from the environment") ;
+
   {
     opt_scan_t st = OPT_SCAN_ZERO ;
     for (;;)

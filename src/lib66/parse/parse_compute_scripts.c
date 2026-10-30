@@ -36,13 +36,11 @@ static void compute_wrapper_scripts(resolve_service_t *res, resolve_service_addo
     resolve_service_addon_scripts_t *script = runorfinish ? &ex->run : &ex->finish ;
     resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, ex) ;
     char *shebang = "#!" SS_EXECLINE_SHEBANGPREFIX "execlineb -" ;
-    char *env = "importas -D2 VERBOSITY VERBOSITY\n" ;
-    char *exec = SS_EXTLIBEXECPREFIX "66-execute -v${VERBOSITY}" ;
-    char run[strlen(shebang) + 3 + strlen(env) + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
+    char *exec = SS_EXTLIBEXECPREFIX "66-execute" ;
+    char run[strlen(shebang) + 3 + strlen(exec) + 7 + strlen(res->sa.s + res->name) + 4 + 1] ;
 
     auto_strings(run, \
         shebang, (!runorfinish) ? ((res->type == E_PARSER_TYPE_CLASSIC) ? "S0\n" : "P\n") : "P\n", \
-        env,
         exec, \
         !runorfinish ? " stop " : " start ", \
         res->sa.s + res->name, (!runorfinish) ? " $@\n" : "\n") ;

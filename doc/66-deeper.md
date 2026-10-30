@@ -194,8 +194,7 @@ ncontents        : 0
 nprovide         : 0
 nconflict        : 0
 run              : #!/usr/bin/execlineb -P
-importas -D2 VERBOSITY VERBOSITY
-/usr/libexec/66-execute -v${VERBOSITY} start dhcpcd
+/usr/libexec/66-execute start dhcpcd
 
 run_user         : #!/usr/bin/execlineb -P
  /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStart} }
@@ -203,8 +202,7 @@ run_user         : #!/usr/bin/execlineb -P
 run_build        : None
 run_runas        : None
 finish           : #!/usr/bin/execlineb -S0
-importas -D2 VERBOSITY VERBOSITY
-/usr/libexec/66-execute -v${VERBOSITY} stop dhcpcd $@
+/usr/libexec/66-execute stop dhcpcd $@
 
 finish_user      : #!/usr/bin/execlineb -P
  /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStop} }

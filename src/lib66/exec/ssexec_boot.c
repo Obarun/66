@@ -55,7 +55,6 @@ static char const *envdir = 0 ;
 static char const *fifo = 0 ;
 static char const *haltfile = 0 ;
 static char const *log_user = SS_LOGGER_RUNNER ;
-static char const *cver = 0 ;
 
 /* init.conf / cmdline overridable values, pre-seeded with their default so they
  * are never empty even when the key is absent from the configuration */
@@ -412,12 +411,10 @@ static inline void make_cmdline(char const *prog,char const **add,int len,char c
 
     pid_t pid ;
     int wstat ;
-    int m = 5 + len, i = 0, n = 0 ;
+    int m = 3 + len, i = 0, n = 0 ;
     char const *newargv[m] ;
 
     newargv[n++] = "66" ;
-    newargv[n++] = "-v" ;
-    newargv[n++] = cver ;
     newargv[n++] = prog ;
 
     for (;i<len;i++)
@@ -524,7 +521,6 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     size_t bannerlen, livelen ;
     pid_t pid ;
     char verbo[U32_FMT] ;
-    cver = verbo ;
     char *tty = 0 ;
 
     if (geteuid()) {
@@ -652,6 +648,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     }
 
     set_env(&env, "PATH", path) ;
+    set_env(&env, "VERBOSITY", verbo) ;
 
     // create scandir
     {
@@ -726,9 +723,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         char fmtfd[2 + U32_FMT] = "-" ;
 
         size_t m = 0 ;
-        char const *newargv[6] ;
+        char const *newargv[5] ;
         newargv[m++] = "66" ;
-        newargv[m++] = "-v0" ;
         newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
         if (!catch_log)

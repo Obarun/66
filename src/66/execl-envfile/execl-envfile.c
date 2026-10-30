@@ -71,6 +71,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
     subst_t info = SUBST_ZERO ;
 
     PROG = "execl-envfile" ;
+
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     {
         opt_scan_t st = OPT_SCAN_ZERO ;
 

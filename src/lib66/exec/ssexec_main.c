@@ -284,6 +284,10 @@ static void info_clean(ssexec_t *info)
 int ssexec_main(int argc, char const *const *argv, ssexec_t *info)
 {
     PROG = "66" ;
+
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     log_color = &log_color_disable ;
 
     cmd_build() ;

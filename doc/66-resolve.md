@@ -44,8 +44,7 @@ requiredby      : None
 frontend        : /etc/66/service/foo
 src_servicedir  : /var/lib/66/system/service/svc/foo
 run             : #!/usr/bin/execlineb -P
-importas -D2 VERBOSITY VERBOSITY
-/usr/libexec/66-execute -v${VERBOSITY} start foo
+/usr/libexec/66-execute start foo
 [...]
 logname         : foo-log
 logbackup       : 3

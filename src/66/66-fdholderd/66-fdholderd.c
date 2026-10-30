@@ -818,6 +818,9 @@ int main(int argc, char const *const *argv)
     if (!lx_signalfd_ignore(SIGPIPE))
         log_dieusys(LOG_EXIT_SYS, "ignore SIGPIPE") ;
 
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     // keep 0/1/2 reserved so accepted client sockets never land on them
     if (!ensure_stdfds())
         log_dieusys(LOG_EXIT_SYS, "ensure standard descriptors") ;

@@ -22,6 +22,9 @@ int main (int argc, char const *const *argv)
 
     PROG = "66-umountall" ;
 
+    if (set_verbosity_from_env() < 0)
+        log_warnusys("import VERBOSITY from the environment") ;
+
     int e = umountall() ;
     return e < 0 ? LOG_EXIT_SYS : e ;
 }
