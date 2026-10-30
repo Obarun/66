@@ -39,6 +39,7 @@
 
 #include <66/config.h>
 #include <66/constants.h>
+#include <66/event.h>
 #include <66/ssexec.h>
 #include <66/svc.h>
 #include <66/tree.h>
@@ -325,6 +326,41 @@ static void set_container_exitcode(uint32_t code)
         log_warnusys("write container halt file: ", haltfile) ;
 }
 
+static void wait_scandir_daemons(char const *scandir)
+{
+    log_flow() ;
+
+    size_t i = 0 ;
+    unsigned char up = 0, ready = 0 ;
+    int r ;
+    event_wait_t w ;
+
+    static char const *const daemons[] = { SS_FDHOLDER, SS_EVENTD, SS_ONESHOTD, 0 } ;
+
+    for (; daemons[i] ; i++) {
+
+        up = 0, ready = 0 ;
+
+        char dir[strlen(scandir) + 1 + strlen(daemons[i]) + 1] ;
+        auto_strings(dir, scandir, "/", daemons[i]) ;
+
+        char eventdir[sizeof(dir) + SS_EVENTDIR_LEN] ;
+        auto_strings(eventdir, dir, SS_EVENTDIR) ;
+        char const *dirs[1] = { eventdir } ;
+
+        if (!event_fifo_make(eventdir, getgid()) || !event_wait_init(&w, dirs, 1, EVENT_UP_READY)) {
+            log_warnu("subscribe to scandir daemon: ", dir) ;
+            continue ;
+        }
+
+        r = svc_status_state(dir, &up, &ready) > 0 && ready ? 1 : event_wait_run(&w, 3000) ;
+        event_wait_free(&w) ;
+
+        if (r != 1)
+            log_warnu("bring up scandir daemon: ", dir) ;
+    }
+}
+
 static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
 {
     log_flow() ;
@@ -361,6 +397,8 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
     environ = (char **)merged ;
 
     int rc ;
+
+    wait_scandir_daemons(info->scandir.s) ;
 
     if (tree[0]) {
 
