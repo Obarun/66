@@ -175,6 +175,7 @@ struct conf_entry_s {
     char const *key ;
     conf_type_e type ;
     void *target ;      // unsigned int* (CONF_UINT) | buffer char* (CONF_STR)
+    unsigned int base ; // numeric base of a CONF_UINT value
 } ;
 
 static void parse_conf(const char *conf)
@@ -182,12 +183,12 @@ static void parse_conf(const char *conf)
     log_flow() ;
 
     static conf_entry_t const conf_table[] = {
-        { "VERBOSITY",        CONF_UINT, &VERBOSITY },
-        { "PATH",             CONF_STR,  path },
-        { "TREE",             CONF_STR,  tree },
-        { "UMASK",            CONF_UINT, &mask },
-        { "CATCHLOG",         CONF_UINT, &catch_log },
-        { 0, 0, 0 }
+        { "VERBOSITY",        CONF_UINT, &VERBOSITY, 10 },
+        { "PATH",             CONF_STR,  path,       0 },
+        { "TREE",             CONF_STR,  tree,       0 },
+        { "UMASK",            CONF_UINT, &mask,      8 },
+        { "CATCHLOG",         CONF_UINT, &catch_log, 10 },
+        { 0, 0, 0, 0 }
     } ;
 
     _cleanup_strbuf_ strbuf kernel = STRBUF_ZERO ;
@@ -221,7 +222,7 @@ static void parse_conf(const char *conf)
 
         if (e->type == CONF_UINT) {
 
-            if (!u32_scan_strict_base(val.s, e->target, 8))
+            if (!u32_scan_strict_base(val.s, e->target, e->base))
                 sulogin("invalid value for: ", e->key) ;
 
         } else {
