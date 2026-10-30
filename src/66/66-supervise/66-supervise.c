@@ -82,6 +82,7 @@
 #include <oblibs/files.h>
 #include <oblibs/spawn.h>
 #include <oblibs/environ.h>
+#include <oblibs/linux.h>
 
 #include <66/event.h>
 #include <66/service.h>
@@ -1240,6 +1241,11 @@ static inline int control_init(void)
 int main(int argc, char const *const *argv)
 {
     PROG = "66-supervise" ;
+
+    // before anything is written: the catch-all fifo may have no reader yet
+    if (!lx_signalfd_ignore(SIGPIPE))
+      log_dieusys(111, "ignore SIGPIPE") ;
+
     if (argc < 2)
       log_usage(USAGE) ;
 
@@ -1295,8 +1301,7 @@ int main(int argc, char const *const *argv)
         if (!sse_start_signal(&g_epoll, &wsignal, signal_cb, NULL, 1))
           log_dieusys(111, "init signal watcher") ;
 
-        if (!sse_ignore_signal(&wsignal, SIGPIPE)
-         || !sse_attach_signal(&wsignal, SIGTERM)
+        if (!sse_attach_signal(&wsignal, SIGTERM)
          || !sse_attach_signal(&wsignal, SIGHUP)
          || !sse_attach_signal(&wsignal, SIGQUIT)
          || !sse_attach_signal(&wsignal, SIGINT))

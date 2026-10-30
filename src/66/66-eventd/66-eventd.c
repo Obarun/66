@@ -1471,8 +1471,7 @@ static int eventd_init(void)
         log_warnusys_return(LOG_EXIT_ZERO, "start signal watcher") ;
     }
 
-    if (!sse_ignore_signal(&eventd.wsignal, SIGPIPE) ||
-        !sse_attach_signal(&eventd.wsignal, SIGTERM) ||
+    if (!sse_attach_signal(&eventd.wsignal, SIGTERM) ||
         !sse_attach_signal(&eventd.wsignal, SIGINT)) {
         log_warnusys("set signals") ; // log before teardown: sse_free clobbers errno
         sse_free(&eventd.epoll) ;
@@ -1534,6 +1533,10 @@ int main(int argc, char const *const *argv)
     int notif = -1 ;
 
     PROG = "66-eventd" ;
+
+    // before anything is written: the catch-all fifo may have no reader yet
+    if (!lx_signalfd_ignore(SIGPIPE))
+        log_dieusys(LOG_EXIT_SYS, "ignore SIGPIPE") ;
 
     if (!ensure_stdfds())
         log_dieusys(LOG_EXIT_SYS, "ensure standard descriptors") ;

@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 
 #include <oblibs/log.h>
+#include <oblibs/linux.h>
 #include <oblibs/types.h>
 #include <oblibs/opt.h>
 #include <oblibs/sse.h>
@@ -739,8 +740,7 @@ static int server_init(char const *socket_path, int backlog)
         log_warnusys_return(0, "start signal watcher") ;
     }
 
-    if (!sse_ignore_signal(&fdh.wsignal, SIGPIPE) ||
-        !sse_attach_signal(&fdh.wsignal, SIGTERM) ||
+    if (!sse_attach_signal(&fdh.wsignal, SIGTERM) ||
         !sse_attach_signal(&fdh.wsignal, SIGINT)) {
         sse_free(&fdh.epoll) ;
         log_warnusys_return(0, "set signals") ;
@@ -813,6 +813,10 @@ int main(int argc, char const *const *argv)
     int backlog = FDHOLDER_BACKLOG_DEFAULT ;
 
     PROG = "66-fdholderd" ;
+
+    // before anything is written: the catch-all fifo may have no reader yet
+    if (!lx_signalfd_ignore(SIGPIPE))
+        log_dieusys(LOG_EXIT_SYS, "ignore SIGPIPE") ;
 
     // keep 0/1/2 reserved so accepted client sockets never land on them
     if (!ensure_stdfds())
