@@ -216,11 +216,15 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
             case VERSION_0920:
                 migrate_0920() ;
                 if (migrate_0920_state() < 0)
-                    return -1 ;
+                    log_dieusys(LOG_EXIT_SYS, "drop the unused fields of the state files") ;
                 if (!sanitize_resolve(info, DATA_SERVICE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize services resolve files") ;
-                if (migrate_0920_logsuffix() < 0 || migrate_0920_dependencies() < 0 || migrate_0920_runas() < 0)
-                    return -1 ;
+                if (migrate_0920_logsuffix() < 0)
+                    log_dieusys(LOG_EXIT_SYS, "remove the services named with the logger suffix") ;
+                if (migrate_0920_dependencies() < 0)
+                    log_dieusys(LOG_EXIT_SYS, "write the dependencies and the stop delay of the services") ;
+                if (migrate_0920_runas() < 0)
+                    log_dieusys(LOG_EXIT_SYS, "write the runas of the loggers") ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE_MASTER))
