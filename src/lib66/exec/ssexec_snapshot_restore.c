@@ -82,7 +82,7 @@ int ssexec_snapshot_restore(int argc, char const *const *argv, void *data)
     char dst[SS_MAX_PATH_LEN] ;
     _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
 
-    if (argc < 1)
+    if (argc < 1 || !argv[0][0])
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;

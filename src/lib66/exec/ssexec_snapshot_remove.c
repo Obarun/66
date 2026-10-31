@@ -32,7 +32,7 @@ int ssexec_snapshot_remove(int argc, char const *const *argv, void *data)
 
     char const *snapname = 0 ;
 
-    if (argc < 1)
+    if (argc < 1 || !argv[0][0])
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;

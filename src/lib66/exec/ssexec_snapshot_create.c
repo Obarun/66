@@ -138,7 +138,7 @@ int ssexec_snapshot_create(int argc, char const *const *argv, void *data)
     char src[SS_MAX_PATH_LEN] ;
     snapshot_list_t *list = info->owner ? snapshot_user_list : snapshot_root_list ;
 
-    if (argc < 1)
+    if (argc < 1 || !argv[0][0])
         log_die(LOG_EXIT_USER, "missing name argument") ;
 
     snapname = *argv ;
