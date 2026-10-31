@@ -21,6 +21,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sse.h>
 #include <oblibs/sse_stream.h>
@@ -29,6 +30,7 @@
 #include <oblibs/fd.h>
 
 #include <66/fdholder.h>
+#include <66/svc.h>
 
 static void client_response_handler(io_rb_iovec_t *msg, void *data)
 {
@@ -169,6 +171,15 @@ int fdholder_client_init(fdholder_client_t *c, char const *socket)
     }
 
     int fd = sse_streamux_create_client(socket) ;
+    if (fd < 0 && (errno == ENOENT || errno == ECONNREFUSED)) {
+        size_t dlen = str_rsearch(socket, '/') ;
+        char dir[dlen + 1] ;
+        memcpy(dir, socket, dlen) ;
+        dir[dlen] = 0 ;
+        svc_daemon_wait(dir, 3000) ;
+        fd = sse_streamux_create_client(socket) ;
+    }
+
     if (fd < 0) {
         sse_free(&c->epoll) ;
         log_warnusys_return(LOG_EXIT_ZERO, "connect to fdholder daemon: ", socket) ;

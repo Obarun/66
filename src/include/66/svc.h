@@ -151,7 +151,8 @@ extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who) ;
 extern int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name) ;
 
-extern int svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
+extern int svc_daemon_send(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms) ;
+extern int svc_daemon_wait(char const *dir, int timeout_ms) ;
 extern int svc_status_state(char const *dir, unsigned char *up, unsigned char *ready) ;
 extern int svc_status(resolve_service_t const *res, service_status_t *st) ;
 extern int svc_reactor_armed_idle(struct resolve_hash_s const *h) ;

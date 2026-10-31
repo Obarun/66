@@ -25,7 +25,7 @@
  * (ssexec_signal.c) so the two tools read the same.
  *
  * With -w, it also waits for the service to reach the wanted state, natively, via
- * the event module (svc_send_daemon over <servicedir>/event) -- still resolve-free.
+ * the event module (svc_daemon_send over <servicedir>/event) -- still resolve-free.
  * Without -w it is pure launch-and-forget. */
 
 #include <signal.h>
@@ -235,7 +235,7 @@ int main (int argc, char const *const *argv)
 
         if (wait) {
             event_t wanted = downgrade_if_no_notif(argv[i], wait_to_event(wait)) ;
-            int r = svc_send_daemon(argv[i], data, STATUS_WHO_USER, wanted, (int)timeout) ;
+            int r = svc_daemon_send(argv[i], data, STATUS_WHO_USER, wanted, (int)timeout) ;
             if (r < 0)
                 log_dieu(LOG_EXIT_SYS, "send control ", data, " to daemon: ", argv[i]) ;
 

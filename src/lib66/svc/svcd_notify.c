@@ -43,8 +43,22 @@ int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name)
         return 0 ;
 
     if (socketunix_connect(fd, sock) < 0) {
+
         close_fd(fd) ;
-        return 0 ;
+
+        if (errno != ENOENT && errno != ECONNREFUSED)
+            return 0 ;
+
+        svc_daemon_wait(eventddir, 3000) ;
+
+        fd = socketunix_create(O_CLOEXEC) ;
+        if (fd < 0)
+            return 0 ;
+
+        if (socketunix_connect(fd, sock) < 0) {
+            close_fd(fd) ;
+            return 0 ;
+        }
     }
 
     if (!io_writenclose(fd, frame, 2 + namelen))

@@ -1,5 +1,5 @@
 /*
- * svc_send_daemon.c
+ * svc_daemon_send.c
  *
  * Copyright (c) 2026 Eric Vidal <eric@obarun.org>
  *
@@ -41,7 +41,7 @@ static int in_state(event_t wanted, int have, unsigned char up, unsigned char re
     return event_state_satisfied(&s) ;
 }
 
-int svc_send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
+int svc_daemon_send(char const *dir, char const *control, uint8_t who, event_t wanted, int timeout_ms)
 {
     log_flow() ;
 

@@ -71,7 +71,7 @@ static inline unsigned int parse_signal (char const *signal)
 
 static void send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, bool stop)
 {
-    int r = svc_send_daemon(dir, control, who, wanted, 3000) ;
+    int r = svc_daemon_send(dir, control, who, wanted, 3000) ;
     if (r < 0)
         log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
 

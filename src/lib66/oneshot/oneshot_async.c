@@ -19,6 +19,7 @@
 #include <stdbool.h>
 
 #include <oblibs/log.h>
+#include <oblibs/string.h>
 #include <oblibs/types.h>
 #include <oblibs/sse.h>
 #include <oblibs/sse_stream.h>
@@ -27,6 +28,7 @@
 #include <oblibs/fd.h>
 
 #include <66/oneshot.h>
+#include <66/svc.h>
 
 static void async_dispatch(oneshot_async_t *a, uint8_t status, uint32_t wstat)
 {
@@ -128,6 +130,15 @@ int oneshot_async_send(oneshot_async_t *a, sse_epoll_t *loop, char const *socket
         return (errno = EINVAL, 0) ;
 
     int fd = sse_streamux_create_client(socket) ;
+    if (fd < 0 && (errno == ENOENT || errno == ECONNREFUSED)) {
+        size_t dlen = str_rsearch(socket, '/') ;
+        char dir[dlen + 1] ;
+        memcpy(dir, socket, dlen) ;
+        dir[dlen] = 0 ;
+        svc_daemon_wait(dir, 3000) ;
+        fd = sse_streamux_create_client(socket) ;
+    }
+
     if (fd < 0)
         log_warnusys_return(LOG_EXIT_ZERO, "connect to oneshot daemon: ", socket) ;
 

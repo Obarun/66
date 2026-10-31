@@ -155,7 +155,7 @@ static int stop_one(char const *name, bool logger, ssexec_t *info, strbuf *up, s
         }
     }
 
-    r = svc_send_daemon(h.res.sa.s + h.res.live.scandir, "d", info->who, EVENT_DOWN_READY, timeout) ;
+    r = svc_daemon_send(h.res.sa.s + h.res.live.scandir, "d", info->who, EVENT_DOWN_READY, timeout) ;
     if (r < 0) {
         e = -1 ;
         goto freed ;
