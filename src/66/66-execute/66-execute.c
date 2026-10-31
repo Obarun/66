@@ -45,6 +45,8 @@
 
 #include <66/fdholder.h>
 
+#include "lib/execute.h"
+
 #define EXECUTE_START 0
 #define EXECUTE_STOP 1
 uint8_t action = EXECUTE_START ; // start by default
@@ -514,21 +516,18 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         log_dieusys(LOG_EXIT_SYS, "create environment") ;
 }
 
-static void execute_script(const char *runuser, resolve_service_t *res, resolve_service_addon_execute_t *ex, subst_t *info)
+static void execute_script(strbuf *sa, uint8_t build, const char *runuser, resolve_service_t *res, resolve_service_addon_execute_t *ex, subst_t *info)
 {
     log_flow() ;
 
     int r = 0 ;
-    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
     uid_t owner = getuid() ;
-    uint32_t want = (action == EXECUTE_START) ? ex->run.build : ex->finish.build ;
-    short build = !strcmp(ex->sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
     char *script = ex->sa.s + (action == EXECUTE_START ? ex->run.run_user : ex->finish.run_user) ;
     size_t scriptlen = strlen(script) ;
 
-    if (!build) {
+    if (build == E_PARSER_BUILD_AUTO) {
 
-        r = subst(&sa, script, scriptlen, info) ;
+        r = subst(sa, script, scriptlen, info) ;
 
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "el_substitute") ;
@@ -541,12 +540,12 @@ static void execute_script(const char *runuser, resolve_service_t *res, resolve_
     } else {
 
         char *s = ex->sa.s + ((action == EXECUTE_START) ? ex->run.run_user : ex->finish.run_user) ;
-        if (!auto_strbuf(&sa, s))
+        if (!auto_strbuf(sa, s))
             log_die_nomem("strbuf") ;
     }
 
     log_trace("write file: ", runuser) ;
-    if (!file_write(runuser, sa.s, strlen(sa.s)))
+    if (!file_write(runuser, sa->s, strlen(sa->s)))
         log_dieusys(LOG_EXIT_SYS,"create and write file: ", runuser) ;
 
     if (chmod(runuser, 0755) < 0)
@@ -759,6 +758,39 @@ static void execute_chdir(resolve_service_addon_execute_t *ex)
     }
 }
 
+static int execute_command(char const *script, char const *field, char const *service, char const *const *envp, strbuf *modifs)
+{
+    log_flow() ;
+
+    strbuf words = STRBUF_ZERO ;
+    int n = execute_parse(&words, script, strlen(script)) ;
+
+    switch (n) {
+
+        case -1 :
+            log_dieusys(LOG_EXIT_SYS, "parse ", field, " of: ", service) ;
+        case -2 :
+            log_die(LOG_EXIT_USER, "syntax error in ", field, " of: ", service) ;
+        case -3 :
+            log_die(LOG_EXIT_USER, "unmatched { in ", field, " of: ", service) ;
+        case -4 :
+            log_die(LOG_EXIT_USER, "unmatched } in ", field, " of: ", service) ;
+        case 0 :
+            // nothing to run, as execlineb
+            strbuf_free(&words) ;
+            return 0 ;
+        default :
+            break ;
+    }
+
+    char const *newargv[n + 1] ;
+
+    if (!environ_make(newargv, n, words.s, words.len))
+        log_dieusys(LOG_EXIT_SYS, "make arguments of ", field, " of: ", service) ;
+
+    exec_path_merge_die(newargv[0], newargv, envp, modifs->s, modifs->len) ;
+}
+
 int main(int argc, char const *const *argv, char const *const *envp)
 {
     log_flow() ;
@@ -766,9 +798,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
     char const *service = 0 ;
     char base[SS_MAX_PATH + 1] ;
     _cleanup_strbuf_ strbuf eram = STRBUF_ZERO ; // envrionment in memory
+    _cleanup_strbuf_ strbuf script = STRBUF_ZERO ;
     char const *nenvp[MAXENV + 1] ;
-    char *run = 0 ;
-    char *runuser = 0 ;
+    char *run = 0, *runuser = 0 ;
 
     subst_t info = SUBST_ZERO ;
     resolve_service_t res = RESOLVE_SERVICE_ZERO ;
@@ -829,6 +861,8 @@ int main(int argc, char const *const *argv, char const *const *envp)
             log_dieusys(LOG_EXIT_SYS, "read execute addon of: ", service) ;
     }
 
+    uint32_t want = (action == EXECUTE_START) ? ex.run.build : ex.finish.build ;
+    uint8_t build = !strcmp(ex.sa.s + want, "custom") ? E_PARSER_BUILD_CUSTOM : E_PARSER_BUILD_AUTO ;
     run = (action == EXECUTE_START) ? "/run" : "/finish" ;
     char brun[strlen(res.sa.s + res.live.servicedir) + strlen(run) + 1] ;
     auto_strings(brun, res.sa.s + res.live.servicedir, run) ;
@@ -849,7 +883,7 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_environment(nenvp, envp, &eram, &info, &res) ;
 
-    execute_script(brunuser, &res, &ex, &info) ;
+    execute_script(&script, build, brunuser, &res, &ex, &info) ;
 
     execute_limit(&res) ;
 
@@ -864,6 +898,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
     execute_umask(&ex) ;
 
     execute_chdir(&ex) ;
+
+    if (build == E_PARSER_BUILD_AUTO)
+        return execute_command(script.s, action == EXECUTE_START ? "run_user" : "finish_user", service, nenvp, &info.modifs) ;
 
     exec_path_merge_die(newargv[0], newargv, nenvp, info.modifs.s, info.modifs.len) ;
 

@@ -14,7 +14,7 @@ exe_configs = {
     'deps': [lib66_dep]
   },
   '66-execute': {
-    'sources': ['66-execute.c'],
+    'sources': ['66-execute.c', 'lib/execute_parse.c'],
     'deps': [lib66_dep]
   },
   '66-fdholderd': {
