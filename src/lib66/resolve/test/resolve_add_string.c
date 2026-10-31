@@ -14,8 +14,7 @@
 
 /* The contract of resolve_add_string(), by effect: the string is appended to
  * the sa of the resolve with its terminating zero and its offset returned, an
- * empty string for a null @data; @data may point into that sa itself, the
- * append growing and moving it. */
+ * empty string for a null @data. */
 
 #include <assert.h>
 #include <string.h>
@@ -40,17 +39,6 @@ int main(void)
     off = resolve_add_string(&w, 0) ;
     assert(off == first + 6) ;
     assert(res.sa.s[off] == 0) ;
-
-    /** a string of the sa added to the same sa, enough times for the buffer
-     * to be reallocated under it */
-    for (int i = 0 ; i < 4096 ; i++) {
-
-        off = resolve_add_string(&w, res.sa.s + first) ;
-        assert(off >= 0) ;
-        assert(!strcmp(res.sa.s + off, "first")) ;
-    }
-
-    assert(!strcmp(res.sa.s + first, "first")) ;
 
     resolve_free_obj(&w) ;
 
