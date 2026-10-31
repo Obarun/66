@@ -139,7 +139,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         log_warnusys("replace identifiers in environment from: ", path) ;
 
     // substitute variable inside the environment
-    if (!environ_substitute(&env, &info))
+    if (!environ_substitute(&env, &info, ENVIRON_EMPTY_DROP))
         log_dieusys(LOG_EXIT_SYS, "substitue environment variables") ;
 
     // remove exclamation mark

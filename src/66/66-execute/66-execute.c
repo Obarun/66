@@ -504,7 +504,7 @@ static void execute_environment(char const **nenvp, char const *const *env, strb
         if (!environ_merge_dir(eram, liveenv))
             log_dieusys(LOG_EXIT_SYS, "merge runtime environment directory: ", liveenv) ;
 
-    if (!environ_substitute(eram, info))
+    if (!environ_substitute(eram, info, ENVIRON_EMPTY_KEEP))
         log_dieusys(LOG_EXIT_SYS, "substitute environment variables") ;
 
     if (!environ_clean_unexport(eram))

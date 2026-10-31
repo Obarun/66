@@ -13,7 +13,7 @@ void envfile(const char *efile, const char *script, const char **env, const char
     subst_t info = SUBST_ZERO ;
 
     assert(environ_merge_string(&saenv, efile) == 1) ;
-    assert(environ_substitute(&saenv, &info) == 1) ;
+    assert(environ_substitute(&saenv, &info, ENVIRON_EMPTY_DROP) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
     size_t elen = environ_length(env) ;
@@ -39,7 +39,7 @@ void envfile_fail(const char *efile, const char *script, const char **env, const
     _cleanup_strbuf_ strbuf cmdline = STRBUF_ZERO ;
     subst_t info = SUBST_ZERO ;
     assert(environ_merge_string(&saenv, efile) == 1) ;
-    assert(environ_substitute(&saenv, &info) == 1) ;
+    assert(environ_substitute(&saenv, &info, ENVIRON_EMPTY_DROP) == 1) ;
     assert(environ_clean_unexport(&saenv) == 1) ;
 
     size_t elen = environ_length(env) ;
