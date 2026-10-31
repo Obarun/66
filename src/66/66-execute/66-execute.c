@@ -537,6 +537,8 @@ static void execute_script(strbuf *sa, uint8_t build, const char *runuser, resol
             log_dieusys(LOG_EXIT_SYS, "get arguments of run.user script") ;
         }
 
+        return ;
+
     } else {
 
         char *s = ex->sa.s + ((action == EXECUTE_START) ? ex->run.run_user : ex->finish.run_user) ;
