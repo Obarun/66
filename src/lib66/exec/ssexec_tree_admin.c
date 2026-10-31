@@ -293,7 +293,7 @@ static void tree_parse_options_depends(tree_graph_t *g, ssexec_t *info, char con
         } else if (r) {
             /** if TreeA is requiredby TreeB, we don't want to create TreeB.
              * We only manages it if it exist yet */
-            if (!graph_add_edge(&g->g, info->treename.s, name, true))
+            if (!graph_add_edge(&g->g, name, info->treename.s, true))
                 log_die(LOG_EXIT_SYS,"add requiredby: ", name, " to: ", info->treename.s) ;
         }
     }
@@ -1169,9 +1169,13 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
 
     if (what.requiredby) {
 
+        if (!what.nrequiredby)
+            tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 1, 1, info->treename.s) ;
+
         tree_depends_requiredby(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
 
-        tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
+        if (what.nrequiredby)
+            tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 1, what.nrequiredby, 0) ;
 
         size_t pos = 0 ;
 
