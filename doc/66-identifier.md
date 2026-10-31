@@ -7,7 +7,7 @@ Identifiers are replaced at two distinct moments:
 - **When parsing a frontend file** (`66 parse`, `66 enable`, ...), so that a single generic frontend produces a service tailored to its owner (and, for an instantiated service, to its instance).
 - **At runtime, when an environment is loaded**, so owner-specific values are resolved on the running machine rather than baked in at parse time. This happens in two places:
     - When a scandir is brought up (`66 scandir start`, or the boot/user scandir), inside the files of the scandir environment directory (`/etc/66/environment` for `root`, `~/.66/environment` for a user), so the environment exported to the whole scandir carries owner-specific values.
-    - When a service's environment file or directory is loaded (through `execl-envfile`) before the service is executed.
+    - When a file is loaded by `execl-envfile` in a script. The environment of a service itself is not expanded at runtime: its `[Environment]` section is expanded at parse time, and an identifier written afterwards in its configuration file, or published with [66 env](66-env.html), reaches the service as typed.
 
 | Identifier | Meaning | Replaced by |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ By understanding these identifiers and their replacements, you can effectively c
 
 ## `@I` is parse time only
 
-`@I` resolves an *instance* name, which only exists while parsing an instantiated frontend such as `tty@tty1`. There is no instance context at runtime, so **`@I` is never expanded at runtime**: it is left untouched in scandir environment files and in service environment files loaded by `execl-envfile`. Every other identifier is expanded in every context and resolves against the process owner.
+`@I` resolves an *instance* name, which only exists while parsing an instantiated frontend such as `tty@tty1`. There is no instance context at runtime, so **`@I` is never expanded at runtime**: it is left untouched in scandir environment files and in files loaded by `execl-envfile`. Every other identifier is expanded wherever identifiers are expanded, against the process owner.
 
 ## Examples of identifiers usage
 

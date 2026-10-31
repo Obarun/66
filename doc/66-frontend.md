@@ -91,7 +91,8 @@ and for the event system.
 * **Format.** `INI` with a specific syntax on the key field. The *key* name can
   contain special characters like `-` (hyphen) or `_` (low line), except `@`
   (commercial at) which is reserved.
-* **No empty values.** If a *key* is set, its *value* **can not** be empty.
+* **No empty values.** If a *key* is set, its *value* **can not** be empty. The
+  `[Environment]` section is the exception: `key=` gives the variable an empty value.
 * **Comments** occupy their own line, beginning with the number sign `#`; a `#`
   placed after a value is **not** a comment (it becomes part of the value). Empty
   lines are allowed.
@@ -645,7 +646,7 @@ Defines the command(s) executed to start the service. Enclose multiple lines in 
 
     * The command to execute when starting the service.
 
-    **Note**: The field will be used as is. No changes will be applied at all except in `custom` case (see [Appendix B](#appendix-b-the-execute-key-in-depth)). It's the responsibility of the author to make sure that the content of this field is correct.
+    **Note**: Without a shebang, `66-execute` replaces the `${...}` variables of the field when the service starts, then splits it into words, see [Substitution in Execute](#substitution-in-execute). With a shebang, the field is used as is, see [Appendix B](#appendix-b-the-execute-key-in-depth). It's the responsibility of the author to make sure that the content of this field is correct.
 
 ### Timeout (Start)
 
@@ -934,6 +935,8 @@ DirRun=/run/openntpd
         cmd_args = ! -d -s
         ````
 
+        A *key* may have an empty *value*: with `key=`, the service receives `key` with an empty value. With `key=!`, the empty value is used at the start of the service only, and the service does not receive `key`.
+
         Refers to [execl-envfile](execl-envfile.html) for further information.
 
 ### ImportFile
@@ -962,7 +965,7 @@ The target file must adhere to the environment definition syntax specified in th
 
         The `!` character has no effect on `ImportFile`.
 
-        `ImportFile` processing occurs at the end of the environment setup. If a key is defined both in the `[Environment]` section and in a file specified by `ImportFile`, the value from the `ImportFile` takes precedence.
+        The `ImportFile` files are merged after the `[Environment]` section and the service configuration file, and before the values published with [66 env](66-env.html). If a key is defined both in the `[Environment]` section and in a file specified by `ImportFile`, the value from the `ImportFile` takes precedence. A value published with `66 env` takes precedence over both.
 
         For multiple `ImportFile` declarations, the last declared file takes precedence for any duplicate keys found across the specified files.
 
@@ -1644,6 +1647,8 @@ Same as [*inline*](#inline).
     MYVALUE
     ````
 
+    `MYKEY=` alone is valid and gives `MYKEY` an empty value, the *value* on the next line is not read as its value.
+
 ### *colon*
 
 A value between double colons followed by a *pair* syntax. **Must** be one by line.
@@ -1783,9 +1788,29 @@ Execute = (
 
 A name no layer carries is left **as typed**: `${NOPE}` reaches the command line as those six
 characters, it is not turned into an empty string. Write `\${NOPE}` when that literal form is
-what the program expects.
+what the program expects. Only the `${...}` form is replaced, a `$NAME` without braces is left
+as typed.
 
-Note that in a custom (shebang) script, variables will **not be replaced** by their corresponding environment values within the script, unlike the behavior with the execlineb script format.
+The substitution is made on the whole text of `Execute`. `66-execute` then splits the result
+into words with the execline grammar (double quotes, `{ }` blocks, `#` comments, backslash
+escapes) and executes the first word, searched in `PATH`. A command that is not found exits
+`127`, another failure to execute exits `126`. Hence:
+
+* an empty variable written alone leaves no word: `prog ${EMPTY} -S` runs `prog` with the
+  single argument `-S`;
+* between double quotes, it leaves one empty argument: `prog "${EMPTY}"`;
+* inside a word, it is replaced by nothing: `prog -o${EMPTY}` gives the argument `-o`;
+* a value holding spaces is split into words, `TWO=-d -S` and `prog ${TWO}` give the arguments
+  `-d` and `-S`, while `prog "${TWO}"` gives the single argument `-d -S`;
+* a value holding a `"`, a `{`, a `}` or a `#` is read by the grammar like the rest of the text,
+  `Q=a"b` and `prog ${Q}` fail the start with a syntax error.
+
+A syntax error stops the start with a message such as `unmatched { in run_user of: <service>`.
+An `Execute` made only of comments runs nothing, and the start succeeds.
+
+In a custom (shebang) script, `66` does not replace the variables: the text is written as is to
+`run.user` (or `finish.user`) in the live directory of the service and executed by its
+interpreter. The variables reach the script through its environment.
 
 [identifier](66-identifier.html) is still also **interpreted** even in custom script.
 
@@ -1898,7 +1923,8 @@ Execute = ( /usr/bin/true )
 
 This prototype contains all valid sections with all valid `key=value` pairs. Its values are
 left blank to list the keys only: a key written in a frontend carries a value, and an empty
-one, `()` included, is refused by the parse.
+one, `()` included, is refused by the parse, except in `[Environment]`, where `key=` gives the
+variable an empty value.
 
 ```
 [Main]

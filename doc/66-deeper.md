@@ -543,7 +543,7 @@ It is also where the temporary file of a publication is created, for the time of
 
 One directory per account, mode `0755` and owned by that account. It holds **one file per published variable**, named after the variable and containing the single `variable=value` pair — `%%livedir%%/environment/1000/DISPLAY` contains `DISPLAY=:0`.
 
-`66-execute` merges this directory into the environment of **every** service of the scandir at each start, last and verbatim, so a published value overrides the frontend, the service configuration and the `ImportFile` files, and reaches services that declare no `[Environment]` section at all. See [66 env](66-env.html) for the precedence chain and the limits.
+`66-execute` merges this directory into the environment of **every** service of the scandir at each start, last, so a published value overrides the frontend, the service configuration and the `ImportFile` files, and reaches services that declare no `[Environment]` section at all. A `${...}` written in a published value is substituted like any other value. See [66 env](66-env.html) for the precedence chain and the limits.
 
 The directory lives and dies with the scandir it belongs to: [66 scandir remove](66-scandir.html#remove) destroys it, so nothing published survives it. `66 env` never creates it — it reports its absence rather than publishing into a store no service reads.
 

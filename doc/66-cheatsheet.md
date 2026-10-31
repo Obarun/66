@@ -129,7 +129,7 @@ Without a chosen tree, services go to the default tree `%%default_treename%%`.
 | Withdraw a published variable | `66 env unset DISPLAY` |
 | List the published variables | `66 env list` |
 
-After changing config of a running service, apply it with `66 reconfigure foo`.
+After changing the configuration of a running service, apply it with `66 restart foo`.
 
 [66 env](66-env.html) publishes into the runtime environment of your scandir,
 which is merged **last** — after the frontend, the service configuration file and

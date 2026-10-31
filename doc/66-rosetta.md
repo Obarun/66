@@ -57,7 +57,7 @@ Several keys move to the section of their domain, and the `TimeoutStart` / `Time
 
 An environment **value** may no longer contain a newline or a NUL byte. `\n`, `\012`, `\x0a` and their NUL counterparts `\0`, `\000`, `\x00` used to decode to the byte itself inside a quoted value; they are now a syntax error, in a frontend `[Environment]` section, in a service configuration file and in any file read by [execl-envfile](execl-envfile.html). Both bytes are separators of the internal layout, so such a value could never survive a round-trip -- the parse now fails loudly instead of corrupting it. This is a deliberate divergence from execline's `envfile`.
 
-[Identifiers](66-identifier.html) (`@U`, `@H`, `@R`…) are no longer resolved at parse time only: an environment directory read at runtime -- the scandir environment, and a service environment loaded through `execl-envfile` -- now has them replaced as well. `@I` stays parse-time, since an instance name exists only there.
+[Identifiers](66-identifier.html) (`@U`, `@H`, `@R`…) are no longer resolved at parse time only: an environment directory read at runtime, the scandir environment and any file loaded by `execl-envfile`, now has them replaced as well. The environment of a service is still expanded at parse time only. `@I` stays parse-time, since an instance name exists only there.
 
 ## The event system
 
