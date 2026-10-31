@@ -35,7 +35,7 @@ if is_shared
     soversion: '@0@'.format(soversion_66),
     c_args: shared_c_args,
     link_args: shared_link_args,
-    install_rpath: get_option('libdir'),
+    install_rpath: get_option('prefix') / get_option('libdir'),
     build_rpath: meson.current_build_dir()
   )
 endif
