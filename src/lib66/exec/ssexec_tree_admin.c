@@ -1140,9 +1140,13 @@ int ssexec_tree_admin(int argc, char const *const *argv, void *data)
 
     if (what.depends) {
 
+        if (!what.ndepends)
+            tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 0, 1, info->treename.s) ;
+
         tree_depends_requiredby(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
 
-        tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
+        if (what.ndepends)
+            tree_depends_requiredby_deps(&graph, info->base.s, info->treename.s, 0, what.ndepends, 0) ;
 
         size_t pos = 0 ;
 
