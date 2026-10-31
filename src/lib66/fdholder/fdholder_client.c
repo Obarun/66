@@ -176,7 +176,12 @@ int fdholder_client_init(fdholder_client_t *c, char const *socket)
         char dir[dlen + 1] ;
         memcpy(dir, socket, dlen) ;
         dir[dlen] = 0 ;
-        svc_daemon_wait(dir, 3000) ;
+
+        if (svc_daemon_wait(dir, 3000) < 0) {
+            sse_free(&c->epoll) ;
+            log_warnusys_return(LOG_EXIT_ZERO, "wait for fdholder daemon: ", dir) ;
+        }
+
         fd = sse_streamux_create_client(socket) ;
     }
 

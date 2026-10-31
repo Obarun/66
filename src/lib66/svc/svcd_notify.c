@@ -49,7 +49,8 @@ int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name)
         if (errno != ENOENT && errno != ECONNREFUSED)
             return 0 ;
 
-        svc_daemon_wait(eventddir, 3000) ;
+        if (svc_daemon_wait(eventddir, 3000) < 0)
+            return 0 ;
 
         fd = socketunix_create(O_CLOEXEC) ;
         if (fd < 0)

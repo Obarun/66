@@ -135,7 +135,10 @@ int oneshot_async_send(oneshot_async_t *a, sse_epoll_t *loop, char const *socket
         char dir[dlen + 1] ;
         memcpy(dir, socket, dlen) ;
         dir[dlen] = 0 ;
-        svc_daemon_wait(dir, 3000) ;
+
+        if (svc_daemon_wait(dir, 3000) < 0)
+            log_warnusys_return(LOG_EXIT_ZERO, "wait for oneshot daemon: ", dir) ;
+
         fd = sse_streamux_create_client(socket) ;
     }
 

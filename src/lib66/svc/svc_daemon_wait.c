@@ -12,6 +12,7 @@
  * except according to the terms contained in the LICENSE file.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -30,20 +31,32 @@ int svc_daemon_wait(char const *dir, int timeout_ms)
     unsigned char up = 0, ready = 0 ;
     event_wait_t w ;
 
+    // a scandir that does not run has no daemon to come
+    size_t slen = str_rsearch(dir, '/') ;
+    char scandir[slen + 1] ;
+    memcpy(scandir, dir, slen) ;
+    scandir[slen] = 0 ;
+
+    r = svc_scandir_ok(scandir) ;
+    if (r <= 0)
+        return r ;
+
     char eventdir[strlen(dir) + SS_EVENTDIR_LEN + 1] ;
     auto_strings(eventdir, dir, SS_EVENTDIR) ;
     char const *dirs[1] = { eventdir } ;
 
     // the supervisor makes the fifodir on start: make it first, subscribe, then read the state
     if (!event_fifo_make(eventdir, getgid()) || !event_wait_init(&w, dirs, 1, EVENT_UP_READY))
-        return 0 ;
+        return -1 ;
 
     if (svc_status_state(dir, &up, &ready) > 0 && ready)
         r = 1 ;
     else
-        r = event_wait_run(&w, timeout_ms) == 1 ;
+        r = event_wait_run(&w, timeout_ms) ;
 
+    int e = errno ;
     event_wait_free(&w) ;
+    errno = e ;
 
     return r ;
 }
