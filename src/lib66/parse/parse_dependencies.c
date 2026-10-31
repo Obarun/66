@@ -130,7 +130,7 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
 
         } else {
 
-            off = resolve_add_string(&wres, dep->sa.s + dep->optsdeps) ;
+            off = dep->optsdeps ;
         }
 
         if (off < 0) {
@@ -180,7 +180,7 @@ int parse_dependencies(parse_store_t *st, resolve_service_addon_dependencies_t *
                 auto_strings(t, dep->sa.s + dep->depends, " ", dep->sa.s + from) ;
                 off = resolve_add_string(&wres, t) ;
             } else {
-                off = resolve_add_string(&wres, dep->sa.s + from) ;
+                off = from ;
             }
 
             if (off < 0) {
