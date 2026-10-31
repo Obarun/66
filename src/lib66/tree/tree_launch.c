@@ -596,11 +596,6 @@ static int tree_manager_init(tree_ctx_t *atree, uint32_t ntree, uint8_t operatio
 {
     log_flow() ;
 
-    if (!atree || ntree == 0) {
-        errno = EINVAL ;
-        log_dieusys(LOG_EXIT_SYS, "bad parameter") ;
-    }
-
     pmanager->atree = atree ;
     pmanager->ntree = ntree ;
     pmanager->exitcode = 0 ;

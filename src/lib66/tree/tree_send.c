@@ -130,6 +130,12 @@ int tree_send(uint8_t operation, char const *treename, uint8_t bygroup, uint8_t 
             log_die(LOG_EXIT_USER, "trees selection is not created -- creates at least one tree") ;
         }
 
+        if (!graph.g.nsort) {
+            // no enabled tree -- nothing to do
+            tree_graph_destroy(&graph) ;
+            return 0 ;
+        }
+
     }
 
     tree_ctx_t atree[graph.g.nsort] ;
