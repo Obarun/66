@@ -31,7 +31,7 @@ Description = "ntpd daemon"
 [Start]
 Execute = (
     foreground { mkdir -p -m 0755 ${RUNDIR} }
-    execl-cmdline -s { ntpd ${CMD_ARGS} }
+    ntpd ${CMD_ARGS}
 )
 
 [Environment]

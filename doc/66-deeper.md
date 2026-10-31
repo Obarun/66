@@ -197,7 +197,7 @@ run              : #!/usr/bin/execlineb -P
 /usr/libexec/66-execute start dhcpcd
 
 run_user         : #!/usr/bin/execlineb -P
- /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStart} }
+ /usr/bin/dhcpcd ${ArgsStart}
 
 run_build        : None
 run_runas        : None
@@ -205,7 +205,7 @@ finish           : #!/usr/bin/execlineb -S0
 /usr/libexec/66-execute stop dhcpcd $@
 
 finish_user      : #!/usr/bin/execlineb -P
- /usr/bin/execl-cmdline -s { /usr/bin/dhcpcd ${ArgsStop} }
+ /usr/bin/dhcpcd ${ArgsStop}
 
 finish_build     : None
 finish_runas     : None

@@ -44,7 +44,7 @@ By understanding these identifiers and their replacements, you can effectively c
     Notify = 4
     MaxDeath = 3
     Execute = (
-        /usr/bin/execl-cmdline -s { /usr/bin/dbus-daemon ${Args} }
+        /usr/bin/dbus-daemon ${Args}
     )
 
     [Stop]
@@ -71,7 +71,7 @@ By understanding these identifiers and their replacements, you can effectively c
     Notify = 4
     MaxDeath = 3
     Execute = (
-        /usr/bin/execl-cmdline -s { /usr/bin/dbus-daemon ${Args} }
+        /usr/bin/dbus-daemon ${Args}
     )
 
     [Stop]

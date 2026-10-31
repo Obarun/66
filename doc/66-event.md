@@ -322,7 +322,7 @@ wiring the getty into the boot dependency graph, you subscribe it to the event:
 Type = classic
 Description = "getty on tty1"
 [Start]
-Execute = ( execl-cmdline -s { agetty 38400 tty1 } )
+Execute = ( agetty 38400 tty1 )
 [Event]
 EventType = user
 On = ( boot.done )
