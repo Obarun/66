@@ -10,10 +10,6 @@
  * distribution.
  * This file may not be copied, modified, propagated, or distributed
  * except according to the terms contained in the LICENSE file.
- *
- * Oneshot runner daemon: on request, forks the run/finish script of a service
- * directory with the client's 0/1/2 wired onto it, and hands the script's
- * waitpid status back over the Unix socket.
  */
 
 #include <stddef.h>
@@ -43,6 +39,8 @@
 #include <oblibs/socket.h>
 #include <oblibs/string.h>
 #include <oblibs/clock.h>
+#include <oblibs/environ.h>
+#include <oblibs/spawn.h>
 
 #include <66/oneshot.h>
 #include <66/status.h>
@@ -57,6 +55,7 @@ struct oneshot_job_s
     sse_watcher_t wchild ;
     sse_watcher_t wtimer ; // the [Start] or [Stop] Timeout of the script, fd -1 when not armed
     bool timedout ; // the script was killed at its timeout
+    uint32_t tstop ; // the [Stop] Timeout, between the SIGTERM and the SIGKILL of a way up that timed out
     pid_t pid ;
     struct oneshot_client_s *conn ; // NULL once the client is gone
     uint8_t down ;  // ran the finish (1) or run (0) script
@@ -139,7 +138,7 @@ static void oneshotd_write_status(char const *servicedir, uint8_t down, uint8_t 
         st.result = result ;
     } else {
         st.state = STATUS_STATE_FAILED ;
-        st.result = STATUS_RESULT_EXITED ;
+        st.result = result ;
         st.code = code ;
     }
     st.who = who ;
@@ -159,6 +158,21 @@ static void respond(oneshot_client_t *conn, uint8_t status, void const *payload,
     char hdr[ONESHOT_HDR_SIZE] ;
     oneshot_hdr_pack(hdr, ONESHOT_CMD_RESPONSE, status, 0, (uint32_t)paylen) ;
     stream_message_send(conn->stream, hdr, ONESHOT_HDR_SIZE, payload, paylen) ;
+}
+
+static void conclude(oneshot_client_t *conn, char const *servicedir, uint8_t down, uint8_t who, uint8_t result, uint32_t code)
+{
+    log_flow() ;
+
+    oneshotd_write_status(servicedir, down, who, result, code) ;
+
+    if (!conn)
+        return ;
+
+    char pl[ONESHOT_VERDICT_LEN] ;
+    pl[0] = (char)result ;
+    u32_pack_big(pl + 1, code) ;
+    respond(conn, ONESHOT_OK, pl, ONESHOT_VERDICT_LEN) ;
 }
 
 // child reaping
@@ -186,15 +200,33 @@ static void oneshot_timeout_cb(sse_watcher_t *w, void *data, int event)
     if (w->fd < 0)
         return ;
 
-    sse_free_timer(w) ;
-
     if (w->api_errno != 0) {
         log_warn("timer watcher error: ", strerror(w->api_errno)) ;
+        sse_free_timer(w) ;
         return ;
     }
 
+    /** a way up that timed out goes down the way of a classic: SIGTERM, then
+     * SIGKILL once the [Stop] Timeout has passed, 0 meaning without end */
+    if (!job->down && !job->timedout) {
+
+        job->timedout = true ;
+        kill(-job->pid, SIGTERM) ;
+
+        if (!job->tstop) {
+            sse_free_timer(w) ;
+            return ;
+        }
+
+        if (sse_modify_timer(w, (int)job->tstop, 0))
+            return ;
+
+        log_warnusys("arm the stop timeout of: ", job->servicedir, " -- killing its script now") ;
+    }
+
     job->timedout = true ;
-    kill(job->pid, SIGKILL) ;
+    sse_free_timer(w) ;
+    kill(-job->pid, SIGKILL) ;
 }
 
 static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
@@ -222,39 +254,40 @@ static void oneshot_child_cb(sse_watcher_t *w, void *data, int event)
     uint32_t wstat = cd ? (uint32_t)cd->status : 0 ;
     sse_free_child(w) ;
 
-    uint8_t result = STATUS_RESULT_EXITED ;
+    uint8_t result = STATUS_RESULT_SUCCESS ;
+    uint32_t code = 0 ;
     if (job->timedout) {
         result = job->down ? STATUS_RESULT_TIMEOUT_STOP : STATUS_RESULT_TIMEOUT_START ;
-    } else if (!WIFSIGNALED(wstat) && !WEXITSTATUS(wstat)) {
-        result = STATUS_RESULT_SUCCESS ;
+    } else if (WIFSIGNALED(wstat)) {
+        result = STATUS_RESULT_SIGNALED ;
+        code = (uint32_t)WTERMSIG(wstat) ;
+    } else if (WEXITSTATUS(wstat)) {
+        result = STATUS_RESULT_EXITED ;
+        code = (uint32_t)WEXITSTATUS(wstat) ;
     }
 
-    oneshotd_write_status(job->servicedir, job->down, job->who, result, (uint32_t)WEXITSTATUS(wstat)) ;
+    if (job->conn)
+        job->conn->job = NULL ;
 
-    oneshot_client_t *conn = job->conn ;
-    if (conn) {
-        char pl[4] ;
-        u32_pack_big(pl, wstat) ;
-        respond(conn, ONESHOT_OK, pl, 4) ;
-        conn->job = NULL ;
-    }
+    conclude(job->conn, job->servicedir, job->down, job->who, result, code) ;
 
     job_release(job) ;
 }
 
-static uint32_t oneshot_timeout(char const *servicedir, uint8_t down)
+static void oneshot_timeouts(char const *servicedir, uint32_t *start, uint32_t *stop)
 {
     log_flow() ;
 
-    uint32_t timeout = 0 ;
     size_t len = strlen(servicedir) ;
     char name[len + 1] ;
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;
     resolve_wrapper_t wex = RESOLVE_WRAPPER(DATA_SERVICE_EXECUTE, &ex) ;
 
+    *start = *stop = 0 ;
+
     if (!ob_basename(name, servicedir)) {
         log_warnusys("get the name of: ", servicedir, " -- its script is not timed") ;
-        return 0 ;
+        return ;
     }
 
     char exname[strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
@@ -262,12 +295,12 @@ static uint32_t oneshot_timeout(char const *servicedir, uint8_t down)
 
     if (resolve_read_at(&wex, servicedir, exname) <= 0)
         log_warnusys("read execute addon of: ", servicedir, " -- its script is not timed") ;
-    else
-        timeout = down ? ex.timeout.stop : ex.timeout.start ;
+    else {
+        *start = ex.timeout.start ;
+        *stop = ex.timeout.stop ;
+    }
 
     resolve_free_obj(&wex) ;
-
-    return timeout ;
 }
 
 // handlers
@@ -287,65 +320,46 @@ static void handle_run(oneshot_client_t *conn, uint8_t flags, uint8_t who, char 
     servicedir[pll] = 0 ;
     uint8_t down = (flags & ONESHOT_FLAG_DOWN) != 0 ;
 
+    char const *file = down ? "finish" : "run" ;
+    char script[pll + 1 + 6 + 1] ;
+    auto_strings(script, servicedir, "/", file) ;
+
     /* a oneshot with no finish script has nothing to bring down: report success
-     * (DOWN status) without forking, so no script exit code is fabricated */
-    if (down) {
-        char script[pll + 1 + 6 + 1] ;
-        auto_strings(script, servicedir, "/", "finish") ;
-        if (access(script, F_OK) < 0) {
-            close_all(afd, nfd) ;
-            oneshotd_write_status(servicedir, down, who, STATUS_RESULT_SUCCESS, 0) ;
-            char pl4[4] ;
-            u32_pack_big(pl4, 0) ;
-            respond(conn, ONESHOT_OK, pl4, 4) ;
-            return ;
-        }
-    }
-
-    /* copy the received descriptors off the stack-borrowed afd array */
-    int cfd[3] = { afd[0], afd[1], afd[2] } ;
-
-    uint32_t timeout = oneshot_timeout(servicedir, down) ;
-
-    pid_t pid = fork() ;
-    if (pid < 0) {
-        log_warnusys("fork") ;
-        close_all(cfd, 3) ;
-        oneshotd_write_status(servicedir, down, who, STATUS_RESULT_EXITED, 0) ;
-        respond(conn, ONESHOT_ERR, NULL, 0) ;
+     * (DOWN status) without spawning, so no script exit code is fabricated */
+    if (down && access(script, F_OK) < 0) {
+        close_all(afd, nfd) ;
+        conclude(conn, servicedir, down, who, STATUS_RESULT_SUCCESS, 0) ;
         return ;
     }
 
+    uint32_t tstart, tstop ;
+    oneshot_timeouts(servicedir, &tstart, &tstop) ;
+
+    /** the script leads its own session, so that a kill of its process group reaches
+     * every process it forks, and gets the received descriptors as its 0/1/2 */
+    char const *argv[3] = { script, file, 0 } ;
+    spawn_fa_t fa[3] = {
+        { .type = SPAWN_FA_MOVE, .from = afd[0], .to = 0 },
+        { .type = SPAWN_FA_MOVE, .from = afd[1], .to = 1 },
+        { .type = SPAWN_FA_MOVE, .from = afd[2], .to = 2 }
+    } ;
+
+    pid_t pid = spawn_path_full(script, argv, (char const *const *)environ, 0, 0, SPAWN_FLAG_SETSID, fa, 3) ;
+    int e = errno ;
+
+    close_all(afd, nfd) ;
+
     if (!pid) {
-
-        /* reset the signal mask: the daemon blocks SIGTERM/SIGINT/SIGCHLD through
-         * its signalfds, and the script must run with default signal handling */
-        sigset_t empty ;
-        sigemptyset(&empty) ;
-        sigprocmask(SIG_SETMASK, &empty, 0) ;
-
-        for (int i = 0 ; i < 3 ; i++) {
-            if (dup2(cfd[i], i) < 0)
-                _exit(126) ;
-        }
-
-        for (int i = 0 ; i < 3 ; i++) {
-            if (cfd[i] >= 3)
-                close(cfd[i]) ;
-        }
-
-        oneshot_exec_script(servicedir, down) ; // never returns on success
-
-        _exit(126) ;
+        errno = e ;
+        log_warnusys("spawn: ", script) ;
+        conclude(conn, servicedir, down, who, STATUS_RESULT_EXEC_FAILED, (uint32_t)e) ;
+        return ;
     }
-
-    // parent: the child holds its own copies now
-    close_all(cfd, 3) ;
 
     oneshot_job_t *job = malloc(sizeof(*job) + pll + 1) ;
     if (!job) {
         log_warnusys("allocate job") ;
-        kill(pid, SIGKILL) ;
+        kill(-pid, SIGKILL) ;
         waitpid(pid, NULL, 0) ;
         oneshotd_write_status(servicedir, down, who, STATUS_RESULT_EXITED, 0) ;
         respond(conn, ONESHOT_ERR, NULL, 0) ;
@@ -354,6 +368,7 @@ static void handle_run(oneshot_client_t *conn, uint8_t flags, uint8_t who, char 
     job->wchild = (sse_watcher_t)SSE_WATCHER_ZERO ;
     job->wtimer = (sse_watcher_t)SSE_WATCHER_ZERO ;
     job->timedout = false ;
+    job->tstop = tstop ;
     job->pid = pid ;
     job->conn = conn ;
     job->down = down ;
@@ -363,7 +378,7 @@ static void handle_run(oneshot_client_t *conn, uint8_t flags, uint8_t who, char 
 
     if (!sse_start_child(&osd.epoll, &job->wchild, oneshot_child_cb, job, pid, 2, true)) {
         log_warnusys("start child watcher") ;
-        kill(pid, SIGKILL) ;
+        kill(-pid, SIGKILL) ;
         waitpid(pid, NULL, 0) ;
         conn->job = NULL ;
         free(job) ;
@@ -372,6 +387,7 @@ static void handle_run(oneshot_client_t *conn, uint8_t flags, uint8_t who, char 
         return ;
     }
 
+    uint32_t timeout = down ? tstop : tstart ;
     if (timeout && !sse_start_timer(&osd.epoll, &job->wtimer, oneshot_timeout_cb, job, (int)timeout, 0, 1))
         log_warnusys("start the timer of: ", servicedir, " -- its script is not timed") ;
 
@@ -427,7 +443,7 @@ static void client_destroy(oneshot_client_t *conn)
         conn->job->conn = NULL ;
         if (conn->job->wtimer.fd >= 0)
             sse_free_timer(&conn->job->wtimer) ;
-        kill(conn->job->pid, SIGKILL) ;
+        kill(-conn->job->pid, SIGKILL) ;
         conn->job = NULL ;
     }
 

@@ -661,7 +661,8 @@ supervised and is not started again until the next start; [66 runstate](66-runst
 shows its `result` as `timeout-start`, the `timeout-start` event is sent, and the command that
 waits for it exits with `111`. Without `Notify`, a service is up as soon as its process
 starts, and nothing is timed. The `[Start]` script of a `oneshot` is timed by this key: once the time
-has passed, 66-oneshotd kills it with `SIGKILL`, the oneshot is down, its `result` reads
+has passed, 66-oneshotd sends `SIGTERM` to it and to every process it forked, then `SIGKILL` once its
+[`[Stop] Timeout`](#timeout-stop) has passed, the oneshot is down, its `result` reads
 `timeout-start`, and the command exits with `111`.
 
 * mandatory: no
@@ -755,7 +756,7 @@ Timeout = 5000
 
 Specifies the maximum time (in milliseconds) the way down of the service may take,
 its stop/`finish` script included, whatever brings it down. Once this time has passed, the
-supervisor (66-oneshotd for the `[Stop]` script of a `oneshot`) sends `SIGKILL`: the service stays down and supervised,
+supervisor (66-oneshotd for the `[Stop]` script of a `oneshot`, together with every process it forked) sends `SIGKILL`: the service stays down and supervised,
 [66 runstate](66-runstate.html) shows its `result` as `timeout-stop`, and the command that
 brought it down exits with `111`.
 

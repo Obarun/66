@@ -846,14 +846,14 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     log_trace("processing service: ", service) ;
 
-    if (chdir(".") < 0)
-        log_dieusys(LOG_EXIT_ZERO, "chdir") ;
-
     if (!set_ownersysdir_stack(base, getuid()))
         log_dieusys(LOG_EXIT_SYS, "set owner directory") ;
 
     if (resolve_read(&wres, base, service) <= 0)
         log_dieusys(LOG_EXIT_SYS,"read resolve file of: ", service) ;
+
+    if (chdir(res.sa.s + res.live.servicedir) < 0)
+        log_dieusys(LOG_EXIT_SYS, "chdir to: ", res.sa.s + res.live.servicedir) ;
 
     /** the execute addon: run/finish scripts, runas, timeouts, privileges, caps */
     resolve_service_addon_execute_t ex = RESOLVE_SERVICE_ADDON_EXECUTE_ZERO ;

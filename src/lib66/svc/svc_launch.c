@@ -21,7 +21,6 @@
 #include <time.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <oblibs/io.h>
 #include <oblibs/types.h>
@@ -88,7 +87,7 @@ static int launch_classic(uint32_t id) ;
 static int launch_oneshot(uint32_t id) ;
 static void svc_wait_handler(event_reader_t *r, char const *buf, size_t len, void *data) ;
 static void complete(uint32_t id, bool success) ;
-static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat) ;
+static void svc_oneshot_result(void *data, uint8_t status, uint8_t result, uint32_t code) ;
 static void svc_oneshot_teardown(void *data) ;
 
 static char const *name_of(svc_ctx_t const *svc)
@@ -283,11 +282,14 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     if (success) {
         st.state = armed ? STATUS_STATE_WAITING : (launch->req->action == SVC_ACTION_STOP ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
         st.result = STATUS_RESULT_SUCCESS ;
+    } else if (svc->result == STATUS_RESULT_TIMEOUT_START || svc->result == STATUS_RESULT_TIMEOUT_STOP) {
+        // the verdict, as 66-oneshotd writes it
+        st.state = STATUS_STATE_DOWN ;
+        st.result = svc->result ;
     } else {
         st.state = STATUS_STATE_FAILED ;
-        st.result = STATUS_RESULT_EXITED ;
-        // the exit code only, as 66-oneshotd writes it: 0 for a script killed by a signal
-        st.code = svc->result == STATUS_RESULT_EXITED ? svc->code : 0 ;
+        st.result = svc->result == STATUS_RESULT_SUCCESS ? STATUS_RESULT_EXITED : svc->result ;
+        st.code = svc->code ;
     }
 
     st.who = launch->req->who ;
@@ -396,6 +398,10 @@ static void announce(uint32_t id, bool success)
 
             case STATUS_RESULT_TIMEOUT_STOP :
                 log_warnu(action_word(false), " service: ", name, " -- killed at its stop timeout") ;
+                break ;
+
+            case STATUS_RESULT_EXEC_FAILED :
+                log_warnu(action_word(false), " service: ", name, " -- unable to spawn its script: ", strerror((int)svc->code)) ;
                 break ;
 
             default :
@@ -857,7 +863,7 @@ static void svc_oneshot_teardown(void *data)
     oneshot_async_end(&svc->oneshot) ;
 }
 
-static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat)
+static void svc_oneshot_result(void *data, uint8_t status, uint8_t result, uint32_t code)
 {
     log_flow() ;
 
@@ -868,27 +874,9 @@ static void svc_oneshot_result(void *data, uint8_t status, uint32_t wstat)
 
     if (status == ONESHOT_OK) {
 
-        if (WIFSIGNALED(wstat)) {
-
-            service_status_t st = STATUS_ZERO ;
-
-            svc->result = STATUS_RESULT_SIGNALED ;
-            svc->code = (uint32_t)WTERMSIG(wstat) ;
-
-            if (svc_status(res_of(svc), &st) < 0) {
-
-                log_warnusys("read the status of service: ", name_of(svc)) ;
-
-            } else if (st.result == STATUS_RESULT_TIMEOUT_START || st.result == STATUS_RESULT_TIMEOUT_STOP) {
-
-                svc->result = st.result ;
-            }
-
-        } else if (WEXITSTATUS(wstat)) {
-
-            svc->result = STATUS_RESULT_EXITED ;
-            svc->code = (uint32_t)WEXITSTATUS(wstat) ;
-        }
+        // the verdict 66-oneshotd wrote into the status of the service
+        svc->result = result ;
+        svc->code = code ;
 
         announce(id, svc->result == STATUS_RESULT_SUCCESS) ;
 

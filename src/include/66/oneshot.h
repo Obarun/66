@@ -15,31 +15,30 @@
 
 /**
  * @file oneshot.h
- * @brief Wire protocol, client library and script executor for the 66-oneshotd daemon.
+ * @brief Wire protocol and client library for the 66-oneshotd daemon.
  *
  * `66-oneshotd` is a per-owner daemon that runs the `run` (up) or `finish` (down)
- * script of a service directory on behalf of a client and reports the script's
- * `waitpid` status back. A client connects to the daemon's Unix domain socket,
+ * script of a service directory on behalf of a client and reports its verdict
+ * back, the result and code it writes into the status of the service. A client connects to the daemon's Unix domain socket,
  * sends a single RUN request carrying the service directory path plus its own
  * `0`/`1`/`2` descriptors (passed out-of-band through `SCM_RIGHTS`), and blocks
- * until the daemon forks the script, reaps it, and returns the result.
+ * until the daemon spawns the script, reaps it, and returns the verdict.
  *
- * The daemon forks one child per RUN request, wires the three forwarded
- * descriptors onto the child's `0`/`1`/`2`, resets the signal mask and execs the
- * script through `oneshot_exec_script`. The daemon accepts a connection only from
+ * The daemon spawns one child per RUN request with `spawn_path_full`: the child
+ * leads its own session, gets the three forwarded descriptors as its `0`/`1`/`2`
+ * and an empty signal mask, and execs the script. The daemon accepts a connection only from
  * a peer whose `SCM_CREDENTIALS` uid matches the daemon's effective uid; any other
  * peer is rejected at the socket layer (no protocol response is sent).
  *
- * This module provides three layers:
+ * This module provides two layers:
  *   - the wire framing helpers (`oneshot_hdr_pack`, `oneshot_parse_header`,
  *     `oneshot_status_str`),
- *   - the in-child script executor (`oneshot_exec_script`),
  *   - the asynchronous request/response client (`oneshot_async_t`,
  *     `oneshot_async_send`, `oneshot_async_end`), multiplexed on a caller's loop.
  *
  * @note A response status is the PROTOCOL outcome (could the daemon run the script
- * at all), distinct from the script's own exit code. The script's full `waitpid`
- * status travels in the response payload only when the status is `ONESHOT_OK`.
+ * at all), distinct from the verdict on the script. The verdict travels in the
+ * response payload only when the status is `ONESHOT_OK`.
  */
 
 #ifndef SS_ONESHOT_H
@@ -77,6 +76,11 @@
  * `oneshot_async_send` rejects a longer service directory path with `EINVAL`. */
 #define ONESHOT_PAYLOAD_MAX        (IO_RB_BUFFER_SIZE - ONESHOT_HDR_SIZE)
 
+/** @brief Size in bytes of the verdict an `ONESHOT_OK` response carries: [0] the
+ * `status_result_e` result, [1..4] its code as a big-endian `uint32` (exit code,
+ * signal number or errno, read per result, 0 otherwise). */
+#define ONESHOT_VERDICT_LEN        5
+
 /**
  * @enum oneshot_cmd_e
  * @brief Wire command codes carried in header byte [1].
@@ -97,13 +101,13 @@ enum oneshot_cmd_e
  * @brief Response status codes carried in header byte [2] (responses only).
  *
  * This is the PROTOCOL outcome -- whether the daemon could run the script at all
- * -- not the script's own exit code. The script's full `waitpid` status travels
- * in the response payload only when the status is `ONESHOT_OK`.
+ * -- not the verdict on the script. The verdict travels in the response payload
+ * only when the status is `ONESHOT_OK`.
  */
 enum oneshot_status_e
 {
-    ONESHOT_OK = 0,   // script was forked and reaped; `waitpid` status is in the payload
-    ONESHOT_ERR,      // daemon-side failure (fork, child watcher, allocation, or a transport/connection error detected client-side)
+    ONESHOT_OK = 0,   // the request was carried out; the verdict is in the payload
+    ONESHOT_ERR,      // daemon-side failure (child watcher, allocation, or a transport/connection error detected client-side)
     ONESHOT_PROTO     // malformed request: wrong command, missing/empty payload, path not starting with '/', path too long, wrong fd count, or a RUN already in flight on this connection
 } ;
 
@@ -134,7 +138,7 @@ enum oneshot_status_e
  *
  *   response  header.command = ONESHOT_CMD_RESPONSE, header.status = result.
  *   -------------------------------------------------------------------------
- *   RUN ok : payload = waitpid status (uint32, big-endian) ; 0 fds
+ *   RUN ok : payload = verdict (ONESHOT_VERDICT_LEN bytes) ; 0 fds
  *   others : empty payload, 0 fds (status carries the outcome)
  */
 
@@ -203,40 +207,6 @@ extern int oneshot_parse_header(void const *header, size_t header_len, size_t *p
  */
 extern char const *oneshot_status_str(uint8_t status) ;
 
-// script executor, run in the daemon's forked child (oneshot_exec_script.c)
-
-/**
- * @brief `chdir` into @p servicedir and `execve` its `run` (up) or `finish` (down)
- * script in the current process.
- *
- * Builds the script path as `<servicedir>/run` when @p down is 0, or
- * `<servicedir>/finish` when @p down is non-zero, `chdir`s into @p servicedir,
- * then `execve`s the script with argv `{ script, "run"|"finish", NULL }` and the
- * inherited `environ`. This is meant to run in the daemon's forked child, which
- * must already have wired the client's descriptors onto `0`/`1`/`2` and reset the
- * signal mask before calling.
- *
- * @param[in] servicedir  Absolute path to the service directory. Must not be NULL
- *                        (not checked). The daemon validates it (absolute, bounded,
- *                        nonempty) before forking.
- * @param[in] down        0 -> exec the `run` script; non-zero -> exec the `finish`
- *                        script.
- *
- * @return Does not return. On success control passes to the exec'd script and this
- * function never returns. On every failure it terminates the process via
- * `log_dieusys` rather than returning:
- *      - exits 111 (`LOG_EXIT_SYS`) if `chdir(servicedir)` fails.
- *      - exits 127 if `execve` fails with errno `ENOENT` (script not found).
- *      - exits 126 if `execve` fails with any other errno.
- *
- * @note The exit-code/no-return contract is the only contract: the function never
- * hands a status back to its caller. It never `_exit(0)`s for a missing `finish`
- * script -- an absent script is a failing `execve` (`ENOENT`) and exits 127. The
- * daemon short-circuits the "no finish script on stop" case before forking, so
- * this executor is only reached when the target script is expected to exist.
- */
-extern void oneshot_exec_script(char const *servicedir, uint8_t down) ;
-
 // async client library (oneshot_async.c)
 
 /**
@@ -244,12 +214,15 @@ extern void oneshot_exec_script(char const *servicedir, uint8_t down) ;
  *
  * @param[in] data    Opaque caller context handed to `oneshot_async_send`.
  * @param[in] status  Protocol outcome (`oneshot_status_e`). `ONESHOT_OK` means the
- *                    daemon forked and reaped the script; any other value (including
+ *                    daemon carried the request out; any other value (including
  *                    a connection drop before reply) is a failure.
- * @param[in] wstat   The script's raw `waitpid` status; valid only when @p status
- *                    is `ONESHOT_OK`, 0 otherwise.
+ * @param[in] result  The `status_result_e` result the daemon wrote into the status
+ *                    of the service; valid only when @p status is `ONESHOT_OK`, 0
+ *                    otherwise.
+ * @param[in] code    The code of @p result (exit code, signal number or errno), 0
+ *                    when @p result carries none or @p status is not `ONESHOT_OK`.
  */
-typedef void oneshot_async_cb_t(void *data, uint8_t status, uint32_t wstat) ;
+typedef void oneshot_async_cb_t(void *data, uint8_t status, uint8_t result, uint32_t code) ;
 
 /**
  * @struct oneshot_async_s

@@ -123,7 +123,7 @@ A down file (`Flags = ( down )`, `66 signal -D`) only means the service is not b
 
 The supervisor of a classic service with a `Notify` key gives it `[Start] Timeout` to become ready, counted from the start of its process, whatever brings it up (`66 start`, `66 signal -u`, a restart by the supervisor, the boot). Without `Notify`, a classic service is up as soon as its process starts, and nothing is timed.
 
-The `[Start]` script of a oneshot is timed by its `[Start] Timeout` (`0`, the default, means without end): once it has passed, 66-oneshotd, its supervisor, kills the script with `SIGKILL`; the oneshot is down, `66 runstate` shows `result` as `timeout-start`, what waits for it is not started, and the command exits with `111` and the message above (verbosity 2).
+The `[Start]` script of a oneshot is timed by its `[Start] Timeout` (`0`, the default, means without end): once it has passed, 66-oneshotd, its supervisor, sends `SIGTERM` to the script and to every process it forked, then `SIGKILL` once its `[Stop] Timeout` has passed (`0` means without end, no `SIGKILL`); the oneshot is down, `66 runstate` shows `result` as `timeout-start`, what waits for it is not started, and the command exits with `111` and the message above (verbosity 2).
 
 When the time runs out before the service is ready:
 
@@ -136,7 +136,7 @@ When the time runs out before the service is ready:
   unable to start service: <name> -- not ready within its start timeout
   ```
 
-The way down of a service waits for its `[Stop] Timeout`, never for its `[Start] Timeout`, whatever brings it down; the supervisor sends `SIGKILL` once it has passed, 66-oneshotd for the `[Stop]` script of a oneshot. A `[Stop] Timeout` the frontend does not write is the general stop delay chosen at the build of 66 (`10000` milliseconds by default); `0` written means without end, no `SIGKILL`. The parse writes the delay that applies in the resolve file. A logger, which has no `[Stop]` section, gets the general stop delay.
+The way down of a service waits for its `[Stop] Timeout`, never for its `[Start] Timeout`, whatever brings it down; the supervisor sends `SIGKILL` once it has passed, 66-oneshotd for the `[Stop]` script of a oneshot and every process it forked. A `[Stop] Timeout` the frontend does not write is the general stop delay chosen at the build of 66 (`10000` milliseconds by default); `0` written means without end, no `SIGKILL`. The parse writes the delay that applies in the resolve file. A logger, which has no `[Stop]` section, gets the general stop delay.
 
 ### Absent service
 
@@ -277,8 +277,9 @@ An event guarantees that the order acted on the service: a real change of state,
 | dependencies | 0 | its `Depends` come up first, never what depends on it | |
 | **-P** | 0 | the named services only, not their logger, whatever the state of their dependencies | |
 | a service of the selection fails | 111 | what waits for it is not started | `unable to start service: <name> -- a service it waits for failed` (verbosity 2) |
-| oneshot whose script fails | 111 | what waits for it is not started | `unable to start service: <name> -- exited with code <n>`, or `-- killed by signal <n>` (verbosity 2) |
-| oneshot whose script runs past its `[Start] Timeout` | 111 | killed, down, `66 runstate` shows `result` as `timeout-start`; what waits for it is not started | `unable to start service: <name> -- not ready within its start timeout` (verbosity 2) |
+| oneshot whose script fails | 111 | what waits for it is not started; `66 runstate` shows `result` as `exited:<n>` or `signaled:<SIG>` | `unable to start service: <name> -- exited with code <n>`, or `-- killed by signal <n>` (verbosity 2) |
+| oneshot whose script cannot be spawned | 111 | what waits for it is not started; `66 runstate` shows `result` as `exec-failed` | `unable to start service: <name> -- unable to spawn its script: <reason>` (verbosity 2) |
+| oneshot whose script runs past its `[Start] Timeout` | 111 | brought down by `SIGTERM`, `SIGKILL` once its `[Stop] Timeout` has passed, down, `66 runstate` shows `result` as `timeout-start`; what waits for it is not started | `unable to start service: <name> -- not ready within its start timeout` (verbosity 2) |
 | classic with `Notify` not ready within `[Start] Timeout` | 111 | brought down by its supervisor, left down and supervised, what waits for it is not started | `unable to start service: <name> -- not ready within its start timeout` (verbosity 2), see [Start timeout](#start-timeout) |
 | conflicting service running | 100 | nothing starts | `conflicting service for '<name>' -- please stop the '<other>' service first.` |
 | conflicting service whose resolve file does not read | 100 | nothing starts | see [Invalid service](#invalid-service) |
