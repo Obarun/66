@@ -1392,7 +1392,7 @@ Selects which family of trigger the reactor subscribes to, and therefore which [
 
 * valid values: `service`, `signal`, `user`, `inotify`, `schedule`, `timer`.
 
-    * service : react to the status transitions (up/down/crash/…) of a supervised service named in [`From`](#from).
+    * service : react to the status transitions (up/down/crash/…) of a `classic` or `oneshot` service named in [`From`](#from). A `oneshot` sends only the end of its script: `done`, `down` or `failed`, with its result (`exited`, `signaled`, `timeout-start`, `timeout-stop`, `exec-failed`); never `starting` nor `stopping`.
     * signal : react to a signal routed by `66` to a supervised service named in [`From`](#from).
     * user : react to a name raised by [66 emit](66-emit.html) or by another reactor's [`Emit`](#emit). A `user` reactor is **sourceless** — no [`From`](#from).
     * inotify / schedule / timer : react to the `Type = event` source named in [`From`](#from). The condition lives in the source, so these carry **no** [`On`](#on-onall).

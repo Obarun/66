@@ -259,19 +259,28 @@ static uint32_t inotify_mask_from_on(char const *on, uint32_t non)
 
 static int source_subscribe(eventd_source_t *s)
 {
-    char ev[strlen(s->name) + SS_EVENTDIR_LEN + 1] ;
-    auto_strings(ev, s->name, SS_EVENTDIR) ;
+    resolve_service_t res = RESOLVE_SERVICE_ZERO ;
+    resolve_wrapper_t wres = RESOLVE_WRAPPER(DATA_SERVICE, &res) ;
+
+    if (resolve_read(&wres, sysdir, s->name) != 1) {
+        resolve_free_obj(&wres) ;
+        log_warn_return(LOG_EXIT_ZERO, "source not parsed, deferring subscription: ", s->name) ;
+    }
+
+    // the scandir entry of the source: <name> for a classic, .<name> for a oneshot
+    char const *entry = res.sa.s + res.live.scandir ;
+    char ev[strlen(entry) + SS_EVENTDIR_LEN + 1] ;
+    auto_strings(ev, entry, SS_EVENTDIR) ;
+
+    resolve_free_obj(&wres) ;
 
     struct stat st ;
-    if (stat(ev, &st) < 0 || !S_ISDIR(st.st_mode)) {
-        log_warn("source not supervised yet, deferring subscription: ", s->name) ;
-        return 0 ;
-    }
+    if (stat(ev, &st) < 0 || !S_ISDIR(st.st_mode))
+        log_warn_return(LOG_EXIT_ZERO, "source not supervised yet, deferring subscription: ", s->name) ;
 
-    if (!event_subscribe(&s->fifo, &eventd.epoll, ev, &eventd_event_handler, s, 0)) {
-        log_warnusys("subscribe to event fifodir: ", ev) ;
-        return 0 ;
-    }
+    if (!event_subscribe(&s->fifo, &eventd.epoll, ev, &eventd_event_handler, s, 0))
+        log_warnusys_return(LOG_EXIT_ZERO,"subscribe to event fifodir: ", ev) ;
+
 
     s->subscribed = 1 ;
     return 1 ;

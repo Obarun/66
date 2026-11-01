@@ -137,6 +137,15 @@ static int prepare(struct resolve_hash_s *h, uint32_t index, bool earlier_stage,
 
         if (res->type == E_PARSER_TYPE_ONESHOT || res->type == E_PARSER_TYPE_EVENT) {
 
+            if (res->type == E_PARSER_TYPE_ONESHOT) {
+
+                log_trace("create fifo: ", res->sa.s + res->live.eventdir) ;
+                if (!event_fifo_make(res->sa.s + res->live.eventdir, getgid())) {
+                    log_warnusys("create fifo: ", res->sa.s + res->live.eventdir) ;
+                    return -1 ;
+                }
+            }
+
             if (!state_write(&sta, res)) {
                 log_warnusys("write state file of: ", name) ;
                 return -1 ;

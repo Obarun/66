@@ -48,6 +48,7 @@
 #include <66/utils.h>
 #include <66/resolve.h>
 #include <66/service.h>
+#include <66/event.h>
 
 typedef struct oneshot_job_s oneshot_job_t ;
 struct oneshot_job_s
@@ -149,6 +150,12 @@ static void oneshotd_write_status(char const *servicedir, uint8_t down, uint8_t 
 
     if (!status_write(&st, file))
         log_warnusys("write runtime status of: ", servicedir) ;
+
+    char ev[strlen(servicedir) + SS_EVENTDIR_LEN + 1] ;
+    auto_strings(ev, servicedir, SS_EVENTDIR) ;
+
+    if (!event_emit_transition(ev, st.state, st.result, st.who, st.code, 0, &st.stamp, 0))
+        log_warnusys("emit the transition of: ", servicedir) ;
 }
 
 // responses

@@ -203,7 +203,7 @@ service: c cannot be ordered: it is part of, or depends on, a dependency cycle -
 
 ### Events
 
-An event guarantees that the order acted on the service: a real change of state, or a signal actually delivered to its process. An order that changes nothing sends no event, for every command: `66 start` or `66 signal -u`/`-o` of a classic that runs, `66 stop` or `66 signal -d` of a service already down, `66 start` of a oneshot already `done`, a signal to a service that is down. A raw signal delivered to a running service (`66 signal -k`, `-1`, `-H`...) sends the event of that signal; `66 reload` sends the reload order of the service and no signal event (see [Reactors](#reactors)).
+An event guarantees that the order acted on the service: a real change of state, or a signal actually delivered to its process. A oneshot sends only the event of its end, `done`, `down` or `failed` with its result, never `starting` nor `stopping`. An order that changes nothing sends no event, for every command: `66 start` or `66 signal -u`/`-o` of a classic that runs, `66 stop` or `66 signal -d` of a service already down, `66 start` of a oneshot already `done`, a signal to a service that is down. A raw signal delivered to a running service (`66 signal -k`, `-1`, `-H`...) sends the event of that signal; `66 reload` sends the reload order of the service and no signal event (see [Reactors](#reactors)).
 
 ### Reactors
 

@@ -67,7 +67,7 @@ Every event flows from a **source** to one or more **reactors**.
 
 Two more reactor families need no configured source at all:
 
-* **service** — react to the up/down/crash transitions of any supervised service;
+* **service** — react to the up/down/crash transitions of a `classic` service, or to the end of the script of a `oneshot` (`done`, `down`, `failed` and their results);
 * **signal** — react to a signal routed by `66` to a supervised service;
 * **user** — react to a name raised by [66 emit](66-emit.html), or by another reactor's
   `Emit` key.
