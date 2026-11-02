@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -27,21 +28,14 @@
 #include <66/constants.h>
 #include <66/fdholder.h>
 
-static int fdh_ret_timeout = -1 ;
 static bool fdh_ret_delete = false ;
 
 int on_fdholder_retrieve(int id, char const *arg, void *data)
 {
     (void)data ;
+    (void)arg ;
 
     switch (id) {
-        case 'T' : {
-            uint32_t t ;
-            if (!u32_scan_strict(arg, &t))
-                log_dieu(LOG_EXIT_USER, "parse timeout: ", arg) ;
-            fdh_ret_timeout = (int)t ;
-            break ;
-        }
         case 'D' :
             fdh_ret_delete = true ;
             break ;
@@ -55,6 +49,7 @@ int ssexec_fdholder_retrieve(int argc, char const *const *argv, void *data)
     log_flow() ;
 
     ssexec_t *info = data ;
+    int timeout = info->timeout > INT_MAX ? INT_MAX : (int)info->timeout ;
 
     if (argc < 2)
         log_die(LOG_EXIT_USER, "needs an identifier and a program to execute") ;
@@ -69,7 +64,7 @@ int ssexec_fdholder_retrieve(int argc, char const *const *argv, void *data)
     if (!fdholder_client_init(&c, sock))
         log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock) ;
 
-    int ok = fdholder_retrieve(&c, id, fdh_ret_delete, fdh_ret_timeout) ;
+    int ok = fdholder_retrieve(&c, id, fdh_ret_delete, timeout) ;
     uint8_t status = c.status ;
     int fd = c.received_fd ;
 

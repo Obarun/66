@@ -14,9 +14,9 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include <oblibs/log.h>
-#include <oblibs/types.h>
 #include <oblibs/string.h>
 #include <oblibs/strbuf.h>
 #include <oblibs/stream.h>
@@ -24,25 +24,6 @@
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/fdholder.h>
-
-static int fdh_list_timeout = -1 ;
-
-int on_fdholder_list(int id, char const *arg, void *data)
-{
-    (void)data ;
-
-    switch (id) {
-        case 'T' : {
-            uint32_t t ;
-            if (!u32_scan_strict(arg, &t))
-                log_dieu(LOG_EXIT_USER, "parse timeout: ", arg) ;
-            fdh_list_timeout = (int)t ;
-            break ;
-        }
-    }
-
-    return 0 ;
-}
 
 int ssexec_fdholder_list(int argc, char const *const *argv, void *data)
 {
@@ -52,6 +33,7 @@ int ssexec_fdholder_list(int argc, char const *const *argv, void *data)
     (void)argv ;
 
     ssexec_t *info = data ;
+    int timeout = info->timeout > INT_MAX ? INT_MAX : (int)info->timeout ;
 
     char sock[info->scandir.len + sizeof("/" SS_FDHOLDER "/s") + 1] ;
     auto_strings(sock, info->scandir.s, "/" SS_FDHOLDER "/s") ;
@@ -60,7 +42,7 @@ int ssexec_fdholder_list(int argc, char const *const *argv, void *data)
     if (!fdholder_client_init(&c, sock))
         log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock) ;
 
-    int ok = fdholder_list(&c, fdh_list_timeout) ;
+    int ok = fdholder_list(&c, timeout) ;
     uint8_t status = c.status ;
 
     if (ok) {

@@ -690,7 +690,6 @@
                 (store)
                     _arguments -s \
                         '(-h --help)'{-h,--help}'[print this help]' \
-                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:' \
                         '(-d --fd)'{-d,--fd}'[file descriptor to store (default 0)]:number:' \
                         '(-e --expire)'{-e,--expire}'[expiry in seconds (0 = never)]:seconds:' \
                         ':id:'
@@ -698,15 +697,13 @@
                 (retrieve)
                     _arguments -s \
                         '(-h --help)'{-h,--help}'[print this help]' \
-                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:' \
                         '(-D --delete)'{-D,--delete}'[delete the entry after retrieval]' \
                         ':id:' \
                         '*:::prog:_normal'
                     ;;
                 (list)
                     _arguments -s \
-                        '(-h --help)'{-h,--help}'[print this help]' \
-                        '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:'
+                        '(-h --help)'{-h,--help}'[print this help]'
                     ;;
             esac
             ;;

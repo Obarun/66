@@ -233,7 +233,7 @@ scandir          : /run/66/scandir/0/dhcpcd
 statedir         : /run/66/state/0/dhcpcd/state
 eventdir         : /run/66/state/0/dhcpcd/event
 supervisedir     : /run/66/state/0/dhcpcd/supervise
-fdholderdir      : /run/66/scandir/0/fdholder
+fdholderdir      : /run/66/scandir/0/fdholderd
 oneshotddir      : /run/66/scandir/0/oneshotd
 eventddir        : /run/66/scandir/0/eventd
 env              : ArgsStart=!-B ${ArgsConfFile}
@@ -252,7 +252,7 @@ ndirectories     : 0
 nfiles           : 0
 ninfiles         : 0
 stdintype        : 3
-stdindest        : /run/66/scandir/0/fdholder
+stdindest        : /run/66/scandir/0/fdholderd
 stdouttype       : 3
 stdoutdest       : /var/log/66/dhcpcd
 stderrtype       : 5

@@ -32,7 +32,6 @@ extern opt_cmd_fn ssexec_fdholder_list ;
 // per-sub option appliers (defined alongside their handler), as scandir does
 extern opt_on_option_fn on_fdholder_store ;
 extern opt_on_option_fn on_fdholder_retrieve ;
-extern opt_on_option_fn on_fdholder_list ;
 
 /* wrapper-level options : pick the scandir owner whose fdholder we operate on,
  * exactly like the scandir wrapper */
@@ -72,26 +71,23 @@ static opt_t const opts_fdholder_wrapper[] = {
 
 static opt_t const opts_fdholder_store[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
     { .id = 'd',         .shortname = 'd', .longname = "fd",      .arg = OPT_REQUIRED, .argname = "number",       .help = "file descriptor to store (default 0)" },
     { .id = 'e',         .shortname = 'e', .longname = "expire",  .arg = OPT_REQUIRED, .argname = "seconds",      .help = "expiry in seconds (0 = never)" },
 } ;
 
 static opt_t const opts_fdholder_retrieve[] = {
     { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
     { .id = 'D',         .shortname = 'D', .longname = "delete",  .arg = OPT_NONE,                                .help = "delete the entry after retrieval" },
 } ;
 
 static opt_t const opts_fdholder_list[] = {
-    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help",    .arg = OPT_NONE,                                .help = "print this help" },
-    { .id = 'T',         .shortname = 'T', .longname = "timeout", .arg = OPT_REQUIRED, .argname = "milliseconds", .help = "timeout for the operation" },
+    { .id = OPT_ID_HELP, .shortname = 'h', .longname = "help", .arg = OPT_NONE, .help = "print this help" },
 } ;
 
 static opt_cmd_t const fdholder_sub[] = {
     { .name = "store",    .help = "store a file descriptor under a name",  .operands = "id",         .opts = opts_fdholder_store,    .nopts = OPT_COUNT(opts_fdholder_store),    .on_option = &on_fdholder_store,    .fn = &ssexec_fdholder_store },
     { .name = "retrieve", .help = "retrieve a descriptor and exec prog",   .operands = "id prog...", .opts = opts_fdholder_retrieve, .nopts = OPT_COUNT(opts_fdholder_retrieve), .on_option = &on_fdholder_retrieve, .fn = &ssexec_fdholder_retrieve },
-    { .name = "list",     .help = "list stored descriptor names",          .operands = NULL,         .opts = opts_fdholder_list,     .nopts = OPT_COUNT(opts_fdholder_list),     .on_option = &on_fdholder_list,     .fn = &ssexec_fdholder_list },
+    { .name = "list",     .help = "list stored descriptor names",          .operands = NULL,         .opts = opts_fdholder_list,     .nopts = OPT_COUNT(opts_fdholder_list),     .fn = &ssexec_fdholder_list },
 } ;
 
 opt_cmd_t const cmd_fdholder = {

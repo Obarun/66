@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <limits.h>
 
 #include <oblibs/log.h>
 #include <oblibs/types.h>
@@ -25,20 +26,12 @@
 
 static uint32_t fdh_store_fd = 0 ;
 static uint32_t fdh_store_expire = 0 ;
-static int fdh_store_timeout = -1 ;
 
 int on_fdholder_store(int id, char const *arg, void *data)
 {
     (void)data ;
 
     switch (id) {
-        case 'T' : {
-            uint32_t t ;
-            if (!u32_scan_strict(arg, &t))
-                log_dieu(LOG_EXIT_USER, "parse timeout: ", arg) ;
-            fdh_store_timeout = (int)t ;
-            break ;
-        }
         case 'd' :
             if (!u32_scan_strict(arg, &fdh_store_fd))
                 log_dieu(LOG_EXIT_USER, "parse fd: ", arg) ;
@@ -57,6 +50,7 @@ int ssexec_fdholder_store(int argc, char const *const *argv, void *data)
     log_flow() ;
 
     ssexec_t *info = data ;
+    int timeout = info->timeout > INT_MAX ? INT_MAX : (int)info->timeout ;
 
     if (argc < 1)
         log_die(LOG_EXIT_USER, "missing identifier") ;
@@ -70,7 +64,7 @@ int ssexec_fdholder_store(int argc, char const *const *argv, void *data)
     if (!fdholder_client_init(&c, sock))
         log_dieusys(LOG_EXIT_SYS, "connect to fdholder daemon: ", sock) ;
 
-    int ok = fdholder_store(&c, id, (int)fdh_store_fd, fdh_store_expire, fdh_store_timeout) ;
+    int ok = fdholder_store(&c, id, (int)fdh_store_fd, fdh_store_expire, timeout) ;
     uint8_t status = c.status ;
     fdholder_client_end(&c) ;
 
