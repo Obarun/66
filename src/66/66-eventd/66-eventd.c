@@ -427,13 +427,13 @@ static int reactor_filter_on(eventd_reactor_t const *re, char const *source, eve
 // filter 2 -- reactor state x Do
 static int reactor_state_allows(uint32_t state, uint32_t docmd)
 {
-    int active = state == STATUS_STATE_UP || state == STATUS_STATE_DONE ;
     int inert  = state == STATUS_STATE_DOWN || state == STATUS_STATE_FAILED ;
 
     switch (docmd) {
 
         case EVENT_DO_START :
-            return !active ; // down/waiting/failed
+
+            return state != STATUS_STATE_UP ;
 
         case EVENT_DO_STOP :
         case EVENT_DO_RELOAD :

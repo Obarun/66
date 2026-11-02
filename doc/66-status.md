@@ -90,13 +90,15 @@ Status : enabled, down (exited 1) since 2min 5s by user
 ```
 
 A `waiting` service is an armed [event](66-event.html) reactor: it is not running
-and not failed, it sits idle until its event fires, and it goes back to `waiting`
-after each firing — it never parks in `done`. Because its state alone can never
-tell whether it already did its work, the date of its last run closes the line:
+and not failed, it sits idle until its event fires, and it shows `waiting` again
+after each firing. Because its state alone can never tell whether it already did
+its work, the date of its last run closes the line; a reactor that never ran since
+its supervision has no date to show:
 
 ```
 Status : enabled, waiting since 1h 13min by event (last run 1h 13min ago)
 Status : enabled, waiting since 3min by user (never run)
+Status : enabled, waiting (never run)
 ```
 
 `never run` means *since it was last armed*: an explicit [stop](66-stop.html)

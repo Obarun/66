@@ -282,14 +282,10 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     if (success) {
         st.state = armed ? STATUS_STATE_WAITING : (launch->req->action == SVC_ACTION_STOP ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
         st.result = STATUS_RESULT_SUCCESS ;
-    } else if (svc->result == STATUS_RESULT_TIMEOUT_START || svc->result == STATUS_RESULT_TIMEOUT_STOP) {
-        // the verdict, as 66-oneshotd writes it
-        st.state = STATUS_STATE_DOWN ;
-        st.result = svc->result ;
     } else {
         st.state = STATUS_STATE_FAILED ;
-        st.result = svc->result == STATUS_RESULT_SUCCESS ? STATUS_RESULT_EXITED : svc->result ;
-        st.code = svc->code ;
+        st.result = STATUS_RESULT_EXITED ;
+        st.code = svc->result == STATUS_RESULT_EXITED ? svc->code : 0 ;
     }
 
     st.who = launch->req->who ;
@@ -328,13 +324,12 @@ static void announce(uint32_t id, bool success)
 
     auto_strings(file, scandir, "/down") ;
 
-    bool armed = svc->target == SVC_TARGET_UP &&
-                res->has_event &&
-                (res->type == E_PARSER_TYPE_ONESHOT || res->type == E_PARSER_TYPE_MODULE) &&
-                svc_reactor_armed_idle(svc->h) > 0 ;
+    if (res->type == E_PARSER_TYPE_MODULE && launch->req->action != SVC_ACTION_SIGNAL) {
 
-    if ((armed || res->type == E_PARSER_TYPE_MODULE) && launch->req->action != SVC_ACTION_SIGNAL)
+        bool armed = svc->target == SVC_TARGET_UP && res->has_event && svc_reactor_armed_idle(svc->h) > 0 ;
+
         svc_runtime_write(svc, success, armed) ;
+    }
 
     if (success) {
 

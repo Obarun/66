@@ -81,11 +81,12 @@ death.
 | `failed` | the crash budget is exhausted, the service is parked |
 | `waiting` | an armed [event](66-event.html) reactor: it holds no process and waits for its event |
 
-A `oneshot` or `module` reactor records `waiting` itself. A `classic` one cannot
-— its record is kept by [66-supervise](66-supervise.html), which only knows
-`up` and `down` — so `runstate` reports it as `down`, and it is
+A `module` reactor records `waiting` itself. A `classic` or `oneshot` one does not
+— its record is kept by [66-supervise](66-supervise.html) or by 66-oneshotd, which
+only record what the process or the script did — so `runstate` reports a classic
+reactor as `down` and a oneshot reactor as `done` or `down`, and it is
 [66 status](66-status.html) that derives the `waiting` reading from the resolve.
-Seeing `down` here on a classic reactor does not mean it is disarmed.
+Seeing `down` or `done` here on a reactor does not mean it is disarmed.
 
 ### `result` values
 
@@ -113,9 +114,8 @@ in seconds, with no unit conversion:
   Unix epoch** (1970-01-01 UTC). They are absolute instants: decode one with
   `date -d @<value>`. `readystamp` equals `stamp` when entering the state and
   becoming ready coincide (a service without readiness notification). On an armed
-  [event](66-event.html) reactor, whose `state` returns to `waiting` after each
-  firing, `readystamp` is the only field left saying **when its `Execute` last
-  ran** — `0` means it has not run since it was armed.
+  `oneshot` or `module` [event](66-event.html) reactor, `readystamp` says **when
+  its `Execute` last ran** — `0` means it has not run since it was armed.
 
 - `window_start` is a `CLOCK_MONOTONIC` value, i.e. **seconds since boot**, not a
   date. It is only meaningful relative to the monotonic clock, as the anchor of

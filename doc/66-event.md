@@ -674,30 +674,29 @@ running its `Do`. The command is only issued when it would do something:
 
 | `Do` | Fires only when the service is… |
 |---|---|
-| `start` | anything **except** `up` or `done` |
+| `start` | anything **except** `up` |
 | `stop`, `reload` | anything **except** `down` or `failed` |
 | `restart` | *(any state — always fires)* |
 | `reconfigure`, `free` | *(any state — always fires)* |
 
-The gate is built from two sets: a service is **active** when it is `up` or `done`, and
-**inert** when it is `down` or `failed`; the five transitional states (`starting`,
-`stopping`, `finishing`, `restarting`, `waiting`) are neither. `start` fires only on a
-**non-active** service, `stop`/`reload` only on a **non-inert** one, and `restart` fires
-unconditionally — it is the verb to use when the action must run on *every* matching event
-regardless of where the service currently sits.
+`start` fires on anything but a running process, `up`. For a reactor, `Do = start` runs
+its `Execute` on every matching event as long as nothing of it runs: the `done` of a
+`oneshot` reactor records its previous run, it does not hold back the next one.
+`stop`/`reload` fire only on a service
+that is not **inert**, `down` or `failed`. `restart` fires unconditionally — it is the verb
+to use when the action must run on *every* matching event regardless of where the service
+currently sits.
 
 The most common surprise follows from the `start` row: **`Do = start` does not run on a
-service that is already `up` or `done`** — it is a silent no-op (logged as *inhibited*),
-because `start` means “bring it up” and an already-active service is there. This does
-**not** keep a `oneshot`/`module` reactor from reacting repeatedly: such a reactor
-**re-arms to `waiting` after each firing** — it never parks in `done` — so a `Do = start`
-or `Do = restart` reactor fires again on every matching event, running its `Execute` exactly
-once per event. If the reactor's own status cannot be read at that moment, every `Do` except
-`reconfigure`/`free` is inhibited.
+service that is already `up`** — it is a silent no-op (logged as *inhibited*), because
+`start` means “bring it up” and a running service is there. A `oneshot` reactor runs its
+`Execute` exactly once per matching event, with `Do = start` as with `Do = restart`. If the
+reactor's own status cannot be read at that
+moment, every `Do` except `reconfigure`/`free` is inhibited.
 
-Parking in `waiting` does not lose the firing that just happened: the date of the last run
-is kept beside the state, so [66 status](66-status.html) tells a reactor that already did
-its work from one still waiting for its first event:
+[66 status](66-status.html) shows an armed reactor at rest as `waiting`, and dates its last
+run, so it tells a reactor that already did its work from one still waiting for its first
+event:
 
 ```
 $ 66 status numlockx
@@ -708,7 +707,8 @@ $ 66 status
 ```
 
 A reactor that has never fired since it was armed reads `(never run)`, and shows a bare
-`waiting` in the list. [66 stop](66-stop.html) clears that memory, as does a reboot.
+`waiting` in the list; before its first run it has no date either. [66 stop](66-stop.html)
+clears that memory, as does a reboot.
 
 ### Firing immediately on arm
 
@@ -808,10 +808,9 @@ do not need to re-`start` your rules by hand after the daemon bounces.
   `66`. They are opposite directions.
 * **`reload` does not wake a `signal` reactor.** See [`reload` is not a
   signal](#reload-is-not-a-signal) above — the single most common source of confusion.
-* **`Do = start` on an already-active (`up` or `done`) service is a no-op.** But an armed
-  `oneshot`/`module` reactor re-arms to `waiting` between events, so this does *not* stop it
-  firing again — it runs its `Execute` once per event, and `66 status` still reports when it
-  last ran. See [state gating](#when-a-reactor-actually-fires-state-gating).
+* **`Do = start` on an already `up` service is a no-op.** A `oneshot` reactor runs its
+  `Execute` once per event: its `done` records the previous run, it does not hold back the
+  next one, and `66 status` still reports when it last ran. See [state gating](#when-a-reactor-actually-fires-state-gating).
 * **Quartz `?`.** A `schedule` expression must carry `?` on day-of-month or day-of-week; it
   has no `@reboot`.
 * **`Emit` chains can loop.** `Emit = a` triggering a rule whose `Emit = b` triggering a rule

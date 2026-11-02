@@ -13,6 +13,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <oblibs/log.h>
 
@@ -25,13 +26,18 @@ uint8_t svc_status_effective(struct resolve_hash_s const *h, service_status_t co
 {
     log_flow() ;
 
-    /* a oneshot/module reactor records its waiting state itself; a classic one
-     * cannot -- 66-supervise keeps its status binary up/down -- so the event
-     * meaning of a down armed reactor is derived here instead. An event addon
-     * not read is no reactor known: the state is shown as it is. */
-    if (st->state == STATUS_STATE_DOWN && h->res.type == E_PARSER_TYPE_CLASSIC
-        && svc_reactor_armed_idle(h) > 0)
-            return STATUS_STATE_WAITING ;
+    /* a module reactor records its waiting state itself; 66-supervise and
+     * 66-oneshotd record only what the process or the script did, so the event
+     * meaning of an armed reactor at rest is derived here: down for a classic,
+     * done or down for a oneshot. An event addon not read is no reactor known:
+     * the state is shown as it is. */
+    uint8_t type = h->res.type ;
+    bool rest = (type == E_PARSER_TYPE_CLASSIC &&
+                st->state == STATUS_STATE_DOWN) ||
+                (type == E_PARSER_TYPE_ONESHOT && (st->state == STATUS_STATE_DONE || st->state == STATUS_STATE_DOWN)) ;
+
+    if (rest && svc_reactor_armed_idle(h) > 0)
+        return STATUS_STATE_WAITING ;
 
     return st->state ;
 }

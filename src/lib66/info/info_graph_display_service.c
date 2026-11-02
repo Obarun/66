@@ -77,7 +77,7 @@ int info_graph_display_service(char const *name)
          * as down. An armed reactor that already fired carries the run it did, which
          * its waiting state alone would hide. */
         case STATUS_STATE_WAITING :
-            ppid = st.state == STATUS_STATE_WAITING && st.readystamp.tv_sec ?
+            ppid = h.res.type != E_PARSER_TYPE_CLASSIC && st.readystamp.tv_sec ?
                    "waiting(done)" : status_state_to_string(STATUS_STATE_WAITING) ;
             pid_color = 2 ; break ;
 

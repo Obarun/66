@@ -174,6 +174,15 @@ static void info_get_status(resolve_service_t *res)
     int warn_color = 0 ;
     service_status_t st = STATUS_ZERO ;
     int r = status_record_load(&st, res) ;
+    char const *disen = !NOFIELD ? "" : res->enabled ? "enabled, " : "disabled, " ;
+
+    if (!r && svc_status_effective(SH, &st) == STATUS_STATE_WAITING) {
+
+        if (!ostream_fmt(ostream_1, "%s%s%s%s (never run)\n", disen, log_color->valid, status_state_to_string(STATUS_STATE_WAITING), log_color->off))
+            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
+
+        return ;
+    }
 
     if (r <= 0) {
 
@@ -184,8 +193,6 @@ static void info_get_status(resolve_service_t *res)
             log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
         return ;
     }
-
-    char const *disen = !NOFIELD ? "" : res->enabled ? "enabled, " : "disabled, " ;
 
     uint8_t estate = svc_status_effective(SH, &st) ;
 
@@ -227,10 +234,10 @@ static void info_get_status(resolve_service_t *res)
     char whoby[16] = "" ;
     auto_strings(whoby, " by ", status_who_to_string(st.who)) ;
 
-    /* a reactor goes back to waiting after each firing: its state alone never says
-     * whether its Execute already ran, only the date of its last run does. */
+    /* a oneshot or module reactor shown waiting after a firing: its state alone
+     * never says whether its Execute already ran, only the date of its last run does. */
     char lastrun[INFO_DURATION_LEN + 18] = "" ;
-    if (st.state == STATUS_STATE_WAITING) {
+    if (estate == STATUS_STATE_WAITING && res->type != E_PARSER_TYPE_CLASSIC) {
 
         if (!st.readystamp.tv_sec) {
 
