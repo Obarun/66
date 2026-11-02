@@ -110,5 +110,17 @@ void migrate_0920(void)
     if (!access(shutd, F_OK) && !svc_control_send(shutd, "k", 1, STATUS_WHO_SHUTDOWN))
         log_warnu("relaunch: ", shutd, MIGRATE_SCANDIR_HINT) ;
 
+    char const *const daemon[] = { SS_ONESHOTD, SS_EVENTD, 0 } ;
+
+    for (unsigned int i = 0 ; daemon[i] ; i++) {
+
+        char d[info.scandir.len + 1 + strlen(daemon[i]) + 1] ;
+
+        auto_strings(d, info.scandir.s, "/", daemon[i]) ;
+
+        if (!access(d, F_OK) && svc_daemon_send(d, "r", STATUS_WHO_USER, EVENT_RESTART_READY, SS_READY_TIMEOUT) <= 0)
+            log_warnu("restart: ", d, " -- restart it with 66 internal restart ", daemon[i]) ;
+    }
+
     ssexec_free(&info) ;
 }
