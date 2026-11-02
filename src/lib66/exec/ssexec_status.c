@@ -171,7 +171,6 @@ static int status_record_load(service_status_t *st, resolve_service_t *res)
 
 static void info_get_status(resolve_service_t *res)
 {
-    int warn_color = 0 ;
     service_status_t st = STATUS_ZERO ;
     int r = status_record_load(&st, res) ;
     char const *disen = !NOFIELD ? "" : res->enabled ? "enabled, " : "disabled, " ;
@@ -196,43 +195,8 @@ static void info_get_status(resolve_service_t *res)
 
     uint8_t estate = svc_status_effective(SH, &st) ;
 
-    char const *word = status_state_to_string(estate) ;
-    switch (estate) {
-        case STATUS_STATE_UP :
-        case STATUS_STATE_STARTING :
-        case STATUS_STATE_DONE :
-        case STATUS_STATE_WAITING :    warn_color = 2 ; break ;
-        default :                      warn_color = 1 ; break ;
-    }
-
     struct timespec now ;
     clock_now(&now) ;
-    uint64_t elapsed = now.tv_sec > st.stamp.tv_sec ? (uint64_t)(now.tv_sec - st.stamp.tv_sec) : 0 ;
-    char secs[INFO_DURATION_LEN + 1] ;
-
-    if (NOFIELD)
-        info_fmt_duration(secs, elapsed) ;
-    else
-        secs[u64_fmt(secs, elapsed)] = 0 ;
-
-    // what last happened to the process; nothing to report on a clean success
-    char code[U64_FMT] ;
-    code[u64_fmt(code, st.code)] = 0 ;
-    char detail[U64_FMT + 16] = "" ;
-    switch (st.result) {
-        case STATUS_RESULT_SUCCESS :
-            break ;
-        case STATUS_RESULT_EXITED :
-        case STATUS_RESULT_SIGNALED :
-            auto_strings(detail, " (", status_result_to_string(st.result), " ", code, ")") ;
-            break ;
-        default :
-            auto_strings(detail, " (", status_result_to_string(st.result), ")") ;
-            break ;
-    }
-
-    char whoby[16] = "" ;
-    auto_strings(whoby, " by ", status_who_to_string(st.who)) ;
 
     /* a oneshot or module reactor shown waiting after a firing: its state alone
      * never says whether its Execute already ran, only the date of its last run does. */
@@ -257,23 +221,10 @@ static void info_get_status(resolve_service_t *res)
         }
     }
 
-    char const *color = warn_color > 1 ? log_color->valid : log_color->error ;
+    if (!ostream_puts(ostream_1, disen))
+        log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
 
-    if (st.pid > 0) {
-
-        char pid[PID_FMT] ;
-        pid[pid_format(pid, st.pid)] = 0 ;
-
-        if (!ostream_fmt(ostream_1, "%s%s%s%s (pid %s)%s since %s%s%s\n",
-                         disen, color, word, log_color->off, pid, detail, secs, whoby, lastrun))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-
-    } else {
-
-        if (!ostream_fmt(ostream_1, "%s%s%s%s%s since %s%s%s\n",
-                         disen, color, word, log_color->off, detail, secs, whoby, lastrun))
-            log_dieusys(LOG_EXIT_SYS,"write to stdout") ;
-    }
+    info_status_line(&st, estate, !NOFIELD, lastrun) ;
 }
 
 static void info_display_status(char const *field,resolve_service_t *res)

@@ -150,6 +150,7 @@ extern void info_resolve_display(void const *base, char const *blob, info_field_
  * @param[in] noname   If non-zero, print only the values, not the field names.
  */
 extern void info_status_display(service_status_t const *st, char const *select, uint8_t noname) ;
+extern void info_status_line(service_status_t const *st, uint8_t state, uint8_t raw, char const *suffix) ;
 
 extern depth_t info_graph_init(void) ;
 
