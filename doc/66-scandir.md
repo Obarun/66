@@ -414,6 +414,21 @@ At its first scan, `66-scandir` starts the supervisors of its internal services 
 
 The [internal](66-internal.html) command starts, stops and restarts `fdholderd`, `oneshotd` and `eventd`. A stop lasts until the *scandir* is started again.
 
+## A scandir that dies
+
+A *scandir* that does not run as PID 1, the *scandir* of a user session, of a container or a nested one, can die without stopping its services: killed with `SIGKILL`, crashed, or chosen by the out-of-memory killer. Its supervisors, its services and their loggers may then go on running without it. 66 neither adopts nor cleans up these processes: when the *scandir* is started again on the same directory,
+
+- a supervisor left running makes the new supervisor of the same service fail every second with `another instance of 66-supervise is already running`;
+- a service left running without its supervisor is started a second time, and its new logger fails every second with `unable to lock .../log/<service>/lock: Device or resource busy`, the old logger still holding the lock.
+
+Before starting such a *scandir* again, kill everything left from the previous one. For the *scandir* of a user, once the user has no session open:
+
+```
+pkill -9 -u <user>
+```
+
+This is a known limitation. It will be solved when 66 places the processes of a *scandir* in a cgroup, which brings them all down with it; cgroup support is on the roadmap.
+
 ## Boot specification
 
 The **-b**, **-B** and **-c** option are called by [66 boot](66-boot.html). **-b** and **-B** will create `.66-scandir` control files (see the [Interface](#interface) section) specifically for stage1 (PID1 process). This special *scandir* is controlled by [66 halt](66-halt.html), [66 poweroff](66-poweroff.html) and [66 reboot](66-reboot.html) command. The [66-shutdownd](66-shutdownd.html) daemon which controls the shutdown request will be created automatically at the correct location.
