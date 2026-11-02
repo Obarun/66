@@ -147,6 +147,8 @@ extern int svc_launch(svc_ctx_t *asvc, selection_service_t const *lot, svc_reque
 extern int svc_unsupervise_one(resolve_service_t *res, fdholder_client_t *a, bool *started, uint8_t who) ;
 
 extern int svc_scandir_ok (char const *dir) ;
+extern int svc_supervise_ok(char const *dir) ;
+extern int svc_supervise_wait(char const *dir, int timeout_ms) ;
 extern int svc_scandir_send(char const *scandir,char const *signal) ;
 extern int svc_control_send(char const *scandir, char const *ops, size_t nops, uint8_t who) ;
 extern int svcd_notify(char const *eventddir, char verb, uint8_t who, char const *name) ;

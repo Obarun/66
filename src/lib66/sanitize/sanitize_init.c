@@ -186,11 +186,8 @@ static int prepare(struct resolve_hash_s *h, uint32_t index, bool earlier_stage,
 
 static int synchronize(selection_service_t const *lot, service_graph_resolve_t *store, bitset32_t const *subscribe)
 {
-    uint32_t n = service_graph_nvertex(lot->g), neventdirs = 0 ;
-    char const *eventdirs[n + 1] ;
-    resolve_service_t *one = 0 ;
+    uint32_t n = service_graph_nvertex(lot->g) ;
     ss_state_t sta = STATE_ZERO ;
-    event_wait_t fifo ;
 
     for (uint32_t index = 0 ; index < n ; index++) {
 
@@ -205,44 +202,14 @@ static int synchronize(selection_service_t const *lot, service_graph_resolve_t *
         if (h->res.type != E_PARSER_TYPE_CLASSIC || h->res.earlier)
             continue ;
 
-        one = &h->res ;
-        eventdirs[neventdirs++] = h->res.sa.s + h->res.live.eventdir ;
-        log_trace("subscribe to fifo: ", eventdirs[neventdirs - 1]) ;
-    }
+        state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
 
-    if (!neventdirs)
+        if (!sanitize_scandir(&h->res, &sta)) {
+            log_warnusys("sanitize scandir directory: ", h->res.sa.s + h->res.live.scandir) ;
+            return -1 ;
+        }
+
         return 1 ;
-
-    if (!event_wait_init(&fifo, eventdirs, neventdirs, EVENT_SUPERVISE_UP)) {
-        log_warnusys("subscribe to event fifos") ;
-        return -1 ;
-    }
-
-    state_set_flag(&sta, STATE_FLAGS_TORELOAD, STATE_FLAGS_TRUE) ;
-
-    if (!sanitize_scandir(one, &sta)) {
-        event_wait_free(&fifo) ;
-        log_warnusys("sanitize scandir directory: ", one->sa.s + one->live.scandir) ;
-        return -1 ;
-    }
-
-    log_trace("waiting for events on fifo...") ;
-
-    /** TODO
-     * waiting for 3 seconds here,
-     * it should be the -T option if exist.
-    */
-    int w = event_wait_run(&fifo, 3000) ;
-    event_wait_free(&fifo) ;
-
-    if (w < 0) {
-        log_warnusys("wait for events") ;
-        return -1 ;
-    }
-
-    if (!w) {
-        log_warn("timed out waiting for services to be supervised") ;
-        return (errno = ETIMEDOUT, -1) ;
     }
 
     return 1 ;

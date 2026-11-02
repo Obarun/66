@@ -14,15 +14,41 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <oblibs/log.h>
 #include <oblibs/bits.h>
 
 #include <66/config.h>
+#include <66/constants.h>
+#include <66/enum_parser.h>
 #include <66/svc.h>
 #include <66/graph.h>
 #include <66/selection.h>
 #include <66/service.h>
+
+static int supervise_wait(resolve_service_t const *res, int timeout)
+{
+    char const *name = res->sa.s + res->name ;
+
+    if (res->type != E_PARSER_TYPE_CLASSIC)
+        return 1 ;
+
+    int r = svc_issupervised(res) ;
+    if (r <= 0)
+        return r ;
+
+    r = svc_supervise_wait(res->sa.s + res->live.scandir, timeout) ;
+    if (r < 0)
+        log_warnusys_return(LOG_EXIT_LESSONE, "wait for the supervisor of: ", name) ;
+
+    if (!r) {
+        log_warn("supervisor of: ", name, " is not listening") ;
+        return (errno = ETIMEDOUT, -1) ;
+    }
+
+    return 1 ;
+}
 
 int svc_send(selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req, bitset32_t *reached)
 {
@@ -39,6 +65,17 @@ int svc_send(selection_service_t const *lot, service_graph_resolve_t *store, svc
 
     if (!lot->member.count)
         return 1 ;
+
+    uint32_t index ;
+    int timeout = !req->timeout ? SS_READY_TIMEOUT : req->timeout > INT_MAX ? INT_MAX : (int)req->timeout ;
+
+    FOREACH_SELECTION_MEMBER(lot, index) {
+
+        struct resolve_hash_s *h ;
+
+        if (service_graph_resolve_get(store, index, 0, &h) <= 0 || supervise_wait(&h->res, timeout) < 0)
+            return -1 ;
+    }
 
     svc_ctx_t asvc[lot->member.count] ;
 

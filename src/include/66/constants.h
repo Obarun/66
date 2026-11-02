@@ -111,6 +111,7 @@
 
 #define SS_EVENTD "eventd"
 #define SS_EVENTD_LEN (sizeof SS_EVENTD - 1)
+#define SS_READY_TIMEOUT 3000
 
 #define SS_VAR_UNEXPORT '!'
 
