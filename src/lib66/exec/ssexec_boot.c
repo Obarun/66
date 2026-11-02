@@ -341,15 +341,13 @@ static inline void run_stage2 (strbuf *env, const char *tty, ssexec_t *info)
         }
     }
 
-    if (!catch_log) {
+    close_fd(notifpipe[1]) ;
+    wait_for_notif(notifpipe[0]) ;
 
-        close_fd(notifpipe[1]) ;
-        wait_for_notif(notifpipe[0]) ;
-
-    } else {
+    if (catch_log) {
 
         close_fd(1) ;
-        if (io_open(fifo, O_WRONLY) != 1)  // blocks until catch-all logger is up
+        if (io_open(fifo, O_WRONLY) != 1)
             sulogin("open for writing fifo: ",fifo) ;
         if (copy_fd(2, 1) == -1)
             sulogin("copy stderr to stdout","") ;
@@ -727,11 +725,10 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         newargv[m++] = "66" ;
         newargv[m++] = "scandir" ;
         newargv[m++] = "start" ;
-        if (!catch_log)
-            newargv[m++] = fmtfd ; // contents filled in the parent branch below, once the pipe exists
+        newargv[m++] = fmtfd ; // contents filled in the parent branch below, once the pipe exists
         newargv[m++] = 0 ;
 
-        if (!catch_log && pipe(notifpipe) < 0)
+        if (pipe(notifpipe) < 0)
             sulogin("pipe","") ;
 
         if (tty && !slashdev && ioctl(ttyfd, TIOCNOTTY) == -1)
@@ -748,21 +745,15 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         reset_stdin() ;
         setsid() ;
 
-        if (!catch_log) {
+        close_fd(notifpipe[0]) ;
+        /* format the readiness fd now that the pipe exists; notifpipe[1] is
+         * >= 3 here (fds 0,1,2 are taken) as 66 scandir start requires it */
+        fmtfd[1] = 'd' ;
+        fmtfd[2 + u32_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
+        cad() ;
 
-            close_fd(notifpipe[0]) ;
-            /* format the readiness fd now that the pipe exists; notifpipe[1] is
-             * >= 3 here (fds 0,1,2 are taken) as 66 scandir start requires it */
-            fmtfd[1] = 'd' ;
-            fmtfd[2 + u32_fmt(fmtfd + 2, notifpipe[1])] = 0 ;
-            cad() ;
-
-        } else {
-
-            cad() ;
-            if (copy_fd(2, 1) == -1)
-                sulogin("copy stderr to stdout", "") ;
-        }
+        if (catch_log && copy_fd(2, 1) == -1)
+            sulogin("copy stderr to stdout", "") ;
 
         // it merge char const *const *environ with env.s where env.s take precedence
         exec_path_merge_die(newargv[0], newargv, (char const *const *)environ, env.s, env.len) ;

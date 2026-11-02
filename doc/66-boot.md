@@ -63,7 +63,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It forks a child, also called *stage2*.
 
-    * The child is blocked until the `catch-all` logger runs.
+    * The child is blocked until [66-scandir](66-scandir.html) notifies its readiness, that is until its [internal services](66-scandir.html#internal-services), the `catch-all` logger among them, are up and ready.
 
     * The child starts the services of every tree of the `boot` group (or of *TREE* when pinned).
 
@@ -73,7 +73,7 @@ When booting a system, command *boot* performs the following operations:
 
 - It execs into [66 scandir start](66-scandir.html) with `%%livedir%%/scandir/0` as its scandir.
 
-    * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which spawns the early services of the `boot` group (or of *TREE* when pinned), where one of those services is `scandir-log`, which is the `catch-all` logger. Once this service is up `boot's` command child *stage2* unblocks.
+    * [scandir start](66-scandir.html) transitions into [66-scandir](66-scandir.html) which starts its [internal services](66-scandir.html#internal-services) first, `scandir-log`, the `catch-all` logger, among them, then the early services of the `boot` group (or of *TREE* when pinned), and notifies its readiness. `boot's` command child *stage2* then unblocks.
 
     * The child then brings up the services of every enabled tree. An invalid service of a tree, its resolve file unreadable, part of a dependency cycle or without frontend, is left out with a warning naming it, together with every service that depends on it; the others start, and the tree counts as failed. When a tree of the `boot` group fails, the enabled trees are not started.
 
