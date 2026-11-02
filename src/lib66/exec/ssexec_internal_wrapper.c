@@ -21,11 +21,23 @@
 #include <66/ssexec.h>
 #include <66/constants.h>
 #include <66/utils.h>
+#include <66/svc.h>
 
 extern void internal_signal_set_name(char const *name) ;
 
+static void internal_scandir_ok(ssexec_t *info)
+{
+    int r = svc_scandir_ok(info->scandir.s) ;
+    if (r < 0)
+        log_dieusys(LOG_EXIT_SYS, "check scandir: ", info->scandir.s) ;
+
+    if (!r)
+        log_die(LOG_EXIT_USER, "scandir: ", info->scandir.s, " is not running") ;
+}
+
 static int do_internal_signal(char const *name, int argc, char const *const *argv, void *data)
 {
+    internal_scandir_ok(data) ;
     internal_signal_set_name(name) ;
     return ssexec_internal_signal(argc, argv, data) ;
 }
@@ -43,6 +55,12 @@ static int do_internal_stop(int argc, char const *const *argv, void *data)
 static int do_internal_restart(int argc, char const *const *argv, void *data)
 {
     return do_internal_signal("restart", argc, argv, data) ;
+}
+
+static int do_internal_status(int argc, char const *const *argv, void *data)
+{
+    internal_scandir_ok(data) ;
+    return ssexec_internal_status(argc, argv, data) ;
 }
 
 static int on_internal_wrapper(int id, char const *arg, void *data)
@@ -87,6 +105,7 @@ static opt_cmd_t const internal_sub[] = {
     { .name = "start",   .help = "start an internal service of the scandir",   .operands = "fdholderd|oneshotd|eventd", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_internal_start },
     { .name = "stop",    .help = "stop an internal service of the scandir",    .operands = "fdholderd|oneshotd|eventd", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_internal_stop },
     { .name = "restart", .help = "restart an internal service of the scandir", .operands = "fdholderd|oneshotd|eventd", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_internal_restart },
+    { .name = "status",  .help = "display the state of the internal services of the scandir", .operands = "[fdholderd|oneshotd|eventd]", .opts = opts_help, .nopts = OPT_COUNT(opts_help), .fn = &do_internal_status },
 } ;
 
 opt_cmd_t const cmd_internal = {

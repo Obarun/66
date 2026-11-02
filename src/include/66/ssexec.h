@@ -132,6 +132,7 @@ extern opt_cmd_fn ssexec_fdholder_store ;
 extern opt_cmd_fn ssexec_fdholder_retrieve ;
 extern opt_cmd_fn ssexec_fdholder_list ;
 extern opt_cmd_fn ssexec_internal_signal ;
+extern opt_cmd_fn ssexec_internal_status ;
 extern opt_cmd_fn ssexec_env_import ;
 extern opt_cmd_fn ssexec_env_set ;
 extern opt_cmd_fn ssexec_env_unset ;

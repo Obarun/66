@@ -721,6 +721,7 @@
         'start:start an internal service of the scandir'
         'stop:stop an internal service of the scandir'
         'restart:restart an internal service of the scandir'
+        'status:display the state of the internal services of the scandir'
     )
 
     _arguments -C \
