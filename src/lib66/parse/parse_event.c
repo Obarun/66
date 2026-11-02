@@ -110,8 +110,12 @@ static int on_service_predicate_ok(char const *cond)
 {
     size_t llen = str_search(cond, ':') ;
 
-    if (!cond[llen])
-        return status_state_from_string(cond) >= 0 || status_result_from_string(cond) >= 0 ;
+    if (!cond[llen]) {
+
+        // waiting is a state shown by 66 status, no event ever carries it
+        int state = status_state_from_string(cond) ;
+        return (state >= 0 && state != STATUS_STATE_WAITING) || status_result_from_string(cond) >= 0 ;
+    }
 
     char const *arg = cond + llen + 1 ;
     char word[llen + 1] ;

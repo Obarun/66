@@ -489,6 +489,15 @@ int main(void)
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = service\nFrom = ( db )\nOn = ( bogus )\nDo = restart\n") ;
 
+    // waiting is shown by 66 status, no event carries it
+    rejected("waiting is no event",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( waiting )\nDo = restart\n") ;
+
+    rejected("per-source waiting is no event",
+        "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
+        "[Event]\nEventType = service\nFrom = ( db )\nOn = ( db:waiting )\nDo = restart\n") ;
+
     rejected("svc not in From",
         "[Main]\nType = classic\n[Start]\nExecute = ( /bin/true )\n"
         "[Event]\nEventType = service\nFrom = ( db )\nOn = ( other:up )\nDo = restart\n") ;
