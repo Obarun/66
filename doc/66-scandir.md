@@ -121,7 +121,7 @@ The *scandir* is created if it wasn't made previously, but you don't a fine-grai
 
 - **-h, --help**: prints this help.
 
-- **-d, --notify** *notif*: notify readiness on file descriptor notif. When *scandir* is ready to accept signal, it will write a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent. If **-b** is set, this option has no effect.
+- **-d, --notify** *notif*: notify readiness on file descriptor notif. Once the [internal services](#internal-services) of the *scandir* are up and ready, or after 3 seconds, it writes a newline to *notif*. *notif* **cannot be** lesser than `3`. By default, no notification is sent.
 
 - **-s, --rescan** *rescan*: perform a scan every *rescan* milliseconds. If *rescan* is set to 0 (the default), automatic scans are never performed after the first one and `66-scandir` will only detect new services by issuing either [scandir reconfigure](#reconfigure) or [scandir check](#check). It is **strongly** discouraged to set *rescan* to a positive value under `500`.
 
@@ -149,7 +149,7 @@ This command stops a running *scandir*.
 scandir stop [ -h ]
 ```
 
-This command stops the *scandir* sending a `SIGTERM` to all the 66-supervise processes supervising a service and a `SIGHUP` to all the 66-supervise processes supervising a logger, then exec into its finish procedure. This means that services will be brought down but loggers will exit naturally on `EOF`, and `66-scandir` will wait for them to exit before exec'ing into `.66-scandir/finish` or exiting itself: it's a clean shutdown with no loss of logs.
+This command stops the *scandir* sending a `SIGTERM` to all the 66-supervise processes, except the one of the `scandir-log` catch-all logger of a boot *scandir*, which receives a `SIGHUP` and exits naturally on `EOF`. `66-scandir` waits for them to exit before exec'ing into `.66-scandir/finish` or exiting itself.
 
 #### Options
 
@@ -326,7 +326,7 @@ Kill all the 66-supervise processes.
 ```
 scandir nuke [ -h ]
 ```
-`66-scandir` kill all the 66-supervise processes it has launched but that did not match a service directory last time *scandir* was scanned, i.e. it prunes the supervision tree so that it matches exactly what was in *scandir* at the time of the last scan. A `SIGTERM` is sent to the 66-supervise processes supervising services and a `SIGHUP` is sent to the 66-supervise processes supervising loggers.
+`66-scandir` kill all the 66-supervise processes it has launched but that did not match a service directory last time *scandir* was scanned, i.e. it prunes the supervision tree so that it matches exactly what was in *scandir* at the time of the last scan. A `SIGTERM` is sent to these 66-supervise processes, a `SIGHUP` to the one of the `scandir-log` catch-all logger.
 
 #### Options
 
@@ -356,7 +356,7 @@ Annihilates a running *scandir*.
 scandir annihilate [ -h ]
 ```
 
-Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the relevant 66-supervise processes, even if they are supervising loggers. This is not recommended in a situation where you do not need to tear down the supervision tree.
+Does the same thing as [nuke](#nuke), except that `SIGTERM` is sent to all the relevant 66-supervise processes, the one of the `scandir-log` catch-all logger included. This is not recommended in a situation where you do not need to tear down the supervision tree.
 
 #### Options
 
@@ -405,6 +405,14 @@ Removes zombies from a *scandir* for the owner `owner`
 ```
 66 scandir -o owner zombies
 ```
+
+## Internal services
+
+Every *scandir* holds the internal services `fdholderd`, `oneshotd` and `eventd`, made by the [create](#create) subcommand. A boot *scandir* also holds the `scandir-log` catch-all logger, unless it was created with **-c**.
+
+At its first scan, `66-scandir` starts the supervisors of its internal services alone. The other services and the readiness notification of [start -d](#start) wait until each internal service is up and ready, or for 3 seconds at most. An internal service that is not ready by then is reported with a warning and the *scandir* goes on.
+
+The [internal](66-internal.html) command starts, stops and restarts `fdholderd`, `oneshotd` and `eventd`. A stop lasts until the *scandir* is started again.
 
 ## Boot specification
 

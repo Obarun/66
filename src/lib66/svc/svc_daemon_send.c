@@ -24,15 +24,11 @@
 
 static int is_down(event_t wanted)
 {
-    return wanted == EVENT_DOWN || wanted == EVENT_DOWN_READY || wanted == EVENT_SUPERVISE_DOWN ;
+    return wanted == EVENT_DOWN || wanted == EVENT_DOWN_READY ;
 }
 
 static int in_state(event_t wanted, int have, unsigned char up, unsigned char ready)
 {
-    if (wanted == EVENT_SUPERVISE_DOWN)
-        return !have ; // no status: supervisor (and service) already gone
-    if (wanted == EVENT_SUPERVISE_UP)
-        return have ; // status present: supervisor is up
     if (!have)
         return 0 ; // no status: cannot confirm a service state -> must act
 

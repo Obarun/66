@@ -14,8 +14,8 @@
  * Native oblibs service scanner. It scans a directory of supervised services,
  * spawns one supervisor per service, reaps dead children and re-scans on demand.
  * The scanner logic -- the service pool, the two inverse indexes, the `what`
- * trigger flags, scan/start/reap/killthem/remove_service, the logger-by-pipe
- * coupling(peer/p) and the temporize/panic model -- is built on:
+ * trigger flags, scan/start/reap/killthem/remove_service and the
+ * temporize/panic model -- is built on:
  *
  *   inverse indexes by_pid/by_devino -> oblibs fhash_cb(typed callbacks)
  *   the services pool                -> svpool(free-list, 66-scandir/lib)
@@ -29,6 +29,11 @@
  *
  * The control fifo keeps a single-byte command alphabet (.66-scandir/control),
  * the .66-scandir/{finish,crash,SIG*} scripts and the `max` service bound are kept.
+ *
+ * Internal services: fdholderd, oneshotd, eventd and, on a boot scandir, the
+ * catch-all logger. The first scan spawns their supervisors alone; the other
+ * services and the readiness notification wait until each of them is up and
+ * ready, or until SS_READY_TIMEOUT. The scandir starts whatever happens.
  *
  * Signals: sse_start_signal delivers one callback per distinct pending signal
  * (level-triggered, no coalescing), so a single signal watcher correctly drives
@@ -65,6 +70,9 @@
 #include <oblibs/string.h>
 
 #include <66/config.h> // SS_MAX_SERVICE, SS_MAX_SERVICE_NAME (compile-time)
+#include <66/constants.h>
+#include <66/event.h>
+#include <66/svc.h>
 #include "lib/scandir.h" // svpool + devino + (via bits.h) bitset32_t
 
 /* active/tmpactive and the pool occupancy are oblibs bitset32_t (inline value type,
@@ -92,8 +100,6 @@ struct service_s
     devino_t devino ;
     pid_t pid ;
     struct timespec start ;
-    int p ;
-    uint32_t peer ;
 } ;
 
 struct flags_s
@@ -120,7 +126,7 @@ static bitset32_t active = BITSET32_ZERO ;
 static bitset32_t tmpactive = BITSET32_ZERO ;
 
 #define SERVICE(i) (services + (i))
-#define NAME(i) (names + (size_t)(i) * ((size_t)namemax + 5))
+#define NAME(i) (names + (size_t)(i) * ((size_t)namemax + 1))
 
 // deadlines live on CLOCK_MONOTONIC
 typedef struct deadline_s { struct timespec t ; int inf ; } deadline_t ;
@@ -134,6 +140,32 @@ static unsigned int g_what = 0 ;
 static int controlfd = -1 ;
 static sse_watcher_t wsig ;
 static sse_watcher_t wctl ;
+
+typedef struct internal_s internal_t ;
+struct internal_s
+{
+    char const *name ;
+    uint8_t catch_all ; // only exists on a boot scandir
+    uint8_t subscribed ;
+    uint8_t ready ;
+    event_fifo_t fifo ;
+    event_state_t state ;
+    event_aggregator_t ag ;
+} ;
+
+static internal_t internals[] =
+{
+    { .name = SS_FDHOLDER },
+    { .name = SS_ONESHOTD },
+    { .name = SS_EVENTD },
+    { .name = SPECIAL_LOGGER_SERVICE, .catch_all = 1 }
+} ;
+
+#define NINTERNAL (sizeof(internals) / sizeof(internals[0]))
+
+static uint8_t winternal = 1 ; // the other services and the notification wait for the internal ones
+static deadline_t whold_deadline ;
+static unsigned int notif = 0 ;
 
 // fhash_cb typed callbacks (aux = the services pool base)
 static uint32_t bypid_hash(void const *key, void *aux)
@@ -235,6 +267,12 @@ static int compute_timeout(void)
         if (best < 0 || ms < best) best = ms ;
     }
 
+    if (winternal) {
+        int64_t ms = (int64_t)(whold_deadline.t.tv_sec - now.tv_sec) * 1000 + ((int64_t)whold_deadline.t.tv_nsec - (int64_t)now.tv_nsec) / 1000000 ;
+        if (ms < 0) ms = 0 ;
+        if (best < 0 || ms < best) best = ms ;
+    }
+
     if (best < 0)
         return SSE_TIMEOUT_INFINITE ;
 
@@ -269,18 +307,8 @@ static void panic(char const *errmsg)
     panicnosp(errmsg) ;
 }
 
-static int close_pipes_iter(uint32_t i, void *aux)
-{
-    service *sv = SERVICE(i) ;
-    (void)aux ;
-    if (sv->p >= 0)
-        close(sv->p) ;
-    return 1 ;
-}
-
 static inline void close_pipes(void)
 {
-    svpool_iter(&pool, &close_pipes_iter, 0) ;
     if (special < max) {
 
         close_fd(1) ;
@@ -312,15 +340,10 @@ static inline void waitthem(void)
  * what:
  *  1 -> kill all services
  *  2 -> kill inactive services
- *  4 -> send a SIGTERM to loggers instead of SIGHUP
+ *  4 -> send a SIGTERM to the catch-all logger instead of SIGHUP
  *  8 -> reap
  * 16 -> delay killing until the next scan
  **/
-
-static inline int is_logger(uint32_t i)
-{
-    return NAME(i)[str_search(NAME(i), '/')] != 0 ;
-}
 
 static char const *scandir_signame(int sig)
 {
@@ -463,7 +486,7 @@ static int killthem_iter(uint32_t i, void *aux)
     service *sv = SERVICE(i) ;
     unsigned int *what = aux ;
     if ((*what & 1 || !bitset32_isvalid(&active, i)) && sv->pid)
-        kill(sv->pid, *what & (2 << (i == special || is_logger(i))) ? SIGTERM : SIGHUP) ;
+        kill(sv->pid, *what & (2 << (i == special)) ? SIGTERM : SIGHUP) ;
     return 1 ;
 }
 
@@ -478,34 +501,8 @@ static inline void killthem(unsigned int *what)
 }
 
 
-/**
- * sv->p values:
- *  0+ : this end of the pipe
- *  -1 : not a logged service
- *  -2 : inactive and peer dead, do not reactivate
- *  -3 : reactivation wanted, trigger rescan on death
- **/
-
 static void remove_service(service *sv)
 {
-    if (sv->peer < max) {
-        service *peer = SERVICE(sv->peer) ;
-        if (peer->p >= 0) {
-            close(peer->p) ;
-            peer->p = -2 ;
-        }
-        peer->peer = max ;
-    }
-
-    if (sv->p == -3) {
-
-        dl_earliest_ts(&scan_deadline, &sv->start) ;
-
-    } else if (sv->p >= 0) {
-
-        close(sv->p) ;
-    }
-
     fhash_cb_delete(&by_devino, &sv->devino) ;
     svpool_delete(&pool, (uint32_t)(sv - services)) ;
 }
@@ -545,19 +542,13 @@ static void reap(unsigned int *what)
     }
 }
 
-static int check(char const *name, uint32_t prod, bitset32_t *act)
+static int check(char const *name, bitset32_t *act)
 {
     struct stat st ;
     devino_t di ;
     uint32_t i ;
     service *sv ;
     if (stat(name, &st) == -1) {
-
-        if (prod < max && errno == ENOENT) {
-            if (SERVICE(prod)->peer < max)
-                log_warn("logger for service ", NAME(prod), " has been moved") ;
-            return (int)max ;
-        }
         log_warnusys("stat ", name) ;
         return -4 ;
     }
@@ -568,21 +559,7 @@ static int check(char const *name, uint32_t prod, bitset32_t *act)
     di.dev = st.st_dev ;
     di.ino = st.st_ino ;
 
-    if (fhash_cb_search(&by_devino, &di, &i)) {
-        sv = SERVICE(i) ;
-        if (sv->peer < max) {
-            if (prod < max && prod != sv->peer) {
-                log_warn("old service ", name, " still exists, waiting") ;
-                return -10 ;
-            }
-
-            if (sv->p == -1) {
-                sv->p = -2 ;
-                return (int)i ;
-            }
-        }
-
-    } else {
+    if (!fhash_cb_search(&by_devino, &di, &i)) {
 
         i = svpool_new(&pool) ;
         if (i >= max) {
@@ -595,27 +572,11 @@ static int check(char const *name, uint32_t prod, bitset32_t *act)
         sv->pid = 0 ;
 
         clock_now_mono(&sv->start) ;
-        dl_now(&start_deadline) ; // XXX: may cause a superfluous start if logger fails, oh well
+        dl_now(&start_deadline) ;
 
-        if (prod >= max) {
+        if (special >= max && !strcmp(name, SPECIAL_LOGGER_SERVICE))
+            special = i ;
 
-            sv->peer = max ;
-            sv->p = -1 ;
-            if (special >= max && !strcmp(name, SPECIAL_LOGGER_SERVICE))
-                special = i ;
-
-        } else {
-            int p[2] ;
-            if (pipe2(p, O_CLOEXEC) == -1) {
-                log_warnusys("create pipe for ", name) ;
-                svpool_delete(&pool, i) ;
-                return -3 ;
-            }
-            sv->peer = prod ;
-            sv->p = p[0] ;
-            SERVICE(prod)->peer = i ;
-            SERVICE(prod)->p = p[1] ;
-        }
         // devino written above (stable field) -> safe to index by it now
         fhash_cb_insert(&by_devino, &sv->devino, i) ;
     }
@@ -671,38 +632,21 @@ static void scan(unsigned int *what)
 
     for (;;) {
         int i ;
-        size_t len ;
         struct dirent *d ;
         errno = 0 ;
         d = readdir(dir) ;
         if (!d) break ;
         if (d->d_name[0] == '.') continue ;
-        len = strlen(d->d_name) ;
-        if (len > namemax) {
+        if (strlen(d->d_name) > namemax) {
             log_warn("name too long - not spawning service: ", d->d_name) ;
             continue ;
         }
 
-        i = check(d->d_name, max, &tmpactive) ;
+        i = check(d->d_name, &tmpactive) ;
         if (i < 0) {
             closedir(dir) ;
             set_scan_timeout((unsigned int)(-i)) ;
             return ;
-        }
-
-        if ((uint32_t)i < max) {
-            char logname[len + 5] ;
-            memcpy(logname, d->d_name, len) ;
-            memcpy(logname + len, "/log", 5) ;
-            if (check(logname, (uint32_t)i, &tmpactive) < 0) {
-                svpool_delete(&pool, (uint32_t)i) ;
-                closedir(dir) ;
-                /* NB: the original implementation passes -i here (the producer index,
-                 * >= 0), not the inner check()'s negative error code -- kept verbatim
-                 * (suspected upstream quirk, not silently "fixed"). */
-                set_scan_timeout((unsigned int)(-i)) ;
-                return ;
-            }
         }
     }
     closedir(dir) ;
@@ -716,23 +660,143 @@ static void scan(unsigned int *what)
     *what &= ~16 ;
 }
 
+static int is_internal(char const *name)
+{
+    size_t pos = 0 ;
+    for ( ; pos < NINTERNAL ; pos++) {
+        if (!strcmp(name, internals[pos].name))
+            return 1 ;
+    }
+
+    return 0 ;
+}
+
+static void internal_frame(event_frame_t const *f, void *data)
+{
+    internal_t *in = data ;
+
+    if (in->ready)
+        return ;
+
+    int r = event_state_update(&in->state, f) ;
+    if (r == EVENT_STATE_OK) {
+        in->ready = 1 ;
+    } else if (r == EVENT_STATE_FAIL) {
+        event_state_init(&in->state, EVENT_UP_READY, 0, 0) ; // its supervisor brings it back up
+    }
+}
+
+static void internal_cb(event_reader_t *r, char const *buf, size_t len, void *data)
+{
+    internal_t *in = data ;
+    (void)r ;
+
+    if (!in->ready)
+        event_aggregate(&in->ag, buf, len, &internal_frame, in) ;
+}
+
+static void internal_watch(sse_epoll_t *ep)
+{
+    size_t pos = 0 ;
+    for (; pos < NINTERNAL ; pos++) {
+
+        internal_t *in = &internals[pos] ;
+        unsigned char up = 0, ready = 0 ;
+        char eventdir[strlen(in->name) + SS_EVENTDIR_LEN + 1] ;
+        struct stat st ;
+
+        if (stat(in->name, &st) < 0) {
+
+            if (errno != ENOENT || !in->catch_all)
+                log_warnusys("find internal service: ", in->name) ;
+
+            in->ready = 1 ;
+            continue ;
+        }
+
+        auto_strings(eventdir, in->name, SS_EVENTDIR) ;
+
+        if (!event_fifo_make(eventdir, getgid()) ||
+            !event_subscribe(&in->fifo, ep, eventdir, &internal_cb, in, 0)) {
+                log_warnusys("watch internal service: ", in->name) ;
+                in->ready = 1 ;
+                continue ;
+        }
+
+        in->subscribed = 1 ;
+
+        if (svc_supervise_ok(in->name) > 0 && svc_status_state(in->name, &up, &ready) > 0 && ready) {
+            in->ready = 1 ;
+        } else {
+            event_state_init(&in->state, EVENT_UP_READY, up, ready) ;
+        }
+    }
+
+    struct timespec now, delay ;
+    clock_now_mono(&now) ;
+    clock_from_ms(&delay, SS_READY_TIMEOUT) ;
+    clock_add(&whold_deadline.t, &now, &delay) ;
+    whold_deadline.inf = 0 ;
+}
+
+static void internal_unwatch(void)
+{
+    size_t pos = 0 ;
+    for (; pos < NINTERNAL ; pos++) {
+
+        if (internals[pos].subscribed) {
+            event_unsubscribe(&internals[pos].fifo) ;
+            internals[pos].subscribed = 0 ;
+        }
+    }
+}
+
+static void internal_release(void)
+{
+    if (!winternal)
+        return ;
+
+    size_t pos = 0 ;
+
+    if (dl_future(&whold_deadline)) {
+
+        for (; pos < NINTERNAL ; pos++)
+            if (!internals[pos].ready)
+                return ;
+    }
+
+    pos = 0 ;
+    for (; pos < NINTERNAL ; pos++) {
+        if (!internals[pos].ready)
+            log_warn("internal service ", internals[pos].name, " is not ready, starting the other services anyway") ;
+    }
+
+    internal_unwatch() ;
+    winternal = 0 ;
+    dl_now(&start_deadline) ;
+
+    if (notif) {
+
+        if (io_write(notif, "\n", 1) < 0)
+            log_warnusys("notify readiness") ;
+
+        close(notif) ;
+    }
+}
+
 static int start_iter(uint32_t i, void *aux)
 {
     service *sv = SERVICE(i) ;
     char const *const cargv[3] = { "66-supervise", NAME(i), 0 } ;
-    spawn_fa_t fa[1] ;
-    size_t j = 0 ;
     (void)aux ;
 
     if (!bitset32_isvalid(&active, i) || sv->pid || ts_future(&sv->start))
         return 1 ;
 
-    if (sv->peer < max) {
-        fa[j] = (spawn_fa_t){ .type = SPAWN_FA_MOVE, .from = sv->p, .to = !is_logger(i) } ;
-        j++ ;
-    }
+    if (winternal && !is_internal(NAME(i)))
+        return 1 ;
 
-    sv->pid = spawn_path_full(SUPERVISE_BIN, cargv, (char const *const *)environ, 0, 0, SPAWN_FLAG_SETSID, fa, j) ;
+    sv->pid = spawn_path_full(SUPERVISE_BIN, cargv, (char const *const *)environ, 0, 0, SPAWN_FLAG_SETSID, 0, 0) ;
     if (!sv->pid) {
         log_warnusys("spawn 66-supervise for ", NAME(i)) ;
         dl_addsec_now(&start_deadline, 10) ;
@@ -763,7 +827,7 @@ static void alloc_storage(void)
 
     services = malloc(sizeof(service) * (size_t)max) ;
     freelist = malloc(sizeof(uint32_t) * (size_t)max) ;
-    names = malloc((size_t)max * ((size_t)namemax + 5)) ;
+    names = malloc((size_t)max * ((size_t)namemax + 1)) ;
     bypid_slots = malloc(sizeof(fhash_cb_slot_t) * (size_t)nslots) ;
     bydevino_slots = malloc(sizeof(fhash_cb_slot_t) * (size_t)nslots) ;
 
@@ -868,7 +932,6 @@ static opt_cmd_t const cmd =
 int main(int argc, char const *const *argv)
 {
     opt_scan_t st = OPT_SCAN_ZERO ;
-    unsigned int notif = 0 ;
     char const *scandir ;
     sse_epoll_t ep = SSE_EPOLL_ZERO ;
 
@@ -957,12 +1020,9 @@ int main(int argc, char const *const *argv)
         log_dieusys(LOG_EXIT_SYS, "watch control fifo") ;
 
     initial_cleanup() ;
-    if (notif) {
-        if (io_write(notif, "\n", 1) < 0) log_warnusys("notify readiness") ;
-        close(notif) ;
-    }
+    internal_watch(&ep) ;
 
-    dl_epoch(&scan_deadline) ;     /* scan immediately at startup */
+    dl_epoch(&scan_deadline) ;
     dl_inf(&start_deadline) ;
 
     /* From now on, we must not die.
@@ -996,12 +1056,14 @@ int main(int argc, char const *const *argv)
 
         } else sse_dispatch(&ep) ;
 
+        internal_release() ;
         killthem(&g_what) ;
         reap(&g_what) ;
     }
 
     // Finish phase
 
+    internal_unwatch() ;
     close_pipes() ;
     if (flags.waitall)
         waitthem() ;

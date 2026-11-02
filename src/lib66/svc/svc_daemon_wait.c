@@ -49,10 +49,11 @@ int svc_daemon_wait(char const *dir, int timeout_ms)
     if (!event_fifo_make(eventdir, getgid()) || !event_wait_init(&w, dirs, 1, EVENT_UP_READY))
         return -1 ;
 
-    if (svc_status_state(dir, &up, &ready) > 0 && ready)
+    if (svc_supervise_ok(dir) > 0 && svc_status_state(dir, &up, &ready) > 0 && ready) {
         r = 1 ;
-    else
+    } else {
         r = event_wait_run(&w, timeout_ms) ;
+    }
 
     int e = errno ;
     event_wait_free(&w) ;

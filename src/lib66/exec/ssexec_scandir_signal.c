@@ -14,8 +14,6 @@
 
 #include <errno.h>
 #include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -69,42 +67,11 @@ static inline unsigned int parse_signal (char const *signal)
     return i ;
 }
 
-static void send_daemon(char const *dir, char const *control, uint8_t who, event_t wanted, bool stop)
-{
-    int r = svc_daemon_send(dir, control, who, wanted, 3000) ;
-    if (r < 0)
-        log_dieu(LOG_EXIT_SYS, "send control ", control, " to daemon: ", dir) ;
-
-    if (!r && !stop)
-        log_dieu(LOG_EXIT_SYS, "daemon did not reach the wanted state: ", dir) ;
-}
-
-static void send_fdholder(char const *scandir, uint8_t down)
-{
-    char fdholder[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
-    char oneshotd[strlen(scandir) + 1 + SS_FDHOLDER_LEN + 1] ;
-
-    auto_strings(fdholder, scandir, "/", SS_FDHOLDER) ;
-    auto_strings(oneshotd, scandir, "/", SS_ONESHOTD) ;
-
-     if (!down) {
-
-        send_daemon(fdholder, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, true) ;
-        send_daemon(oneshotd, "dx", STATUS_WHO_SHUTDOWN, EVENT_SUPERVISE_DOWN, true) ;
-
-    } else {
-
-        send_daemon(fdholder, "U", STATUS_WHO_BOOT, EVENT_UP_READY, false) ;
-        send_daemon(oneshotd, "U", STATUS_WHO_BOOT, EVENT_UP_READY, false) ;
-    }
-}
-
 static int send_signal(char const *scandir, char const *signal)
 {
     log_flow() ;
 
     unsigned int sig = 0 ;
-    uint8_t down = 0 ;
     char csig[3] ;
     sig = parse_signal(signal) ;
 
@@ -126,14 +93,12 @@ static int send_signal(char const *scandir, char const *signal)
 
             csig[0] = 'h' ;
             csig[1] = 0 ;
-            down = 1 ;
             break ;
 
         case 3: // check
 
             csig[0] = 'a' ;
             csig[1] = 0 ;
-            down = 1 ;
             break ;
 
         case 4: // quit
@@ -169,8 +134,6 @@ static int send_signal(char const *scandir, char const *signal)
         default:
             log_die(LOG_EXIT_SYS, "unknown signal: ", signal) ;
     }
-
-    send_fdholder(scandir, down) ;
 
     return svc_scandir_send(scandir,csig) ;
 }
@@ -424,18 +387,6 @@ int ssexec_scandir_signal(int argc, char const *const *argv, void *data)
 
     r = svc_scandir_ok(info->scandir.s) ;
     if (r <= 0) {
-       /** TODO:
-        *
-        * We have a race condition here with nested scandir.
-        * 66-supervise may have already sent a down signal to the
-        * scandir.
-        * When the stop script of nested scandir is executed,
-        * the scandir is already down and crash.
-        *
-        * For now, be sure to also remove the fdholder and oneshotd of
-        * the nested scandir to avoid issue at next start of the scandir.
-        */
-        send_fdholder(info->scandir.s, 0) ;
 
         if (r < 0)
             log_dieusys(LOG_EXIT_SYS, "check: ", info->scandir.s) ;
