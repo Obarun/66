@@ -154,6 +154,7 @@ static struct { opt_cmd_t const *node ; char const *name ; } const cmd_reg[] = {
     { &cmd_scandir,     "scandir" },
     { &cmd_env,         "env" },
     { &cmd_fdholder,    "fdholder" },
+    { &cmd_internal,    "internal" },
     { &cmd_poweroff,    "poweroff" },
     { &cmd_reboot,      "reboot" },
     { &cmd_halt,        "halt" },

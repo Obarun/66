@@ -30,6 +30,7 @@ nav:
   - enable: 66-enable.md
   - env: 66-env.md
   - fdholder: 66-fdholder.md
+  - internal: 66-internal.md
   - free: 66-free.md
   - halt: 66-halt.md
   - hibernate: 66-hibernate.md

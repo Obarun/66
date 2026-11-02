@@ -670,9 +670,6 @@
 
     # fdholder_sub[] in ssexec_fdholder_wrapper.c
     subcommands=(
-        "start:start the scandir's fdholder daemon"
-        "stop:stop the scandir's fdholder daemon"
-        "restart:restart the scandir's fdholder daemon"
         'store:store a file descriptor under a name'
         'retrieve:retrieve a descriptor and exec prog'
         'list:list stored descriptor names'
@@ -690,11 +687,6 @@
             ;;
         (args)
             case $line[1] in
-                (start|stop|restart)
-                    _arguments -s \
-                        '(-h --help)'{-h,--help}'[print this help]' \
-                        '(-T --timeout)'{-T,--timeout}'[timeout to wait for the service state]:milliseconds:'
-                    ;;
                 (store)
                     _arguments -s \
                         '(-h --help)'{-h,--help}'[print this help]' \
@@ -717,6 +709,37 @@
                         '(-T --timeout)'{-T,--timeout}'[timeout for the operation]:milliseconds:'
                     ;;
             esac
+            ;;
+    esac
+}
+
+## internal
+
+(( $+functions[_66_cmd_internal] )) || _66_cmd_internal() {
+    local curcontext="$curcontext" state line
+    local -a subcommands
+
+    # internal_sub[] in ssexec_internal_wrapper.c
+    subcommands=(
+        'start:start an internal service of the scandir'
+        'stop:stop an internal service of the scandir'
+        'restart:restart an internal service of the scandir'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[print this help]' \
+        '(-o --owner)'{-o,--owner}'[operate on the internal services of owner]:owner:_users' \
+        '1:subcommand:->subcommand' \
+        '*::arg:->args'
+
+    case $state in
+        (subcommand)
+            _describe -t internal-subcommands 'internal subcommand' subcommands
+            ;;
+        (args)
+            _arguments -s \
+                '(-h --help)'{-h,--help}'[print this help]' \
+                ':internal service:(fdholderd oneshotd eventd)'
             ;;
     esac
 }
@@ -753,6 +776,7 @@ _66() {
         'scandir:main subcommands to manage scandir'
         'env:main subcommands to manage the runtime environment'
         'fdholder:main subcommands to manage the scandir'\''s fdholder'
+        'internal:control the internal services of the scandir'
         'poweroff:poweroff the system'
         'reboot:reboot the system'
         'halt:halt the system'

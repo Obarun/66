@@ -1,14 +1,14 @@
 # fdholder
 
-Manages the *fdholder* daemon of a [scandir](66-scandir.html) and the file descriptors it keeps.
+Manages the file descriptors kept by the *fdholder* daemon of a [scandir](66-scandir.html).
 
 ## Interface
 
 ```
-fdholder [ -h ] [ -o owner ] start|stop|restart|store|retrieve|list [<subcommand options>]
+fdholder [ -h ] [ -o owner ] store|retrieve|list [<subcommand options>]
 ```
 
-The *fdholder* (`66-fdholderd`) is a daemon supervised by the [scandir](66-scandir.html). It holds open file descriptors on behalf of services so they survive a service restart — typically the read end of a logging fifo. This command controls that daemon and the descriptors it stores.
+The *fdholder* (`66-fdholderd`) is a daemon supervised by the [scandir](66-scandir.html). It holds open file descriptors on behalf of services so they survive a service restart, typically the read end of a logging fifo. This command handles the descriptors it stores. The daemon itself is started, stopped and restarted by the [internal](66-internal.html) command.
 
 This command expects an already running [scandir](66-scandir.html) for the relevant *owner*.
 
@@ -19,17 +19,9 @@ This command expects an already running [scandir](66-scandir.html) for the relev
 
 ## Subcommands
 
-- **start**: start the scandir's *fdholder* daemon.
-- **stop**: stop the scandir's *fdholder* daemon.
-- **restart**: restart the scandir's *fdholder* daemon.
 - **store** *id*: store a file descriptor under the name *id*.
 - **retrieve** *id* *prog...*: retrieve the descriptor stored under *id*, place it on standard input, and execute *prog*.
 - **list**: list the names of the stored descriptors.
-
-### start, stop, restart
-
-- **-h, --help**: print this help.
-- **-T, --timeout** *milliseconds*: timeout to wait for the service to reach its state.
 
 ### store *id*
 
@@ -50,12 +42,6 @@ This command expects an already running [scandir](66-scandir.html) for the relev
 - **-T, --timeout** *milliseconds*: timeout for the operation.
 
 ## Usage examples
-
-Start the *fdholder* daemon of the current owner's *scandir*
-
-```
-66 fdholder start
-```
 
 Store standard input under the name `mylog`, keeping it forever
 
