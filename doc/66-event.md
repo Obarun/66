@@ -643,7 +643,9 @@ common point of confusion:
 * [66 stop](66-stop.html) brings the service **down but leaves the reactor armed**. The rule
   stays registered at `66-eventd` and keeps reacting, so a `Do = start` reactor you stopped
   **comes back up on its next event**. `stop` acts on the running service, never on the
-  reaction.
+  reaction. A `oneshot` reactor you stopped does not have to wait: `66 start` reads its
+  sources again and fires it at once if its awaited condition holds, so a oneshot such as a
+  keyboard setting can be run again by hand.
 * [66 free](66-free.html) — which stops the service *and* unsupervises it — is what
   **disarms** the reactor: it leaves the scandir and `66-eventd`, and reacts no more. For a
   `module`, a single `free` disarms every member reactor in the same pass.

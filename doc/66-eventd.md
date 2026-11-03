@@ -45,4 +45,4 @@ If a reactor fires **10 times within 10 seconds**, `66-eventd` treats it as a ru
 
 ## Control
 
-`66-eventd` listens on `eventd/s` for short messages — *arm*, *disarm*, and *emit a user event*. Only the scandir owner may connect (the daemon checks the peer's credentials and rejects the rest). You normally never write to this socket yourself: [66 start](66-start.html), [66 free](66-free.html) and [66 emit](66-emit.html) do it for you.
+`66-eventd` listens on `eventd/s` for short messages — *arm*, *disarm*, *catch up* (read again the sources of a reactor already armed) and *emit a user event*. Only the scandir owner may connect (the daemon checks the peer's credentials and rejects the rest). You normally never write to this socket yourself: [66 start](66-start.html), [66 free](66-free.html) and [66 emit](66-emit.html) do it for you.

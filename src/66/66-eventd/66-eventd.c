@@ -923,6 +923,18 @@ static void eventd_arm_reactor(char const *name)
     eventd_drain_emits() ;
 }
 
+static void eventd_catch_up_reactor(char const *name)
+{
+    log_flow() ;
+
+    eventd_reactor_t *re = hash_find(&eventd.reactors, name, strlen(name)) ;
+    if (!re)
+        return ;
+
+    reactor_catch_up(re) ;
+    eventd_drain_emits() ;
+}
+
 static void eventd_disarm_reactor(char const *name)
 {
     log_flow() ;
@@ -1319,6 +1331,7 @@ static void client_dispatch(eventd_client_t *conn)
     switch (verb) {
 
         case 'a' : eventd_arm_reactor(name) ; break ;
+        case 'c' : eventd_catch_up_reactor(name) ; break ;
         case 'd' : eventd_disarm_reactor(name) ; break ;
         case 'e' : eventd_emit(name) ; break ;
 
