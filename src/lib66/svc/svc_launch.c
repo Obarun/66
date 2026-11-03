@@ -268,7 +268,7 @@ static inline int svc_send_event(svc_event_type_t type, uint32_t id)
     return (written == sizeof(msg)) ? 1 : 0 ;
 }
 
-static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
+static void svc_runtime_write(svc_ctx_t *svc, bool success)
 {
     log_flow() ;
 
@@ -280,7 +280,7 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     auto_strings(file, supervisedir, "/", SS_STATUS) ;
 
     if (success) {
-        st.state = armed ? STATUS_STATE_WAITING : (launch->req->action == SVC_ACTION_STOP ? STATUS_STATE_DOWN : STATUS_STATE_DONE) ;
+        st.state = launch->req->action == SVC_ACTION_STOP ? STATUS_STATE_DOWN : STATUS_STATE_DONE ;
         st.result = STATUS_RESULT_SUCCESS ;
     } else {
         st.state = STATUS_STATE_FAILED ;
@@ -291,19 +291,8 @@ static void svc_runtime_write(svc_ctx_t *svc, bool success, bool armed)
     st.who = launch->req->who ;
     clock_now(&st.stamp) ;
 
-    if (!svc->waiting && success && svc->target == SVC_TARGET_UP) {
-
+    if (success && svc->target == SVC_TARGET_UP)
         clock_now(&st.readystamp) ;
-
-    } else if (armed) {
-
-        service_status_t old = STATUS_ZERO ;
-
-        if (svc_status(res, &old) < 0)
-            log_warnusys("read runtime status of: ", name_of(svc)) ;
-
-        st.readystamp = old.readystamp ;
-    }
 
     if (!status_write(&st, file))
         log_warnusys("write runtime status of: ", name_of(svc)) ;
@@ -324,12 +313,11 @@ static void announce(uint32_t id, bool success)
 
     auto_strings(file, scandir, "/down") ;
 
-    if (res->type == E_PARSER_TYPE_MODULE && launch->req->action != SVC_ACTION_SIGNAL) {
 
-        bool armed = svc->target == SVC_TARGET_UP && res->has_event && svc_reactor_armed_idle(svc->h) > 0 ;
-
-        svc_runtime_write(svc, success, armed) ;
-    }
+    if (res->type == E_PARSER_TYPE_MODULE &&
+        launch->req->action != SVC_ACTION_SIGNAL &&
+        !svc->waiting)
+        svc_runtime_write(svc, success) ;
 
     if (success) {
 
@@ -615,7 +603,7 @@ static int launch_service(uint32_t id)
 
         svc->target = SVC_TARGET_UP ;
 
-        if (svc_reactor_armed_idle(svc->h) > 0) {
+        if (svc->mreactor || svc_reactor_armed_idle(svc->h) > 0) {
 
             svc->native = true ;
             svc->waiting = true ;
@@ -690,7 +678,7 @@ static int passage_of(svc_ctx_t const *svc, char const **why)
     if (r < 0)
         return -1 ;
 
-    if (action == SVC_ACTION_START && FLAGS_ISSET(svc->state, SVC_FLAGS_UP) && !r) {
+    if (action == SVC_ACTION_START && FLAGS_ISSET(svc->state, SVC_FLAGS_UP) && !r && !svc->mreactor) {
         *why = "skipping already up service: " ;
     } else if (action == SVC_ACTION_STOP && FLAGS_ISSET(svc->state, SVC_FLAGS_DOWN)) {
         *why = "skipping already down service: " ;

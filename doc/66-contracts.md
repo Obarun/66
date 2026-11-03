@@ -211,6 +211,8 @@ An event guarantees that the order acted on the service: a real change of state,
 - **Only `66 free` disarms**, whatever the type of the service, with one exception: 66-eventd disarms a reactor that fires 10 times within 10 seconds, a loop guard; `66 start` arms it again. `66 stop` and every signal leave it armed. `66 remove` and `66 reconfigure` take the service out of the supervision as `66 free` does, so they disarm it; `66 reconfigure` arms again a reactor it found armed.
 - `66 start` of a `oneshot` reactor stopped by `66 stop`, still armed, reads its sources again: it fires at once if its awaited condition holds. A `classic` reactor stopped waits for its next event. `66 start` of a reactor that is `done` reads nothing.
 - A restart of 66-eventd arms again every reactor it finds and runs none of them: they wait for their next event.
+- A `module` reactor is armed with its members: `66 start` runs none of them, its event runs them, every event again.
+- A `module` named in the `From` of a reactor is refused with `100` by the parse: a module sends no event.
 - `66 restart` of a reactor brings it up now.
 - A reactor armed above a restarted or reloaded service comes back armed, it is not run.
 - `[Event] Propagate` defaults to `true`: `Do = X` means `66 X`, the dependencies included; `Propagate = false` carries **-P** to the action of the reactor.

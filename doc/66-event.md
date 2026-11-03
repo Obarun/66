@@ -216,6 +216,9 @@ Do = stop
 Emit = backend-down
 ```
 
+`From` names services that send events: a `classic` or a `oneshot`. A `module` sends none, so
+the parser refuses one in `From`.
+
 `OnAll` fires only when several conditions hold at once — useful to wait on a whole set of
 dependencies:
 
@@ -664,7 +667,8 @@ fires, so the parser forces such a service *down* and starting it only registers
 the service comes up later, when its event fires. Every other verb is the opposite: `stop`,
 `reload`, `reconfigure` and `free` act on a *running* service, so `66 start` launches the
 reactor normally and it reacts from **up**. In [66 status](66-status.html) an armed-and-idle
-reactor shows the **WAITING** state.
+reactor shows the **WAITING** state. A `module` reactor is armed with its members: `66 start`
+runs none of them, its event runs them, and every event runs them again.
 
 [66 restart](66-restart.html) of a reactor brings it up now, under a new process. A reactor
 armed above a service that is restarted or reloaded comes back armed: it is not run.

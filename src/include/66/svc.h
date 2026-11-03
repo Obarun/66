@@ -127,6 +127,7 @@ struct svc_ctx_s
 
     bool done ; // its completion is told, the event and the deadline race for it
     bool waiting ; // a reactor armed only, its Execute never ran
+    bool mreactor ; // a member of a module reactor in the lot: armed and run with its module
 
     bool supervised ; // a supervisor held it when svc_init_ctx() read its state
     uint16_t state ; // SVC_FLAGS_*
@@ -140,7 +141,7 @@ struct svc_ctx_s
     uint32_t code ; // read per result: the exit code (EXITED), the signal (SIGNALED)
 } ;
 
-#define SVC_CTX_ZERO { .h = 0, .oneshot = { 0 }, .native = false, .done = false, .waiting = false, .supervised = false, .state = 0, .target = SVC_TARGET_NONE, .index = 0, .ndepends = 0, .nrequiredby = 0, .result = STATUS_RESULT_SUCCESS, .code = 0 }
+#define SVC_CTX_ZERO { .h = 0, .oneshot = { 0 }, .native = false, .done = false, .waiting = false, .mreactor = false, .supervised = false, .state = 0, .target = SVC_TARGET_NONE, .index = 0, .ndepends = 0, .nrequiredby = 0, .result = STATUS_RESULT_SUCCESS, .code = 0 }
 
 extern int svc_init_ctx(svc_ctx_t *asvc, selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req) ;
 extern int svc_launch(svc_ctx_t *asvc, selection_service_t const *lot, svc_request_t const *req) ;

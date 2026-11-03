@@ -26,17 +26,18 @@ uint8_t svc_status_effective(struct resolve_hash_s const *h, service_status_t co
 {
     log_flow() ;
 
-    /* a module reactor records its waiting state itself; 66-supervise and
-     * 66-oneshotd record only what the process or the script did, so the event
-     * meaning of an armed reactor at rest is derived here: down for a classic,
-     * done or down for a oneshot. An event addon not read is no reactor known:
-     * the state is shown as it is. */
+    /* 66-supervise, 66-oneshotd and the launch of a module record only what the
+     * process, the script or the members did, so the event meaning of an armed
+     * reactor at rest is derived here: down for a classic, done or down for a
+     * oneshot or a module. An event addon not read is no reactor known,
+     * a reactor no longer supervised is no longer armed: the state is shown as
+     * it is. */
     uint8_t type = h->res.type ;
     bool rest = (type == E_PARSER_TYPE_CLASSIC &&
                 st->state == STATUS_STATE_DOWN) ||
-                (type == E_PARSER_TYPE_ONESHOT && (st->state == STATUS_STATE_DONE || st->state == STATUS_STATE_DOWN)) ;
+                ((type == E_PARSER_TYPE_ONESHOT || type == E_PARSER_TYPE_MODULE) && (st->state == STATUS_STATE_DONE || st->state == STATUS_STATE_DOWN)) ;
 
-    if (rest && svc_reactor_armed_idle(h) > 0)
+    if (rest && svc_reactor_armed_idle(h) > 0 && svc_issupervised(&h->res) > 0)
         return STATUS_STATE_WAITING ;
 
     return st->state ;

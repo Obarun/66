@@ -25,6 +25,24 @@
 #include <66/graph.h>
 #include <66/selection.h>
 
+static int member_of_reactor(selection_service_t const *ordered, service_graph_resolve_t *store, struct resolve_hash_s const *h)
+{
+    struct resolve_hash_s *module ;
+
+    if (!h->res.inns)
+        return 0 ;
+
+    uint32_t index = service_graph_find(store->g, h->res.sa.s + h->res.inns) ;
+
+    if (index == SERVICE_GRAPH_NOINDEX || !bitset32_isvalid(&ordered->member, index))
+        return 0 ;
+
+    if (service_graph_resolve_get(store, index, SERVICE_READ_EVENT, &module) <= 0)
+        return -1 ;
+
+    return svc_reactor_armed_idle(module) > 0 ;
+}
+
 static int ctx_of(svc_ctx_t *asvc, uint32_t *n, selection_service_t const *ordered, service_graph_resolve_t *store, uint32_t index, bool reverse, bool unordered)
 {
     svc_ctx_t svc = SVC_CTX_ZERO ;
@@ -41,9 +59,14 @@ static int ctx_of(svc_ctx_t *asvc, uint32_t *n, selection_service_t const *order
     if (r < 0)
         return -1 ;
 
+    int reactor = member_of_reactor(ordered, store, h) ;
+    if (reactor < 0)
+        return -1 ;
+
     svc.h = h ;
     svc.index = index ;
     svc.supervised = supervised ;
+    svc.mreactor = reactor ;
     FLAGS_SET(svc.state, r ? SVC_FLAGS_UP : SVC_FLAGS_DOWN) ;
 
     if (!unordered) {

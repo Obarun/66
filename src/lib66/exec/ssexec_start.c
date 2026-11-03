@@ -78,7 +78,7 @@ static bool stopped_reactor(char const *base, char const *name, char *eventddir)
     if (r <= 0)
         goto freed ;
 
-    if (h.res.type != E_PARSER_TYPE_ONESHOT || svc_reactor_armed_idle(&h) <= 0)
+    if ((h.res.type != E_PARSER_TYPE_ONESHOT && h.res.type != E_PARSER_TYPE_MODULE) || svc_reactor_armed_idle(&h) <= 0)
         goto freed ;
 
     // the first start arms it, and the arm already reads its sources

@@ -81,11 +81,12 @@ death.
 | `failed` | the crash budget is exhausted, the service is parked |
 | `waiting` | an armed [event](66-event.html) reactor: it holds no process and waits for its event |
 
-A `module` reactor records `waiting` itself. A `classic` or `oneshot` one does not
-— its record is kept by [66-supervise](66-supervise.html) or by 66-oneshotd, which
-only record what the process or the script did — so `runstate` reports a classic
-reactor as `down` and a oneshot reactor as `done` or `down`, and it is
-[66 status](66-status.html) that derives the `waiting` reading from the resolve.
+No reactor records `waiting` itself. Its record is kept by [66-supervise](66-supervise.html),
+by 66-oneshotd, or for a `module` by the start or stop of its members, which only record what
+the process, the script or the members did. So `runstate` reports a classic reactor as `down`
+and a oneshot or module reactor as `done` or `down`, and it is [66 status](66-status.html)
+that derives the `waiting` reading from the resolve. A reactor armed that never ran has no
+record at all.
 Seeing `down` or `done` here on a reactor does not mean it is disarmed.
 
 ### `result` values

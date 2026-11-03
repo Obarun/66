@@ -31,6 +31,8 @@
 #include <66/module.h>
 #include <66/utils.h>
 #include <66/symlink.h>
+#include <66/enum_parser.h>
+#include <66/event_rule.h>
 
 static char const *provides(struct resolve_hash_s const *c)
 {
@@ -44,8 +46,8 @@ static int check_closed(struct resolve_hash_s *c, strbuf *msg)
     char const *list[3] = {
         dep->ndepends ? dep->sa.s + dep->depends : 0,
         dep->nrequiredby ? dep->sa.s + dep->requiredby : 0,
-        // the From of a member reactor: the members of its module only
-        inns && c->res.has_event && c->event.nfrom ? c->event.sa.s + c->event.from : 0
+        // the From of a reactor: a member watches the members of its module only, a service outside none of them
+        c->res.has_event && c->event.nfrom ? c->event.sa.s + c->event.from : 0
     } ;
 
     char const *key[3] = { "depends on", "declares in its RequiredBy", "watches in its From" } ;
@@ -75,9 +77,57 @@ static int check_closed(struct resolve_hash_s *c, strbuf *msg)
             if (inns)
                 return auto_strbuf(msg, "service: ", c->name, ", a member of the module: ", inns, ", ", key[i], ": ", name, " outside its module -- ", rule[i], " the members of its module only") ? 0 : -1 ;
 
+            // a service outside a module watches one of its members: the module sends no event either
+            if (i == 2)
+                return auto_strbuf(msg, "service: ", c->name, " ", key[i], ": ", name, ", a member of the module: ", module, " -- a service outside a module watches none of its members") ? 0 : -1 ;
+
             // a service outside a module names one of its members: Depends or RequiredBy
             return auto_strbuf(msg, "service: ", c->name, " ", key[i], ": ", name, ", a member of the module: ", module, " -- ", i ? "declare the module: " : "depend on the module: ", module, " instead") ? 0 : -1 ;
         }
+    }
+
+    return 1 ;
+}
+
+static int check_from(struct resolve_hash_s *c, hash_t *hres, char const *base, strbuf *msg)
+{
+    int r ;
+    size_t pos = 0 ;
+    uint32_t src = c->event.type ;
+    _cleanup_strbuf_ strbuf sa = STRBUF_ZERO ;
+
+    if (!c->res.has_event || !c->event.nfrom || (src != EVENT_SOURCE_SERVICE && src != EVENT_SOURCE_SIGNAL))
+        return 1 ;
+
+    if (!sbl_clean_string(&sa, c->event.sa.s + c->event.from))
+        return -1 ;
+
+    FOREACH_SBL(&sa, pos) {
+
+        char const *name = sa.s + pos ;
+        struct resolve_hash_s const *other = resolve_hash_search(hres, name) ;
+        uint32_t type ;
+
+        if (other) {
+
+            type = other->res.type ;
+
+        } else {
+
+            struct resolve_hash_s h = RESOLVE_HASH_ZERO ;
+            r = service_read(&h, base, name, 0) ;
+            type = h.res.type ;
+            service_read_free(&h) ;
+
+            if (r < 0)
+                return -1 ;
+
+            if (!r)
+                continue ;
+        }
+
+        if (type == E_PARSER_TYPE_MODULE)
+            return auto_strbuf(msg, "service: ", c->name, " watches in its From: ", name, ", a module -- a module sends no event") ? 0 : -1 ;
     }
 
     return 1 ;
@@ -332,6 +382,7 @@ int parse_check(hash_t *hres, ssexec_t *info, strbuf *msg)
         // what @c was before the command, kept by parse_write() and read by check_released()
         if ((r = read_before(c, base)) <= 0 ||
             (r = check_closed(c, msg)) <= 0 ||
+            (r = check_from(c, hres, base, msg)) <= 0 ||
             (r = check_provided(c, hres, &g, base, msg)) <= 0 ||
             (r = check_released(c, hres, &g, base, msg)) <= 0) {
                 e = r ;

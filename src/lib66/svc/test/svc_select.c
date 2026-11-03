@@ -236,6 +236,8 @@ static void write_system(void)
         { .name = "react", .type = E_PARSER_TYPE_ONESHOT, .docmd = EVENT_DO_START },
         { .name = "rcl", .docmd = EVENT_DO_RESTART },
         { .name = "rstop", .docmd = EVENT_DO_STOP },
+        { .name = "rfree", .docmd = EVENT_DO_START },
+        { .name = "rmod", .type = E_PARSER_TYPE_MODULE, .docmd = EVENT_DO_START },
         { .name = "one", .type = E_PARSER_TYPE_ONESHOT },
         { .name = "loop" },
         { .name = "bad" },
@@ -285,6 +287,11 @@ static void write_system(void)
     write_status("rcl", STATUS_STATE_DOWN, 0) ;
     write_state("rstop", STATE_FLAGS_TRUE, 0) ;
     write_status("rstop", STATUS_STATE_DOWN, 0) ;
+    // a classic reactor freed: no longer supervised, no status record
+    write_state("rfree", STATE_FLAGS_FALSE, 0) ;
+    // a module reactor whose members ran on its event
+    write_state("rmod", STATE_FLAGS_TRUE, 0) ;
+    write_status("rmod", STATUS_STATE_DONE, 0) ;
     // a oneshot done, a classic wanted down with no process
     write_state("one", STATE_FLAGS_TRUE, 0) ;
     write_status("one", STATUS_STATE_DONE, 0) ;
@@ -447,6 +454,14 @@ static void test_running(void)
     service_read_free(&h) ;
     readone(&h, "rstop", SERVICE_READ_EVENT) ;
     CHECK(svc_status_effective(&h, &st) == STATUS_STATE_DOWN, "a reactor that stops is shown down") ;
+    service_read_free(&h) ;
+    readone(&h, "rfree", SERVICE_READ_EVENT) ;
+    CHECK(svc_status_effective(&h, &st) == STATUS_STATE_DOWN, "a reactor freed is no longer armed, it is shown down") ;
+    service_read_free(&h) ;
+    service_status_t done = STATUS_ZERO ;
+    done.state = STATUS_STATE_DONE ;
+    readone(&h, "rmod", SERVICE_READ_EVENT) ;
+    CHECK(svc_status_effective(&h, &done) == STATUS_STATE_WAITING, "a module reactor done is shown waiting") ;
     service_read_free(&h) ;
 }
 
