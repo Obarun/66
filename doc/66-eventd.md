@@ -41,7 +41,7 @@ Like [66-supervise](66-supervise.html), `66-eventd` has no configuration files o
 
 If a reactor fires **10 times within 10 seconds**, `66-eventd` treats it as a runaway loop and **squelches** it: the reactor is disarmed and destroyed, with a warning in the log. It is not throttled and does not re-arm itself — a fresh [66 start](66-start.html) is required. The backstop applies to `Emit` as well, which is what breaks a cyclic `Emit` chain. It is the event-system equivalent of the supervisor's crash budget.
 
-`66-eventd` is itself supervised and may restart. On startup it **repopulates** its tables from the scandir, re-arming every supervised source and reactor best-effort; arming is idempotent, so rules survive a daemon bounce without operator action.
+`66-eventd` is itself supervised and may restart. On startup it **repopulates** its tables from the scandir, re-arming every supervised source and reactor best-effort; arming is idempotent, so rules survive a daemon bounce without operator action. A re-armed reactor does not run, it waits for the next event of its sources.
 
 ## Control
 

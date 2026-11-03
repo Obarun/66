@@ -1247,7 +1247,7 @@ static void repopulate(char const *scandir)
             if (res.type == E_PARSER_TYPE_EVENT)
                 eventd_arm_source(&res, source_get_who(&res)) ;
             else if (res.has_event)
-                eventd_arm_reactor(name) ;
+                reactor_create(name) ; // a bounce of the daemon arms again, it runs nothing
         }
 
         resolve_free_obj(&wres) ;

@@ -797,7 +797,9 @@ you [`66 free`](66-free.html) the **reactor** itself. Disarming is always done o
 `66-eventd` is itself supervised and may restart (a crash, a scandir reconfigure). On
 startup it **repopulates** from the scandir: it re-arms every supervised event source and
 every reactor it finds, best-effort. Arming is idempotent, so nothing is double-armed. You
-do not need to re-`start` your rules by hand after the daemon bounces.
+do not need to re-`start` your rules by hand after the daemon bounces. A re-armed reactor
+**does not run**: the daemon does not read the state of its sources, the reactor waits for
+their next event. Running it is the administrator's call.
 
 ## Notes and pitfalls
 
