@@ -69,14 +69,11 @@ void basic3(resolve_enum_table_t table)
     int r ;
     size_t end ;
     const char *a = "Execute = ( umask 027 %%BINDIR%%/deluge-web -d )# comment\n" ;
-    const char *b = " umask 027 %%BINDIR%%/deluge-web -d " ;
 
     _alloc_sbl_(stk, strlen(a) + 1) ;
 
     r = parse_bracket(&stk, a, &end, table) ;
-    assert(r == 1) ;
-    assert(strcmp(stk.s, b) == 0) ;
-    assert(a[end] == ')') ;
+    assert(r == 0) ;
 }
 
 void basic4(resolve_enum_table_t table)
@@ -646,8 +643,31 @@ static frontend_case_t const frontend_cases[] = {
       { { S_MAIN, E_PARSER_SECTION_MAIN_TYPE, "classic" }, { S_MAIN, E_PARSER_SECTION_MAIN_VERSION, "0.0.1" } }, 2 },
     { "comment_first_line", "[Main]\n# First Line\nType = classic\n", 1, "",
       { { S_MAIN, E_PARSER_SECTION_MAIN_TYPE, "classic" } }, 1 },
-    { "hash_after_value", MAIN_HEAD "[Start]\nExecute = ( true )#Timeout = 3333\n", 1, "",
-      { { S_START, E_PARSER_SECTION_STARTSTOP_EXEC, " true " }, { S_START, E_PARSER_SECTION_STARTSTOP_TIMEOUT, "3333" } }, 2 },
+    // a '#' on the line of a ')' is refused, glued to it or not
+    { "comment_after_bracket", MAIN_HEAD "[Start]\nExecute = ( true ) # note\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "hash_after_bracket", MAIN_HEAD "[Start]\nExecute = ( true )#Timeout = 3333\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "hash_comment_after_bracket", MAIN_HEAD "[Start]\nExecute = ( true )# note\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "hash_alone_after_bracket", MAIN_HEAD "[Start]\nExecute = ( true )#\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "key_glued_to_bracket", MAIN_HEAD "[Start]\nExecute = ( true )Timeout = 3333\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "hash_after_glued_brackets", MAIN_HEAD "[Start]\nExecute = ( (a))#Timeout = 3333\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "section_glued_to_bracket", MAIN_HEAD "[Start]\nExecute = ( true )[Stop]\nExecute = ( echo s )\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "glued_brackets_then_key", MAIN_HEAD "[Start]\nExecute = ( echo $((1+2)))\nTimeout = 3\n", 1, "",
+      { { S_START, E_PARSER_SECTION_STARTSTOP_EXEC, " echo $((1+2))" }, { S_START, E_PARSER_SECTION_STARTSTOP_TIMEOUT, "3" } }, 2 },
+
+    // the line of the closing ')' of a value on several lines holds nothing else
+    { "key_after_multiline_bracket", MAIN_HEAD "[Start]\nExecute = (\ntrue\n)#Timeout = 3333\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "key_glued_to_multiline_bracket", MAIN_HEAD "[Start]\nExecute = (\ntrue\n)Timeout = 3333\nTimeout = 7\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "comment_after_multiline_bracket", MAIN_HEAD "[Start]\nExecute = (\ntrue\n) # note\nTimeout = 7\n", 0, WARN_FORMAT("Execute", "Start"), { { 0 } }, 0 },
+    { "blanks_after_multiline_bracket", MAIN_HEAD "[Start]\nExecute = (\ntrue\n) \t\nTimeout = 7\n", 1, "",
+      { { S_START, E_PARSER_SECTION_STARTSTOP_EXEC, "\ntrue\n" }, { S_START, E_PARSER_SECTION_STARTSTOP_TIMEOUT, "7" } }, 2 },
+    { "script_parenthese_with_text", MAIN_HEAD "[Start]\nExecute = (\necho a\n) foo\n)\nTimeout = 7\n", 1, "",
+      { { S_START, E_PARSER_SECTION_STARTSTOP_EXEC, "\necho a\n) foo\n" }, { S_START, E_PARSER_SECTION_STARTSTOP_TIMEOUT, "7" } }, 2 },
+
+    // a key counts only where it begins its line, blanks aside
+    { "capital_after_quote", "[Main]\nType = classic\nDescription = \"x\" # Note\nVersion = 0.0.1\n", 1, "",
+      { { S_MAIN, E_PARSER_SECTION_MAIN_DESCRIPTION, "x" }, { S_MAIN, E_PARSER_SECTION_MAIN_VERSION, "0.0.1" } }, 2 },
+    { "key_after_quote", "[Main]\nType = classic\nDescription = \"x\" Version = 9\nVersion = 0.0.1\n", 1, "",
+      { { S_MAIN, E_PARSER_SECTION_MAIN_DESCRIPTION, "x" }, { S_MAIN, E_PARSER_SECTION_MAIN_VERSION, "0.0.1" } }, 2 },
 
     // where a value between parentheses ends: the line after the ')' is a key, a comment or a section
     { "bracket_then_commented_key", MAIN_HEAD "[Start]\nExecute = ( true )\n#Timeout = 5\nTimeout = 3\n", 1, "",

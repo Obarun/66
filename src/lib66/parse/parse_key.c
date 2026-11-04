@@ -75,7 +75,7 @@ int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
             return 0 ;
         }
 
-        if (cfg->str[o] != '#') {
+        if (o == cfg->opos) {
             kid = key_to_enum(table.u.parser.list, key->s) ;
             if (kid >= 0)
                 return kid ;

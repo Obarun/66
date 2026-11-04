@@ -96,6 +96,8 @@ int parse_bracket(strbuf *store, const char *str, size_t *end, resolve_enum_tabl
     char const *line =  cfg.str + cfg.pos ;
     size_t len = strlen(line) ;
     int olvp = cfg.cpos ;
+    // end of the line of a closing ')', where vp means glued to it, not the beginning of a line
+    size_t eol = cfg.str[cfg.cpos] == ')' ? str_search(line, '\n') : 0 ;
 
     /**
      * The following while loop receives a string starting after the last
@@ -108,6 +110,12 @@ int parse_bracket(strbuf *store, const char *str, size_t *end, resolve_enum_tabl
     while (bracket && o < len) {
 
         char c = parse_char_next(line, len, &o) ;
+
+        if (o <= eol && (c == '#' || c == '[' || (c >= 'A' && c <= 'Z'))) {
+            vp = 0 ;
+            lvp = 0 ;
+            continue ;
+        }
 
         switch(c) {
 
@@ -138,6 +146,15 @@ int parse_bracket(strbuf *store, const char *str, size_t *end, resolve_enum_tabl
                          * line and encountering either '#@' or '@', it determines
                          * the validity. If the validity check fails, it signifies
                          * that we remain within the script context*/
+
+                        e = o ;
+                        while (line[e] == ' ' || line[e] == '\t' || line[e] == '\r')
+                            e++ ;
+
+                        if (line[e] && line[e] != '\n') {
+                            o += str_search(line + o, '\n') ;
+                            break ;
+                        }
 
                         int /* last parenthese */ lp = o + olvp ;
                         e = 0 ;
