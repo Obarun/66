@@ -42,6 +42,19 @@ lexer_config LEXER_CONFIG_KEY = { \
     .exitcode = 0,\
 } ;
 
+static size_t key_linestart(char const *str, size_t opos)
+{
+    size_t o = 0, n ;
+
+    while ((n = o + str_search(str + o, '\n')) < opos)
+        o = n + 1 ;
+
+    while (str[o] == ' ' || str[o] == '\t' || str[o] == '\r')
+        o++ ;
+
+    return o ;
+}
+
 int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
 {
     log_flow() ;
@@ -53,19 +66,27 @@ int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table)
     key->len-- ;
 
     if (cfg->found) {
-        kid = key_to_enum(table.u.parser.list, key->s) ;
-        if (kid < 0) {
-            log_warn("unknown key: ", key->s, " -- ignoring it") ;
+
+        size_t c, o = key_linestart(cfg->str, cfg->opos) ;
+
+        if (parse_section_header(cfg->str, o, &c)) {
             cfg->found = 0 ;
-            next = str_search(cfg->str + cfg->opos, '\n') ;
-            if (!cfg->str[cfg->opos + next]) next = 0 ;
-            cfg->pos = cfg->opos + next + 1 ;
+            cfg->pos = cfg->slen ;
+            return 0 ;
         }
 
-        /** check for commented key (no char precedes a key at offset 0) */
-        if (cfg->opos > 0 && cfg->str[cfg->opos - 1] == '#')
-            cfg->found = 0 ;
+        if (cfg->str[o] != '#') {
+            kid = key_to_enum(table.u.parser.list, key->s) ;
+            if (kid >= 0)
+                return kid ;
+            log_warn("unknown key: ", key->s, " -- ignoring it") ;
+        }
+
+        cfg->found = 0 ;
+        next = str_search(cfg->str + cfg->opos, '\n') ;
+        if (!cfg->str[cfg->opos + next]) next = 0 ;
+        cfg->pos = cfg->opos + next + 1 ;
     }
 
-    return kid < 0 ? 0 : kid ;
+    return 0 ;
 }

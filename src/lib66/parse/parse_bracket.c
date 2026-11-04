@@ -61,7 +61,7 @@ static int key_isvalid(const char *line, size_t *o, resolve_enum_table_t table)
     return 1 ;
 }
 
-int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
+int parse_bracket(strbuf *store, const char *str, size_t *end, resolve_enum_table_t table)
 {
     log_flow() ;
 
@@ -347,6 +347,8 @@ int parse_bracket(strbuf *store, const char *str, resolve_enum_table_t table)
 
     if (!sbl_addb(store, cfg.str + cfg.opos + 1, lvp - (cfg.opos + 1)))
         return -1 ;
+
+    *end = (size_t)lvp ;
 
     return 1 ;
 }

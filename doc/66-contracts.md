@@ -50,7 +50,7 @@ A name with a frontend and no resolve file is refused with `100` by every comman
 service: <name> is not parsed -- parse it with 66 parse <name>
 ```
 
-A name provided by a service through its `Provide` key answers for that service, except for `66 remove`, which takes a name literally. A parsed service keeps its name while it is enabled; disabled, an enabled provider may take the name over, the service staying parsed, and `66 enable` of the service takes the name back from a disabled provider.
+A name provided by a service through its `Provide` key answers for that service, except for `66 remove` and `66 enable`, which take a name literally. A parsed service keeps its name while it is enabled; disabled, an enabled provider may take the name over, the service staying parsed, and `66 enable` of the service takes the name back from a disabled provider.
 
 A damaged entry of the Provide directory, a file that is no link or a link to nothing, provides nothing: it is ignored, the name designates the service bearing it, and the entry is named at verbosity 2:
 

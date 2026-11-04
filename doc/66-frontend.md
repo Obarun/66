@@ -93,14 +93,21 @@ and for the event system.
   (commercial at) which is reserved.
 * **No empty values.** If a *key* is set, its *value* **can not** be empty. The
   `[Environment]` section is the exception: `key=` gives the variable an empty value.
-* **Comments** occupy their own line, beginning with the number sign `#`; a `#`
-  placed after a value is **not** a comment (it becomes part of the value). Empty
-  lines are allowed.
+* **Comments** occupy their own line, beginning with the number sign `#` (blanks
+  aside). A `#` on the line of a key is **not** a comment: after a value written
+  on the line, it belongs to the value (`Version = 1.0 # note` gives `1.0#note`);
+  after a value between double quotes, the rest of the line is ignored; after a
+  value between parentheses, a comment on its line is refused
+  (`Execute = ( true ) # note` is an invalid format). Empty lines are allowed.
 * **Keys are case sensitive** and can not be renamed. Most names are specific
   enough to avoid confusion.
-* **Section names** are written between square brackets `[]` and **must begin**
-  with an uppercase letter followed by lowercase letters **only** — no special
-  characters, no numbers.
+* **Section names** are written between square brackets `[]` **at the beginning of
+  a line** (blanks aside), and **must begin** with an uppercase letter followed by
+  lowercase letters **only**, no special characters, no numbers. A `[` that does not
+  begin a line is not a section; a line that begins with `[Name]` is a section
+  header, inside a value too. An unknown section is ignored, with all the lines
+  below it until the next section, and named at verbosity 2; after an
+  `[Environment]` section, whose body is kept whole, its lines stay in that body.
 * A section can be mandatory without all of its keys being mandatory.
 * **Service names.** The name of a frontend, or of one of its instances, ending with the
   suffix `-log` is refused: the suffix is reserved to the loggers 66 creates. A name starting

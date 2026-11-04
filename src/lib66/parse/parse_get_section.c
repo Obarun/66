@@ -13,89 +13,64 @@
  */
 
 #include <string.h>
-#include <errno.h>
+#include <sys/types.h>
 
 #include <oblibs/log.h>
 #include <oblibs/string.h>
-#include <oblibs/sbl.h>
-#include <oblibs/strbuf.h>
 #include <oblibs/lexer.h>
 
 #include <66/parse.h>
+#include <66/enum.h>
 #include <66/enum_parser.h>
-
-lexer_config LEXER_CONFIG_SECTION = { \
-    .str = 0,\
-    .slen = 0,\
-    .open = "[",\
-    .olen = 1,\
-    .close = "]",\
-    .clen = 1,\
-    .skip = " \t\r",\
-    .skiplen = 3,\
-    .kopen = 0,\
-    .kclose = 0,\
-    .style = 0,\
-    .forceopen = 0,\
-    .forceclose = 0,\
-    .pos = 0,\
-    .opos = 0,\
-    .cpos = 0,\
-    .invalue = 0,\
-    .found = 0,\
-    .exitcode = 0,\
-} ;
 
 int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len)
 {
     log_flow() ;
 
     size_t pos = 0 ;
-    _alloc_sbl_(stk, len + 1) ;
 
     while (pos < len) {
 
-        lexer_config cfg = LEXER_CONFIG_SECTION ;
+        size_t c, o = pos, eol = pos + str_search(str + pos, '\n') ;
+
+        while (o < eol && (str[o] == ' ' || str[o] == '\t' || str[o] == '\r'))
+            o++ ;
+
+        pos = eol + 1 ;
+
+        if (!parse_section_header(str, o, &c))
+            continue ;
+
+        char name[c - o] ;
+        memcpy(name, str + o + 1, c - o - 1) ;
+        name[c - o - 1] = 0 ;
+
+        ssize_t id = key_to_enum(enum_list_parser_section, name) ;
+        if (id < 0) {
+            log_warn("invalid section name: ", name, " -- ignoring it") ;
+            continue ;
+        }
+
+        if (!(*ncfg) && id != E_PARSER_SECTION_MAIN)
+            log_warn_return(LOG_EXIT_ZERO, "invalid frontend file -- section [Main] must be set first") ;
+
+        log_trace("found section: ", name) ;
+
+        /** acfg holds at most one slot per section type; a frontend with
+         * more sections than that (e.g. a duplicated section) would overrun
+         * it. */
+        if (*ncfg >= E_PARSER_SECTION_ENDOFKEY)
+            log_warn_return(LOG_EXIT_ZERO, "too many sections in frontend file") ;
+
+        lexer_config cfg = LEXER_CONFIG_ZERO ;
         cfg.str = str ;
         cfg.slen = len ;
-        cfg.pos = pos ;
-        stk.len = 0 ;
+        cfg.opos = o ;
+        cfg.cpos = c ;
+        cfg.pos = c + 1 ;
+        cfg.found = 1 ;
 
-        errno = 0 ;
-        if (!lexer(&stk, &cfg))
-            return errno == EOVERFLOW ? -1 : 0 ;
-
-        if (!strbuf_uncounted(&stk))
-            return -1 ;
-
-        if (cfg.found) {
-
-            ssize_t id = key_to_enum(enum_list_parser_section, stk.s) ;
-            if (id < 0 || cfg.str[!cfg.opos ? 0 : cfg.opos - 1] == '#') {
-                log_warn(id < 0 ? "invalid section name: " : "commented section: ", stk.s, " -- ignoring it") ;
-                id = str_search(cfg.str + cfg.cpos, '\n') ;
-                if (!cfg.str[cfg.cpos + id])
-                    log_warn_return(LOG_EXIT_ZERO, "frontend service file must end with an empty line") ;
-
-                cfg.pos += --id ;
-                pos = cfg.pos ;
-                continue ;
-            }
-
-            if (!pos && strcmp(stk.s, *enum_list_parser_section[E_PARSER_SECTION_MAIN].name))
-                log_warn_return(LOG_EXIT_ZERO, "invalid frontend file -- section [Main] must be set first") ;
-
-            log_trace("found section: ", stk.s) ;
-
-            /** acfg holds at most one slot per section type; a frontend with
-             * more sections than that (e.g. a duplicated section) would overrun
-             * it. */
-            if (*ncfg >= E_PARSER_SECTION_ENDOFKEY)
-                log_warn_return(LOG_EXIT_ZERO, "too many sections in frontend file") ;
-
-            acfg[(*ncfg)++] = cfg ;
-        }
-        pos = cfg.pos ;
+        acfg[(*ncfg)++] = cfg ;
     }
 
     if (!(*ncfg))

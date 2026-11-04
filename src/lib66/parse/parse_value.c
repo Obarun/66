@@ -99,14 +99,21 @@ int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table)
                     return -1 ;
                 parse_error_return(LOG_EXIT_ZERO, 6, table) ;
             }
+
+            pos = 1 ;
+            while (pos < vcfg.opos && (stk.s[pos] == ' ' || stk.s[pos] == '\t' || stk.s[pos] == '\r'))
+                pos++ ;
+
+            if (pos != vcfg.opos || stk.s[vcfg.cpos] != '"')
+                parse_error_return(LOG_EXIT_ZERO, 6, table) ;
+
             kcfg->pos += vcfg.pos - 1 ;
             break ;
 
         case E_PARSER_EXPECT_BRACKET:
 
-            pos = 0 ;
             {
-                int r = parse_bracket(store, stk.s, table) ;
+                int r = parse_bracket(store, stk.s, &pos, table) ;
                 if (r < 0)
                     return -1 ;
                 if (!r)

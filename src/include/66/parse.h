@@ -58,7 +58,6 @@ struct parse_store_s
     uint8_t present[E_PARSER_SECTION_ENDOFKEY][SS_PARSE_STORE_NKEY] ; // (sid,kid) -> written by the user ?
 } ;
 
-extern lexer_config LEXER_CONFIG_SECTION ;
 extern lexer_config LEXER_CONFIG_QUOTE ;
 extern lexer_config LEXER_CONFIG_INLINE ;
 extern lexer_config LEXER_CONFIG_LIST ;
@@ -115,11 +114,13 @@ extern void parse_store_free(parse_store_t *st) ;
 extern int parse_compute_list(resolve_wrapper_t_ref wres, strbuf *store, uint32_t *res, uint8_t opts) ;
 
 /** helper */
+
+extern int parse_section_header(char const *str, size_t o, size_t *c) ;
 extern int parse_get_section(lexer_config *acfg, unsigned int *ncfg, char const *str, size_t len) ;
 extern int parse_key(strbuf *key, lexer_config *cfg, resolve_enum_table_t table) ;
 extern int parse_value(strbuf *store, lexer_config *kcfg, resolve_enum_table_t table) ;
 extern int parse_list(strbuf *stk) ;
-extern int parse_bracket(strbuf *store, const char *line, resolve_enum_table_t table) ;
+extern int parse_bracket(strbuf *store, const char *line, size_t *end, resolve_enum_table_t table) ;
 extern int parse_clean_runas(char const *str, resolve_enum_table_t table) ;
 extern int parse_io(struct resolve_hash_s *c, parse_build_ctx_t *ctx) ;
 extern int parse_io_resolve(resolve_service_t *res, resolve_service_addon_io_t *io, resolve_wrapper_t_ref w, ssexec_t *info) ;
