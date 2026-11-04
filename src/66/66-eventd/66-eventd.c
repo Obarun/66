@@ -71,6 +71,7 @@ struct eventd_reactor_s
     pid_t pid ; // action child pid ; 0 when idle
     uint8_t in_flight ; // own-reap latch: set at fork, cleared at reap
     uint8_t pending_free ; // a disarm arrived while in_flight: destroy at reap
+    uint8_t squelched ; // stopped by the backstop, torn down at the end of the dispatch
     uint64_t fires[EVENTD_MAX_TRIGGER] ; // in-window firing timestamps (ms), oldest-first
     uint8_t nfires ; // count of in-window firings (sliding-window backstop)
     hash_node_t node ;
@@ -351,13 +352,18 @@ static void source_unref(char const *name, size_t len, uint8_t type)
     source_destroy(s) ;
 }
 
-static void reactor_destroy(eventd_reactor_t *re)
+static void reactor_release(eventd_reactor_t *re)
 {
-    hash_del(&eventd.reactors, re) ;
     if (re->in_flight)
         sse_free_child(&re->child) ;
     eventd_rule_free(&re->rule) ;
     free(re) ;
+}
+
+static void reactor_destroy(eventd_reactor_t *re)
+{
+    hash_del(&eventd.reactors, re) ;
+    reactor_release(re) ;
 }
 
 static char const *reactor_source_list(resolve_service_addon_event_t const *r, uint32_t *n)
@@ -393,6 +399,14 @@ static void reactor_wire(eventd_reactor_t *re, int arm)
 
         p += plen + 1 ;
     }
+}
+
+static void reactor_squelch_teardown(void *data)
+{
+    eventd_reactor_t *re = data ;
+
+    reactor_wire(re, 0) ;
+    reactor_release(re) ;
 }
 
 static int reactor_listens_to(eventd_reactor_t const *re, uint8_t kind, char const *source)
@@ -494,8 +508,12 @@ static int reactor_enforce_backstop(eventd_reactor_t *re)
         return 0 ;
 
     log_warn("reactor ", re->name, ": squelched -- rate limit exceeded, disarming") ;
-    reactor_wire(re, 0) ;
-    reactor_destroy(re) ;
+
+    re->squelched = 1 ;
+    hash_del(&eventd.reactors, re) ;
+    if (!sse_defer(&eventd.epoll, &reactor_squelch_teardown, re))
+        log_warnusys("defer the teardown of reactor: ", re->name) ;
+
     return 1 ;
 }
 
@@ -607,6 +625,9 @@ static int reactor_source_status(char const *svc, size_t svclen, event_frame_t *
 
 static void reactor_evaluate(eventd_reactor_t *re, char const *source, event_frame_t const *f)
 {
+    if (re->squelched)
+        return ;
+
     if (!reactor_filter_on(re, source, f))
         return ;
 
@@ -893,6 +914,7 @@ static eventd_reactor_t *reactor_create(char const *name)
     re->pid = 0 ;
     re->in_flight = 0 ;
     re->pending_free = 0 ;
+    re->squelched = 0 ;
     re->nfires = 0 ;
     memcpy(re->name, name, len + 1) ;
 
