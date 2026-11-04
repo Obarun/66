@@ -37,6 +37,7 @@ extern void migrate_0920() ;
 extern void migrate_0912_provide_symlink(void) ;
 
 extern int migrate_0920_dependencies(void) ;
+extern int migrate_0920_eventdir(void) ;
 extern int migrate_0920_logsuffix(void) ;
 extern int migrate_0920_runas(void) ;
 extern int migrate_0920_state(void) ;

@@ -227,6 +227,8 @@ int sanitize_migrate(ssexec_t *info, const char *oversion)
                     log_dieusys(LOG_EXIT_SYS, "write the runas of the loggers") ;
                 if (migrate_0920_verbosity() < 0)
                     log_dieusys(LOG_EXIT_SYS, "write the run and finish scripts of the services") ;
+                if (migrate_0920_eventdir() < 0)
+                    log_dieusys(LOG_EXIT_SYS, "create the event fifodir of the oneshots") ;
                 if (!sanitize_resolve(info, DATA_TREE))
                     log_dieusys(LOG_EXIT_SYS, "sanitize trees resolve files") ;
                 if (!sanitize_resolve(info, DATA_TREE_MASTER))
