@@ -98,7 +98,7 @@ extern int svc_lot(selection_service_t *lot, selection_service_t const *sel, ser
 
 extern int svc_conflict(selection_service_t const *sel, service_graph_resolve_t *store, char const *base, uint8_t mode, uint32_t *member, uint32_t *other) ;
 extern int svc_send(selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req, bitset32_t *reached) ;
-extern int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who) ;
+extern int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who, uint64_t timeout) ;
 
 
 /**
@@ -145,7 +145,7 @@ struct svc_ctx_s
 
 extern int svc_init_ctx(svc_ctx_t *asvc, selection_service_t const *lot, service_graph_resolve_t *store, svc_request_t const *req) ;
 extern int svc_launch(svc_ctx_t *asvc, selection_service_t const *lot, svc_request_t const *req) ;
-extern int svc_unsupervise_one(resolve_service_t *res, fdholder_client_t *a, bool *started, uint8_t who) ;
+extern int svc_unsupervise_one(resolve_service_t *res, fdholder_client_t *a, bool *started, uint8_t who, uint64_t timeout) ;
 
 extern int svc_scandir_ok (char const *dir) ;
 extern int svc_supervise_ok(char const *dir) ;

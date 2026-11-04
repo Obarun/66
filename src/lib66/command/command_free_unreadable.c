@@ -182,7 +182,7 @@ static int take_out(char const *name, bool logger, ssexec_t *info, fdholder_clie
     struct resolve_hash_s h ;
 
     if (made_of(&h, name, logger, info) >= 0)
-        e = svc_unsupervise_one(&h.res, a, started, info->who) ;
+        e = svc_unsupervise_one(&h.res, a, started, info->who, info->timeout) ;
 
     service_read_free(&h) ;
 

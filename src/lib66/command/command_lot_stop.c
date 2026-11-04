@@ -65,7 +65,7 @@ int command_lot_stop(selection_service_t const *lot, service_graph_resolve_t *st
             if (!bitset32_isvalid(&reached, index))
                 selection_service_remove(&out, index) ;
 
-        if (svc_unsupervise(&out, store, info->who) < 0)
+        if (svc_unsupervise(&out, store, info->who, info->timeout) < 0)
             log_dieusys(LOG_EXIT_SYS, "unsupervise the services of the selection") ;
     }
 

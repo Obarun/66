@@ -25,7 +25,7 @@
 #include <66/selection.h>
 #include <66/svc.h>
 
-static int one(service_graph_resolve_t *store, uint32_t index, fdholder_client_t *a, bool *started, uint8_t who)
+static int one(service_graph_resolve_t *store, uint32_t index, fdholder_client_t *a, bool *started, uint8_t who, uint64_t timeout)
 {
     struct resolve_hash_s *h ;
 
@@ -39,10 +39,10 @@ static int one(service_graph_resolve_t *store, uint32_t index, fdholder_client_t
     if (r <= 0)
         return r ;
 
-    return svc_unsupervise_one(&h->res, a, started, who) ;
+    return svc_unsupervise_one(&h->res, a, started, who, timeout) ;
 }
 
-int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who)
+int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *store, uint8_t who, uint64_t timeout)
 {
     log_flow() ;
 
@@ -52,13 +52,13 @@ int svc_unsupervise(selection_service_t const *lot, service_graph_resolve_t *sto
     fdholder_client_t a ;
 
     FOREACH_SELECTION_UNORDERED(lot, index) {
-        r = one(store, index, &a, &started, who) ;
+        r = one(store, index, &a, &started, who, timeout) ;
         if (r < 0)
             goto end ;
     }
 
     FOREACH_SELECTION_REVERSE(lot, pos, index) {
-        r = one(store, index, &a, &started, who) ;
+        r = one(store, index, &a, &started, who, timeout) ;
         if (r < 0)
             goto end ;
     }
