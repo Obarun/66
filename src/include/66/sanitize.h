@@ -26,6 +26,7 @@
 
 extern int sanitize_system(ssexec_t *info) ;
 extern int sanitize_migrate(ssexec_t *info, const char *oversion) ;
+extern int sanitize_version(ssexec_t *info) ;
 extern int sanitize_fdholder_start(fdholder_client_t *c, const char *socket) ;
 extern int sanitize_fdholder(resolve_service_t *res, fdholder_client_t *c, ss_state_t *sta, uint32_t flag, uint8_t init) ;
 extern int sanitize_livestate(resolve_service_t *res, ss_state_t *sta) ;

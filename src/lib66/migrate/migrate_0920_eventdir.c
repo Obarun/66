@@ -36,7 +36,6 @@ static int migrate_one(char const *base, char const *name)
 
     r = resolve_read(&w, base, name) ;
 
-    // a oneshot initialized by a release that gave it no event fifodir
     if (r > 0 && res.type == E_PARSER_TYPE_ONESHOT && !access(res.sa.s + res.live.servicedir, F_OK)) {
 
         log_trace("create fifo: ", res.sa.s + res.live.eventdir) ;
