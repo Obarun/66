@@ -830,11 +830,14 @@ int main(void)
         CHECK(dir_create_parent(path, 0755), "create %s", path) ;
     }
 
-    // the runner of a logger, read by write_logger()
+    // the runner of a logger, read by write_logger() and parse_clean_runas()
+    int other = strcmp(SS_LOGGER_RUNNER, "root") ;
+    char const *pw = other ? "root:x:0:0:root:/root:/bin/sh\n" SS_LOGGER_RUNNER ":x:999:999::/:/sbin/nologin\n" : "root:x:0:0:root:/root:/bin/sh\n" ;
+    char const *gr = other ? "root:x:0:\n" SS_LOGGER_RUNNER ":x:999:\n" : "root:x:0:\n" ;
     auto_strings(path, root, "/etc/passwd") ;
-    CHECK(file_write(path, "root:x:0:0:root:/root:/bin/sh\n", 30), "passwd") ;
+    CHECK(file_write(path, pw, strlen(pw)), "passwd") ;
     auto_strings(path, root, "/etc/group") ;
-    CHECK(file_write(path, "root:x:0:\n", 10), "group") ;
+    CHECK(file_write(path, gr, strlen(gr)), "group") ;
 
     fflush(stdout) ;
     pid_t pid = fork() ;

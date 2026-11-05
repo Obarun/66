@@ -28,7 +28,7 @@ build:
   stage: build
   script:
   - ./build_toolchain.sh
-  - meson setup build -D test=true
+  - meson setup build -D test=true -D with-doc=true -D 66-log-user=66log
   - meson compile -C build
   - meson test --print-errorlogs -C build
   - DESTDIR=gitlab-ci meson install -C build
