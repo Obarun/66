@@ -2,43 +2,74 @@
 
 # In 0.9.2.0
 
+- Adaptation to oblibs 0.4.1.0
+
 ## Overview
 
-Three options that never did what they promised are gone: the global `-l` of the
-`66` command, the same `-l` of `66-hpr` and of `66-shutdownd`, and the `clone`
-value of `66 tree -o`. With the global `-l` goes the `LIVE=` key of `init.conf`,
-which was its only source. The live directory is now fixed at compile time, by
-the `-D livedir=` option to `meson setup`, and nothing overrides it at runtime.
+This release makes 66 more predictable and easier to debug. Commands that refuse
+leave nothing half done, a service can no longer hang its own stop forever,
+oneshots get the same care as long-running services, and the upgrade works on a
+running machine.
 
-A name now designates one thing at a time, a service bearing it or a provider of
-it, never both. Providers are recorded apart, under `.provide/`, and exactly one
-of them answers to a name at a time.
+**Debugging.** The verbosity you set for the boot, `VERBOSITY` in `init.conf` or
+on the kernel command line, now reaches every 66 tool: the scandir, the
+supervisors, the internal helpers and the services themselves. When you debug a
+boot at a high verbosity, you get their trace as well, not only the one of the
+`66` command. A `VERBOSITY` exported in your shell does the same for the `66`
+commands you type.
 
-The dependency graph is rebuilt from what the frontends declare, and nothing
-else. A resolve file holds the declarations of its frontend; what a service is
-required by is computed when the graph is built, never written in the resolve
-file of another service. The graph of each account is kept in
-`%%livedir%%/graph/<uid>/system`, built again after each command that writes
-the system, at the start of the scandir and after a reboot. The commands that
-write the system take an exclusive lock of it, so two of them no longer write
-over each other.
+**Stopping a service.** A service that does not stop is now killed after 10
+seconds, the default chosen when 66 is built, unless its frontend sets its own
+`[Stop] Timeout`; `[Stop] Timeout = 0` keeps waiting without end. A shutdown or a `66 stop` can no longer wait forever
+on one stuck service.
 
-Every command now follows one contract, stated situation by situation: a refused
-command changes nothing, `-P` acts on the named services alone, an event means
-the order acted, and a service that cannot be read, that sits on a dependency
-cycle or that lost its frontend is named, with its repair, instead of breaking
-the commands that meet it.
+**Oneshots.** A oneshot that runs past its timeout is stopped together with
+every process it started, instead of leaving them behind. `66 status` tells you
+whether its script failed, was killed by a signal or could not be run at all.
+And a reactor can now act when a oneshot finishes, the same way it already
+could for a long-running service.
 
-The way down of every service is now bounded: a `[Stop] Timeout` the frontend
-does not write is a general stop delay chosen at build time, `10000`
-milliseconds by default.
+**A broken service no longer stops everything.** A tree, the boot and the
+shutdown now start or stop every service that is fine, and only leave aside a
+broken service, one whose files cannot be read or that sits in a dependency
+loop, together with the services that depend on it; the tree is then reported
+as failed, and the broken service is named with the command that repairs it.
+Before, the tree stopped at the first refusal and the services after it were
+never touched, so one bad service could leave a whole boot half started.
 
-The migration is **automatic**. It stamps the resolve files at the new version
-and rewrites the control scripts of a scandir already on disk, so a machine
-upgraded without a reboot keeps answering the power button. It also moves the
-aliases you already had into `.provide/`, and rewrites the dependencies and the
-stop delay of each service from its frontend, see
-[What happens by itself](#what-happens-by-itself).
+**What a command does.** Every command behaves the same way in every situation.
+A command that refuses one of the services you named changes nothing at all,
+instead of acting on some of them. `-P` acts on the services you named and
+nothing else, not even their logger. A command that needs a helper of the
+scandir that is still starting now waits a moment instead of failing.
+
+**Running 66 commands at the same time.** Two 66 commands run at the same time
+no longer write over each other: they take turns, and the one that waits says
+so. A service can therefore run 66 itself, for instance
+`Execute = ( 66 start serviceA )`, without blocking the command that started it
+nor breaking the commands you type meanwhile.
+
+**Names.** A name now means one thing: either the service that bears it, or the
+service that provides it with `Provide`, never both, and only one provider
+answers to a name at a time. `66 remove` on a name only a provider answers to
+tells you which service to remove, instead of removing the provider.
+
+**Frontend files.** 66 now reads and runs the `Execute` line of your frontends
+itself: `execl-cmdline` is no longer needed around a command, a syntax error
+stops the start with a message naming the service, and a variable left empty in
+`[Environment]` no longer breaks the start.
+
+**Gone.** A few options that never worked are removed: `-l` of `66`, `66-hpr` and
+`66-shutdownd`, `clone=` of `66 tree`, and the `LIVE=` line of `init.conf`. The
+place where 66 keeps its runtime files, `/run/66` by default, is now chosen when
+66 is built. If you never used these, nothing changes for you.
+
+**The upgrade.** It is automatic and works without a reboot. The first 66
+command after the upgrade converts the files of 66, moves your aliases, rewrites
+the dependencies and the stop delay of each service from its frontend, and
+restarts the helpers whose behaviour changed, so a running machine keeps working,
+see [What happens by itself](#what-happens-by-itself). Check
+[What you must do](#what-you-must-do) first.
 
 ## What you must do
 
@@ -65,13 +96,83 @@ Then check these points against your frontends and your scripts:
 5. **An `Emit` naming an event with a dot is refused** by the parse: the dotted
    names belong to the events 66 raises itself. Rename the event, and the `On`
    that listens to it.
-6. **A module is closed.** A member that names a service outside its module in
-   its `Depends`, `RequiredBy` or `OptsDepends`, a service outside the module
-   that names a member, and a member of `Type = module` are refused by the
-   parse. Declare the outside dependencies on the module itself.
-7. **A `CopyFrom` path that does not exist is refused** by the parse.
-8. **A script that relied on `-P` taking the logger along** must name the logger
+6. **A `CopyFrom` path that does not exist is refused** by the parse.
+7. **A script that relied on `-P` taking the logger along** must name the logger
    itself: `-P` now acts on the named services only.
+8. **`66 fdholder start|stop|restart` is gone.** Replace it in your scripts by
+   `66 internal start|stop|restart fdholderd`: `66 fdholder` refuses these
+   subcommands as unknown.
+9. **`66 fdholder store|retrieve|list` lost their `-T` option.** Pass the
+   timeout to `66` itself: `66 -T 5000 fdholder list` instead of
+   `66 fdholder list -T 5000`.
+
+## New things to explore
+
+- **`66 internal`** ([internal](66-internal.html)):
+
+    Each scandir runs three helpers of its own: `fdholderd`, which keeps the
+    pipes between your services and their loggers, `oneshotd`, which runs your
+    oneshots, and `eventd`, which runs your reactors. `66 internal start`,
+    `stop` and `restart` act on one of them, for instance
+    `66 internal restart eventd` when the reactors no longer answer. With `-o`,
+    root acts on the helpers of the scandir of another user. The command waits
+    until the helper is in the state you asked for, for the time given by
+    `66 -T`. `66 internal status` shows the state of the three helpers, or of
+    the one you name, with the same line as `66 status`.
+
+- **`66 reconfigure -c`** ([66 reconfigure](66-reconfigure.html)):
+
+    Repairs a service that 66 can no longer read. It removes what the service
+    left on disk, as `66 remove` does, its log directory and its configuration
+    included, parses its frontend again and puts it back in the state it was
+    in. Commands that meet a broken service name this repair for you.
+
+- **`66 status` with several services** ([66 status](66-status.html)):
+
+    `66 status sshd nginx postgresql` shows the three of them, in the order 66
+    starts them.
+
+- **Reactors on a oneshot** ([event system](66-event.html)):
+
+    A reactor can now act when a oneshot finishes, the same way it already
+    could for a long-running service: `From = ( mount-fstab )` with
+    `On = ( done )` runs once the mounts are done, `On = ( failed )` or
+    `On = ( exited:3 )` when they fail. A oneshot sends the end of its script
+    only: `done`, `down` or `failed`, with how its script ended, never
+    `starting` nor `stopping`.
+
+- **How a oneshot ended** ([66 status](66-status.html)):
+
+    `66 status` and `66 runstate` now tell how the script of a oneshot ended:
+    `signaled` with the signal that killed it, `exec-failed` with the reason it
+    could not be run at all, besides `exited` with its exit code. A failed start
+    says so as well, with `unable to spawn its script: <reason>`.
+
+- **Handing a name over to a provider** ([Provide](66-dependencies.html#provide-i-also-answer-to-these-names)):
+
+    A provider can take over the name of a disabled service.
+    `66 disable -P dbus` then `66 enable dbus-launch` hand `dbus` over to
+    `dbus-launch`, the services that depend on `dbus` staying in place;
+    `66 enable dbus` takes the name back. While the service bearing the name is
+    enabled, its provider is refused.
+
+- **Services that run 66**:
+
+    Two 66 commands run at the same time take turns instead of writing over each
+    other, so a service or a reactor can run 66 itself. A oneshot can start the
+    services it prepared, `Execute = ( 66 start serviceA )`, and a reactor can
+    remove a service, and itself, once that service goes down:
+
+    ```
+    [Start]
+    Execute = ( 66 remove sddm sddm-remove )
+
+    [Event]
+    EventType = service
+    From = ( sddm )
+    On = ( down )
+    Do = start
+    ```
 
 ## Interface changes
 
@@ -92,6 +193,7 @@ Then check these points against your frontends and your scripts:
 - **The `LIVE=` key of `init.conf` is gone**:
 
     It fed the global `-l`, and nothing else. The skeleton no longer ships it.
+    A `LIVE=` on the kernel command line is ignored as well.
 
 - **`66 tree -o clone=` is gone**:
 
@@ -104,28 +206,23 @@ Then check these points against your frontends and your scripts:
     A neighbour that names the removed service in its `RequiredBy` keeps its
     declaration, and the name becomes absent.
 
-- **`66 reconfigure -c, --cleanup` is new** ([66 reconfigure](66-reconfigure.html)):
-
-    It removes what the named services left on disk, as `66 remove` does, their
-    log directory and their configuration included, then parses them again and
-    puts them back in their state. It repairs a service whose resolve file or one
-    of its addons does not read.
-
 - **`-P` never takes the logger**:
 
     Under `-P`, `start`, `stop`, `free`, `signal`, `reload`, `restart`, `enable`
     and `disable` act on the named services only, their logger included in what
     is left aside. A named logger is acted upon alone under `-P`.
 
-- **`66 status` takes several services** ([66 status](66-status.html)):
+- **`66 state` no longer shows `toparse`, `isparsed` and `torestart`**:
 
-    They are displayed in the order of the dependency graph. A runtime record that
-    cannot be read shows `unreadable`.
+    They told nothing: `isparsed` was always true, a service not parsed has no
+    state file, and `toparse` and `torestart` were never set to true. `66 state -f`
+    refuses them as unknown fields.
 
-- **New build option `default-stop-timeout`**:
+- **`66 fdholder store|retrieve|list` take the timeout of `66 -T`**:
 
-    The general stop delay, in milliseconds, applied when a frontend does not
-    write `[Stop] Timeout`. `10000` by default, `0` for without end.
+    Their own `-T, --timeout` option is gone; like every command, they wait
+    for the time given by `66 -T`, without limit by default. The wait for a
+    `fdholderd` that does not listen yet stays bounded to 3 seconds.
 
 ## Behaviour changes
 
@@ -140,23 +237,15 @@ Then check these points against your frontends and your scripts:
   or addon does not read, or that is part of or depends on a dependency cycle,
   is refused with `100` by a command whose action touches it, with a message
   that names its repair: `66 reconfigure -c` or `66 parse -f`. A command that
-  does not touch it acts and warns at verbosity 2. A service whose frontend is
-  gone is refused only by `66 parse -f`, `66 reconfigure` and `66 status`
-  naming it, the others act from its resolve file: `66 remove` takes it out.
-  `66 tree start`, `66 tree stop`, `66 tree free`, the boot and the shutdown leave
-  it out, with what depends on it, and start or stop the others; the tree then
-  counts as failed.
-- **A dependency cycle in the frontends is refused** by the parse.
-- **`66 parse -f` keeps the tree and the activation** of the service, unless
-  `66 -t` names another tree, and refuses a supervised service whose frontend
-  changes its type.
-- **`66 enable -t` moves an already parsed service** and its logger to the
-  given tree.
-- **A provider takes over the name of a disabled service**: `66 disable -P dbus`
-  then `66 enable dbus-launch` hand `dbus` over to `dbus-launch`, the services
-  that depend on `dbus` staying in place; `66 enable dbus` takes the name back.
-  While the service bearing the name is enabled, its provider is refused (see
-  [Provide](66-dependencies.html#provide-i-also-answer-to-these-names)).
+  does not touch it acts and warns at verbosity 2. `66 tree start`,
+  `66 tree stop`, `66 tree free`, the boot and the shutdown leave such a service
+  out, with what depends on it, and start or stop the others; the tree then
+  counts as failed. A service whose frontend is gone is not invalid: it is
+  refused only by `66 parse -f`, `66 reconfigure` and `66 status` naming it,
+  the others act from its resolve file, and `66 remove` takes it out.
+- **`66 parse -f` of a supervised service whose frontend changes its type
+  exits `100`** instead of `111`, and its message names `66 reconfigure` as the
+  other way out.
 - **Enabling a provider while a rival answers to the same name exits `100`**
   instead of `111`. A script that tested the code must be adjusted.
 - **The `[Start] Timeout` of a `Notify` service is enforced** by its
@@ -165,25 +254,138 @@ Then check these points against your frontends and your scripts:
   Without `Notify`, nothing is timed.
 - **The way down waits for `[Stop] Timeout`**, never for `[Start] Timeout`, then
   `SIGKILL`. A stop that ends with that kill exits with `111`. The logger gets
-  the general stop delay, and the `finish` script is bounded by the same delay
-  instead of a fixed five seconds.
+  the general stop delay, and the `finish` script is bounded by the same delay,
+  where it got five seconds when the frontend wrote no `[Stop] Timeout`.
 - **An event means the order acted.** An order that changes nothing sends no
   event: a start of a classic that runs, a stop of a service already down, a
   signal to a service that is down. `66 reload` sends no signal event.
-- **Only `66 free` disarms a reactor or an event source.** `66 stop` and every
-  signal leave it armed; `66 remove` and `66 reconfigure` disarm it as `free`
-  does, and `66 reconfigure` arms again a reactor it found armed. `66 restart` of
-  a reactor brings it up now, and a reactor armed above a restarted service comes
-  back armed without running.
+- **The script of a oneshot is timed by 66-oneshotd.** Past its `[Start] Timeout`,
+  the script and every process it forked get `SIGTERM`, then `SIGKILL` once its
+  `[Stop] Timeout` has passed; past its `[Stop] Timeout`, its `[Stop]` script and
+  its children get `SIGKILL`. The oneshot is down and its `result` reads
+  `timeout-start` or `timeout-stop`; with `[Stop] Timeout = 0`, no `SIGKILL`
+  follows the `SIGTERM`. The script used to be killed alone with `SIGKILL`, its
+  children left running, and the oneshot read `failed`.
+- **`66 runstate` shows an armed oneshot reactor as `done` or `down`**, the
+  record its script left, as it shows a classic reactor as `down`. `66 status`
+  still shows it `waiting`, with its last run; a reactor that never ran reads
+  `waiting (never run)`.
 - **`66 runstate` shows the current state**: `stopping` for a service brought
   down by `66 stop`, `finishing` for one that died by itself, `up` for a classic
   that runs after `66 signal -o`, `restarting` during a crash loop.
 - **A failed start says how the service ended**, at verbosity 2: `exited with
-  code <n>`, `killed by signal <n>`, `not ready within its start timeout`, and
-  `killed at its stop timeout` for a stop.
-- **`66 env set`** refuses an empty value, and both `set` and `import` refuse a
-  value starting with an exclamation mark.
-- **`66 log`** names an unknown or never parsed service as every other command.
+  code <n>`, `killed by signal <n>`, `not ready within its start timeout`,
+  `unable to spawn its script: <reason>` for a oneshot, and `killed at its stop
+  timeout` for a stop.
+- **`66 env import` refuses a value starting with an exclamation mark**, as
+  `66 env set` does.
+- **Every 66 program follows the `VERBOSITY` of the boot.** `66 boot` passes the
+  `VERBOSITY` of `init.conf` or of the kernel command line on in the
+  environment, and every 66 program, `66` itself, the scandir and the services
+  included, reads it when it starts; an explicit `-v` takes precedence. A
+  `VERBOSITY` exported in your shell now sets the verbosity of the `66` commands
+  you type. The scandir of the boot no longer runs at verbosity `0`, and a
+  service started without `VERBOSITY` in its environment runs `66-execute` at
+  verbosity `1` instead of `2`. The value is read as a decimal number: `8` and
+  `9` used to send the boot to sulogin.
+- **The `Execute` of an `auto` build is run by `66-execute` itself.** The
+  substituted text is split into words with the execline grammar and the first
+  word is executed, without going through `execlineb`, and no `run.user` or
+  `finish.user` is written in the live directory any more. An empty variable
+  written alone leaves no word, so the `execl-cmdline -s { ... }` that frontends
+  wrapped around their command to drop empty variables is no longer needed. A
+  syntax error stops the start with `syntax error in run_user of: <service>`,
+  `unmatched { in ...` or `unmatched } in ...`, see
+  [Substitution in Execute](66-frontend.html#substitution-in-execute).
+- **A conflicting service exits `100`** instead of `111`, at `66 enable` (enabled
+  rival) as at `66 start` (running rival). The check now covers every service
+  the command brings up, its dependencies included, and `66 restart`,
+  `66 reload` and `66 tree start` make it too: a tree holding a service in
+  conflict with a running one starts nothing and counts as failed.
+- **`66 remove` and `66 enable` refuse a name only a provider answers to.**
+  `66 remove network` used to remove `connmand`, and `66 enable network` to
+  enable `connmand` again when it was enabled. Both now exit `100`:
+
+    ```
+    name: network is provided by: connmand -- '66 remove connmand' instead
+    name: network is provided by: connmand and no service has this name -- '66 enable connmand' instead
+    ```
+
+- **`66 log` tells an unknown name from a service never parsed**, with the
+  messages of every other command, where it answered `unknown service: <name>`
+  in both cases:
+
+    ```
+    service: <name> is unknown: no frontend and no service answers to the name -- is its provider enabled?
+    service: <name> is not parsed -- parse it with 66 parse <name>
+    ```
+
+- **The scandir starts its internal services first, and commands wait for
+  them.** At its first scan, `66-scandir` starts `fdholderd`, `oneshotd`,
+  `eventd` and, on a boot scandir, the `scandir-log` catch-all logger, alone. The
+  other services and the readiness notification of `66 scandir start -d` wait
+  until each of them is up and ready, or for 3 seconds at most, see
+  [internal services](66-scandir.html#internal-services). Meanwhile, a command
+  that needs one of them, the start of a oneshot, `66 fdholder`, `66 emit`,
+  `66 env` or the shutdown, waits up to 3 seconds for it to listen, and
+  `66 start`, `stop`, `signal`, `reload` and the tree commands wait for the
+  supervisor of a service that is not there yet, for the time of `66 -T`,
+  3 seconds by default. They used to fail at once, the last ones with
+  `supervisor not listening`. Nothing is waited for when the scandir does not
+  run.
+
+- **`66 boot` waits for the readiness of the scandir with `CATCHLOG=1` too.** The
+  stage 2 starts the trees once the internal services of the scandir are ready,
+  whatever the value of `CATCHLOG`.
+- **A stopped internal service comes back with its scandir.** `66 internal stop`
+  stops `fdholderd`, `oneshotd` or `eventd` until the scandir is started again,
+  which always brings its internal services back up. `66 fdholder stop` kept the
+  helper down even after a restart of the scandir.
+- **The `66 scandir` subcommands no longer act on `fdholderd` and `oneshotd` on
+  their own.** `zombies`, `abort`, `nuke` and `annihilate` leave them running,
+  `reconfigure` and `check` no longer start them; `stop` and `quit` bring them
+  down with the other services.
+- **A restart of `66-eventd` runs no reactor.** It arms again the reactors it
+  finds and waits for their next event. A oneshot reactor that had already run
+  used to run once more, without any event.
+- **`66 start` of a stopped oneshot reactor runs it if its event already
+  happened.** The source is already in the state the reactor waits for, so the
+  reactor runs at once, as at its first start. It used to wait for the next
+  event of its source.
+- **A reactor whose `From` names a module, or a member of a module from outside
+  that module, is refused by the parse** with `100`. It used to be accepted:
+
+    ```
+    service: <name> watches in its From: <module>, a module -- a module sends no event
+    service: <name> watches in its From: <module>:<member>, a member of the module: <module> -- a service outside a module watches none of its members
+    ```
+
+- **A value between quotes opens and closes them on the line of its key.**
+  `Description = no quotes`, `Description = "no end` and a value written on the
+  next line are refused with `invalid format of key: Description`. They used to
+  be accepted: the first with an empty description, the keys after it being lost,
+  the two others with whatever text was found.
+- **Text after the closing parenthesis of a value, on its line, is refused**
+  with `invalid format of key: Execute`, as `Execute = ( true ) # note` already
+  was: `Execute = ( true )#Timeout = 3333`, `Execute = ( true )Timeout = 3333`,
+  or a `# note` after the `)` that ends a script written on several lines. They
+  used to be accepted, the text ignored or, for a key glued to the parenthesis,
+  read.
+- **A service is taken out of the supervision once its supervisor has exited.**
+  `66 free`, `66 remove`, `66 stop -u`, `66 disable -S`, `66 tree free`,
+  `66 reconfigure` and the shutdown wait for the `66-supervise` of each service
+  to exit before removing its live directory, for the time of `66 -T`, 3 seconds
+  by default. A supervisor that does not exit in time stops the command with
+  `111`:
+
+    ```
+    supervisor of: <name> did not exit
+    ```
+
+  The live directory used to be removed at once, under the supervisor.
+- **The parse no longer reports a frontend without `Version`** at the default
+  verbosity: `key Version at section [Main] was not set -- define it to: <version>`
+  is written at the trace level only.
 
 ## What happens by itself
 
@@ -212,6 +414,18 @@ together migrate the system once.
   names explicitly is kept.
   The log directory and its content are left as they are, with the owner the
   previous release gave them.
+- **The state file of each service is written again without `toparse`,
+  `isparsed` and `torestart`**, the copy under the live directory included.
+- **The `run` and `finish` scripts of each service are written again**, without
+  the `VERBOSITY` import of the previous release: `66-execute` takes its
+  verbosity from the environment.
+- **The daemons whose behaviour changed are started again from this release**,
+  in a scandir that runs: `66-shutdownd`, so the next shutdown is driven by it,
+  and `66-oneshotd` and `66-eventd`, which the first command after the upgrade
+  waits for. A scandir that does not run starts the daemons of this release when
+  it starts. `fdholderd` keeps running, with the descriptors it holds. A shutdown
+  planned before the upgrade, with `66 reboot +<minutes>` or
+  `66 poweroff <hh:mm>`, is dropped: plan it again once the upgrade is done.
 - **The aliases move into `.provide/`.** An alias whose name a service already
   bears does not survive: the service keeps the name, the alias loses its claim,
   and a warning names the service concerned. Both frontends stay. To hand the
@@ -222,6 +436,10 @@ together migrate the system once.
     service: <name> has a name a provider claims -- the service keeps it, remove one of them to hand it over
     ```
 
+- **A oneshot already started gets its event directory**, the one its reactors
+  listen to, so the first shutdown after an upgrade made without a reboot reports
+  the end of each oneshot.
+
 ## Bug fixes
 
 - **A forced shutdown no longer writes past the end of its argument array**:
@@ -230,62 +448,100 @@ together migrate the system once.
     `66-hpr` in an array sized one element short, and the terminating null
     landed outside it.
 
-- **The boot logger fifo no longer carries a doubled separator**:
+- **`66 fdholder` applies the options of its subcommands**:
 
-    The path was assembled with a separator the live directory already ends
-    with.
+    `--fd`, `--expire` and `--delete` were accepted and ignored:
+    `66 fdholder store --fd 4 <id>` stored the descriptor 0, and a value that
+    was not a number passed without an error.
 
-- **`66 log` follows a provided name**:
+- **`66 configure --import` refuses a single version**:
 
-    `66 log network`, on a name only a provider answers to, answered `unknown
-    service: network`. It now reaches the provider that answers to it.
+    `66 configure --import 0.9.1.2 foo`, without a destination, did nothing and
+    exited `0`. It now exits `100`: an import names a source and a destination.
 
-- **`66 remove` names the provider instead of asking whether the service was
-  parsed**:
+- **An empty variable no longer erases an `Execute` script**:
 
-    `66 remove network`, on a name no service bears, answered `unable to find
-    service: network -- did you parse it?`. It now says which provider answers
-    to the name, and to remove that provider instead.
+    A reference to an empty variable in an `auto` `Execute` dropped the whole
+    text of the script, and the start failed. `key=` in `[Environment]` now gives
+    the variable an empty value, see
+    [Substitution in Execute](66-frontend.html#substitution-in-execute).
+
+- **`66 boot` and `66 tree start` do nothing when no tree is enabled**:
+
+    They stopped with `unable to bad parameter: Invalid argument` and exited
+    `111`.
+
+- **`66 snapshot remove ""` no longer destroys every snapshot**:
+
+    An empty name designated the snapshot directory itself. `create`, `remove`
+    and `restore` now refuse an empty name with `100`.
+
+- **`66 tree admin -o depends=none` forgets the tree in its former dependencies**:
+
+    The former dependency kept the tree in its `requiredby`, and a later
+    `66 tree disable` of it disabled the tree as well.
+
+- **`66 tree admin -o requiredby=` writes both sides**:
+
+    `requiredby=<tree>` recorded nothing, and `requiredby=none` did not remove
+    the tree from the trees that required it.
+
+- **`66 parse -f` checks the dependency names**:
+
+    A forced parse skipped the check, and wrote a resolve file naming a
+    dependency no frontend provides. It is now refused, as the first parse is.
+
+- **A name too long for its buffer is refused instead of overflowing it**:
+
+    A `From` naming a service longer than the maximum, a `StdOut` path longer
+    than the maximum and a long snapshot name overran a fixed buffer. The parse
+    now refuses the first two, and the snapshot commands size the path to the
+    name.
+
+- **A module reactor runs its members on every event**:
+
+    A `Do = start` module reactor ran its members on the first event only and
+    did nothing on the next ones, where the event system said it runs once per
+    event.
+
+- **The parse reads a key only at the start of a line**:
+
+    A capital word in a script was taken for a key.
+    `Execute = ( echo HelloWorld )` warned `unknown key: HelloWorld)`,
+    `Execute = ( echo TimeoutStart=7 )` was refused, and a script line
+    `Timeout=7777` set the start timeout of the service. These scripts are now
+    read as they are written, without a warning.
+
+- **A `[` inside a value or a comment no longer opens a section**:
+
+    `Description = "its [Stop] takes 2s"` was cut to `its `, and the comment
+    `# answer [yes|no]` warned `invalid section name: yes|no`.
+
+- **A commented key is ignored**:
+
+    `#  Type = classic` and `# Version = 1.2.3` were read as keys.
+
+- **A misnamed section no longer gives its keys to the previous one**:
+
+    After `[Stp]`, a typo for `[Stop]`, the `Execute = ( echo stop )` that
+    followed replaced the script of `[Start]`. The keys of the misnamed section
+    are now ignored, with `invalid section name: Stp`.
 
 ## For packagers
 
-`meson setup` now refuses a `livedir` that is not an absolute path, and trims a
-trailing slash from it. Since it is the only source of the live directory left,
-a mistake there used to surface at boot and now stops the build.
-
-`lib66` breaks its API and its ABI. `set_livedir()` and `set_livestate()` are
-gone: the first validated a live directory a caller could choose, and no caller
-chooses one any more, the second had none. `set_livescan()` and
-`set_liveenviron()` now build the whole path themselves instead of extending a
-buffer the caller had preloaded, and `env_runtime_setdir()` loses the live
-directory from its arguments for the same reason. `struct ssexec_s` loses a
-field, and `append_shutdown` and `write_shutdownd` lose a parameter. Rebuild
-everything that links against it, `66-tools` included.
-
-The graph API is replaced. `graph_add_deps()` and the `service_graph_build_*()`,
-`service_graph_collect()`, `service_graph_resolve()` family are gone; the graph
-of the system is built and read through `66/graph.h`, the selection of a command
-through the new `66/selection.h`, and the writes of the system go through the
-`service_graph_write_begin()` / `service_graph_write_end()` transaction of
-`66/graph.h`. A program that read the `depends` and
-`requiredby` of a resolve file to draw the graph now reads the declarations of
-each frontend only: the services that depend on a service are found by reading
-the `depends` of every service and the `requiredby` it declares itself.
-`symlink_switch()`, `env_prepare_for_write()`, the old parse entry points
-(`parse_service()`, `parse_cleanup()`...), `sanitize_graph()`,
-`sanitize_source()` and `sanitize_write()` are gone as well, and `svc_launch()`,
-`svc_init_ctx()`, `svc_is_up()` and `svc_compute_ns()` leave the public `66/svc.h`.
-Several primitives now return `1`, `0` or `-1`.
-
-`symlink_provide()` is gone from `66/symlink.h`. The provided names are handled
-by the `symlink_provide_*()` family: `symlink_provide_parse()`,
-`symlink_provide_enable()`, `symlink_provide_release()`,
-`symlink_provide_drop()`, and the checks `symlink_provide_isavailable()`,
-`symlink_provide_claim()` and `symlink_provide_isfree()`, which write the reason
-of a refusal in a buffer instead of exiting.
-
-`meson setup` takes a new `-D default-stop-timeout=` option, in milliseconds,
-`10000` by default.
+- **The build dependency is now `oblibs >= 0.4.1.0`.**
+- **New build option `default-stop-timeout`**: the stop delay, in
+  milliseconds, given to a service whose frontend writes no `[Stop] Timeout`.
+  `10000` by default, `0` for without end.
+- **`livedir` must be an absolute path.** `meson setup` refuses a relative one
+  and trims a trailing slash. Nothing changes it at runtime any more: the
+  `LIVE=` key is gone from the `init.conf` skeleton.
+- **`lib66` breaks its API and its ABI.** Rebuild everything that links against
+  it, `66-tools` included, and ship `lib66` with the 66 programs of the same
+  release: a `66-oneshotd` and a `lib66` of different releases do not
+  understand each other.
+- **The installed `lib66` carries an absolute `RUNPATH`**, `<prefix>/<libdir>`,
+  where it was relative.
 
 ---
 
