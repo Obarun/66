@@ -1,6 +1,6 @@
 project('66',
         'c',
-        version: '0.9.1.2',
+        version: '0.9.2.0',
         meson_version: '>=1.1.0',
         license: 'ISC',
         default_options: [
@@ -60,7 +60,7 @@ if get_option('doc-only')
 endif
 
 # Versioning
-version_oblibs = '>=0.4.0.0'
+version_oblibs = '>=0.4.1.0'
 
 # Compiler setup
 cc = meson.get_compiler('c')
