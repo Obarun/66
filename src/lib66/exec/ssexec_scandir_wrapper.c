@@ -30,13 +30,10 @@
  * (which set the signal name). */
 
 extern opt_on_option_fn on_scandir_create ;
-extern opt_on_option_fn on_scandir_signal ;
 
-extern opt_cmd_fn do_scandir_start ;
 extern opt_cmd_fn do_scandir_stop ;
 extern opt_cmd_fn do_scandir_reconfigure ;
 extern opt_cmd_fn do_scandir_check ;
-extern opt_cmd_fn do_scandir_quit ;
 extern opt_cmd_fn do_scandir_abort ;
 extern opt_cmd_fn do_scandir_nuke ;
 extern opt_cmd_fn do_scandir_annihilate ;

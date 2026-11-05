@@ -137,6 +137,12 @@ extern opt_cmd_fn ssexec_env_import ;
 extern opt_cmd_fn ssexec_env_set ;
 extern opt_cmd_fn ssexec_env_unset ;
 extern opt_cmd_fn ssexec_env_list ;
+extern opt_cmd_fn do_tree_start ;
+extern opt_cmd_fn do_tree_stop ;
+extern opt_cmd_fn do_scandir_start ;
+extern opt_cmd_fn do_scandir_quit ;
+
+extern opt_on_option_fn on_scandir_signal ;
 
 /** wrapper command nodes (sub-trees) */
 extern opt_cmd_t const cmd_scandir ;

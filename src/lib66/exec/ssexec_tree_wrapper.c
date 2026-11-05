@@ -29,8 +29,6 @@ extern opt_on_option_fn on_tree_status ;
 extern opt_on_option_fn on_tree_resolve ;
 extern opt_on_option_fn on_tree_init ;
 
-extern opt_cmd_fn do_tree_start ;
-extern opt_cmd_fn do_tree_stop ;
 extern opt_cmd_fn do_tree_free ;
 
 static int do_tree_remove(int argc, char const *const *argv, void *data)
