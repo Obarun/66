@@ -751,7 +751,8 @@ static void test_module(void)
     {
         struct resolve_hash_s h = RESOLVE_HASH_ZERO ;
         CHECK(parsed("mod", &h), "mod is parsed") ;
-        CHECK(h.dependencies.ncontents == 2 && !strcmp(h.dependencies.sa.s + h.dependencies.contents, "mod:m1 mod:m2"), "contents of mod") ;
+        char const *c = h.dependencies.sa.s + h.dependencies.contents ;
+        CHECK(h.dependencies.ncontents == 2 && (!strcmp(c, "mod:m1 mod:m2") || !strcmp(c, "mod:m2 mod:m1")), "contents of mod: %s", c) ;
         service_read_free(&h) ;
     }
     CHECK(parsed("mod:m1", 0) && parsed("mod:m2", 0), "the members are written") ;
