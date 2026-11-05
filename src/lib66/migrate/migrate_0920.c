@@ -118,7 +118,7 @@ void migrate_0920(void)
 
         auto_strings(d, info.scandir.s, "/", daemon[i]) ;
 
-        if (!access(d, F_OK) && svc_daemon_send(d, "r", STATUS_WHO_USER, EVENT_RESTART_READY, SS_READY_TIMEOUT) <= 0)
+        if (svc_supervise_ok(d) > 0 && svc_daemon_send(d, "r", STATUS_WHO_USER, EVENT_RESTART_READY, SS_READY_TIMEOUT) <= 0)
             log_warnu("restart: ", d, " -- restart it with 66 internal restart ", daemon[i]) ;
     }
 
