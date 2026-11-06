@@ -616,11 +616,14 @@ static void execute_uidgid(resolve_service_t *res, resolve_service_addon_execute
                 log_dieusys(LOG_EXIT_SYS, "get uid and gid of: ", as) ;
         }
 
+        if ((ex->capsbound || ex->capsambient) && prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
+            log_dieusys(LOG_EXIT_SYS, "keep capabilities") ;
+
         if (setgid(gid) < 0)
             log_dieusys(LOG_EXIT_SYS, "setgid") ;
 
         if (setuid(uid) < 0)
-            log_dieusys(LOG_EXIT_SYS, "setgid") ;
+            log_dieusys(LOG_EXIT_SYS, "setuid") ;
 
         if (uid && (geteuid() == 0 || getegid() == 0))
             log_dieusys(LOG_EXIT_SYS, "drop root privileges") ;
@@ -893,9 +896,9 @@ int main(int argc, char const *const *argv, char const *const *envp)
 
     execute_privileges(&ex) ;
 
-    execute_caps(&res, &ex) ;
-
     execute_uidgid(&res, &ex) ;
+
+    execute_caps(&res, &ex) ;
 
     execute_umask(&ex) ;
 

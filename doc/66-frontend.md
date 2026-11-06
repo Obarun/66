@@ -1259,7 +1259,7 @@ Defines the Linux capabilities allowed in the capability bounding set for a root
 
     Invalid capability names are ignored, and a warning is logged when the service configuration is parsed.
 
-    To allow privileges to be dropped, it is necessary to set `CAP_SETUID` and `CAP_SETGID` to the capability bounding set if you use the `RunAs` key.
+    With the `RunAs` key, the bounding set is applied after the change of user: it does not need `CAP_SETUID` nor `CAP_SETGID`.
 
     Requires Linux kernel version `5.6` or later.
 
@@ -1290,6 +1290,8 @@ Specifies Linux capabilities that a service and its child processes automaticall
     The bounding set must contain at least `CAP_SETPCAP` capability and each listed capability. If not, it is skipped, and a warning is logged. If `CAP_SETPCAP` is not in bounding set, the process dies.
 
     For root-owned services, if `CapsBound` is not set, the service checks the system’s current set of allowed permissions to decide which capabilities can be used. If `CapsBound` is set, only the capabilities listed in `CapsBound` are considered. For example, if `CapsBound = (CAP_SYS_NICE)` and `CapsAmbient = (CAP_DAC_OVERRIDE)`, the `CAP_DAC_OVERRIDE` capability will be skipped because it is not in the `CapsBound` list, and a warning will be logged.
+
+    With the `RunAs` key, the ambient capabilities are raised after the change of user: the service runs as that user with the listed capabilities.
 
     Requires Linux kernel version `5.6` or later.
 

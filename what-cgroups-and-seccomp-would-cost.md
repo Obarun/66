@@ -73,9 +73,9 @@ nothing has to move.
 
 ### Where the code goes
 
-The exec chain in `66-execute.c` (lines 841–861) is already the single place where every
+The exec chain in `66-execute.c` (lines 888–911) is already the single place where every
 process attribute is applied, in order: io, environment, script, rlimits, nice,
-privileges, capabilities, uid/gid, umask, chdir, then `exec`. Creating the leaf, writing
+privileges, uid/gid, capabilities, umask, chdir, then `exec`. Creating the leaf, writing
 the knobs and joining it is one more step in that list. cgroup membership is inherited
 across `fork`, so writing the PID once before `exec` covers the whole descendant tree.
 
