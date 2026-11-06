@@ -168,6 +168,13 @@ inline static void write_min_resolve(char const *dir, char const *name, uint32_t
     if (!resolve_write_at(&wex, dir, name, tmpdir.s))
         log_dieusys(LOG_EXIT_SYS, "write execute addon of: ", name) ;
 
+    char file[strlen(rdir) + 1 + strlen(name) + SS_ADDON_EXECUTE_SUFFIX_LEN + 1] ;
+    auto_strings(file, rdir, "/", name) ;
+    auto_chown(file) ;
+
+    auto_strings(file, rdir, "/", name, SS_ADDON_EXECUTE_SUFFIX) ;
+    auto_chown(file) ;
+
     resolve_free_obj(&wres) ;
     resolve_free_obj(&wex) ;
 }
