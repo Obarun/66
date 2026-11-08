@@ -44,6 +44,9 @@
 #include <66/tree.h>
 #include <66/utils.h>
 
+
+#define SS_LIVE_LEN (sizeof SS_LIVE - 1)
+
 static unsigned int mask = SS_BOOT_UMASK ;
 static unsigned int container = SS_BOOT_CONTAINER ;
 static unsigned int catch_log = SS_BOOT_CATCH_LOG ;
@@ -59,7 +62,6 @@ static char const *log_user = SS_LOGGER_RUNNER ;
 /* init.conf / cmdline overridable values, pre-seeded with their default so they
  * are never empty even when the key is absent from the configuration */
 static char path[SS_MAX_PATH_LEN + 1] = SS_BOOT_PATH ;
-static char const *live = SS_LIVE ;
 static char tree[SS_MAX_PATH_LEN + 1] = "" ;
 static char confile[SS_MAX_PATH_LEN + 1 + SS_BOOT_CONF_LEN + 1] ;
 static int notifpipe[2] ;
@@ -516,7 +518,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     strbuf env = STRBUF_ZERO ;
     // boot is one-shot: ssexec_boot always ends in exec/sulogin, never returns
     unsigned int r , tmpfs = boot_tmpfs, hasconsole = 1 ;
-    size_t bannerlen, livelen ;
+    size_t bannerlen ;
     pid_t pid ;
     char verbo[U32_FMT] ;
     char *tty = 0 ;
@@ -539,15 +541,14 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
     verbo[u32_fmt(verbo, VERBOSITY)] = 0 ;
     int ttyfd = catch_log ? 2 : 1 ; // the terminal is on stderr (logger) or stdout (no logger)
     bannerlen = strlen(banner) ;
-    livelen = strlen(live) ;
-    char tfifo[livelen + SS_BOOT_LOGFIFO_LEN + 1] ;
-    auto_strings(tfifo, live, SS_BOOT_LOGFIFO) ;
+    char tfifo[SS_LIVE_LEN + SS_BOOT_LOGFIFO_LEN + 1] ;
+    auto_strings(tfifo, SS_LIVE, SS_BOOT_LOGFIFO) ;
     fifo = tfifo ;
 
     // outlives the fork: run_stage2 writes it on a container boot failure
-    char thalt[livelen + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
+    char thalt[SS_LIVE_LEN + SS_BOOT_CONTAINER_DIR_LEN + 1 + info->ownerlen + 1 + SS_BOOT_CONTAINER_HALTFILE_LEN + 1] ;
     if (container) {
-        auto_strings(thalt, live, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
+        auto_strings(thalt, SS_LIVE, SS_BOOT_CONTAINER_DIR, "/", info->ownerstr, "/", SS_BOOT_CONTAINER_HALTFILE) ;
         haltfile = thalt ;
     }
 
@@ -625,8 +626,8 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
             sulogin("open /dev/null or copy stderr to stdout", "") ;
     }
 
-    char fs[livelen + 1] ;
-    split_tmpfs(fs,live) ;
+    char fs[SS_LIVE_LEN + 1] ;
+    split_tmpfs(fs,SS_LIVE) ;
     r = is_mnt(fs) ;
 
     if (!r || tmpfs) {
@@ -669,9 +670,9 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
         t[m++] = "-L" ;
         t[m++] = log_user ;
 
-        log_info("Create live scandir at: ",live) ;
+        log_info("Create live scandir at: ",SS_LIVE) ;
 
-        make_cmdline("scandir", t, nargc, "create live scandir at: ", live, &env) ;
+        make_cmdline("scandir", t, nargc, "create live scandir at: ", SS_LIVE, &env) ;
     }
 
     // initiate earlier service
@@ -690,7 +691,7 @@ int ssexec_boot(int argc, char const *const *argv, void *data)
 
     if (catch_log)
     {
-        log_info("Starts boot logger at: ",live,SS_LOG,"/0") ;
+        log_info("Starts boot logger at: ",SS_LIVE,SS_LOG,"/0") ;
         int fdr = io_open(fifo, O_RDONLY|O_NONBLOCK) ;
         if (fdr == -1)
             sulogin("open fifo: ",fifo) ;
